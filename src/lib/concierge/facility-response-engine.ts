@@ -18,6 +18,7 @@
 import crypto from 'crypto';
 import type { FacilityDeclineReason, FacilityResponseStatus, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { recordEvent, type EventActor } from '@/lib/events/record-event';
 import { captureError } from '@/lib/sentry';
 import { sendFacilityResponseRequestEmail } from '@/lib/email';
 import { signUnsubscribeToken } from '@/lib/unsubscribe-token';
@@ -128,7 +129,14 @@ export async function createFacilityResponsesForShortlist(args: {
         status = 'SENT';
       }
     }
-    const updated = await prisma.facilityResponse.update({
+    const updated = await prisma.$transaction(async (tx) => {
+      await recordEvent(tx, {
+        entityType: 'FACILITY_RESPONSE', entityId: row.id, eventType: 'status.changed', field: 'status',
+        oldValue: { status: row.status, homeId: row.homeId, searchId: row.searchId },
+        newValue: { status, delivery, homeId: row.homeId, searchId: row.searchId, careLevel: summary.careLevel, payerLane: summary.feeLane },
+        source: 'ADMIN',
+      });
+      return tx.facilityResponse.update({
       where: { id: row.id },
       data: {
         token,
@@ -139,6 +147,7 @@ export async function createFacilityResponsesForShortlist(args: {
         ...(status === 'SENT' ? { sentAt: now } : {}),
       },
       select: { id: true, status: true },
+    });
     });
     out.push({ responseId: updated.id, homeId: home.id, status: updated.status, delivery });
   }
@@ -182,9 +191,17 @@ export async function openFacilityResponse(token: string, now: Date = new Date()
   const view = await resolveFacilityResponse(token);
   if (!view) return null;
   if (!view.openedAt) {
-    await prisma.facilityResponse.update({
-      where: { id: view.id },
-      data: { openedAt: now, ...(view.status === 'SENT' || view.status === 'PENDING' ? { status: 'OPENED' } : {}) },
+    const nextStatus = view.status === 'SENT' || view.status === 'PENDING' ? 'OPENED' : view.status;
+    await prisma.$transaction(async (tx) => {
+      await tx.facilityResponse.update({
+        where: { id: view.id },
+        data: { openedAt: now, ...(nextStatus !== view.status ? { status: 'OPENED' } : {}) },
+      });
+      await recordEvent(tx, {
+        entityType: 'FACILITY_RESPONSE', entityId: view.id, eventType: 'link.opened', field: 'status',
+        oldValue: { status: view.status, homeId: view.homeId }, newValue: { status: nextStatus, homeId: view.homeId, openedAt: now },
+        source: 'OPERATOR', occurredAt: now,
+      });
     });
     return { ...view, openedAt: now, status: view.status === 'SENT' || view.status === 'PENDING' ? 'OPENED' : view.status };
   }
@@ -213,25 +230,36 @@ export async function applyFacilityResponse(args: {
   const base = { respondedAt: now, ...(view.openedAt ? {} : { openedAt: now }) };
 
   if (args.action === 'accept') {
-    await prisma.$transaction([
-      prisma.facilityResponse.update({ where: { id: view.id }, data: { ...base, status: 'ACCEPTED', acceptedAt: now } }),
-      prisma.assistedLivingHome.update({
+    await prisma.$transaction(async (tx) => {
+      await tx.facilityResponse.update({ where: { id: view.id }, data: { ...base, status: 'ACCEPTED', acceptedAt: now } });
+      await tx.assistedLivingHome.update({
         where: { id: view.homeId },
         data: { observedAcceptanceCriteria: rollupObservedAccept(home?.observedAcceptanceCriteria, now) as unknown as Prisma.InputJsonValue },
-      }),
-    ]);
+      });
+      await recordEvent(tx, {
+        entityType: 'FACILITY_RESPONSE', entityId: view.id, eventType: 'status.changed', field: 'status',
+        oldValue: { status: view.status, homeId: view.homeId }, newValue: { status: 'ACCEPTED', homeId: view.homeId, acceptedAt: now },
+        source: 'OPERATOR', occurredAt: now,
+      });
+    });
   } else {
     const reason: FacilityDeclineReason = args.reason ?? 'OTHER';
-    await prisma.$transaction([
-      prisma.facilityResponse.update({
+    await prisma.$transaction(async (tx) => {
+      await tx.facilityResponse.update({
         where: { id: view.id },
         data: { ...base, status: 'DECLINED', declinedAt: now, declineReason: reason, declineText: args.text?.trim().slice(0, 500) || null },
-      }),
-      prisma.assistedLivingHome.update({
+      });
+      await tx.assistedLivingHome.update({
         where: { id: view.homeId },
         data: { observedAcceptanceCriteria: rollupObservedCriteria(home?.observedAcceptanceCriteria, reason, now) as unknown as Prisma.InputJsonValue },
-      }),
-    ]);
+      });
+      // The reason is a fixed enum (business fact); the free text is NOT recorded.
+      await recordEvent(tx, {
+        entityType: 'FACILITY_RESPONSE', entityId: view.id, eventType: 'status.changed', field: 'status',
+        oldValue: { status: view.status, homeId: view.homeId }, newValue: { status: 'DECLINED', homeId: view.homeId, declineReason: reason, declinedAt: now },
+        source: 'OPERATOR', occurredAt: now,
+      });
+    });
   }
   void notifyDp(view.searchId, view.facilityName, args.action);
   return { ok: true, status: args.action === 'accept' ? 'ACCEPTED' : 'DECLINED', facilityName: view.facilityName };
@@ -255,13 +283,20 @@ async function notifyDp(searchId: string, facilityName: string, action: 'accept'
 }
 
 /** Admin confirms the move-in. Only an ACCEPTED row can become ADMITTED. */
-export async function markAdmitted(args: { searchId: string; homeId: string; now?: Date }): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function markAdmitted(args: { searchId: string; homeId: string; now?: Date; actor?: EventActor | null }): Promise<{ ok: true } | { ok: false; error: string }> {
   const now = args.now ?? new Date();
   const row = await prisma.facilityResponse.findUnique({ where: { searchId_homeId: { searchId: args.searchId, homeId: args.homeId } }, select: { id: true, status: true } });
   if (!row) return { ok: false, error: 'No facility response for that home' };
   if (row.status === 'ADMITTED') return { ok: true };
   if (row.status !== 'ACCEPTED') return { ok: false, error: `Facility has not accepted yet (status ${row.status})` };
-  await prisma.facilityResponse.update({ where: { id: row.id }, data: { status: 'ADMITTED', admittedAt: now } });
+  await prisma.$transaction(async (tx) => {
+    await tx.facilityResponse.update({ where: { id: row.id }, data: { status: 'ADMITTED', admittedAt: now } });
+    await recordEvent(tx, {
+      entityType: 'FACILITY_RESPONSE', entityId: row.id, eventType: 'status.changed', field: 'status',
+      oldValue: { status: row.status, homeId: args.homeId }, newValue: { status: 'ADMITTED', homeId: args.homeId, admittedAt: now },
+      source: 'ADMIN', actor: args.actor ?? null, occurredAt: now,
+    });
+  });
   return { ok: true };
 }
 

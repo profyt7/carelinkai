@@ -15,6 +15,8 @@
  */
 
 import { prisma } from '@/lib/prisma';
+import { recordEvent } from '@/lib/events/record-event';
+import { deriveIntakeFacts } from '@/lib/concierge/intake-facts';
 import { captureError } from '@/lib/sentry';
 import { sendConciergeRequestNotification } from '@/lib/email';
 import { deriveFeeLane, PAYER_SOURCE_LABELS, type PayerSource } from '@/lib/payer/payer-source';
@@ -72,7 +74,9 @@ export class FreeLaneRefused extends Error {
 export async function createConciergePageRequest(i: ConciergePageIntake): Promise<{ id: string }> {
   if (deriveFeeLane(i.payerSource) !== 'FEE_ELIGIBLE') throw new FreeLaneRefused();
   const owner = await ensureConciergePageUser();
-  const row = await prisma.placementSearch.create({
+  const facts = deriveIntakeFacts({ payerSource: i.payerSource, location: i.location, queryText: conciergeQueryText(i), patientInfo: { medicalNeeds: i.careNeeds } });
+  const row = await prisma.$transaction(async (tx) => {
+  const created = await tx.placementSearch.create({
     data: {
       userId: owner.id,
       queryText: conciergeQueryText(i),
@@ -83,6 +87,9 @@ export async function createConciergePageRequest(i: ConciergePageIntake): Promis
       conciergeStatus: 'SUBMITTED',
       conciergeSubmittedAt: new Date(),
       payerSource: i.payerSource,
+      payerLane: facts.payerLane,
+      intakeZip: facts.intakeZip,
+      careLevel: facts.careLevel,
       source: CONCIERGE_PAGE_SOURCE,
       patientInfo: {
         contactName: i.contactName.trim(),
@@ -97,6 +104,18 @@ export async function createConciergePageRequest(i: ConciergePageIntake): Promis
       },
     },
     select: { id: true },
+  });
+  // History (sprint W5-1): the family's request entered the queue.
+  await recordEvent(tx, {
+    entityType: 'PLACEMENT_SEARCH',
+    entityId: created.id,
+    eventType: 'status.changed',
+    field: 'conciergeStatus',
+    oldValue: null,
+    newValue: { status: 'SUBMITTED', payerLane: facts.payerLane, zip: facts.intakeZip, careLevel: facts.careLevel, source: CONCIERGE_PAGE_SOURCE },
+    source: 'FAMILY',
+  });
+  return created;
   });
 
   // Same PHI-free admin alert the DP submit fires (request id + link only).

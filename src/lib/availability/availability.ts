@@ -11,6 +11,7 @@
  */
 
 import { prisma } from '@/lib/prisma';
+import { recordEvent, eventSourceForAvailability, type EventActor } from '@/lib/events/record-event';
 import type { AvailabilitySource } from '@prisma/client';
 
 /** A verification older than this reads as stale → "Contact to confirm". */
@@ -100,16 +101,40 @@ export async function updateAvailability(params: {
   homeId: string;
   count: number | null;
   source: AvailabilitySource;
+  /** Who did it (for the history row); omit for channel-driven writes. */
+  actor?: EventActor | null;
 }): Promise<AvailabilityView | null> {
   const count = params.count == null ? null : normalizeCount(params.count);
-  const home = await prisma.assistedLivingHome.update({
-    where: { id: params.homeId },
-    data: {
-      availabilityCount: count,
-      availabilityVerifiedAt: new Date(),
-      availabilitySource: params.source,
-    },
-    select: { availabilityCount: true, availabilityVerifiedAt: true, availabilitySource: true },
+  const now = new Date();
+  // The write and its history row commit together (sprint W5-1, Δ14 / G2).
+  const home = await prisma.$transaction(async (tx) => {
+    const before = await tx.assistedLivingHome.findUnique({
+      where: { id: params.homeId },
+      select: { availabilityCount: true, availabilityVerifiedAt: true, availabilitySource: true },
+    });
+    if (!before) return null;
+    const updated = await tx.assistedLivingHome.update({
+      where: { id: params.homeId },
+      data: {
+        availabilityCount: count,
+        availabilityVerifiedAt: now,
+        availabilitySource: params.source,
+      },
+      select: { availabilityCount: true, availabilityVerifiedAt: true, availabilitySource: true },
+    });
+    await recordEvent(tx, {
+      entityType: 'AVAILABILITY',
+      entityId: params.homeId,
+      eventType: 'availability.updated',
+      field: 'availabilityCount',
+      oldValue: { count: before.availabilityCount, source: before.availabilitySource, verifiedAt: before.availabilityVerifiedAt },
+      newValue: { count, source: params.source, verifiedAt: now },
+      source: eventSourceForAvailability(params.source),
+      actor: params.actor ?? null,
+      occurredAt: now,
+    });
+    return updated;
   });
+  if (!home) return null;
   return availabilityView(home);
 }

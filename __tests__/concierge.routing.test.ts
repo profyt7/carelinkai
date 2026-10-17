@@ -11,12 +11,17 @@
  */
 
 jest.mock('@/lib/auth-utils', () => ({ requireRole: jest.fn() }));
-jest.mock('@/lib/prisma', () => ({
-  prisma: {
+jest.mock('@/lib/prisma', () => {
+  // Sprint W5-1: writes now commit alongside an EntityEvent row inside
+  // prisma.$transaction(callback); the mock runs the callback against itself.
+  const p: any = {
     placementSearch: { findUnique: jest.fn(), update: jest.fn() },
     user: { findUnique: jest.fn() },
-  },
-}));
+    entityEvent: { create: jest.fn().mockResolvedValue({ id: 'evt' }), findMany: jest.fn().mockResolvedValue([]) },
+  };
+  p.$transaction = jest.fn(async (arg: unknown) => (typeof arg === 'function' ? (arg as (tx: unknown) => unknown)(p) : Promise.all(arg as Promise<unknown>[])));
+  return { prisma: p };
+});
 jest.mock('@/lib/email', () => ({ sendConciergeRequestNotification: jest.fn().mockResolvedValue(true) }));
 jest.mock('@/lib/sentry', () => ({ captureError: jest.fn() }));
 

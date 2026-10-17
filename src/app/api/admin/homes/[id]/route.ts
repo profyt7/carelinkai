@@ -3,12 +3,16 @@ import { getServerSession } from 'next-auth';
 import { getToken } from 'next-auth/jwt';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { recordEvent, diffFields } from '@/lib/events/record-event';
 import { HomeStatus, CareLevel } from '@prisma/client';
 import { z } from 'zod';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { AuditAction } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
+
+/** Fields whose admin edits are kept in history (sprint W5-1). */
+const ADMIN_TRACKED_HOME_FIELDS = ['name', 'description', 'status', 'careLevel', 'capacity', 'currentOccupancy', 'genderRestriction', 'priceMin', 'priceMax', 'amenities', 'highlights'] as const;
 
 const updateHomeSchema = z.object({
   name: z.string().min(1).optional(),
@@ -246,8 +250,18 @@ export async function PATCH(
       }
     }
 
-    // Update the home
-    const updatedHome = await prisma.assistedLivingHome.update({
+    // History (sprint W5-1): one row per changed field, same transaction as the write.
+    const diffs = diffFields(existingHome as unknown as Record<string, unknown>, validatedData as Record<string, unknown>, ADMIN_TRACKED_HOME_FIELDS);
+    const updatedHome = await prisma.$transaction(async (tx) => {
+      for (const d of diffs) {
+        const isText = d.field === 'description' || d.field === 'name';
+        await recordEvent(tx, {
+          entityType: 'OPERATOR_PROFILE', entityId: id, eventType: 'field.changed', field: d.field,
+          oldValue: isText ? { changed: true } : d.oldValue, newValue: isText ? { changed: true } : d.newValue,
+          source: 'ADMIN', actor: { userId: session.user?.id ?? null, role: 'ADMIN' },
+        });
+      }
+      return tx.assistedLivingHome.update({
       where: { id },
       data: validatedData,
       include: {
@@ -270,6 +284,7 @@ export async function PATCH(
         reviews: true,
         photos: true,
       },
+    });
     });
 
     // Create audit log

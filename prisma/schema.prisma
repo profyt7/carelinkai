@@ -2345,6 +2345,11 @@ model PlacementSearch {
   /// Payer-source screener (OL-114): structured payer tag from the concierge/DP
   /// intake (patientInfo.paymentType stays as legacy free text). TAGS ONLY.
   payerSource          PayerSource?
+  /// First-class intake facts (sprint W5-1, Δ14/G2): derived at intake time from the
+  /// screener / request — never guessed after the fact (nullable, no backfill).
+  payerLane            String?          // FEE_ELIGIBLE | FREE_LANE | UNKNOWN
+  intakeZip            String?          // 5-digit ZIP of the search area when given
+  careLevel            String?          // "Memory care" | "Assisted living" | … (plain label)
   curatedHomes         Json?            // [{ homeId, name, address, note, confirmedAvailability }]
   conciergeNote        String?          // overall care-team message to the DP
   conciergeSubmittedAt DateTime?
@@ -3528,4 +3533,50 @@ model EmailSuppression {
   suppressedAt DateTime @default(now())
 
   @@index([email])
+}
+
+/// Sprint W5-1 (Δ14 / G2): append-only history. Every status or data change on
+/// the entities below is recorded alongside the write (same transaction) via
+/// src/lib/events/record-event.ts. There is deliberately NO update/delete path
+/// for this model anywhere in the app (guarded by a unit test). PHI rule: old /
+/// new values hold IDs, statuses, counts, payer lane, care level, ZIP — never
+/// names, DOB, diagnoses, notes (sanitized by the helper).
+enum EntityType {
+  HOME
+  AVAILABILITY
+  LISTING_CLAIM
+  PLACEMENT_SEARCH
+  FACILITY_RESPONSE
+  AVAILABILITY_PING
+  OPERATOR_PROFILE
+  CONCIERGE_ORDER
+}
+
+enum EventSource {
+  OPERATOR
+  ADMIN
+  DP
+  FAMILY
+  PING
+  VA_CALL
+  IMPORT
+  SYSTEM
+  STRIPE
+}
+
+model EntityEvent {
+  id          String      @id @default(cuid())
+  entityType  EntityType
+  entityId    String
+  eventType   String // e.g. "availability.updated", "status.changed", "field.changed"
+  field       String?
+  oldValue    Json?
+  newValue    Json?
+  source      EventSource
+  actorUserId String?
+  actorRole   String?
+  occurredAt  DateTime    @default(now())
+
+  @@index([entityType, entityId, occurredAt])
+  @@index([occurredAt])
 }

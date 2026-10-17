@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { recordEvent } from '@/lib/events/record-event';
 import { isOperatorAcceptanceCurrent, BAA_CURRENT_VERSION, DPA_CURRENT_VERSION } from '@/lib/legal';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { AuditAction } from '@prisma/client';
@@ -69,18 +70,25 @@ export async function POST(req: NextRequest) {
     const ua = req.headers.get('user-agent') || 'unknown';
     const now = new Date();
 
-    await prisma.operator.update({
-      where: { id: operator.id },
-      data: {
-        baaTemplateVersion: BAA_CURRENT_VERSION,
-        baaAcceptedAt: now,
-        baaAcceptedIp: ip,
-        baaAcceptedUserAgent: ua,
-        dpaTemplateVersion: DPA_CURRENT_VERSION,
-        dpaAcceptedAt: now,
-        dpaAcceptedIp: ip,
-        dpaAcceptedUserAgent: ua,
-      },
+    await prisma.$transaction(async (tx) => {
+      await tx.operator.update({
+        where: { id: operator.id },
+        data: {
+          baaTemplateVersion: BAA_CURRENT_VERSION,
+          baaAcceptedAt: now,
+          baaAcceptedIp: ip,
+          baaAcceptedUserAgent: ua,
+          dpaTemplateVersion: DPA_CURRENT_VERSION,
+          dpaAcceptedAt: now,
+          dpaAcceptedIp: ip,
+          dpaAcceptedUserAgent: ua,
+        },
+      });
+      await recordEvent(tx, {
+        entityType: 'OPERATOR_PROFILE', entityId: operator.id, eventType: 'legal.accepted', field: 'baaDpaAcceptedAt',
+        oldValue: null, newValue: { status: 'ACCEPTED', verifiedAt: now },
+        source: 'OPERATOR', actor: { userId: session.user.id, role: 'OPERATOR' }, occurredAt: now,
+      });
     });
 
     // Audit both acceptance events

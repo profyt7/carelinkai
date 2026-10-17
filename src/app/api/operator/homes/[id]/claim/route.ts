@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { recordEvent } from '@/lib/events/record-event';
 import { UserRole } from '@prisma/client';
 import { sendOperatorClaimNotification } from '@/lib/email';
 
@@ -80,8 +81,8 @@ export async function POST(
   }
 
   // Transfer ownership in a transaction
-  const [updatedHome] = await prisma.$transaction([
-    prisma.assistedLivingHome.update({
+  const updatedHome = await prisma.$transaction(async (tx) => {
+    const h = await tx.assistedLivingHome.update({
       where: { id: params.id },
       data: {
         operatorId: operator.id,
@@ -89,12 +90,24 @@ export async function POST(
         ...(imageRightsAcknowledged ? { imageRightsAcknowledgedAt: new Date() } : {}),
       },
       include: { address: true },
-    }),
-    prisma.operator.update({
+    });
+    await tx.operator.update({
       where: { id: operator.id },
       data: { seededHomeId: null },
-    }),
-  ]);
+    });
+    // History: the listing changed hands (sprint W5-1).
+    await recordEvent(tx, {
+      entityType: 'LISTING_CLAIM',
+      entityId: params.id,
+      eventType: 'claim.completed',
+      field: 'operatorId',
+      oldValue: { operatorId: home.operatorId, status: home.status },
+      newValue: { operatorId: operator.id, status: 'ACTIVE' },
+      source: 'OPERATOR',
+      actor: { userId: user.id, role: user.role },
+    });
+    return h;
+  });
 
   // Surface the claim to the founder/admin in real time (non-blocking, OL-079).
   // Idempotent by construction: the seededHomeId guard above means a given

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { recordEvent } from '@/lib/events/record-event';
 import { z } from 'zod';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { AuditAction } from '@prisma/client';
@@ -73,7 +74,19 @@ export async function POST(
     const wasAlreadyPendingReview = home.status === 'PENDING_REVIEW';
 
     // Reassign the listing to the operator and queue it for review
-    const updatedHome = await prisma.assistedLivingHome.update({
+    const updatedHome = await prisma.$transaction(async (tx) => {
+      // History: admin reassigned the listing (sprint W5-1).
+      await recordEvent(tx, {
+        entityType: 'LISTING_CLAIM',
+        entityId: id,
+        eventType: 'claim.assigned',
+        field: 'operatorId',
+        oldValue: { operatorId: home.operatorId, status: home.status },
+        newValue: { operatorId: operator.id, status: 'PENDING_REVIEW' },
+        source: 'ADMIN',
+        actor: { userId: session.user?.id ?? null, role: 'ADMIN' },
+      });
+      return tx.assistedLivingHome.update({
       where: { id },
       data: {
         operatorId: operator.id,
@@ -93,6 +106,7 @@ export async function POST(
           },
         },
       },
+    });
     });
 
     // Notify the operator that the listing is now theirs
