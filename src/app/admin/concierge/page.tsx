@@ -11,7 +11,9 @@ type Row = {
   payerSource?: string | null;
   /** 'concierge_page' = a private-pay family via /concierge (W4 0a); null = DP in the app. */
   source?: string | null;
-  conciergeStatus: 'SUBMITTED' | 'MATCHING' | 'SHORTLIST_READY' | null;
+  conciergeStatus: 'SUBMITTED' | 'MATCHING' | 'SHORTLIST_READY' | 'WAITLIST' | 'PENDING_PAYMENT' | null;
+  /** Latest paid-concierge order (W5-3), if any. */
+  conciergeOrders?: Array<{ id: string; status: 'PENDING_PAYMENT' | 'PAID' | 'WAITLIST' | 'REQUESTED_UNPAID' | 'REFUNDED' | 'CANCELED'; amountCents: number; paidAt: string | null }>;
   conciergeSubmittedAt: string | null;
   conciergeRespondedAt: string | null;
   curatedHomes: { homeId: string }[] | null;
@@ -29,6 +31,7 @@ const FILTERS = [
   { key: 'SUBMITTED', label: 'Submitted' },
   { key: 'MATCHING', label: 'Matching' },
   { key: 'SHORTLIST_READY', label: 'Sent' },
+  { key: 'WAITLIST', label: 'Waitlist' },
   { key: 'ALL', label: 'All' },
 ] as const;
 
@@ -37,7 +40,23 @@ function StatusBadge({ status }: { status: Row['conciergeStatus'] }) {
     return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-success-100 text-success-800"><CheckCircle className="h-3 w-3" /> Sent</span>;
   if (status === 'MATCHING')
     return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800"><Loader2 className="h-3 w-3" /> Matching</span>;
+  if (status === 'WAITLIST')
+    return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-700"><Clock className="h-3 w-3" /> Waitlist</span>;
+  if (status === 'PENDING_PAYMENT')
+    return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-600"><Clock className="h-3 w-3" /> Awaiting payment</span>;
   return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800"><Inbox className="h-3 w-3" /> Submitted</span>;
+}
+
+/** Paid-concierge chip (W5-3): Paid / Refunded / Unpaid request. Nothing for DP rows. */
+function OrderChip({ order }: { order: Row['conciergeOrders'] extends Array<infer T> | undefined ? T | undefined : never }) {
+  if (!order) return null;
+  if (order.status === 'PAID')
+    return <span data-testid="order-chip" data-order-status="PAID" className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-success-600 text-white">Paid · ${(order.amountCents / 100).toFixed(0)}</span>;
+  if (order.status === 'REFUNDED')
+    return <span data-testid="order-chip" data-order-status="REFUNDED" className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-neutral-200 text-neutral-700">Refunded</span>;
+  if (order.status === 'REQUESTED_UNPAID')
+    return <span data-testid="order-chip" data-order-status="REQUESTED_UNPAID" className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-600">Unpaid request</span>;
+  return null;
 }
 
 export default function AdminConciergeQueuePage() {
@@ -51,6 +70,7 @@ export default function AdminConciergeQueuePage() {
     setError(null);
     try {
       const qs = filter === 'OPEN' || filter === 'ALL' ? '' : `?status=${filter}`;
+      // ALL / OPEN use the default list (PENDING_PAYMENT hidden server-side).
       const res = await fetch(`/api/admin/concierge${qs}`, { cache: 'no-store' });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Failed to load');
@@ -135,6 +155,7 @@ export default function AdminConciergeQueuePage() {
               <div className="flex items-center gap-3 shrink-0">
                 {/* Payer-source tag (OL-114) — read-only, at-a-glance. */}
                 <PayerLaneBadge payerSource={r.payerSource} />
+                <OrderChip order={r.conciergeOrders?.[0]} />
                 <StatusBadge status={r.conciergeStatus} />
                 <ArrowRight className="h-4 w-4 text-neutral-400" />
               </div>

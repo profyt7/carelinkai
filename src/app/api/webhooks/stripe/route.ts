@@ -10,6 +10,7 @@ import { bindRequestLogger } from "@/lib/logger";
 import { InvoiceStatus, SubscriptionPlan, SubscriptionStatus } from "@prisma/client";
 import { smsService } from "@/lib/sms/sms-service";
 import { captureError } from '@/lib/sentry';
+import { handleConciergeStripeEvent, isConciergeStripeEvent } from '@/lib/concierge/orders';
 
 /**
  * Utility: maps Stripe Transfer status strings to internal PaymentStatus values
@@ -158,6 +159,17 @@ export async function POST(request: NextRequest) {
         });
         logger.error("Invalid webhook payload", { err: err instanceof Error ? err.message : err });
         return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+      }
+    }
+
+    // ─── Family Concierge (sprint W5-3): checkout completed / expired, refunds ──
+    // Idempotent on event.id (StripeWebhookEvent). A charge.refunded that is not
+    // a concierge order falls through to the existing handlers untouched.
+    if (isConciergeStripeEvent(event)) {
+      const r = await handleConciergeStripeEvent(event);
+      if (r.handled) {
+        logger.info("Concierge Stripe event processed", { type: event.type, orderId: r.orderId, status: r.status, duplicate: !!r.duplicate });
+        return NextResponse.json({ received: true, concierge: true, duplicate: !!r.duplicate }, { status: 200 });
       }
     }
 

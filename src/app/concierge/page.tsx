@@ -2,16 +2,17 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { FiCheck } from 'react-icons/fi';
 import ConciergeScreener from './ConciergeScreener';
+import { CONCIERGE_OFFER } from '@/lib/concierge/offer';
 
 /**
  * Family concierge offer page (sprint W3 item 5 / sprint 3.1).
  *
- * Private-pay-only offer with the payer-source screener in FRONT of it:
- * the server HTML carries the pitch and the screener; the offer section (where
- * the price will live) is mounted client-side only after a private-pay / LTC
- * insurance answer. Medicaid / Medicare / VA / not-sure answers get free help
- * and never render the offer. No price exists yet — Chris adds it; nothing
- * here touches Stripe. The CTA is a placeholder into the existing intake.
+ * Paid, private-pay offer (flat one-time fee, sprint W5-3) with the payer-source
+ * screener in FRONT of it: the server HTML carries the pitch and the screener;
+ * the offer card (where the price lives) is mounted client-side only after a
+ * private-pay / LTC insurance / not-sure answer. Medicaid / Medicare / VA
+ * answers get free help and never render the offer or a price. This server
+ * page carries no dollar amount; src/lib/concierge/offer.ts owns the number.
  */
 
 const PAGE_URL = 'https://getcarelinkai.com/concierge';
@@ -101,7 +102,8 @@ export default function ConciergePage() {
         <h2 className="text-3xl font-bold text-neutral-900">Why it’s different from a “free” placement agency</h2>
         <ul className="mt-6 space-y-3 max-w-3xl">
           {[
-            'National placement agencies are paid a commission by the home — often a month’s rent — which is why their “free” shortlist leans toward whoever pays. Our concierge is paid by you, flat, and homes never pay us to be recommended.',
+            'National placement agencies are paid a commission by the home — often a month’s rent — which is why their “free” shortlist leans toward whoever pays. Our concierge is paid by you, flat, one time.',
+            CONCIERGE_OFFER.honestyLine,
             'Every home we shortlist is a licensed Ohio facility with its state inspection history in front of you, facts only.',
             'Availability is confirmed with the home before you tour — no wasted Saturday drives.',
             'Families paying through Medicaid, Medicare or the VA get the directory, guides and direct home contact free, with no fee attached to the placement, ever.',

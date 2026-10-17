@@ -43,6 +43,7 @@ export const PUBLIC_PAGE_PREFIXES: readonly string[] = [
   // anyone without an account (sprint W3 item 2).
   '/claim',
   // Family concierge offer page (sprint W3 item 5) — public, screener in front.
+  // /concierge/thanks is the Stripe Checkout success page (sprint W5-3).
   '/concierge',
 ];
 

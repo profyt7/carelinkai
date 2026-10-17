@@ -6,6 +6,7 @@ import { AlertCard } from './AlertCard';
 import { DashboardSkeleton } from './DashboardSkeleton';
 import { FileText, Calendar, CheckCircle, MapPin, Zap, Car, MessageCircle, Heart, Star } from 'lucide-react';
 import Link from 'next/link';
+import ConciergeUpsellCard from './ConciergeUpsellCard';
 
 interface Metrics {
   inquiryStatus?: {
@@ -130,6 +131,9 @@ export function FamilyDashboardContent() {
           <p className="text-sm text-neutral-600 mt-1">Track your inquiry and application progress</p>
         </div>
       )}
+
+      {/* Family Concierge card — paid ($399) or free-help, decided server-side by payer lane (W5-3) */}
+      <ConciergeUpsellCard />
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">

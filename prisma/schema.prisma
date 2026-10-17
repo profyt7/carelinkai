@@ -129,6 +129,8 @@ model Family {
   plusStatus              SubscriptionStatus?
   plusPeriodEndsAt        DateTime?
   isPlus                  Boolean               @default(false)
+  /// Family dashboard concierge upsell card dismissed (hidden for 30 days) — sprint W5-3.
+  conciergeUpsellDismissedAt DateTime?
   activities              ActivityFeedItem[]
   bookings                Booking[]
   emergencyPreferences    EmergencyPreference[]
@@ -2382,11 +2384,54 @@ model PlacementSearch {
   user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   placementRequests  PlacementRequest[]
   facilityResponses  FacilityResponse[]
+  conciergeOrders    ConciergeOrder[]
 
   @@index([userId])
   @@index([status])
   @@index([createdAt])
   @@index([conciergeStatus])
+}
+
+/// Paid Family Concierge order (sprint W5-3, G1). $399 flat, one-time, private-pay
+/// lane only. Every status change is recorded via recordEvent (source STRIPE for
+/// webhook-driven changes, FAMILY for the family's own request).
+enum ConciergeOrderStatus {
+  PENDING_PAYMENT   // Stripe Checkout Session created, not yet paid
+  PAID              // checkout.session.completed received
+  WAITLIST          // monthly capacity reached; same intake, no payment
+  REQUESTED_UNPAID  // CONCIERGE_CHECKOUT_ENABLED unset → today's "request" behaviour
+  REFUNDED          // charge.refunded received
+  CANCELED          // checkout expired / canceled before payment
+}
+
+model ConciergeOrder {
+  id                      String               @id @default(cuid())
+  placementSearchId       String?
+  /// The family's user id when they were signed in (nullable — /concierge is public).
+  familyUserId            String?
+  email                   String
+  status                  ConciergeOrderStatus @default(REQUESTED_UNPAID)
+  stripeCheckoutSessionId String?              @unique
+  stripePaymentIntentId   String?
+  amountCents             Int                  @default(39900)
+  createdAt               DateTime             @default(now())
+  paidAt                  DateTime?
+  refundedAt              DateTime?
+  placementSearch         PlacementSearch?     @relation(fields: [placementSearchId], references: [id], onDelete: SetNull)
+
+  @@index([placementSearchId])
+  @@index([familyUserId])
+  @@index([email])
+  @@index([status, createdAt])
+  @@index([stripePaymentIntentId])
+}
+
+/// Stripe webhook idempotency (sprint W5-3): one row per processed event id.
+/// A duplicate delivery hits the primary key and is acknowledged without re-running.
+model StripeWebhookEvent {
+  id          String   @id // Stripe event id (evt_…)
+  type        String
+  processedAt DateTime @default(now())
 }
 
 /// Placement request sent to homes

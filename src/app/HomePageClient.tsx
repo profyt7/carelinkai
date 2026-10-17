@@ -309,6 +309,47 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* 1b. FAMILY CONCIERGE (sprint W5-3, G1) — between hero/search and the directory. Renders logged-out. */}
+      <section className="py-14 bg-primary-50 border-y border-primary-100" data-testid="home-concierge-section">
+        <div className="max-w-7xl mx-auto px-4 md:px-6">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-5 lg:items-center">
+            <div className="lg:col-span-3">
+              <p className="text-sm font-semibold uppercase tracking-wide text-primary-600">Family Concierge · Greater Cleveland</p>
+              <h2 className="mt-2 text-3xl md:text-4xl font-bold text-neutral-900">Want a person to do the legwork?</h2>
+              <ul className="mt-5 space-y-3">
+                {[
+                  'A verified shortlist of 3–5 homes in 2 business days',
+                  'Tours scheduled, with real prices in writing',
+                  '$399 flat — full refund if we don’t deliver the shortlist on time',
+                ].map((line) => (
+                  <li key={line} className="flex gap-3 text-neutral-800">
+                    <FiCheck className="mt-1 flex-shrink-0 text-success-600" />
+                    <span>{line}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="lg:col-span-2 rounded-2xl border border-primary-200 bg-white p-6 shadow-sm">
+              <p className="text-neutral-700">
+                One flat fee, paid by you — never by a home. A Cleveland person confirms availability and prices with each
+                home before you tour.
+              </p>
+              <Link
+                href="/concierge"
+                data-testid="home-concierge-cta"
+                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-6 py-3 font-semibold text-white hover:bg-primary-700"
+              >
+                See the Family Concierge
+                <FiArrowRight />
+              </Link>
+              <p className="mt-4 text-sm text-neutral-600" data-testid="home-concierge-free-line">
+                Paying with Medicaid, Medicare or the VA? Our help is always free.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* 2. VALUE PROPOSITION SECTION */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 md:px-6">

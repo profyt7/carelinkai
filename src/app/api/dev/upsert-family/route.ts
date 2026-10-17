@@ -19,6 +19,9 @@ export async function POST(request: NextRequest) {
     const rawPassword: string = (body.password as string) || 'Family123!';
     const firstName: string = (body.firstName as string) || 'Fam';
     const lastName: string = (body.lastName as string) || 'Ily';
+    // Sprint W5-3: optional payer-lane answer seed (a PlacementSearch tagged with
+    // payerSource) so the dashboard concierge card can be exercised per lane.
+    const payerSource: string | undefined = typeof body.payerSource === 'string' ? body.payerSource : undefined;
 
     const passwordHash = await bcrypt.hash(rawPassword, 10);
 
@@ -75,6 +78,21 @@ export async function POST(request: NextRequest) {
         },
       });
     }
+
+    if (payerSource) {
+      await prisma.placementSearch.create({
+        data: {
+          userId: user.id,
+          queryText: 'E2E payer-lane seed',
+          parsedCriteria: { source: 'e2e' },
+          searchResults: { matches: [] },
+          status: 'COMPLETED',
+          payerSource: payerSource as any,
+        },
+      });
+    }
+    // Fresh fixture: no dismissed upsell card carried over from an earlier run.
+    await prisma.family.update({ where: { id: family.id }, data: { conciergeUpsellDismissedAt: null } });
 
     return NextResponse.json({ success: true, userId: user.id, familyId: family.id, email, password: rawPassword });
   } catch (e) {
