@@ -20,6 +20,8 @@ type Row = {
   availability: { fresh: boolean; count: number | null; verifiedAt: string | null; source: string | null; label: string };
   lastPing: { id: string; channel: string; sentAt: string; expiresAt: string; delivery: string | null; repliedAt: string | null; replyRaw: string | null; parsedCount: number | null; outcome: string | null; state: 'sent' | 'replied' | 'expired' | 'stop' | 'admin_review' } | null;
   onCallList: boolean;
+  /** OL-163e: the home asked not to be called — never pinged, never on a call list. */
+  doNotCall?: boolean;
   /** Opted in + email + claimed (or admin-call opt-in) → will be pinged when PING_ENABLED is set (W5-5). */
   eligible?: boolean;
 };
@@ -159,6 +161,7 @@ export default function AvailabilityPingsAdminPage() {
                       {!r.claimed && <span className="ml-2 rounded bg-neutral-100 px-1.5 py-0.5 text-[11px] text-neutral-600">unclaimed</span>}
                       {r.eligible && <span className="ml-2 rounded bg-success-50 px-1.5 py-0.5 text-[11px] font-semibold text-success-700 ring-1 ring-inset ring-success-200" data-testid="ping-eligible">eligible</span>}
                       {r.onCallList && <span className="ml-2 inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800"><PhoneCall className="h-3 w-3" /> call list</span>}
+                      {r.doNotCall && <span className="ml-2 rounded bg-error-50 px-1.5 py-0.5 text-[11px] font-semibold text-error-700 ring-1 ring-inset ring-error-200" data-testid="ping-do-not-call">do not call</span>}
                     </div>
                     <div className="text-xs text-neutral-500">{r.city ?? ''}</div>
                   </td>
