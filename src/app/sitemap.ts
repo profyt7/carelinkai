@@ -4,6 +4,9 @@ import { SUBURBS, suburbPath } from '@/lib/directory/suburbs';
 
 const SITE_URL = 'https://getcarelinkai.com';
 
+// OL-159: re-rendered at least hourly and on demand (POST /api/admin/revalidate).
+export const revalidate = 3600;
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
 
