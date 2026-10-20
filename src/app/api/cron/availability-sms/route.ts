@@ -37,6 +37,8 @@ export async function GET(request: NextRequest) {
   const homes = await prisma.assistedLivingHome.findMany({
     where: {
       status: 'ACTIVE',
+      isDemo: false,
+      doNotCall: false, // OL-163e: a do-not-call home is never texted either
       availabilityOptIn: true,
       contactMobile: { not: null },
       OR: [{ availabilityVerifiedAt: null }, { availabilityVerifiedAt: { lt: staleCutoff } }],
