@@ -30,6 +30,10 @@ export const CONCIERGE_OFFER = {
   /** Above the fold on /concierge: families never pay to search. */
   freeForFamiliesLine:
     'Free for families. Searching CareLinkAI — verified homes, prices, Medicaid waiver status, inspection history — never costs a family anything. The concierge is an optional, private-pay lane.',
+  /** Free-lane hero on /concierge once a Medicaid / Medicare / VA answer is given (OL-166b): no price, no dollar figure. */
+  freeLaneHeadline: 'Free help for Medicaid, Medicare and VA families',
+  freeLaneSubhead:
+    'Verified homes, confirmed availability and Medicaid waiver status, inspection history in plain English — free, with no fee to you or to the home, ever.',
   /** One-liner for the homepage section and the dashboard card. */
   oneLine: 'A Cleveland person checks fit, prices and the contract with you before you sign — paid by you, flat, never by a home.',
   /** v2 items 1–9, plain language (Family_Concierge_Offer_2026_10_16.md v2). */
