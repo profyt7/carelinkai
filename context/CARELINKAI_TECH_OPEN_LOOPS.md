@@ -7,8 +7,25 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
 
 ## 🔴 SHIP NOW (this week)
 
+### OL-163: AI availability-call agent (a–e) — PRs #750–#754 open (stacked), DO NOT MERGE until Chris reviews
+- **Status:** 🟢 BUILT 2026-10-20 — a webhook #750 · b call list #751 · c QA queue #752 · d badge + agent keys #753 · e do-not-call + retry #754. Merge in order; each needs "Update branch" first. Chris: set `ELEVENLABS_WEBHOOK_SECRET` in Render; map the agent's data-collection fields to the observation keys; 12-home pilot Tue–Thu; Elizabeth QAs at `/admin/call-qa`. Decision: price from calls stays on the observation (add `PriceSource.AI_CALL` later?).
+- **Path:** `src/lib/availability/call-result.ts`, `call-rules.ts`, `call-qa.ts`, `src/app/api/webhooks/elevenlabs/call-result`, `src/app/api/admin/availability/call-list`, `src/app/admin/call-qa`, `prisma/migrations/20261020000000_*`, `20261020000001_*`
+
+### OL-159: hub staleness — PR #756 open
+- **Status:** 🟢 BUILT 2026-10-20 — static hub pages `revalidate = 3600`, `POST /api/admin/revalidate`, import-script purge, `post-deploy-revalidate.yml` asserts footer sha = main + waiver lines after every deploy and dumps cache headers (if `cf-cache-status: HIT` shows up, the fix is an edge-cache rule, not code).
+
+### OL-160: cron diagnostics — PR #755 open
+- **Status:** 🟢 BUILT 2026-10-20 — `src/lib/cron-auth.ts`; DP Follow-ups workflow + `scripts/run-cron.js` name "auth 401 — CRON_SECRET mismatch" vs "5xx — app error". Found + fixed: reminders cron routes were fail-open when `CRON_SECRET` was unset.
+
+### OL-161: POST /_error — PR #759 open
+- **Status:** 🟢 BUILT 2026-10-20 — middleware 405 for non-GET on page routes; e2e `POST / → 405`.
+
+### OL-162: checkout preflight — PR #757 open
+- **Status:** 🟢 BUILT 2026-10-20 — `/admin/checkout-preflight` booleans only; `isCheckoutEnabled` refuses on mismatch (live key in production, price id, webhook secret, admin email).
+
 ### OL-155: Sprint W5 batch — six stacked PRs open (#743–#748), merge in order
-- **Status:** 🔴 OPEN (2026-10-17) — #743 OL-154 flake · #744 EntityEvent history · #745 Medicaid waiver + acceptance + WRAAA import · #746 paid concierge · #747 Rich Results fix · #748 operator contact card. Each retargets to `main` when its base merges. Post-merge: run the Rich Results test on `/cleveland/assisted-living` (expect Carousel valid); check `/admin/homes/<id>` History tab renders.
+- **Status:** ✅ MERGED 2026-10-20 — #743 `32b9422` · #744 `99fb3b3` · #745 `ab88429` · #746 `81fa7d9` · #747 `8fe9a0b` · #748 `f47326d`, each verified live via `prod-verify.yml` (12 cards, /concierge, listing page, ping). Follow-up #749 (not-sure lane both, OL-158 copy, Terms Ohio, CI split) open.
+- **Prior status:** 🔴 OPEN (2026-10-17) — #743 OL-154 flake · #744 EntityEvent history · #745 Medicaid waiver + acceptance + WRAAA import · #746 paid concierge · #747 Rich Results fix · #748 operator contact card. Each retargets to `main` when its base merges. Post-merge: run the Rich Results test on `/cleveland/assisted-living` (expect Carousel valid); check `/admin/homes/<id>` History tab renders.
 - **Path:** the six branches; `context/DEV_SESSION_SUMMARIES.md` 2026-10-17 entry
 
 ### OL-156: WRAAA waiver import — production dry run + apply (founder, after #745)
