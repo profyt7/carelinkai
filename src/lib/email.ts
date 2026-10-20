@@ -44,7 +44,7 @@ function getResend(): Resend {
  * All send helpers below call this instead of `resend.emails.send` directly.
  */
 type ResendSendArgs = Parameters<Resend['emails']['send']>[0];
-async function guardedResendSend(
+export async function guardedResendSend(
   args: ResendSendArgs,
 ): Promise<{ data: { id: string } | null; error: { message?: string; name?: string } | null }> {
   const toList = Array.isArray(args.to) ? args.to : args.to ? [args.to] : [];

@@ -227,81 +227,6 @@ class MockEmailProvider implements EmailProvider {
 }
 
 /**
- * SendGrid email provider
- * Requires @sendgrid/mail package to be installed
- */
-class SendGridEmailProvider implements EmailProvider {
-  private client: any;
-
-  constructor() {
-    try {
-      // Dynamic import to avoid requiring the package if not used
-      const sgMail = require('@sendgrid/mail');
-      sgMail.setApiKey(process.env["SENDGRID_API_KEY"]);
-      this.client = sgMail;
-    } catch (error) {
-      console.error('Failed to initialize SendGrid client:', error);
-      throw new Error('SendGrid client initialization failed. Is @sendgrid/mail installed?');
-    }
-  }
-
-  async sendEmail(message: EmailMessage): Promise<EmailSendResult> {
-    try {
-      // Convert to SendGrid format
-      const sgMessage = {
-        to: message.to,
-        from: {
-          email: message.from || EMAIL_FROM,
-          name: message.fromName || EMAIL_FROM_NAME
-        },
-        subject: message.subject,
-        text: message.text,
-        html: message.html,
-        cc: message.cc,
-        bcc: message.bcc,
-        attachments: message.attachments?.map(attachment => ({
-          filename: attachment.filename,
-          content: Buffer.isBuffer(attachment.content) 
-            ? attachment.content.toString('base64')
-            : Buffer.from(attachment.content).toString('base64'),
-          type: attachment.contentType,
-          disposition: attachment.disposition,
-          content_id: attachment.contentId
-        })),
-        customArgs: message.metadata,
-        mailSettings: {
-          bypassListManagement: {
-            enable: true
-          }
-        }
-      };
-
-      // Send email
-      const response = await this.client.send(sgMessage);
-      
-      return {
-        success: true,
-        messageId: response[0]?.headers['x-message-id'] || uuidv4(),
-        provider: this.getProviderName(),
-        timestamp: new Date()
-      };
-    } catch (error: any) {
-      console.error('SendGrid email error:', error);
-      return {
-        success: false,
-        error,
-        provider: this.getProviderName(),
-        timestamp: new Date()
-      };
-    }
-  }
-
-  getProviderName(): string {
-    return 'sendgrid';
-  }
-}
-
-/**
  * AWS SES email provider
  * Requires aws-sdk package to be installed
  */
@@ -463,8 +388,6 @@ class NodemailerEmailProvider implements EmailProvider {
  */
 function getEmailProvider(): EmailProvider {
   switch (EMAIL_PROVIDER.toLowerCase()) {
-    case 'sendgrid':
-      return new SendGridEmailProvider();
     case 'aws-ses':
     case 'ses':
       return new AwsSesEmailProvider();
@@ -601,9 +524,6 @@ export class EmailService {
    */
   static setProvider(providerName: string): void {
     switch (providerName.toLowerCase()) {
-      case 'sendgrid':
-        this.provider = new SendGridEmailProvider();
-        break;
       case 'aws-ses':
       case 'ses':
         this.provider = new AwsSesEmailProvider();
