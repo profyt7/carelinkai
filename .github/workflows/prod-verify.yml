@@ -36,10 +36,6 @@ on:
         type: boolean
         required: false
         default: false
-      expect_listing_cards:
-        description: 'Minimum listing cards on /cleveland/assisted-living (check_v1020)'
-        required: false
-        default: '12'
       check_post_405:
         description: 'POST / → 405 with Allow header (post-#759 / OL-161)'
         type: boolean
@@ -77,7 +73,6 @@ jobs:
           CHECK_PUBLIC: ${{ inputs.check_public_routes }}
           CHECK_PING: ${{ inputs.check_ping }}
           CHECK_1020: ${{ inputs.check_v1020 }}
-          EXPECT_CARDS: ${{ inputs.expect_listing_cards }}
           CHECK_405: ${{ inputs.check_post_405 }}
           EXPECT_CARDS: ${{ inputs.expect_listing_cards }}
           CHECK_CONCIERGE: ${{ inputs.check_concierge }}
