@@ -10,12 +10,16 @@ import ConciergeRequestForm from './ConciergeRequestForm';
 
 /**
  * Payer-source screener in front of the private-pay concierge offer
- * (sprint W3 item 5). The offer section is NOT in the server HTML and is only
- * mounted after a private-pay / LTC-insurance answer; Medicaid, Medicare, VA
- * and "not sure" answers get the free-help panel and never render the offer.
+ * (sprint W3 item 5, W5-3, W5 follow-up). The offer section is NOT in the
+ * server HTML:
+ *  - private pay / LTC insurance → the offer card (price, inclusions, form);
+ *  - not sure yet → the FREE-help panel first (directory, waiver filter,
+ *    guides, "if Medicaid may be involved, our help is free"), then the offer
+ *    as a secondary option below it — a possibly-Medicaid family is never led
+ *    with a price;
+ *  - Medicaid / Medicare / VA → the free-help panel only; the offer never renders.
  *
- * No price is rendered anywhere yet (Chris adds it; no Stripe product/price
- * exists). The CTA is a placeholder that hands off to the existing intake.
+ * No price is rendered in this file: offer.ts owns the number.
  */
 export default function ConciergeScreener() {
   const [choice, setChoice] = useState<PayerSource | ''>('');
@@ -37,35 +41,50 @@ export default function ConciergeScreener() {
     setAnswered(null);
   }
 
-  if (route === 'free_help') {
+  const changeAnswer = (
+    <button type="button" onClick={reset} className="text-sm font-medium text-neutral-600 hover:text-neutral-900">
+      Change my answer
+    </button>
+  );
+
+  function freeLane(payer: PayerSource, opts: { withReset: boolean }) {
     // Medicaid answer (sprint W5-2): land on the directory with "Accepts Medicaid waiver" preset.
-    const medicaid = answered === 'MEDICAID_WAIVER';
+    const medicaid = payer === 'MEDICAID_WAIVER';
+    const notSure = payer === 'NOT_SURE';
     const freeLinks = medicaid
       ? [
           { href: WAIVER_DIRECTORY_PATH, label: 'Homes accepting new Medicaid Assisted Living Waiver residents (WRAAA list, Oct 2026)' },
           { href: '/learn/guides/assisted-living-cost-guide', label: 'Ohio Medicaid waiver and the real cost of assisted living' },
           { href: '/cleveland', label: 'Browse the full Cleveland directory — verified homes, ODH inspection facts, direct contact' },
         ]
-      : [
-          { href: '/cleveland', label: 'Browse the Cleveland directory — verified homes, ODH inspection facts, direct contact' },
-          { href: '/learn/guides/what-medicare-covers', label: 'What Medicare does and doesn’t cover' },
-          { href: '/learn/guides/veterans-benefits-assisted-living', label: 'VA benefits for assisted living (Aid & Attendance)' },
-          { href: '/learn/guides/assisted-living-cost-guide', label: 'Ohio Medicaid waiver and the real cost of assisted living' },
-        ];
+      : notSure
+        ? [
+            { href: '/cleveland', label: 'Browse the Cleveland directory — verified homes, ODH inspection facts, direct contact' },
+            { href: WAIVER_DIRECTORY_PATH, label: 'Homes accepting new Medicaid Assisted Living Waiver residents (WRAAA list, Oct 2026)' },
+            { href: '/learn/guides/assisted-living-cost-guide', label: 'Ohio Medicaid waiver and the real cost of assisted living' },
+            { href: '/learn/guides/what-medicare-covers', label: 'What Medicare does and doesn’t cover' },
+            { href: '/learn/guides/veterans-benefits-assisted-living', label: 'VA benefits for assisted living (Aid & Attendance)' },
+          ]
+        : [
+            { href: '/cleveland', label: 'Browse the Cleveland directory — verified homes, ODH inspection facts, direct contact' },
+            { href: '/learn/guides/what-medicare-covers', label: 'What Medicare does and doesn’t cover' },
+            { href: '/learn/guides/veterans-benefits-assisted-living', label: 'VA benefits for assisted living (Aid & Attendance)' },
+            { href: '/learn/guides/assisted-living-cost-guide', label: 'Ohio Medicaid waiver and the real cost of assisted living' },
+          ];
     const cta = medicaid
       ? { href: WAIVER_DIRECTORY_PATH, label: 'See homes accepting the Medicaid waiver' }
-      : { href: '/search', label: 'Start the free search' };
+      : notSure
+        ? { href: '/cleveland', label: 'Browse the free directory' }
+        : { href: '/search', label: 'Start the free search' };
     return (
-      <div data-testid="concierge-free-lane" className="rounded-2xl border border-success-200 bg-success-50 p-6 sm:p-8">
+      <div data-testid="concierge-free-lane" data-lane={payer} className="rounded-2xl border border-success-200 bg-success-50 p-6 sm:p-8">
         <p className="text-sm font-semibold uppercase tracking-wide text-success-700">Free help — always</p>
         <h3 className="mt-2 text-2xl font-bold text-neutral-900">
-          {answered === 'NOT_SURE'
-            ? 'Let’s figure out the paying part first — free.'
-            : 'Your search is free on CareLinkAI. No fee, no catch.'}
+          {notSure ? 'Let’s figure out the paying part first — free.' : 'Your search is free on CareLinkAI. No fee, no catch.'}
         </h3>
         <p className="mt-3 text-neutral-700">
-          {answered === 'NOT_SURE'
-            ? 'Most families start here. The guides below explain what Medicare does and doesn’t cover, how Ohio Medicaid waivers work, and VA benefits — then the directory lets you contact homes directly.'
+          {notSure
+            ? `Most families start here. ${CONCIERGE_OFFER.notSureLine} The guides below explain how Ohio Medicaid waivers work, what Medicare does and doesn’t cover, and VA benefits — and the directory lets you contact homes directly, at no charge.`
             : 'When care is paid through Medicaid, Medicare or the VA, CareLinkAI never charges a fee to you or to the home for the placement. Everything below is free: the verified directory, inspection records, and direct contact with homes.'}
         </p>
         <ul className="mt-5 space-y-3">
@@ -87,21 +106,35 @@ export default function ConciergeScreener() {
             {cta.label}
             <FiArrowRight />
           </Link>
-          <button type="button" onClick={reset} className="text-sm font-medium text-neutral-600 hover:text-neutral-900">
-            Change my answer
-          </button>
+          {opts.withReset && changeAnswer}
         </div>
       </div>
     );
   }
 
-  if (route === 'private_pay' && answered) {
+  function offer(payer: PayerSource, opts: { secondary: boolean }) {
     return (
-      <div data-testid="concierge-offer" className="rounded-2xl border border-primary-200 bg-white p-6 sm:p-8 shadow-sm">
+      <div
+        data-testid="concierge-offer"
+        data-secondary={opts.secondary ? 'true' : 'false'}
+        className={`rounded-2xl border bg-white p-6 sm:p-8 shadow-sm ${opts.secondary ? 'mt-6 border-neutral-200' : 'border-primary-200'}`}
+      >
+        {opts.secondary && (
+          <p className="mb-4 text-sm text-neutral-600" data-testid="concierge-secondary-lead">
+            {CONCIERGE_OFFER.secondaryLead}
+          </p>
+        )}
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-wide text-primary-600">Family Concierge · private pay</p>
-            <h3 className="mt-2 text-2xl font-bold text-neutral-900">A Cleveland person does the legwork with you.</h3>
+            <p className="text-sm font-semibold uppercase tracking-wide text-primary-600">
+              {opts.secondary ? 'Family Concierge · optional' : 'Family Concierge · private pay'}
+            </p>
+            <h3 className="mt-2 text-2xl font-bold text-neutral-900">
+              A person checks fit, prices and the contract with you — before you sign.
+            </h3>
+            <p className="mt-2 font-semibold text-primary-700" data-testid="concierge-offer-subhead">
+              {CONCIERGE_OFFER.subhead}
+            </p>
           </div>
           <div className="rounded-xl bg-primary-50 px-4 py-3 text-right" data-testid="concierge-price">
             <p className="text-3xl font-bold text-primary-700">{CONCIERGE_OFFER.priceDisplay}</p>
@@ -109,9 +142,9 @@ export default function ConciergeScreener() {
           </div>
         </div>
         <p className="mt-3 text-neutral-700">
-          {answered === 'NOT_SURE'
-            ? 'Not sure how care will be paid? That is exactly what the intake call sorts out. If it turns out Medicaid, Medicare or the VA will pay, we tell you and point you to our free help instead — no charge.'
-            : 'For families paying privately or through long-term care insurance, our concierge takes the search off your plate: a verified shortlist, availability and prices confirmed with each home, tours scheduled around you, and the numbers in writing before you sign anything.'}
+          {opts.secondary
+            ? 'If it turns out you are paying privately or through long-term care insurance: a verified shortlist in 2 business days, a fit check against each home’s acceptance criteria, a Medicaid runway estimate, the real prices in writing with what to ask for, a contract red-flag review, and one thread with the discharge planner. If Medicaid, Medicare or the VA will pay, the intake call tells you so and points you back to the free help — no charge.'
+            : 'For families paying privately or through long-term care insurance. In a 48-hour discharge window the expensive mistakes are the wrong-fit home, the unread contract and the price that changes after move-in. Within 2 business days you get a verified shortlist, a fit check against each home’s acceptance criteria, a Medicaid runway estimate, the real prices in writing with what to ask for, a contract red-flag review, and one thread with the discharge planner.'}
         </p>
         <p className="mt-4 text-sm font-semibold text-neutral-900">What’s included</p>
         <ul className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="concierge-inclusions">
@@ -132,12 +165,23 @@ export default function ConciergeScreener() {
           </div>
         </div>
         <p className="mt-4 text-xs text-neutral-500">{CONCIERGE_OFFER.honestyLine}</p>
-        <ConciergeRequestForm payerSource={answered} />
-        <div className="mt-4">
-          <button type="button" onClick={reset} className="text-sm font-medium text-neutral-600 hover:text-neutral-900">
-            Change my answer
-          </button>
-        </div>
+        <p className="mt-2 text-xs text-neutral-500" data-testid="concierge-no-outcome">{CONCIERGE_OFFER.noOutcomeLine}</p>
+        <ConciergeRequestForm payerSource={payer} />
+        <div className="mt-4">{changeAnswer}</div>
+      </div>
+    );
+  }
+
+  if (route === 'free_help' && answered) return freeLane(answered, { withReset: true });
+
+  if (route === 'private_pay' && answered) return offer(answered, { secondary: false });
+
+  if (route === 'both' && answered) {
+    // Free help first; the offer is the secondary option (never the lead).
+    return (
+      <div data-testid="concierge-both">
+        {freeLane(answered, { withReset: false })}
+        {offer(answered, { secondary: true })}
       </div>
     );
   }

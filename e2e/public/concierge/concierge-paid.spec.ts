@@ -1,8 +1,8 @@
 /**
  * Family Concierge — homepage section, family dashboard cards, terms (sprint W5-3, G1 e/f/g).
  *
- *  - homepage renders the "Want a person to do the legwork?" section logged-out
- *    (three bullets, CTA → /concierge, free-lane line);
+ *  - homepage renders the concierge section logged-out (v2: the mistake headline,
+ *    one line + the guarantee, CTA → /concierge, free-lane line — OL-165 b);
  *  - FAMILY user with no payer-lane answer → paid card "$399 flat" → dismiss hides
  *    it (30 days, per user, survives reload);
  *  - FAMILY user whose last payer-lane answer is Medicaid → "Free help for your
@@ -16,6 +16,7 @@ import { test, expect, type Browser, type Page } from '@playwright/test';
 
 const ts = Date.now();
 const FAM_PRIVATE = `fam-private-${ts}@test.carelinkai.com`;
+const FAM_UNSURE = `fam-unsure-${ts}@test.carelinkai.com`;
 const FAM_MEDICAID = `fam-medicaid-${ts}@test.carelinkai.com`;
 const FAM_ORDERED = `fam-ordered-${ts}@test.carelinkai.com`;
 
@@ -45,7 +46,8 @@ async function login(browser: Browser, email: string): Promise<Page> {
 
 test.describe('@critical Family Concierge — homepage, dashboard cards, terms', () => {
   test.beforeAll(async ({ request }) => {
-    expect((await request.post('/api/dev/upsert-family', { data: { email: FAM_PRIVATE } })).ok()).toBe(true);
+    expect((await request.post('/api/dev/upsert-family', { data: { email: FAM_PRIVATE, payerSource: 'PRIVATE_FUNDS' } })).ok()).toBe(true);
+    expect((await request.post('/api/dev/upsert-family', { data: { email: FAM_UNSURE } })).ok()).toBe(true);
     expect((await request.post('/api/dev/upsert-family', { data: { email: FAM_MEDICAID, payerSource: 'MEDICAID_WAIVER' } })).ok()).toBe(true);
     expect((await request.post('/api/dev/upsert-family', { data: { email: FAM_ORDERED, payerSource: 'PRIVATE_FUNDS' } })).ok()).toBe(true);
     // An unpaid request from the ordered family (flag unset in CI → REQUESTED_UNPAID).
@@ -57,32 +59,70 @@ test.describe('@critical Family Concierge — homepage, dashboard cards, terms',
     expect((await r.json()).orderStatus).toBe('REQUESTED_UNPAID');
   });
 
-  test('homepage section renders logged-out with the three bullets, CTA and free-lane line', async ({ request }) => {
+  test('homepage section renders logged-out: the mistake headline, one line + the guarantee, CTA and free-lane line', async ({ request }) => {
     const res = await request.get('/');
     expect(res.status()).toBe(200);
     const html = await res.text();
     expect(html).toContain('data-testid="home-concierge-section"');
-    expect(html).toContain('Want a person to do the legwork?');
-    expect(html).toContain('verified shortlist of 3–5 homes in 2 business days');
-    expect(html).toContain('real prices in writing');
-    expect(html).toContain('$399 flat');
-    expect(html).toContain('Paying with Medicaid, Medicare or the VA? Our help is always free.');
-    expect(html).toMatch(/data-testid="home-concierge-cta"[^>]*href="\/concierge"|href="\/concierge"[^>]*data-testid="home-concierge-cta"/);
+    // React separates adjacent text expressions with <!-- --> — strip them before text assertions.
+    const section = html.slice(html.indexOf('data-testid="home-concierge-section"'), html.indexOf('Why CareLinkAI?')).replace(/<!--\s*-->/g, '');
+    expect(section).toContain('We keep you from making the $5,000 mistake under pressure.');
+    expect(section).toContain('A verified shortlist in 2 business days — or you pay nothing.');
+    expect(section).toContain('No verified shortlist within 2 business days → full refund.');
+    expect(section).toContain('$399 flat, one time');
+    expect(section).toContain('Paying with Medicaid, Medicare or the VA? Our help is always free.');
+    expect(section).not.toMatch(/legwork/i);
+    expect(section).toMatch(/data-testid="home-concierge-cta"[^>]*href="\/concierge"|href="\/concierge"[^>]*data-testid="home-concierge-cta"/);
   });
 
-  test('/terms has the Family Concierge section', async ({ request }) => {
+  test('/terms has the v2 Family Concierge section: scope, verbatim not-included list, not-advice + no-outcome sentences', async ({ request }) => {
     const html = await (await request.get('/terms')).text();
     expect(html).toContain('data-testid="terms-family-concierge"');
     expect(html).toContain('flat $399');
     expect(html).toContain('refund the full fee');
+    const visible = html.replace(/<script[\s\S]*?<\/script>/g, '').replace(/<!--\s*-->/g, '').replace(/<[^>]+>/g, ' ');
+    expect(visible).toContain('Medicaid runway estimate');
+    expect(visible).toContain('Discharge coordination');
+    expect(visible).toContain('medical, legal or financial advice; Medicaid application filing (we point to the Western Reserve AAA); attending tours in person; negotiating on the family’s behalf (we prepare them; they ask).');
+    expect(visible).toContain('The Family Concierge is not medical, legal or financial advice.');
+    expect(visible).toContain('We do not promise savings, a particular outcome, or that any home will agree to a request.');
+    expect(visible).not.toMatch(/legwork|pays CareLinkAI a fee|move-in fee/i);
   });
 
-  test('private/unknown lane → paid card; dismiss hides it for 30 days (survives reload)', async ({ browser }) => {
+  test('unknown lane (no payer answer yet) → free-help card first with the concierge as a secondary line; dismissible', async ({ browser }) => {
+    const page = await login(browser, FAM_UNSURE);
+    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
+    const card = page.getByTestId('concierge-free-card');
+    await expect(card).toBeVisible({ timeout: 30000 });
+    await expect(card).toHaveAttribute('data-variant', 'both');
+    await expect(card).toContainText('If Medicaid may be involved, our help is free.');
+    await expect(card.getByRole('link', { name: /Browse the free directory/ })).toHaveAttribute('href', '/cleveland');
+    await expect(card.getByRole('link', { name: /Medicaid waiver/ })).toHaveAttribute('href', '/cleveland/assisted-living?waiver=1');
+    await expect(card.getByTestId('concierge-both-cta')).toHaveAttribute('href', '/concierge');
+    await expect(page.getByTestId('concierge-paid-card')).toHaveCount(0);
+    // The price appears once, in the secondary line — never in the heading.
+    await expect(card.getByRole('heading')).not.toContainText('$');
+    const [res] = await Promise.all([
+      page.waitForResponse((r) => r.url().includes('/api/family/concierge-upsell') && r.request().method() === 'POST'),
+      card.getByTestId('concierge-both-dismiss').click(),
+    ]);
+    expect(res.status()).toBe(200);
+    await expect(card).toHaveCount(0);
+    const api = await page.evaluate(async () => (await fetch('/api/family/concierge-upsell', { credentials: 'include' })).json());
+    expect(api).toMatchObject({ card: null, reason: 'dismissed' });
+    await page.context().close();
+  });
+
+  test('private lane → paid card; dismiss hides it for 30 days (survives reload)', async ({ browser }) => {
     const page = await login(browser, FAM_PRIVATE);
     await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
     const card = page.getByTestId('concierge-paid-card');
     await expect(card).toBeVisible({ timeout: 30000 });
-    await expect(card).toContainText('Get a Cleveland concierge — $399 flat');
+    // OL-165 c: one line + the guarantee.
+    await expect(card).toContainText('Family Concierge — $399 flat, one time');
+    await expect(card).toContainText('checks fit, prices and the contract with you before you sign');
+    await expect(card).toContainText('No verified shortlist within 2 business days → full refund.');
+    await expect(card).not.toContainText('legwork');
     await expect(card.getByTestId('concierge-paid-card-cta')).toHaveAttribute('href', '/concierge');
     await expect(page.getByTestId('concierge-free-card')).toHaveCount(0);
     const [res] = await Promise.all([
