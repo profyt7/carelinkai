@@ -208,7 +208,8 @@ jobs:
               esac
             fi
             [ "$cards" -ge "${EXPECT_CARDS:-12}" ] && pass "/cleveland/assisted-living shows $cards listing cards (≥ ${EXPECT_CARDS:-12})" || fail "/cleveland/assisted-living shows $cards listing cards (< ${EXPECT_CARDS:-12})"
-            grep -q 'availabilityVerifiedAt' body.txt && pass "/cleveland/assisted-living JSON-LD exposes availabilityVerifiedAt" || fail "/cleveland/assisted-living JSON-LD does not contain availabilityVerifiedAt"
+            # The key is emitted only for homes with a fresh, QA-approved verified date (OL-163d) — absence is a data state, not a regression.
+            grep -q 'availabilityVerifiedAt' body.txt && pass "/cleveland/assisted-living JSON-LD exposes availabilityVerifiedAt" || echo "- ℹ️ /cleveland/assisted-living JSON-LD: no home on page 1 has a verified availability date yet (key appears once a call/ping is QA-approved)" >> "$GITHUB_STEP_SUMMARY"
             first=$( { grep -oE 'href="/homes/[A-Za-z0-9_-]+"' body.txt || true; } | head -n1 | sed -E 's/^href="//; s/"$//')
             if [ -n "$first" ]; then
               fetch GET "$first"
