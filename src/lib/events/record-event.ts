@@ -49,6 +49,9 @@ export const ALLOWED_VALUE_KEYS: ReadonlySet<string> = new Set([
   'admissionsCrm', 'admissionsCrmSource', 'admissionsCrmVerifiedAt',
   'twoPersonAssist', 'wandering', 'oxygen', 'insulin', 'bariatric', 'behavioral', 'hospiceInPlace',
   'changed', 'length', 'redactedKeys',
+  // OL-163: AI availability-call observations (business facts only).
+  'observationId', 'conversationId', 'calledAt', 'bedsAL', 'bedsMC', 'priceFromMonthly', 'priceUndisclosed',
+  'waiverStatus', 'medicaidPending', 'doNotCall', 'confidence', 'qaStatus', 'appliedAt',
 ]);
 
 /** Key names that are never allowed even if someone adds them to the allowlist by mistake. */
@@ -172,6 +175,8 @@ export function eventSourceForAvailability(source: string): EventSource {
       return 'PING';
     case 'VOICE':
       return 'VA_CALL';
+    case 'AI_CALL':
+      return 'AI_CALL';
     case 'CONCIERGE':
       return 'ADMIN';
     case 'OPERATOR':
