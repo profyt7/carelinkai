@@ -16,30 +16,40 @@ import {
   monthStart,
   upsellCardForLane,
   isDismissed,
+  mayBuyConcierge,
 } from '@/lib/concierge/offer';
 import { routeForPayerSource } from '@/lib/concierge/screener';
 import { PAYER_SOURCE_VALUES } from '@/lib/payer/payer-source';
 
 describe('lane → offer routing', () => {
-  it('private funds, LTC insurance and "not sure" see the paid offer', () => {
-    for (const v of ['PRIVATE_FUNDS', 'LTC_INSURANCE', 'NOT_SURE'] as const) {
+  it('private funds and LTC insurance see the paid offer first', () => {
+    for (const v of ['PRIVATE_FUNDS', 'LTC_INSURANCE'] as const) {
       expect(conciergeRouteForLane(v)).toBe('offer');
       expect(routeForPayerSource(v)).toBe('private_pay');
       expect(upsellCardForLane(v)).toBe('paid');
+      expect(mayBuyConcierge(v)).toBe(true);
     }
-    // Unanswered = unknown → the paid card / offer (the family pays, never a home).
-    expect(upsellCardForLane(null)).toBe('paid');
-    expect(upsellCardForLane(undefined)).toBe('paid');
+  });
+  it('"not sure" / unanswered see BOTH: free help first, the offer as a secondary option (never led with a price)', () => {
+    expect(conciergeRouteForLane('NOT_SURE')).toBe('both');
+    expect(routeForPayerSource('NOT_SURE')).toBe('both');
+    expect(upsellCardForLane('NOT_SURE')).toBe('both');
+    expect(mayBuyConcierge('NOT_SURE')).toBe(true); // may still request / book, as the secondary option
+    // Unanswered on the dashboard = unknown lane → the same free-first card.
+    expect(upsellCardForLane(null)).toBe('both');
+    expect(upsellCardForLane(undefined)).toBe('both');
+    expect(CONCIERGE_OFFER.notSureLine).toBe('If Medicaid may be involved, our help is free.');
   });
   it('Medicaid / Medicare / VA get the free path, never the offer or the paid card', () => {
     for (const v of ['MEDICAID_WAIVER', 'MEDICARE_ADVANTAGE', 'VA_BENEFITS'] as const) {
       expect(conciergeRouteForLane(v)).toBe('free');
       expect(routeForPayerSource(v)).toBe('free_help');
       expect(upsellCardForLane(v)).toBe('free');
+      expect(mayBuyConcierge(v)).toBe(false);
     }
   });
   it('covers every PayerSource value', () => {
-    for (const v of PAYER_SOURCE_VALUES) expect(['offer', 'free']).toContain(conciergeRouteForLane(v));
+    for (const v of PAYER_SOURCE_VALUES) expect(['offer', 'free', 'both']).toContain(conciergeRouteForLane(v));
   });
 });
 

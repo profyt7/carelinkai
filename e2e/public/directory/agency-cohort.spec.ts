@@ -15,10 +15,10 @@
  * locally pass NEXTAUTH_SECRET=<same value> to both). No email is sent.
  *
  * Runs with the ./e2e config:
- *   npx playwright test --config=playwright.e2e.config.ts e2e/public/agency-cohort.spec.ts
+ *   npx playwright test --config=playwright.e2e.config.ts e2e/public/directory/agency-cohort.spec.ts
  */
 import { test, expect } from '@playwright/test';
-import { signClaimToken } from '../../src/lib/claim-token';
+import { signClaimToken } from '../../../src/lib/claim-token';
 
 const PAGE = '/cleveland/home-care-agencies';
 const ts = Date.now();
