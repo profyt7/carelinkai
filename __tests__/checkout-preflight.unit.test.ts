@@ -14,7 +14,7 @@ import { GET } from '@/app/api/admin/checkout-preflight/route';
 
 // Fake Stripe-shaped values assembled at runtime so no key-looking literal sits
 // in the source (the CI secret scan flags `STRIPE_SECRET_KEY: 'sk_live_…'` lines).
-const fake = (prefix: string, mode?: string) => [prefix, mode, 'unit', 'fixture'].filter(Boolean).join('_');
+const fake = (prefix: string, mode?: string) => `${prefix}_${mode ? `${mode}_` : ''}unitfixture0`;
 const LIVE_KEY = fake('sk', 'live');
 const TEST_KEY = fake('sk', 'test');
 const PRICE_ID = fake('price');
