@@ -67,7 +67,7 @@ export default function ConciergeUpsellCard() {
             </div>
             {both && (
               <p className="mt-3 text-xs text-neutral-600" data-testid="concierge-both-secondary">
-                Paying privately and want a person to do the legwork?{' '}
+                Paying privately and want a person to check fit, prices and the contract with you?{' '}
                 <Link href="/concierge" data-testid="concierge-both-cta" className="font-semibold text-primary-700 hover:underline">
                   The optional Family Concierge is {CONCIERGE_OFFER.priceDisplay} flat →
                 </Link>
@@ -91,10 +91,10 @@ export default function ConciergeUpsellCard() {
           <Sparkles size={18} className="text-white" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-neutral-900">Get a Cleveland concierge — {CONCIERGE_OFFER.priceDisplay} flat</h3>
+          {/* OL-165 c: one line + the guarantee (private lanes only; the server never sends this card to a free lane). */}
+          <h3 className="font-bold text-neutral-900">Family Concierge — {CONCIERGE_OFFER.priceDisplay} flat, one time</h3>
           <p className="text-sm text-neutral-700 mt-1">
-            A verified shortlist of 3–5 homes in 2 business days, tours scheduled, real prices in writing. One-time fee,
-            full refund if we don’t deliver. {CONCIERGE_OFFER.freeLaneLine}
+            {CONCIERGE_OFFER.oneLine} <strong>{CONCIERGE_OFFER.guarantee}</strong>
           </p>
           <Link href="/concierge" data-testid="concierge-paid-card-cta" className="mt-3 inline-flex items-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">
             See the Family Concierge →
