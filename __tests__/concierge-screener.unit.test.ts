@@ -99,10 +99,37 @@ describe('no Stripe in the screener / request files; no price in the server-rend
     expect(offenders).toEqual([]);
   });
 
-  it('the server page and the components carry no literal dollar price; only offer.ts does', () => {
+  it('the server page and the components carry no literal dollar amount; only offer.ts does', () => {
     for (const f of ['src/app/concierge/page.tsx', 'src/app/concierge/ConciergeRequestForm.tsx', 'src/app/concierge/ConciergeScreener.tsx']) {
       expect({ file: f, dollarPrice: /\$\s?\d/.test(read(f)) }).toEqual({ file: f, dollarPrice: false });
     }
     expect(/\$399/.test(read('src/lib/concierge/offer.ts'))).toBe(true);
+  });
+
+  it('OL-165 copy rules on every concierge surface: no "legwork", no "AI" pitch, no facility fee', () => {
+    for (const f of [
+      'src/app/concierge/page.tsx',
+      'src/app/concierge/ConciergeScreener.tsx',
+      'src/app/concierge/ConciergeRequestForm.tsx',
+      'src/components/dashboard/ConciergeUpsellCard.tsx',
+      'src/lib/concierge/offer.ts',
+    ]) {
+      const src = read(f);
+      expect({ file: f, legwork: /legwork/i.test(src), ai: /\bAI\b/.test(src), facilityFee: /pays CareLinkAI a fee|move-in fee|referral fee/i.test(src) }).toEqual({
+        file: f,
+        legwork: false,
+        ai: false,
+        facilityFee: false,
+      });
+    }
+    // The homepage concierge section and the terms section (the files also carry unrelated copy).
+    const home = read('src/app/HomePageClient.tsx');
+    const section = home.slice(home.indexOf('data-testid="home-concierge-section"'), home.indexOf('VALUE PROPOSITION SECTION'));
+    expect(section).not.toMatch(/legwork|\bAI\b|\$\s?\d/);
+    const terms = read('src/app/terms/page.tsx');
+    const tsec = terms.slice(terms.indexOf('data-testid="terms-family-concierge"'), terms.indexOf('Contact Us'));
+    expect(tsec).toMatch(/not medical, legal or financial advice/);
+    expect(tsec).toMatch(/do not promise savings, a particular outcome/);
+    expect(tsec).not.toMatch(/legwork|\bAI\b|pays CareLinkAI a fee|move-in fee/);
   });
 });

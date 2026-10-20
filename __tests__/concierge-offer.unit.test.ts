@@ -5,6 +5,7 @@
  */
 
 import {
+  CONCIERGE_FIVE_MISTAKES,
   CONCIERGE_OFFER,
   DEFAULT_MONTHLY_CAP,
   conciergeRouteForLane,
@@ -94,21 +95,62 @@ describe('dashboard dismiss (30 days)', () => {
   });
 });
 
-describe('offer copy (authoritative)', () => {
-  it('is $399 flat, one-time, with the seven inclusions, guarantee and exclusions', () => {
+describe('offer copy (authoritative, v2 — OL-165)', () => {
+  it('is $399 flat, one-time, with the nine v2 inclusions, guarantee and the verbatim not-included list', () => {
     expect(CONCIERGE_OFFER.priceCents).toBe(39900);
     expect(CONCIERGE_OFFER.priceDisplay).toBe('$399');
-    expect(CONCIERGE_OFFER.inclusions).toHaveLength(7);
-    expect(CONCIERGE_OFFER.inclusions.join(' ')).toMatch(/20-minute intake call/);
-    expect(CONCIERGE_OFFER.inclusions.join(' ')).toMatch(/3–5 homes within 2 business days/);
-    expect(CONCIERGE_OFFER.inclusions.join(' ')).toMatch(/up to 5 tours/);
-    expect(CONCIERGE_OFFER.inclusions.join(' ')).toMatch(/30, 60 and 90 days/);
-    expect(CONCIERGE_OFFER.inclusions.join(' ')).toMatch(/re-search within 90 days/);
+    expect(CONCIERGE_OFFER.headline).toBe('We keep you from making the $5,000 mistake under pressure.');
+    expect(CONCIERGE_OFFER.subhead).toBe('A verified shortlist in 2 business days — or you pay nothing.');
+    expect(CONCIERGE_OFFER.freeForFamiliesLine).toMatch(/^Free for families\./);
+    const incl = CONCIERGE_OFFER.inclusions;
+    expect(incl).toHaveLength(9);
+    expect(incl[0]).toMatch(/20-minute intake call within 1 business day/);
+    expect(incl[1]).toMatch(/3–5 homes within 2 business days/);
+    expect(incl[2]).toMatch(/fit check against each home’s acceptance criteria/);
+    expect(incl[2]).toMatch(/two-person assist.*secured unit.*oxygen.*insulin.*bariatric.*behavioral.*hospice/);
+    expect(incl[3]).toMatch(/Medicaid runway plan/);
+    expect(incl[3]).toMatch(/Ohio Assisted Living Waiver/);
+    expect(incl[4]).toMatch(/Real prices in writing/);
+    expect(incl[4]).toMatch(/community-fee waiver or reduction.*move-in concession.*12-month rate lock.*care-level assessment/);
+    expect(incl[5]).toMatch(/up to 5 tours/);
+    expect(incl[6]).toMatch(/contract red-flag review in plain English/);
+    expect(incl[7]).toMatch(/Discharge coordination/);
+    expect(incl[8]).toMatch(/before-you-sign checklist/);
+    expect(incl[8]).toMatch(/30, 60 and 90 days/);
+    expect(incl[8]).toMatch(/free re-search within 90 days/);
     expect(CONCIERGE_OFFER.guarantee).toBe('No verified shortlist within 2 business days → full refund.');
-    expect(CONCIERGE_OFFER.notIncluded).toEqual(['Medical, legal or financial advice', 'Medicaid application filing', 'In-person tour attendance']);
+    // Verbatim from Family_Concierge_Offer_2026_10_16.md (v2).
+    expect(CONCIERGE_OFFER.notIncluded).toEqual([
+      'medical, legal or financial advice',
+      'Medicaid application filing (we point to the Western Reserve AAA)',
+      'attending tours in person',
+      'negotiating on the family’s behalf (we prepare them; they ask)',
+    ]);
     expect(CONCIERGE_OFFER.honestyLine).toBe(
-      'Homes never pay to be listed, ranked or recommended. If a home ever pays CareLinkAI a fee when a resident moves in, we tell you before you tour — it never changes your price or which homes we show you.',
+      'Homes never pay to be listed, ranked or recommended. The concierge is paid by you — flat, one time — never by a home.',
     );
+    expect(CONCIERGE_OFFER.noOutcomeLine).toMatch(/never promise savings, a particular outcome/);
     expect(CONCIERGE_OFFER.freeLaneLine).toBe('Paying with Medicaid, Medicare or the VA? Our help is always free.');
+    expect(CONCIERGE_FIVE_MISTAKES).toHaveLength(5);
+    expect(CONCIERGE_FIVE_MISTAKES.map((m) => m.mistake)).toEqual([
+      'The wrong-fit move.',
+      'Running out of money in a home that won’t keep you.',
+      'Signing without the real price.',
+      'Missing the fine print.',
+      'Losing the discharge window.',
+    ]);
+  });
+
+  it('copy rules (OL-165 e): no "AI", no "legwork", no promised savings / outcomes / negotiation results, no facility fee', () => {
+    const all = JSON.stringify({ CONCIERGE_OFFER, CONCIERGE_FIVE_MISTAKES });
+    expect(all).not.toMatch(/\bAI\b/);
+    expect(all).not.toMatch(/legwork/i);
+    expect(all).not.toMatch(/\b(we|we’ll|we will|you’ll|you will) (save|negotiate|get you|lower)/i);
+    expect(all).not.toMatch(/guaranteed? (savings|rate|price|outcome)/i);
+    expect(all).not.toMatch(/pays CareLinkAI a fee|move-in fee|referral fee|placement fee/i);
+    // The free lane never sees a price: no dollar amount in any free-lane / shared line.
+    for (const k of ['freeLaneLine', 'notSureLine', 'freeForFamiliesLine', 'oneLine', 'noOutcomeLine', 'honestyLine'] as const) {
+      expect({ k, v: CONCIERGE_OFFER[k] }).toEqual({ k, v: expect.not.stringMatching(/\$\s?\d/) });
+    }
   });
 });

@@ -129,7 +129,12 @@ export default function ConciergeScreener() {
             <p className="text-sm font-semibold uppercase tracking-wide text-primary-600">
               {opts.secondary ? 'Family Concierge · optional' : 'Family Concierge · private pay'}
             </p>
-            <h3 className="mt-2 text-2xl font-bold text-neutral-900">A Cleveland person does the legwork with you.</h3>
+            <h3 className="mt-2 text-2xl font-bold text-neutral-900">
+              A person checks fit, prices and the contract with you — before you sign.
+            </h3>
+            <p className="mt-2 font-semibold text-primary-700" data-testid="concierge-offer-subhead">
+              {CONCIERGE_OFFER.subhead}
+            </p>
           </div>
           <div className="rounded-xl bg-primary-50 px-4 py-3 text-right" data-testid="concierge-price">
             <p className="text-3xl font-bold text-primary-700">{CONCIERGE_OFFER.priceDisplay}</p>
@@ -138,8 +143,8 @@ export default function ConciergeScreener() {
         </div>
         <p className="mt-3 text-neutral-700">
           {opts.secondary
-            ? 'If it turns out you are paying privately or through long-term care insurance and you would rather hand the search to a person: a verified shortlist, availability and prices confirmed with each home, tours scheduled around you, and the numbers in writing before you sign anything. If Medicaid, Medicare or the VA will pay, the intake call tells you so and points you back to the free help — no charge.'
-            : 'For families paying privately or through long-term care insurance, our concierge takes the search off your plate: a verified shortlist, availability and prices confirmed with each home, tours scheduled around you, and the numbers in writing before you sign anything.'}
+            ? 'If it turns out you are paying privately or through long-term care insurance: a verified shortlist in 2 business days, a fit check against each home’s acceptance criteria, a Medicaid runway estimate, the real prices in writing with what to ask for, a contract red-flag review, and one thread with the discharge planner. If Medicaid, Medicare or the VA will pay, the intake call tells you so and points you back to the free help — no charge.'
+            : 'For families paying privately or through long-term care insurance. In a 48-hour discharge window the expensive mistakes are the wrong-fit home, the unread contract and the price that changes after move-in. Within 2 business days you get a verified shortlist, a fit check against each home’s acceptance criteria, a Medicaid runway estimate, the real prices in writing with what to ask for, a contract red-flag review, and one thread with the discharge planner.'}
         </p>
         <p className="mt-4 text-sm font-semibold text-neutral-900">What’s included</p>
         <ul className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="concierge-inclusions">
@@ -160,6 +165,7 @@ export default function ConciergeScreener() {
           </div>
         </div>
         <p className="mt-4 text-xs text-neutral-500">{CONCIERGE_OFFER.honestyLine}</p>
+        <p className="mt-2 text-xs text-neutral-500" data-testid="concierge-no-outcome">{CONCIERGE_OFFER.noOutcomeLine}</p>
         <ConciergeRequestForm payerSource={payer} />
         <div className="mt-4">{changeAnswer}</div>
       </div>
