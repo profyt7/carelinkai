@@ -23,6 +23,9 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
 ### OL-162: checkout preflight — PR #757 open
 - **Status:** 🟢 BUILT 2026-10-20 — `/admin/checkout-preflight` booleans only; `isCheckoutEnabled` refuses on mismatch (live key in production, price id, webhook secret, admin email).
 
+### OL-165: Family Concierge v2 copy (five-mistakes framing) — PR #761 open, stacked on #749
+- **Status:** 🟢 BUILT 2026-10-20 — copy + structure only from the vault v2 offer doc: headline on the $5,000 mistake, guarantee subhead, "Free for families" above the fold, nine deliverables, verbatim not-included list, homepage / dashboard card / Terms §15 aligned; copy-rule tests (no "AI", no "legwork", no promised outcome, no facility fee). Residual: the free lane sees the "$5,000 mistake" H1 (not a price) — Chris to confirm. `src/lib/concierge/offer.ts`.
+
 ### OL-155: Sprint W5 batch — six stacked PRs open (#743–#748), merge in order
 - **Status:** ✅ MERGED 2026-10-20 — #743 `32b9422` · #744 `99fb3b3` · #745 `ab88429` · #746 `81fa7d9` · #747 `8fe9a0b` · #748 `f47326d`, each verified live via `prod-verify.yml` (12 cards, /concierge, listing page, ping). Follow-up #749 (not-sure lane both, OL-158 copy, Terms Ohio, CI split) open.
 - **Prior status:** 🔴 OPEN (2026-10-17) — #743 OL-154 flake · #744 EntityEvent history · #745 Medicaid waiver + acceptance + WRAAA import · #746 paid concierge · #747 Rich Results fix · #748 operator contact card. Each retargets to `main` when its base merges. Post-merge: run the Rich Results test on `/cleveland/assisted-living` (expect Carousel valid); check `/admin/homes/<id>` History tab renders.
