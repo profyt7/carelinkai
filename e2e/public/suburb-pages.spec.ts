@@ -88,7 +88,8 @@ test.describe('@critical suburb assisted-living pages', () => {
       for (const other of SUBURBS) {
         if (other.slug !== s.slug) expect(html).not.toContain(homeName(other.city, 'Verified'));
       }
-      expect(html).toContain('Verified Availability');
+      expect(html).toMatch(/data-testid="availability-badge"[^>]*data-verified-at="20\d\d-[^"]+"/);
+      expect(html).toMatch(/Verified [A-Z][a-z]{2} \d{1,2}/);
       expect(html).toContain('ODH survey Feb 18, 2026 · 1 citation');
       expect(html).toContain(`ODH license ${s.slug.slice(0, 3).toUpperCase()}${ts % 10000}R`);
       expect(html).not.toContain('@test.carelinkai.com');
