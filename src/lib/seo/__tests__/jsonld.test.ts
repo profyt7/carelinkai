@@ -273,11 +273,13 @@ describe('llms.txt', () => {
     expect(txt).toContain('https://getcarelinkai.com/cleveland/assisted-living/westlake');
     expect(txt).toContain('https://getcarelinkai.com/cleveland/memory-care');
   });
-  it('states the fee model in one line: flat, facility-paid, private-pay only, free lane', () => {
-    expect(FEE_MODEL_LINE).toMatch(/flat/i);
-    expect(FEE_MODEL_LINE).toMatch(/paid by the facility/i);
-    expect(FEE_MODEL_LINE).toMatch(/private-pay/i);
-    expect(FEE_MODEL_LINE).toMatch(/Medicaid, Medicare or the VA/);
+  it('states the fee model in one line: free to search, homes never pay, optional $399 family-paid concierge with the refund, free lane; no facility fee', () => {
+    expect(FEE_MODEL_LINE).toMatch(/^Free for families to search and contact homes\./);
+    expect(FEE_MODEL_LINE).toMatch(/Homes never pay to be listed or ranked/);
+    expect(FEE_MODEL_LINE).toMatch(/Family Concierge: \$399 flat for private-pay families/);
+    expect(FEE_MODEL_LINE).toMatch(/refunded if there is no verified shortlist within 2 business days/);
+    expect(FEE_MODEL_LINE).toMatch(/Medicaid, Medicare or the VA always get our help free/);
+    expect(FEE_MODEL_LINE).not.toMatch(/paid by the facility|move-in|placement fee/i);
     expect(FEE_MODEL_LINE.includes('\n')).toBe(false);
   });
   it('publishes no email address', () => {

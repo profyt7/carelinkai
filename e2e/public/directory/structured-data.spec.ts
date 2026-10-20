@@ -7,7 +7,7 @@
  * server HTML cookie-less and parses every <script type="application/ld+json">.
  *
  * Runs with the ./e2e config:
- *   npx playwright test --config=playwright.e2e.config.ts e2e/public/structured-data.spec.ts
+ *   npx playwright test --config=playwright.e2e.config.ts e2e/public/directory/structured-data.spec.ts
  */
 import { test, expect, type APIRequestContext } from '@playwright/test';
 

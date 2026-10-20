@@ -10,7 +10,7 @@
  * asserts the listing cards are in the HTML itself.
  *
  * Runs with the ./e2e config:
- *   npx playwright test --config=playwright.e2e.config.ts e2e/public/cleveland-listings.spec.ts
+ *   npx playwright test --config=playwright.e2e.config.ts e2e/public/directory/cleveland-listings.spec.ts
  */
 import { test, expect } from '@playwright/test';
 

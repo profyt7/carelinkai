@@ -2,30 +2,32 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { FiCheck } from 'react-icons/fi';
 import ConciergeScreener from './ConciergeScreener';
-import { CONCIERGE_OFFER } from '@/lib/concierge/offer';
+import { CONCIERGE_FIVE_MISTAKES, CONCIERGE_OFFER } from '@/lib/concierge/offer';
 
 /**
- * Family concierge offer page (sprint W3 item 5 / sprint 3.1).
+ * Family concierge offer page (sprint W3 item 5 / sprint 3.1; v2 copy OL-165).
  *
  * Paid, private-pay offer (flat one-time fee, sprint W5-3) with the payer-source
  * screener in FRONT of it: the server HTML carries the pitch and the screener;
  * the offer card (where the price lives) is mounted client-side only after a
  * private-pay / LTC insurance / not-sure answer. Medicaid / Medicare / VA
  * answers get free help and never render the offer or a price. This server
- * page carries no dollar amount; src/lib/concierge/offer.ts owns the number.
+ * page carries no literal dollar amount; src/lib/concierge/offer.ts owns the
+ * number (the headline's five-thousand-dollar mistake is the cost of a wrong
+ * move, not a price).
  */
 
 const PAGE_URL = 'https://getcarelinkai.com/concierge';
 
 export const metadata: Metadata = {
-  title: 'Family Concierge — Hands-On Help Finding Senior Care in Cleveland | CareLinkAI',
+  title: 'Family Concierge — A Verified Shortlist in 2 Business Days or You Pay Nothing | CareLinkAI',
   description:
-    'A Cleveland person who does the legwork: a verified shortlist, availability confirmed, tours scheduled, pricing in writing. Private-pay families only; always free when Medicaid, Medicare or the VA pays.',
+    'A Cleveland person checks fit, prices and the contract with you before you sign: a verified shortlist in 2 business days, a Medicaid runway plan, real prices in writing, a contract red-flag review. Private-pay families only; always free when Medicaid, Medicare or the VA pays.',
   alternates: { canonical: PAGE_URL },
   openGraph: {
     title: 'Family Concierge | CareLinkAI',
     description:
-      'Hands-on help finding assisted living or memory care in Greater Cleveland. Private-pay families only — free help for everyone else.',
+      'We keep you from making the expensive mistake under pressure. Assisted living and memory care in Greater Cleveland. Private-pay families only — free help for everyone else.',
     type: 'website',
     url: PAGE_URL,
     siteName: 'CareLinkAI',
@@ -37,7 +39,7 @@ const structuredData = {
   '@type': 'WebPage',
   name: 'Family Concierge — CareLinkAI',
   description:
-    'Hands-on help finding senior care in Greater Cleveland for private-pay families. Free directory and guides for families paying through Medicaid, Medicare or the VA.',
+    'A person who checks fit, prices and the contract with private-pay families before they sign for senior care in Greater Cleveland. Free directory and guides for families paying through Medicaid, Medicare or the VA.',
   url: PAGE_URL,
   publisher: {
     '@type': 'Organization',
@@ -55,18 +57,29 @@ export default function ConciergePage() {
       {/* Hero */}
       <section className="bg-white border-b border-neutral-200">
         <div className="max-w-5xl mx-auto px-6 py-16">
-          <p className="text-sm font-semibold text-primary-600 uppercase tracking-wide">For families · Greater Cleveland</p>
-          <h1 className="mt-3 text-4xl sm:text-5xl font-bold text-neutral-900 leading-tight">
-            Family Concierge: a Cleveland person who does the legwork with you
+          <p className="text-sm font-semibold text-primary-600 uppercase tracking-wide">Family Concierge · Greater Cleveland</p>
+          {/* "Free for families" stays above the fold (OL-165 a). */}
+          <p
+            className="mt-3 inline-flex items-center rounded-full border border-success-200 bg-success-50 px-4 py-2 text-sm font-semibold text-success-800"
+            data-testid="concierge-free-for-families"
+          >
+            {CONCIERGE_OFFER.freeForFamiliesLine}
+          </p>
+          <h1 className="mt-5 text-4xl sm:text-5xl font-bold text-neutral-900 leading-tight" data-testid="concierge-headline">
+            {CONCIERGE_OFFER.headline}
           </h1>
+          <p className="mt-4 text-xl font-semibold text-primary-700 max-w-3xl" data-testid="concierge-subhead">
+            {CONCIERGE_OFFER.subhead}
+          </p>
           <p className="mt-6 text-lg text-neutral-700 max-w-3xl">
-            Finding the right assisted living or memory care home usually means twenty phone calls, five tours and a
-            pricing sheet you can’t decode. Our concierge does that work with you — verified homes only, availability
-            confirmed before you visit, and the real price in writing.
+            A hospital gives you 48 hours. In that window families pick a home that can’t handle the care, sign a
+            contract they haven’t read, or run out of money in a place that won’t keep them. A Cleveland person checks
+            fit, prices and the contract with you before you sign — verified homes only, availability confirmed before
+            you visit, the real price in writing.
           </p>
           <p className="mt-4 text-neutral-700 max-w-3xl">
-            It is a <strong>private-pay service</strong>. If care will be paid through Medicaid, Medicare or the VA,
-            CareLinkAI’s help is always free — the screener below sends you straight there.
+            The concierge is a <strong>private-pay service</strong>. If care will be paid through Medicaid, Medicare or
+            the VA, CareLinkAI’s help is always free — the screener below sends you straight there.
           </p>
         </div>
       </section>
@@ -76,24 +89,32 @@ export default function ConciergePage() {
         <ConciergeScreener />
       </section>
 
-      {/* How it works (no pricing here) */}
-      <section className="bg-white border-y border-neutral-200">
+      {/* The five mistakes (no pricing here) — replaces the old "how it works" steps (OL-165 a). */}
+      <section className="bg-white border-y border-neutral-200" data-testid="concierge-five-mistakes">
         <div className="max-w-5xl mx-auto px-6 py-16">
-          <h2 className="text-3xl font-bold text-neutral-900">How the concierge works</h2>
-          <ol className="mt-6 space-y-4 max-w-3xl list-decimal list-inside text-neutral-700">
-            <li>
-              <strong className="text-neutral-900">A 20-minute call.</strong> Care needs, location, timeline, budget —
-              and who else in the family needs to be in the loop.
-            </li>
-            <li>
-              <strong className="text-neutral-900">A verified shortlist within two business days.</strong> Three to five
-              homes, each with availability confirmed with the operator and the ODH inspection history explained.
-            </li>
-            <li>
-              <strong className="text-neutral-900">Tours and the paperwork.</strong> We schedule the tours, send a checklist,
-              and get the full pricing breakdown in writing before you decide.
-            </li>
+          <h2 className="text-3xl font-bold text-neutral-900">The five mistakes a 48-hour discharge causes — and what we check for each</h2>
+          <p className="mt-3 text-neutral-700 max-w-3xl">
+            None of this is about saving you time. It is about the decisions that cost a family thousands of dollars and
+            a second move when they are made under pressure.
+          </p>
+          <ol className="mt-8 space-y-6 max-w-3xl">
+            {CONCIERGE_FIVE_MISTAKES.map((m, i) => (
+              <li key={m.mistake} className="flex gap-4">
+                <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary-600 text-sm font-bold text-white">
+                  {i + 1}
+                </span>
+                <div>
+                  <p className="font-semibold text-neutral-900">{m.mistake}</p>
+                  <p className="mt-1 text-neutral-700">{m.cost}</p>
+                  <p className="mt-2 text-neutral-800">
+                    <strong className="text-primary-700">What we do: </strong>
+                    {m.answer}
+                  </p>
+                </div>
+              </li>
+            ))}
           </ol>
+          <p className="mt-8 text-sm text-neutral-600 max-w-3xl">{CONCIERGE_OFFER.noOutcomeLine}</p>
         </div>
       </section>
 
@@ -106,6 +127,7 @@ export default function ConciergePage() {
             CONCIERGE_OFFER.honestyLine,
             'Every home we shortlist is a licensed Ohio facility with its state inspection history in front of you, facts only.',
             'Availability is confirmed with the home before you tour — no wasted Saturday drives.',
+            `${CONCIERGE_OFFER.guarantee} That is the whole guarantee: the shortlist, on time, or your money back.`,
             'Families paying through Medicaid, Medicare or the VA get the directory, guides and direct home contact free, with no fee attached to the placement, ever.',
           ].map((line) => (
             <li key={line} className="flex gap-3">

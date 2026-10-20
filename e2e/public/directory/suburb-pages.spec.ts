@@ -10,7 +10,7 @@
  *    not leak in; an unknown suburb slug 404s.
  *
  * Runs with the ./e2e config:
- *   npx playwright test --config=playwright.e2e.config.ts e2e/public/suburb-pages.spec.ts
+ *   npx playwright test --config=playwright.e2e.config.ts e2e/public/directory/suburb-pages.spec.ts
  */
 import { test, expect } from '@playwright/test';
 
