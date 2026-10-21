@@ -45,6 +45,8 @@ export const PUBLIC_PAGE_PREFIXES: readonly string[] = [
   // Family concierge offer page (sprint W3 item 5) — public, screener in front.
   // /concierge/thanks is the Stripe Checkout success page (sprint W5-3).
   '/concierge',
+  // The published phone line + hours (OL-167d).
+  '/contact',
 ];
 
 /**
@@ -64,6 +66,7 @@ export const KNOWN_APP_SEGMENTS: readonly string[] = [
   'claim',
   'cleveland',
   'concierge',
+  'contact',
   'dashboard',
   'demo',
   'design-preview',

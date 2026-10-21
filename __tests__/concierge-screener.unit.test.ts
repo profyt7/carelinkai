@@ -135,4 +135,29 @@ describe('no Stripe in the screener / request files; no price in the server-rend
     expect(tsec).toMatch(/If a home ever pays CareLinkAI a fee when a resident moves in, we tell you before you tour; it never changes your price or which homes we show you\./);
     expect(tsec).not.toMatch(/legwork|\bAI\b/);
   });
+
+  it('OL-168 copy rules: homepage hero + FAQ headings never pitch "AI"; no savings / outcome promises, no facility fees; /cleveland hub likewise', () => {
+    const home = read('src/app/HomePageClient.tsx');
+    // Hero: from the trust badge to the CTAs.
+    const hero = home.slice(home.indexOf('{/* Trust badge */}'), home.indexOf('{/* CTAs */}'));
+    expect(hero).toContain('Verified Cleveland senior living.');
+    expect(hero).toContain('Free for families.');
+    expect(hero).not.toMatch(/\bAI\b|AI-Powered|save you|guarantee|\$\s?\d/);
+    // Every section-level headline (h1/h2) on the homepage is free of "AI" as the pitch.
+    const headings = [...home.matchAll(/<h[12][^>]*>([\s\S]*?)<\/h[12]>/g)].map((m) => m[1]);
+    expect(headings.length).toBeGreaterThan(5);
+    for (const h of headings) expect({ h: h.trim().slice(0, 60), ai: /\bAI\b/.test(h) }).toEqual({ h: h.trim().slice(0, 60), ai: false });
+    // FAQ: question headings never say "AI"; answers make no savings / outcome / fee promises.
+    const faq = home.slice(home.indexOf('{/* 8. FAQ SECTION */}'), home.indexOf('{/* 9. REQUEST A DEMO SECTION */}'));
+    const questions = [...faq.matchAll(/<span className="font-bold text-lg text-neutral-900">([^<]*)<\/span>/g)].map((m) => m[1]);
+    expect(questions).toEqual(
+      expect.arrayContaining(['How does matching work?', 'Does CareLinkAI help with Medicaid?', 'How do you know a bed is really open?', 'Can I call someone?']),
+    );
+    for (const q of questions) expect({ q, ai: /\bAI\b/.test(q) }).toEqual({ q, ai: false });
+    expect(faq).not.toMatch(/we (will )?save you|guaranteed? (a )?(bed|placement|savings|outcome)|pays CareLinkAI a fee|move-in fee|referral fee/i);
+    // "Can I call someone?" carries the published number, rendered from the shared constant (OL-167d).
+    expect(faq).toContain('{CONTACT_PHONE_DISPLAY}');
+    // The Cleveland hub page carries no "AI" at all.
+    expect(/\bAI\b/.test(read('src/app/cleveland/page.tsx'))).toBe(false);
+  });
 });

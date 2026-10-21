@@ -7,6 +7,7 @@
 import { SUBURBS, suburbPath } from '@/lib/directory/suburbs';
 import { AVAILABILITY_FRESH_DAYS } from '@/lib/availability/availability';
 import { FEE_MODEL_LINE, SITE_URL } from '@/lib/seo/jsonld';
+import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_E164 } from '@/lib/contact';
 
 export function buildLlmsTxt(): string {
   const lines: string[] = [
@@ -16,6 +17,7 @@ export function buildLlmsTxt(): string {
     '',
     `Site: ${SITE_URL}`,
     `Sitemap: ${SITE_URL}/sitemap.xml`,
+    `Contact: ${CONTACT_PHONE_DISPLAY} (${CONTACT_PHONE_E164}) — front desk answers around the clock, a person calls back Mon–Fri 8–6 ET. No patient details by phone; secure requests at ${SITE_URL}/concierge. Web: ${SITE_URL}/contact`,
     '',
     '## What is verified vs self-reported',
     '',
