@@ -16,6 +16,7 @@
 import type { FacilityDeclineReason, FacilityResponseStatus, PayerSource } from '@prisma/client';
 import { deriveFeeLane, PAYER_SOURCE_LABELS, type FeeLane } from '@/lib/payer/payer-source';
 import { DECLINE_REASON_LABELS } from '@/lib/concierge/facility-response';
+import { plannerLeadsPerDay, type DailyCount } from '@/lib/leads/inbound-lead-daily';
 
 export type MetricResponse = {
   status: FacilityResponseStatus;
@@ -66,6 +67,8 @@ export type ConciergeMetrics = {
   generatedAt: string;
   overall: MetricsBlock;
   perDp: MetricsBlock[];
+  /** OL-167c: PLANNER calls to the published number, per calendar day (trailing 14 d, America/New_York). */
+  plannerLeads: { days: DailyCount[]; total: number };
 };
 
 const HOUR = 3_600_000;
@@ -163,7 +166,7 @@ export function computeBlock(key: string, label: string, organization: string | 
   };
 }
 
-export function computeConciergeMetrics(reqs: MetricRequest[], now: Date = new Date()): ConciergeMetrics {
+export function computeConciergeMetrics(reqs: MetricRequest[], now: Date = new Date(), plannerLeadDates: Array<Date | string> = []): ConciergeMetrics {
   const byDp = new Map<string, MetricRequest[]>();
   for (const r of reqs) {
     const list = byDp.get(r.dpId) ?? [];
@@ -173,5 +176,10 @@ export function computeConciergeMetrics(reqs: MetricRequest[], now: Date = new D
   const perDp = [...byDp.entries()]
     .map(([dpId, list]) => computeBlock(dpId, list[0]?.dpName ?? dpId, list[0]?.dpOrganization ?? null, list))
     .sort((a, b) => b.requests - a.requests || a.label.localeCompare(b.label));
-  return { generatedAt: now.toISOString(), overall: computeBlock('overall', 'All discharge planners', null, reqs), perDp };
+  return {
+    generatedAt: now.toISOString(),
+    overall: computeBlock('overall', 'All discharge planners', null, reqs),
+    perDp,
+    plannerLeads: plannerLeadsPerDay(plannerLeadDates, now),
+  };
 }
