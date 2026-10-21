@@ -22,10 +22,10 @@ const CRON_SECRET = process.env.CRON_SECRET;
 const WINDOW_MINUTES = parseInt(process.env.CRON_WINDOW_MINUTES || '1440', 10);
 const MAX_PER_RUN = parseInt(process.env.CRON_MAX_PER_RUN || '100', 10);
 
-// Check for missing secret
+// Check for missing secret (the value itself is never printed)
 if (!CRON_SECRET) {
   console.warn('⚠️  Warning: CRON_SECRET environment variable is not set.');
-  console.warn('   This may cause authentication failures if the API requires it.');
+  console.warn('   Every call will fail with "auth 401 — CRON_SECRET mismatch" (the endpoints fail closed).');
 }
 
 /**
@@ -54,20 +54,39 @@ async function callCronEndpoint(endpoint, body) {
       headers,
       body: JSON.stringify(body),
     });
-    
-    const data = await response.json();
-    
+
+    // OL-160: always print the HTTP status + response body (never the secret),
+    // and name the cause: auth 401 — CRON_SECRET mismatch vs 5xx — app error.
+    const text = await response.text();
+    let data;
+    try { data = JSON.parse(text); } catch { data = { raw: text.slice(0, 2000) }; }
+    console.log(`   HTTP ${response.status} ${response.statusText}`);
+    console.log(`   Body: ${text.slice(0, 2000)}`);
+
     if (!response.ok) {
-      console.error(`❌ Error: ${response.status} ${response.statusText}`);
-      console.error(data);
-      return { success: false, status: response.status, data };
+      const { message } = classifyCronFailure(response.status);
+      console.error(`❌ ${endpoint}: ${message}`);
+      return { success: false, status: response.status, data, message };
     }
-    
+
     return { success: true, data };
   } catch (error) {
-    console.error(`❌ Failed to call ${endpoint}:`, error.message);
-    return { success: false, error: error.message };
+    const { message } = classifyCronFailure(0);
+    console.error(`❌ Failed to call ${endpoint}: ${message} (${error.message})`);
+    return { success: false, status: 0, error: error.message, message };
   }
+}
+
+/**
+ * Same table as classifyCronFailure() in src/lib/cron-auth.ts (kept inline so
+ * this script runs with plain `node`, no build step).
+ */
+function classifyCronFailure(status) {
+  if (status >= 200 && status < 300) return { kind: 'ok', message: 'ok' };
+  if (status === 401 || status === 403) return { kind: 'auth', message: 'auth 401 — CRON_SECRET mismatch (or not set on the server)' };
+  if (status >= 500) return { kind: 'app_error', message: `${status} — app error (5xx); see the response body / Sentry` };
+  if (status === 0) return { kind: 'unreachable', message: 'no HTTP response — host unreachable or DNS/TLS failure' };
+  return { kind: 'client_error', message: `${status} — client error (4xx); check the URL and method` };
 }
 
 /**

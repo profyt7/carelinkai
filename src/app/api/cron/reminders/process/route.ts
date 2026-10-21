@@ -14,6 +14,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
+import { checkCronAuth, cronUnauthorized } from "@/lib/cron-auth";
 import { processDueScheduledNotifications } from "@/lib/services/reminders";
 
 /**
@@ -21,9 +22,11 @@ import { processDueScheduledNotifications } from "@/lib/services/reminders";
  */
 export async function POST(request: NextRequest) {
   try {
-    // Verify cron secret
-    const cronSecret = request.headers.get("x-cron-secret");
-    if (cronSecret !== process.env['CRON_SECRET']) {
+    // Verify cron secret — fails CLOSED (an unset CRON_SECRET used to pass:
+    // `undefined !== undefined` is false). Reason is logged, never the secret (OL-160).
+    const auth = checkCronAuth(request.headers);
+    if (!auth.ok) {
+      cronUnauthorized(`reminders/process`, auth);
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
         { status: 401 }

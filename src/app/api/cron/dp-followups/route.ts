@@ -14,14 +14,16 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { advanceDpSequences } from '@/lib/dp-outreach/dp-followup';
+import { checkCronAuth, cronUnauthorized } from '@/lib/cron-auth';
 
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-  // Fail CLOSED: an unset CRON_SECRET must NOT leave this endpoint open. Same
-  // "inert until the secret is set" discipline as the lead-capture token gate.
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Fail CLOSED: an unset CRON_SECRET must NOT leave this endpoint open. The
+  // helper logs WHY (secret unset vs mismatch) without ever logging the secret
+  // (OL-160); the response body stays generic.
+  const auth = checkCronAuth(request.headers);
+  if (!auth.ok) {
+    const u = cronUnauthorized('dp-followups', auth);
+    return NextResponse.json(u.body, { status: u.status });
   }
   try {
     const result = await advanceDpSequences();
