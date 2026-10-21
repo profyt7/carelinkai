@@ -10,7 +10,7 @@
  *    not leak in; an unknown suburb slug 404s.
  *
  * Runs with the ./e2e config:
- *   npx playwright test --config=playwright.e2e.config.ts e2e/public/suburb-pages.spec.ts
+ *   npx playwright test --config=playwright.e2e.config.ts e2e/public/directory/suburb-pages.spec.ts
  */
 import { test, expect } from '@playwright/test';
 
@@ -88,7 +88,8 @@ test.describe('@critical suburb assisted-living pages', () => {
       for (const other of SUBURBS) {
         if (other.slug !== s.slug) expect(html).not.toContain(homeName(other.city, 'Verified'));
       }
-      expect(html).toContain('Verified Availability');
+      expect(html).toMatch(/data-testid="availability-badge"[^>]*data-verified-at="20\d\d-[^"]+"/);
+      expect(html).toMatch(/Verified [A-Z][a-z]{2} \d{1,2}/);
       expect(html).toContain('ODH survey Feb 18, 2026 · 1 citation');
       expect(html).toContain(`ODH license ${s.slug.slice(0, 3).toUpperCase()}${ts % 10000}R`);
       expect(html).not.toContain('@test.carelinkai.com');

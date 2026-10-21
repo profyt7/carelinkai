@@ -4,21 +4,25 @@
  *
  *  - renders logged-out (200, indexable, canonical); the server HTML carries
  *    the screener but NOT the offer and NO price;
- *  - private-pay / LTC-insurance / not-sure → the paid offer card ($399 flat,
- *    inclusions, guarantee) + "Request the concierge" (CONCIERGE_CHECKOUT_ENABLED
- *    unset in CI) → a request in the EXISTING DP concierge queue tagged
+ *  - private-pay / LTC-insurance → the paid offer card ($399 flat, inclusions,
+ *    guarantee) + "Request the concierge" (CONCIERGE_CHECKOUT_ENABLED unset in
+ *    CI) → a request in the EXISTING DP concierge queue tagged
  *    source=concierge_page carrying the screener answer, plus a ConciergeOrder
  *    REQUESTED_UNPAID (asserted via the admin API);
+ *  - not sure yet → BOTH: the free-help panel first, the offer below it as a
+ *    secondary option (W5 follow-up decision);
  *  - Medicaid / Medicare / VA → free help, the offer never renders, and no dollar
  *    price appears anywhere on the page; Medicaid lands on the waiver-filtered
  *    directory.
  *
  * Runs with the ./e2e config:
- *   npx playwright test --config=playwright.e2e.config.ts e2e/public/concierge-offer.spec.ts
+ *   npx playwright test --config=playwright.e2e.config.ts e2e/public/concierge/concierge-offer.spec.ts
  */
 import { test, expect, type Page } from '@playwright/test';
 
-const PRICE = /\$\s?\d/;
+// Any dollar amount EXCEPT the v2 headline's "$5,000 mistake" (OL-165): that is
+// the cost of a wrong move, not a price, and it is on the page for every lane.
+const PRICE = /\$\s?(?!5,000\b)\d/;
 const ts = Date.now();
 
 async function answer(page: Page, label: RegExp) {
@@ -56,9 +60,11 @@ test.describe('@critical /concierge offer + payer screener', () => {
     // Visible text only — the RSC payload in <script> uses "$3"-style refs.
     const visible = html.replace(/<script[\s\S]*?<\/script>/g, '').replace(/<[^>]+>/g, ' ');
     expect(visible).not.toMatch(PRICE);
-    // Copy honesty (W5-3 d).
+    // Copy honesty (W5-3 d) + v2 framing (OL-165).
     expect(visible).toContain('Homes never pay to be listed, ranked or recommended.');
     expect(visible).not.toContain('homes never pay us to be recommended');
+    expect(visible).toContain('We keep you from making the $5,000 mistake under pressure.');
+    expect(visible).not.toMatch(/legwork/i);
   });
 
   test('is in sitemap.xml', async ({ request }) => {
@@ -72,11 +78,14 @@ test.describe('@critical /concierge offer + payer screener', () => {
     await expect(page.getByTestId('concierge-free-lane')).toHaveCount(0);
     await expect(offer.getByTestId('concierge-price')).toContainText('$399');
     const inclusions = offer.getByTestId('concierge-inclusions').locator('li');
-    await expect(inclusions).toHaveCount(7);
+    await expect(inclusions).toHaveCount(9); // v2 items 1–9 (OL-165)
     await expect(inclusions.first()).toContainText('20-minute intake call');
     await expect(offer.getByTestId('concierge-inclusions')).toContainText('3–5 homes within 2 business days');
+    await expect(offer.getByTestId('concierge-inclusions')).toContainText('Medicaid runway plan');
+    await expect(offer.getByTestId('concierge-inclusions')).toContainText('contract red-flag review');
     await expect(offer.getByTestId('concierge-guarantee')).toContainText('full refund');
     await expect(offer.getByTestId('concierge-not-included')).toContainText('Medicaid application filing');
+    await expect(offer.getByTestId('concierge-not-included')).toContainText('negotiating on the family’s behalf');
 
     const form = offer.getByTestId('concierge-request-form');
     await expect(form).toBeVisible();
@@ -133,18 +142,39 @@ test.describe('@critical /concierge offer + payer screener', () => {
     await ctx.close();
   });
 
-  for (const [label, name] of [
-    [/Long-term care insurance/, 'long-term care insurance'],
-    [/Not sure yet/, 'not sure yet'],
-  ] as const) {
-    test(`${name} → offer + form too`, async ({ page }) => {
-      await answer(page, label);
-      await expect(page.getByTestId('concierge-offer')).toBeVisible();
-      await expect(page.getByTestId('concierge-price')).toContainText('$399');
-      await expect(page.getByTestId('concierge-request-form')).toBeVisible();
-      await expect(page.getByTestId('concierge-free-lane')).toHaveCount(0);
-    });
-  }
+  test('long-term care insurance → offer + form too', async ({ page }) => {
+    await answer(page, /Long-term care insurance/);
+    await expect(page.getByTestId('concierge-offer')).toBeVisible();
+    await expect(page.getByTestId('concierge-offer')).toHaveAttribute('data-secondary', 'false');
+    await expect(page.getByTestId('concierge-price')).toContainText('$399');
+    await expect(page.getByTestId('concierge-request-form')).toBeVisible();
+    await expect(page.getByTestId('concierge-free-lane')).toHaveCount(0);
+  });
+
+  test('not sure yet → BOTH: free help first (directory, waiver filter, guides, "if Medicaid may be involved…"), then the offer as a secondary option', async ({ page }) => {
+    await answer(page, /Not sure yet/);
+    const both = page.getByTestId('concierge-both');
+    await expect(both).toBeVisible();
+    const free = page.getByTestId('concierge-free-lane');
+    const offer = page.getByTestId('concierge-offer');
+    await expect(free).toBeVisible();
+    await expect(offer).toBeVisible();
+    // Free help is the lead: first in DOM order and above the offer on the page.
+    await expect(both.locator('[data-testid="concierge-free-lane"], [data-testid="concierge-offer"]').first()).toHaveAttribute('data-testid', 'concierge-free-lane');
+    const [fb, ob] = await Promise.all([free.boundingBox(), offer.boundingBox()]);
+    expect(fb!.y).toBeLessThan(ob!.y);
+    await expect(free).toContainText('If Medicaid may be involved, our help is free.');
+    expect(await free.innerText()).not.toMatch(PRICE);
+    await expect(free.getByRole('link', { name: /Browse the Cleveland directory/ })).toHaveAttribute('href', '/cleveland');
+    await expect(free.getByRole('link', { name: /Medicaid Assisted Living Waiver/ })).toHaveAttribute('href', '/cleveland/assisted-living?waiver=1');
+    await expect(free.getByRole('link', { name: /Medicare/ })).toBeVisible();
+    await expect(free.getByTestId('concierge-free-cta')).toHaveAttribute('href', '/cleveland');
+    // The offer is marked secondary, still complete (price, inclusions, form) so a private-pay family can proceed.
+    await expect(offer).toHaveAttribute('data-secondary', 'true');
+    await expect(offer.getByTestId('concierge-secondary-lead')).toContainText('optional Family Concierge');
+    await expect(offer.getByTestId('concierge-price')).toContainText('$399');
+    await expect(offer.getByTestId('concierge-request-form')).toBeVisible();
+  });
 
   for (const [label, name] of [
     [/Medicaid/, 'Medicaid / waiver'],
