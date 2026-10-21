@@ -75,6 +75,7 @@ describe('no Stripe in the screener / request files; no price in the server-rend
   it('none of the screener / request files import or call Stripe', () => {
     for (const f of [
       'src/app/concierge/page.tsx',
+      'src/app/concierge/ConciergeIntro.tsx',
       'src/app/concierge/ConciergeScreener.tsx',
       'src/app/concierge/ConciergeRequestForm.tsx',
       'src/lib/concierge/screener.ts',
@@ -100,7 +101,7 @@ describe('no Stripe in the screener / request files; no price in the server-rend
   });
 
   it('the server page and the components carry no literal dollar amount; only offer.ts does', () => {
-    for (const f of ['src/app/concierge/page.tsx', 'src/app/concierge/ConciergeRequestForm.tsx', 'src/app/concierge/ConciergeScreener.tsx']) {
+    for (const f of ['src/app/concierge/page.tsx', 'src/app/concierge/ConciergeIntro.tsx', 'src/app/concierge/ConciergeRequestForm.tsx', 'src/app/concierge/ConciergeScreener.tsx']) {
       expect({ file: f, dollarPrice: /\$\s?\d/.test(read(f)) }).toEqual({ file: f, dollarPrice: false });
     }
     expect(/\$399/.test(read('src/lib/concierge/offer.ts'))).toBe(true);
@@ -130,6 +131,8 @@ describe('no Stripe in the screener / request files; no price in the server-rend
     const tsec = terms.slice(terms.indexOf('data-testid="terms-family-concierge"'), terms.indexOf('Contact Us'));
     expect(tsec).toMatch(/not medical, legal or financial advice/);
     expect(tsec).toMatch(/do not promise savings, a particular outcome/);
-    expect(tsec).not.toMatch(/legwork|\bAI\b|pays CareLinkAI a fee|move-in fee/);
+    // OL-166a: the Terms keep the move-in-fee DISCLOSURE sentence (Terms only — never /concierge, homepage or dashboard).
+    expect(tsec).toMatch(/If a home ever pays CareLinkAI a fee when a resident moves in, we tell you before you tour; it never changes your price or which homes we show you\./);
+    expect(tsec).not.toMatch(/legwork|\bAI\b/);
   });
 });

@@ -1,50 +1,38 @@
 /**
- * SendGrid Email Service for CareLinkAI
- * 
- * This service provides email functionality using SendGrid, including:
- * - Core email sending with HTML/text content
- * - Template-based emails
- * - Helper functions for common email types
+ * Transactional email helpers behind POST /api/email/send (OL-166d).
+ *
+ * Resend-backed replacement for the former SendGrid client: the same helper
+ * API (sendEmail / sendWelcomeEmail / sendPasswordResetEmail /
+ * sendNotificationEmail / sendAppointmentEmail / sendDocumentSharedEmail /
+ * sendCustomEmail / validateEmailConfig) and the same from / reply-to /
+ * category semantics, delivered through the ONE suppression-enforcing Resend
+ * choke point in src/lib/email.ts. Nothing here sends on import.
  */
 
-import sgMail from '@sendgrid/mail';
 import { logger } from '../logger';
+import { guardedResendSend } from '@/lib/email';
 
-// Initialize SendGrid with API key from environment
-if (!process.env["SENDGRID_API_KEY"]) {
-  logger.warn('SENDGRID_API_KEY is not defined. Email functionality will not work.');
-} else {
-  sgMail.setApiKey(process.env["SENDGRID_API_KEY"]);
-}
+// Email configuration from environment (unchanged names / defaults), read at
+// send time so a missing value only affects sending, never importing.
+const emailFrom = () => process.env['EMAIL_FROM'] || 'noreply@carelinkai.com';
+const emailFromName = () => process.env['EMAIL_FROM_NAME'] || 'CareLinkAI';
+const emailReplyTo = () => process.env['EMAIL_REPLY_TO'] || 'support@carelinkai.com';
 
-// Email configuration from environment
-const EMAIL_FROM = process.env["EMAIL_FROM"] || 'noreply@carelinkai.com';
-const EMAIL_FROM_NAME = process.env["EMAIL_FROM_NAME"] || 'CareLinkAI';
-const EMAIL_REPLY_TO = process.env["EMAIL_REPLY_TO"] || 'support@carelinkai.com';
-
-// Types for email templates and options
 export interface EmailData {
   to: string | string[];
   subject: string;
   html?: string;
   text?: string;
-  templateId?: string;
-  dynamicTemplateData?: Record<string, any>;
   attachments?: Array<{
-    content: string;
+    content: string; // base64
     filename: string;
     type: string;
     disposition: 'attachment' | 'inline';
     contentId?: string;
   }>;
+  /** Mapped to Resend tags (`category=<value>`); values are slugged to [a-z0-9_-]. */
   categories?: string[];
   customArgs?: Record<string, any>;
-}
-
-export interface EmailTemplate {
-  id: string;
-  name: string;
-  description: string;
 }
 
 export interface EmailResult {
@@ -53,34 +41,11 @@ export interface EmailResult {
   error?: Error | unknown;
 }
 
-// Available email templates
-export const EmailTemplates = {
-  WELCOME: {
-    id: 'd-welcome-template-id', // Replace with actual SendGrid template ID
-    name: 'welcome',
-    description: 'Welcome email for new users'
-  },
-  PASSWORD_RESET: {
-    id: 'd-password-reset-template-id', // Replace with actual SendGrid template ID
-    name: 'password-reset',
-    description: 'Password reset email'
-  },
-  NOTIFICATION: {
-    id: 'd-notification-template-id', // Replace with actual SendGrid template ID
-    name: 'notification',
-    description: 'General notification email'
-  },
-  APPOINTMENT_CONFIRMATION: {
-    id: 'd-appointment-confirmation-template-id', // Replace with actual SendGrid template ID
-    name: 'appointment-confirmation',
-    description: 'Appointment confirmation email'
-  },
-  DOCUMENT_SHARED: {
-    id: 'd-document-shared-template-id', // Replace with actual SendGrid template ID
-    name: 'document-shared',
-    description: 'Document shared notification'
-  }
-} as const;
+/** Resend tag values allow ASCII letters, numbers, underscores and dashes only. */
+function tagValue(v: string): string {
+  const slug = v.toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 64);
+  return slug || 'general';
+}
 
 /**
  * Build a very simple branded HTML email wrapper.
@@ -117,77 +82,59 @@ function buildBasicHtml(title: string, body: string) {
  * @returns {boolean} True if configuration is valid
  */
 export function validateEmailConfig(): boolean {
-  const requiredVars = ['SENDGRID_API_KEY', 'EMAIL_FROM'];
-  const missingVars = requiredVars.filter(varName => !process.env[varName]);
-  
+  const requiredVars = ['RESEND_API_KEY', 'EMAIL_FROM'];
+  const missingVars = requiredVars.filter((varName) => !process.env[varName]);
   if (missingVars.length > 0) {
     logger.error(`Missing required email configuration variables: ${missingVars.join(', ')}`);
     return false;
   }
-  
   return true;
 }
 
 /**
- * Send an email using SendGrid
- * @param {EmailData} emailData - The email data
- * @returns {Promise<EmailResult>} Result of the send operation
+ * Send an email through Resend (suppression-guarded).
  */
 export async function sendEmail(emailData: EmailData): Promise<EmailResult> {
-  // Validate configuration
   if (!validateEmailConfig()) {
-    return { 
-      success: false, 
-      error: new Error('Invalid email configuration') 
-    };
+    return { success: false, error: new Error('Invalid email configuration') };
   }
-
   try {
-    // Prepare the message
-    const msg = {
-      to: emailData.to,
-      from: {
-        email: EMAIL_FROM,
-        name: EMAIL_FROM_NAME
-      },
-      replyTo: EMAIL_REPLY_TO,
+    const to = Array.isArray(emailData.to) ? emailData.to : [emailData.to];
+    const categories = emailData.categories && emailData.categories.length > 0 ? emailData.categories : ['carelinkai'];
+    const { data, error } = await guardedResendSend({
+      from: `${emailFromName()} <${emailFrom()}>`,
+      to,
+      replyTo: emailReplyTo(),
       subject: emailData.subject,
-      text: emailData.text,
-      html: emailData.html,
-      templateId: emailData.templateId,
-      dynamicTemplateData: emailData.dynamicTemplateData,
-      attachments: emailData.attachments,
-      categories: emailData.categories || ['carelinkai'],
-      customArgs: emailData.customArgs
-    };
-
-    // Send the email
-    const [response] = await sgMail.send(msg as any);
-    
-    logger.info(`Email sent successfully to ${Array.isArray(emailData.to) ? emailData.to.join(', ') : emailData.to}`);
-    
-    return {
-      success: true,
-      messageId: response.headers['x-message-id']
-    };
+      html: emailData.html ?? '',
+      ...(emailData.text ? { text: emailData.text } : {}),
+      ...(emailData.attachments && emailData.attachments.length > 0
+        ? {
+            attachments: emailData.attachments.map((a) => ({
+              filename: a.filename,
+              content: a.content,
+              contentType: a.type,
+              ...(a.contentId ? { contentId: a.contentId } : {}),
+            })),
+          }
+        : {}),
+      tags: categories.map((c) => ({ name: 'category', value: tagValue(c) })),
+    });
+    if (error) {
+      logger.error('Failed to send email', { error: error.message ?? error.name ?? 'Resend error' });
+      return { success: false, error: new Error(error.message ?? 'Resend error') };
+    }
+    logger.info(`Email sent successfully to ${to.join(', ')}`);
+    return { success: true, messageId: data?.id };
   } catch (error) {
     logger.error('Failed to send email', { error: error instanceof Error ? error.message : String(error) });
-    return {
-      success: false,
-      error
-    };
+    return { success: false, error };
   }
 }
 
-/**
- * Send a welcome email to a new user
- * @param {string} to - Recipient email
- * @param {object} data - Template data including user's name
- * @returns {Promise<EmailResult>} Result of the send operation
- */
 export async function sendWelcomeEmail(
-  to: string, 
-  data: { firstName: string; lastName?: string; verificationUrl?: string }
+  to: string,
+  data: { firstName: string; lastName?: string; verificationUrl?: string },
 ): Promise<EmailResult> {
   const htmlBody = `
     <p>Hello ${data.firstName}${data.lastName ? ' ' + data.lastName : ''},</p>
@@ -208,19 +155,13 @@ export async function sendWelcomeEmail(
     to,
     subject: 'Welcome to CareLinkAI',
     html: buildBasicHtml('Welcome to CareLinkAI', htmlBody),
-    text: `Hello ${data.firstName},\n\nWelcome to CareLinkAI!${data.verificationUrl ? `\nPlease verify your email: ${data.verificationUrl}` : ''}\n\nCheers,\nThe CareLinkAI Team`
+    text: `Hello ${data.firstName},\n\nWelcome to CareLinkAI!${data.verificationUrl ? `\nPlease verify your email: ${data.verificationUrl}` : ''}\n\nCheers,\nThe CareLinkAI Team`,
   });
 }
 
-/**
- * Send a password reset email
- * @param {string} to - Recipient email
- * @param {object} data - Template data including reset token/URL
- * @returns {Promise<EmailResult>} Result of the send operation
- */
 export async function sendPasswordResetEmail(
-  to: string, 
-  data: { firstName: string; resetUrl: string; expiresInMinutes?: number }
+  to: string,
+  data: { firstName: string; resetUrl: string; expiresInMinutes?: number },
 ): Promise<EmailResult> {
   const htmlBody = `
     <p>Hello ${data.firstName},</p>
@@ -240,27 +181,14 @@ export async function sendPasswordResetEmail(
     html: buildBasicHtml('Password Reset', htmlBody),
     text: `Hello ${data.firstName},\n\nReset your password using the link below (expires in ${
       data.expiresInMinutes || 30
-    } minutes):\n${data.resetUrl}\n\nIf you didn't request this, please ignore.\n\nThe CareLinkAI Team`
+    } minutes):\n${data.resetUrl}\n\nIf you didn't request this, please ignore.\n\nThe CareLinkAI Team`,
   });
 }
 
-/**
- * Send a notification email
- * @param {string} to - Recipient email
- * @param {string} subject - Email subject
- * @param {object} data - Template data including notification details
- * @returns {Promise<EmailResult>} Result of the send operation
- */
 export async function sendNotificationEmail(
   to: string,
   subject: string,
-  data: { 
-    firstName: string;
-    message: string;
-    actionUrl?: string;
-    actionText?: string;
-    category?: string;
-  }
+  data: { firstName: string; message: string; actionUrl?: string; actionText?: string; category?: string },
 ): Promise<EmailResult> {
   const htmlBody = `
     <p>Hello ${data.firstName},</p>
@@ -283,16 +211,10 @@ export async function sendNotificationEmail(
     text: `Hello ${data.firstName},\n\n${data.message}\n${
       data.actionUrl ? `\n${data.actionText || 'View Details'}: ${data.actionUrl}` : ''
     }\n\nBest regards,\nThe CareLinkAI Team`,
-    categories: ['notification', (data.category || 'general').toLowerCase()]
+    categories: ['notification', (data.category || 'general').toLowerCase()],
   });
 }
 
-/**
- * Send an appointment confirmation email
- * @param {string} to - Recipient email
- * @param {object} data - Template data including appointment details
- * @returns {Promise<EmailResult>} Result of the send operation
- */
 export async function sendAppointmentEmail(
   to: string,
   data: {
@@ -303,20 +225,20 @@ export async function sendAppointmentEmail(
     virtualMeetingUrl?: string;
     notes?: string;
     calendarLink?: string;
-  }
+  },
 ): Promise<EmailResult> {
-  // Format date if it's a Date object
-  const formattedDate = data.dateTime instanceof Date 
-    ? data.dateTime.toLocaleString('en-US', { 
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        timeZoneName: 'short'
-      })
-    : data.dateTime;
+  const formattedDate =
+    data.dateTime instanceof Date
+      ? data.dateTime.toLocaleString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+          timeZoneName: 'short',
+        })
+      : data.dateTime;
 
   const htmlBody = `
     <p>Hello ${data.firstName},</p>
@@ -352,25 +274,13 @@ export async function sendAppointmentEmail(
     }${data.virtualMeetingUrl ? `\nVirtual Meeting: ${data.virtualMeetingUrl}` : ''}\n\n${
       data.notes ? data.notes + '\n\n' : ''
     }${data.calendarLink ? `Add to calendar: ${data.calendarLink}\n\n` : ''}Regards,\nCareLinkAI Team`,
-    categories: ['appointment', 'calendar']
+    categories: ['appointment', 'calendar'],
   });
 }
 
-/**
- * Send a document shared notification email
- * @param {string} to - Recipient email
- * @param {object} data - Template data including document details
- * @returns {Promise<EmailResult>} Result of the send operation
- */
 export async function sendDocumentSharedEmail(
   to: string,
-  data: {
-    firstName: string;
-    sharedBy: string;
-    documentName: string;
-    documentUrl: string;
-    message?: string;
-  }
+  data: { firstName: string; sharedBy: string; documentName: string; documentUrl: string; message?: string },
 ): Promise<EmailResult> {
   const htmlBody = `
     <p>Hello ${data.firstName},</p>
@@ -390,35 +300,20 @@ export async function sendDocumentSharedEmail(
     text: `Hello ${data.firstName},\n\n${data.sharedBy} has shared a document "${data.documentName}" with you.\nView: ${data.documentUrl}\n\n${
       data.message ? data.message + '\n\n' : ''
     }Best regards,\nThe CareLinkAI Team`,
-    categories: ['document', 'collaboration']
+    categories: ['document', 'collaboration'],
   });
 }
 
-/**
- * Send a custom HTML email
- * @param {string} to - Recipient email
- * @param {string} subject - Email subject
- * @param {string} html - HTML content
- * @param {string} text - Plain text content (fallback)
- * @returns {Promise<EmailResult>} Result of the send operation
- */
-export async function sendCustomEmail(
-  to: string,
-  subject: string,
-  html: string,
-  text?: string
-): Promise<EmailResult> {
+export async function sendCustomEmail(to: string, subject: string, html: string, text?: string): Promise<EmailResult> {
   return sendEmail({
     to,
     subject,
     html,
-    text: text || html.replace(/<[^>]*>/g, '') // Strip HTML tags as fallback if text not provided
+    text: text || html.replace(/<[^>]*>/g, ''), // Strip HTML tags as fallback if text not provided
   });
 }
 
-// Export the email service
-// Named constant to satisfy eslint import/no-anonymous-default-export
-const sendgridEmailProvider = {
+const transactionalEmailProvider = {
   sendEmail,
   sendWelcomeEmail,
   sendPasswordResetEmail,
@@ -427,7 +322,6 @@ const sendgridEmailProvider = {
   sendDocumentSharedEmail,
   sendCustomEmail,
   validateEmailConfig,
-  EmailTemplates
 };
 
-export default sendgridEmailProvider;
+export default transactionalEmailProvider;
