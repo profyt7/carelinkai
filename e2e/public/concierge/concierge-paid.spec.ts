@@ -86,7 +86,9 @@ test.describe('@critical Family Concierge — homepage, dashboard cards, terms',
     expect(visible).toContain('medical, legal or financial advice; Medicaid application filing (we point to the Western Reserve AAA); attending tours in person; negotiating on the family’s behalf (we prepare them; they ask).');
     expect(visible).toContain('The Family Concierge is not medical, legal or financial advice.');
     expect(visible).toContain('We do not promise savings, a particular outcome, or that any home will agree to a request.');
-    expect(visible).not.toMatch(/legwork|pays CareLinkAI a fee|move-in fee/i);
+    // OL-166a: the disclosure sentence lives in the Terms only.
+    expect(visible).toContain('If a home ever pays CareLinkAI a fee when a resident moves in, we tell you before you tour; it never changes your price or which homes we show you.');
+    expect(visible).not.toMatch(/legwork/i);
   });
 
   test('unknown lane (no payer answer yet) → free-help card first with the concierge as a secondary line; dismissible', async ({ browser }) => {
