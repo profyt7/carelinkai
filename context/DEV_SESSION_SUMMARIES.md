@@ -2,6 +2,17 @@
 
 ---
 
+### 2026-10-21 — OL-166 follow-ups merged (a–d) + production verifications #2 and #3
+- **Objective:** Part B of Chris's 10/20 merge pass: OL-166a–d as one PR each, CI green, merged in order with update-branch / squash / branch delete; production verification after #760 (#2) and after the last OL-166 merge (#3).
+- **Work completed (squash sha on main):** #762 OL-166a Terms disclosure `991a666` · #763 OL-166b free-lane hero `0abc011` · #764 OL-166c `PriceSource.AI_CALL` `adc04a4` (migration `20261020000002`) · #765 OL-166d `/api/email/send` → Resend `9ff47d5`. All head branches auto-deleted. `chore/prod-verify-1020` (the extended `prod-verify.yml`) opened as #766, not merged.
+- **Production verification #2** (after #760, live `e3b9ba0`): all checks passed — footer sha on /cleveland/assisted-living = `e3b9ba0` (fresh), 12 cards, suburb, listing, /llms.txt, /concierge server HTML, both lanes in a browser, **`POST / → 405` with `Allow: GET, HEAD, OPTIONS`** (OL-161 live). **#3** (after #765, live `9ff47d5`): all checks passed again. Sentry: no new unresolved issues across the whole pass.
+- **Mistake caught and fixed:** rebasing the stacked OL-166b branch onto the squashed main with "keep branch version" silently dropped #757's `isCheckoutEnabled` preflight gating from `offer.ts` and its unit test; CI caught it (2 failing suites), both files were rebuilt from main plus only the free-lane lines (`c03a3be`). #764 / #765 were audited the same way before merging (diff vs main = their own files only).
+- **Decisions:** OL-166b free-lane subhead describes what the free directory verifies (no concierge shortlist exists in that lane); OL-166c never overwrites a fresh (≤180 d) OPERATOR price with a phone answer (`price_operator_fresh`), stale ones are replaced; OL-166d keeps `EMAIL_FROM` / `EMAIL_FROM_NAME` / `EMAIL_REPLY_TO` semantics.
+- **Render env vars now unused:** `SENDGRID_API_KEY`; the value `EMAIL_PROVIDER=sendgrid` is no longer valid (variable still read for mock / ses / smtp). Nothing was set, edited or deleted.
+- **Tests/build status:** CI green on every merged head; three prod-verify runs green (#23, #24, #25).
+- **Deployment impact:** everything live. Founder action still open: set `ELEVENLABS_WEBHOOK_SECRET` in Render.
+- **Recommended next step:** review/merge #766 (prod-verify checks) and this context PR; run the 12-home pilot; QA at `/admin/call-qa` now also writes a phone-reported price.
+
 ### 2026-10-20/21 — 10/20 MERGE PASS: W5 follow-up + OL-165 + the whole 10/20 batch to main, one PR at a time
 - **Objective:** Chris authorized merging after review: #749 → #761 → #750…#754 (stacked, strict order) → #755–#759 → #760 docs last; "Update branch" before each (branch protection requires up-to-date), squash-merge, delete the branch; production verification after #754 and again after #760.
 - **Work completed (squash sha on main):** #749 `63e394e` · #761 `1ee4d49` (retargeted to main) · #750 `42d6678` · #751 `32eac1f` · #752 `14fa505` · #753 `50dec00` · #754 `fd865ba` · #755 `1f30ff6` · #756 `b750d9b` · #757 `b8835e5` · #758 `bf8cbe5` · #759 `ed63db0`. Every head branch auto-deleted on merge (repo setting). Stacked PRs were updated locally (`git merge origin/main`, branch version kept on the few identical-content conflicts) because the API "update branch" cannot resolve a squash-vs-stack conflict.
