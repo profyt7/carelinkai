@@ -12,6 +12,7 @@
  */
 
 import { deriveFeeLane, type PayerSource } from '@/lib/payer/payer-source';
+import { checkoutPreflight } from '@/lib/concierge/preflight';
 
 export const CONCIERGE_OFFER = {
   priceCents: 39900,
@@ -126,9 +127,13 @@ export function mayBuyConcierge(payerSource: PayerSource | null | undefined): bo
 
 export type ConciergeCtaMode = 'checkout' | 'request' | 'waitlist';
 
+/**
+ * The flag alone is not enough (OL-162): checkout also needs a Stripe key of
+ * the right mode, the Price id, the webhook secret and the admin email. Any
+ * mismatch keeps checkout OFF — see src/lib/concierge/preflight.ts.
+ */
 export function isCheckoutEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-  const v = (env['CONCIERGE_CHECKOUT_ENABLED'] ?? '').trim().toLowerCase();
-  return v === '1' || v === 'true' || v === 'yes';
+  return checkoutPreflight(env).checkoutEnabled;
 }
 
 export function monthlyCap(env: NodeJS.ProcessEnv = process.env): number {
