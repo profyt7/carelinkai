@@ -291,7 +291,7 @@ export default function TermsOfServicePage() {
                 <li data-testid="terms-concierge-not-included"><strong>Not included:</strong> {CONCIERGE_OFFER.notIncluded.join('; ')}.</li>
                 <li><strong>Not advice.</strong> The Family Concierge is not medical, legal or financial advice. We describe what we checked and what you may want to ask a home; decisions about care, contracts and money are yours, made with the professionals you choose.</li>
                 <li data-testid="terms-concierge-no-outcome"><strong>No promised outcome.</strong> We do not promise savings, a particular outcome, or that any home will agree to a request. We prepare you to ask; the answer is the home’s.</li>
-                <li><strong>Who pays.</strong> You do. Homes never pay to be listed, ranked or recommended, and a home never pays for the concierge.</li>
+                <li data-testid="terms-concierge-who-pays"><strong>Who pays.</strong> You do. Homes never pay to be listed, ranked or recommended. If a home ever pays CareLinkAI a fee when a resident moves in, we tell you before you tour; it never changes your price or which homes we show you.</li>
                 <li><strong>Free help.</strong> When care is paid through Medicaid, Medicare or the VA, the concierge is not offered and our directory, guides and direct home contact are free.</li>
                 <li><strong>Payments</strong> are processed by Stripe. Refunds are returned to the original payment method.</li>
               </ul>

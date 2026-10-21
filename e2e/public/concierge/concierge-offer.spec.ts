@@ -186,9 +186,13 @@ test.describe('@critical /concierge offer + payer screener', () => {
       await expect(page.getByTestId('concierge-free-lane')).toBeVisible();
       await expect(page.getByTestId('concierge-offer')).toHaveCount(0);
       await expect(page.getByTestId('concierge-request-form')).toHaveCount(0);
+      // OL-166b: the free lane gets its own hero — no dollar figure ANYWHERE on the page (not even the $5,000 headline).
+      await expect(page.getByTestId('concierge-hero')).toHaveAttribute('data-lane', 'free');
+      await expect(page.getByTestId('concierge-headline')).toHaveText('Free help for Medicaid, Medicare and VA families');
       const text = await page.getByTestId('concierge-page').innerText();
-      expect(text).not.toMatch(PRICE);
+      expect(text).not.toMatch(/\$\s?\d/);
       expect(text).not.toContain('399');
+      expect(text).not.toContain('5,000');
       expect(text).toMatch(/free/i);
       // Medicaid lands on the directory with the waiver filter preset (W5-2); the others on the free search.
       const cta = page.getByTestId('concierge-free-cta');
