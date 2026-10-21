@@ -1,7 +1,7 @@
 /**
  * Email API Route Handler for CareLinkAI
  * 
- * This API route handles sending emails using SendGrid.
+ * This API route handles sending emails through Resend (OL-166d; was SendGrid).
  * Features:
  * - Authentication required
  * - Support for multiple email types
@@ -18,7 +18,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { logger } from '@/lib/logger';
-import emailService from '@/lib/email/sendgrid';
+import emailService from '@/lib/email/transactional';
 import { UserRole } from '@prisma/client';
 import { z } from 'zod';
 
@@ -67,7 +67,7 @@ const BulkEmailRequestSchema = z.object({
 });
 
 /**
- * Format email recipients for SendGrid
+ * Format email recipients for the provider
  * @param to - Email recipient(s)
  * @returns Formatted recipient(s)
  */
@@ -104,34 +104,15 @@ function toSingleRecipient(recipient: string | string[]): string {
 /**
  * Extract a meaningful error message from different kinds of error objects.
  *  - Native Error instances → `error.message`
- *  - SendGrid error objects → `error.response.body.errors[0].message`
+ *  - Provider error objects → `error.message`
  *  - Fallback to stringified error
  */
 function extractErrorMessage(err: unknown): string {
   if (!err) return 'Unknown error';
-
-  // Standard JS Error
   if (err instanceof Error && err.message) return err.message;
-
-  // Possible SendGrid style error
-  if (
-    typeof err === 'object' &&
-    err !== null &&
-    'response' in err &&
-    // @ts-ignore - runtime check
-    err.response?.body?.errors &&
-    // @ts-ignore
-    Array.isArray(err.response.body.errors) &&
-    // @ts-ignore
-    err.response.body.errors.length > 0 &&
-    // @ts-ignore
-    err.response.body.errors[0].message
-  ) {
-    // @ts-ignore
-    return err.response.body.errors[0].message as string;
+  if (typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message?: unknown }).message === 'string') {
+    return (err as { message: string }).message;
   }
-
-  // Fallback – stringify
   return JSON.stringify(err);
 }
 
