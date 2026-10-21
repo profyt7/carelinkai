@@ -152,7 +152,8 @@ describe('offer copy (authoritative, v2 — OL-165)', () => {
     expect(all).not.toMatch(/guaranteed? (savings|rate|price|outcome)/i);
     expect(all).not.toMatch(/pays CareLinkAI a fee|move-in fee|referral fee|placement fee/i);
     // The free lane never sees a price: no dollar amount in any free-lane / shared line.
-    for (const k of ['freeLaneLine', 'notSureLine', 'freeForFamiliesLine', 'oneLine', 'noOutcomeLine', 'honestyLine'] as const) {
+    expect(CONCIERGE_OFFER.freeLaneHeadline).toBe('Free help for Medicaid, Medicare and VA families');
+    for (const k of ['freeLaneLine', 'freeLaneHeadline', 'freeLaneSubhead', 'notSureLine', 'freeForFamiliesLine', 'oneLine', 'noOutcomeLine', 'honestyLine'] as const) {
       expect({ k, v: CONCIERGE_OFFER[k] }).toEqual({ k, v: expect.not.stringMatching(/\$\s?\d/) });
     }
   });

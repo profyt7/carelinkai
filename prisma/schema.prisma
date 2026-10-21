@@ -2865,6 +2865,7 @@ enum PriceSource {
   DP_ESTIMATE // discharge-planner network ballpark (labeled "estimated")
   PUBLIC      // public benchmark / facility's own "starting at" marketing page
   FAMILY_AVG  // avg of verified family-reported quotes (only when N >= threshold)
+  AI_CALL     // the home told CareLinkAI's calling assistant by phone; QA-approved before it is written (OL-166c)
 }
 
 /// Family-reported actual quote after a tour/move-in (the "Glassdoor" moat, Phase 2).

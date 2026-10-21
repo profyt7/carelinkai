@@ -76,6 +76,9 @@ const observation = (over: Record<string, unknown> = {}, home: Record<string, un
     medicaidWaiverStatus: 'UNKNOWN',
     medicaidWaiverSource: null,
     medicaidPendingAccepted: null,
+    startingPriceMonthly: null,
+    priceSource: null,
+    priceUpdatedAt: null,
     address: { city: 'Westlake' },
     ...home,
   },
@@ -103,7 +106,7 @@ describe('applyQaAction', () => {
     const r = await applyQaAction({ id: 'obs_1', action: 'approve', actor, now: NOW });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    expect(r.applied).toEqual({ availability: true, waiver: true, pending: true, doNotCall: false });
+    expect(r.applied).toEqual({ availability: true, waiver: true, pending: true, price: true, doNotCall: false });
     expect(r.skipped).toEqual([]);
     expect(homeUpdate).toHaveBeenCalledTimes(1);
     expect(homeUpdate.mock.calls[0][0]).toEqual({
@@ -118,18 +121,21 @@ describe('applyQaAction', () => {
         medicaidPendingAccepted: true,
         medicaidPendingAcceptedSource: 'AI_CALL',
         medicaidPendingAcceptedVerifiedAt: CALLED_AT,
+        startingPriceMonthly: 4200,
+        priceSource: 'AI_CALL',
+        priceUpdatedAt: CALLED_AT,
       },
     });
     expect(obsUpdate.mock.calls[0][0].data).toMatchObject({ qaStatus: 'APPROVED', qaByUserId: 'admin_1', qaAt: NOW, appliedAt: NOW });
     const types = evtCreate.mock.calls.map((c: any) => `${c[0].data.eventType}:${c[0].data.source}`);
-    expect(types).toEqual(['availability.updated:AI_CALL', 'acceptance.updated:AI_CALL', 'acceptance.updated:AI_CALL', 'call.qa:ADMIN']);
+    expect(types).toEqual(['availability.updated:AI_CALL', 'acceptance.updated:AI_CALL', 'acceptance.updated:AI_CALL', 'pricing.updated:AI_CALL', 'call.qa:ADMIN']);
     expect(evtCreate.mock.calls[0][0].data.newValue).toMatchObject({ count: 3, source: 'AI_CALL', observationId: 'obs_1' });
   });
 
   it('never overwrites a protected waiver source (VA_CALL / OPERATOR / ADMIN); unknown answers write nothing', async () => {
     obsFind.mockResolvedValue(observation({ medicaidPending: 'CASE_BY_CASE' }, { medicaidWaiverSource: 'VA_CALL', medicaidWaiverStatus: 'ACCEPTING_NEW' }));
     const r = await applyQaAction({ id: 'obs_1', action: 'approve', actor, now: NOW });
-    expect(r.ok && r.applied).toEqual({ availability: true, waiver: false, pending: false, doNotCall: false });
+    expect(r.ok && r.applied).toEqual({ availability: true, waiver: false, pending: false, price: true, doNotCall: false });
     expect(r.ok && r.skipped).toEqual(['waiver_protected_source']);
     const data = homeUpdate.mock.calls[0][0].data;
     expect(data.medicaidWaiverStatus).toBeUndefined();
@@ -140,7 +146,7 @@ describe('applyQaAction', () => {
   it('approve of a declined / no-answer call reviews it but verifies nothing', async () => {
     obsFind.mockResolvedValue(observation({ outcome: 'DECLINED', bedsAL: null, bedsMC: null }));
     const r = await applyQaAction({ id: 'obs_1', action: 'approve', actor, now: NOW });
-    expect(r.ok && r.applied).toEqual({ availability: false, waiver: false, pending: false, doNotCall: false });
+    expect(r.ok && r.applied).toEqual({ availability: false, waiver: false, pending: false, price: false, doNotCall: false });
     expect(r.ok && r.skipped).toEqual(['outcome_declined_not_verifiable']);
     expect(homeUpdate).not.toHaveBeenCalled();
     expect(obsUpdate.mock.calls[0][0].data).toMatchObject({ qaStatus: 'APPROVED', appliedAt: null });
@@ -150,17 +156,71 @@ describe('applyQaAction', () => {
   it('correct → the edited values are applied to the home and stored on the observation', async () => {
     obsFind.mockResolvedValue(observation());
     const r = await applyQaAction({ id: 'obs_1', action: 'correct', corrections: { bedsAL: 0, bedsMC: 2, waiverStatus: 'NO', medicaidPending: 'NO', priceUndisclosed: true, priceFromMonthly: null }, note: ' heard two MC only ', actor, now: NOW });
-    expect(r.ok && r.applied).toEqual({ availability: true, waiver: true, pending: true, doNotCall: false });
+    expect(r.ok && r.applied).toEqual({ availability: true, waiver: true, pending: true, price: false, doNotCall: false });
     expect(homeUpdate.mock.calls[0][0].data).toMatchObject({ availabilityCount: 2, medicaidWaiverStatus: 'NOT_ACCEPTING_REFERRALS', medicaidPendingAccepted: false });
     const d = obsUpdate.mock.calls[0][0].data;
     expect(d).toMatchObject({ qaStatus: 'CORRECTED', bedsAL: 0, bedsMC: 2, waiverStatus: 'NO', medicaidPending: 'NO', priceUndisclosed: true, priceFromMonthly: null, qaNote: 'heard two MC only' });
     expect(d.corrections).toEqual({ bedsAL: 0, bedsMC: 2, waiverStatus: 'NO', medicaidPending: 'NO', priceUndisclosed: true, priceFromMonthly: null });
   });
 
+  it('OL-166c: approve with a disclosed price → startingPriceMonthly, source AI_CALL, priceUpdatedAt = calledAt, pricing.updated event', async () => {
+    obsFind.mockResolvedValue(observation());
+    const r = await applyQaAction({ id: 'obs_1', action: 'approve', actor, now: NOW });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.applied.price).toBe(true);
+    expect(homeUpdate.mock.calls[0][0].data).toMatchObject({ startingPriceMonthly: 4200, priceSource: 'AI_CALL', priceUpdatedAt: CALLED_AT });
+    const types = evtCreate.mock.calls.map((c: any) => c[0].data.eventType);
+    expect(types).toContain('pricing.updated');
+    const priceEvt = evtCreate.mock.calls.map((c: any) => c[0].data).find((d: any) => d.eventType === 'pricing.updated');
+    expect(priceEvt.newValue).toMatchObject({ startingPriceMonthly: 4200, source: 'AI_CALL', observationId: 'obs_1' });
+  });
+
+  it('OL-166c: undisclosed / missing price writes no price; a fresh OPERATOR price is never overwritten', async () => {
+    obsFind.mockResolvedValue(observation({ priceUndisclosed: true }));
+    let r = await applyQaAction({ id: 'obs_1', action: 'approve', actor, now: NOW });
+    expect(r.ok && r.applied.price).toBe(false);
+    expect(homeUpdate.mock.calls[0][0].data).not.toHaveProperty('startingPriceMonthly');
+    jest.clearAllMocks();
+    homeUpdate.mockResolvedValue({});
+    obsFind.mockResolvedValue(observation({ priceFromMonthly: null }));
+    r = await applyQaAction({ id: 'obs_1', action: 'approve', actor, now: NOW });
+    expect(r.ok && r.applied.price).toBe(false);
+    jest.clearAllMocks();
+    homeUpdate.mockResolvedValue({});
+    obsFind.mockResolvedValue(observation({}, { startingPriceMonthly: 5500, priceSource: 'OPERATOR', priceUpdatedAt: new Date('2026-10-01T00:00:00.000Z') }));
+    r = await applyQaAction({ id: 'obs_1', action: 'approve', actor, now: NOW });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.applied.price).toBe(false);
+    expect(r.skipped).toContain('price_operator_fresh');
+    expect(homeUpdate.mock.calls[0][0].data).not.toHaveProperty('priceSource');
+    // A STALE operator price is replaced by the phone answer.
+    jest.clearAllMocks();
+    homeUpdate.mockResolvedValue({});
+    obsFind.mockResolvedValue(observation({}, { startingPriceMonthly: 5500, priceSource: 'OPERATOR', priceUpdatedAt: new Date('2025-01-01T00:00:00.000Z') }));
+    r = await applyQaAction({ id: 'obs_1', action: 'approve', actor, now: NOW });
+    expect(r.ok && r.applied.price).toBe(true);
+    expect(homeUpdate.mock.calls[0][0].data).toMatchObject({ startingPriceMonthly: 4200, priceSource: 'AI_CALL' });
+  });
+
+  it('OL-166c: reject never writes a price; a corrected price is what gets written', async () => {
+    obsFind.mockResolvedValue(observation());
+    const rej = await applyQaAction({ id: 'obs_1', action: 'reject', actor, now: NOW });
+    expect(rej.ok).toBe(true);
+    expect(homeUpdate).not.toHaveBeenCalled();
+    jest.clearAllMocks();
+    homeUpdate.mockResolvedValue({});
+    obsFind.mockResolvedValue(observation());
+    const cor = await applyQaAction({ id: 'obs_1', action: 'correct', corrections: { priceFromMonthly: 4650 }, actor, now: NOW });
+    expect(cor.ok && cor.applied.price).toBe(true);
+    expect(homeUpdate.mock.calls[0][0].data).toMatchObject({ startingPriceMonthly: 4650, priceSource: 'AI_CALL', priceUpdatedAt: CALLED_AT });
+  });
+
   it('reject → closed, home untouched', async () => {
     obsFind.mockResolvedValue(observation());
     const r = await applyQaAction({ id: 'obs_1', action: 'reject', note: 'bad line', actor, now: NOW });
-    expect(r.ok && r.applied).toEqual({ availability: false, waiver: false, pending: false, doNotCall: false });
+    expect(r.ok && r.applied).toEqual({ availability: false, waiver: false, pending: false, price: false, doNotCall: false });
     expect(homeUpdate).not.toHaveBeenCalled();
     expect(obsUpdate.mock.calls[0][0].data).toMatchObject({ qaStatus: 'REJECTED', qaNote: 'bad line', appliedAt: null });
   });
@@ -168,7 +228,7 @@ describe('applyQaAction', () => {
   it('do_not_call → home flagged by ADMIN with a history row, observation rejected, nothing verified', async () => {
     obsFind.mockResolvedValue(observation());
     const r = await applyQaAction({ id: 'obs_1', action: 'do_not_call', actor, now: NOW });
-    expect(r.ok && r.applied).toEqual({ availability: false, waiver: false, pending: false, doNotCall: true });
+    expect(r.ok && r.applied).toEqual({ availability: false, waiver: false, pending: false, price: false, doNotCall: true });
     expect(homeUpdate.mock.calls[0][0].data).toEqual({ doNotCall: true, doNotCallAt: NOW, doNotCallSource: 'ADMIN' });
     expect(obsUpdate.mock.calls[0][0].data).toMatchObject({ qaStatus: 'REJECTED', doNotCall: true });
     expect(evtCreate.mock.calls.map((c: any) => c[0].data.eventType)).toEqual(['home.do_not_call', 'call.qa']);
@@ -177,7 +237,7 @@ describe('applyQaAction', () => {
   it('a call that itself captured do-not-call is never applied, even on approve', async () => {
     obsFind.mockResolvedValue(observation({ doNotCall: true }));
     const r = await applyQaAction({ id: 'obs_1', action: 'approve', actor, now: NOW });
-    expect(r.ok && r.applied).toEqual({ availability: false, waiver: false, pending: false, doNotCall: true });
+    expect(r.ok && r.applied).toEqual({ availability: false, waiver: false, pending: false, price: false, doNotCall: true });
     expect(homeUpdate.mock.calls[0][0].data).toEqual({ doNotCall: true, doNotCallAt: NOW, doNotCallSource: 'ADMIN' });
   });
 

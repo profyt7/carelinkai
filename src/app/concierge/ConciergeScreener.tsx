@@ -21,7 +21,7 @@ import ConciergeRequestForm from './ConciergeRequestForm';
  *
  * No price is rendered in this file: offer.ts owns the number.
  */
-export default function ConciergeScreener() {
+export default function ConciergeScreener({ onRoute }: { onRoute?: (route: ConciergeRoute | null) => void } = {}) {
   const [choice, setChoice] = useState<PayerSource | ''>('');
   const [route, setRoute] = useState<ConciergeRoute | null>(null);
   const [answered, setAnswered] = useState<PayerSource | null>(null);
@@ -33,12 +33,15 @@ export default function ConciergeScreener() {
     e.preventDefault();
     if (!isPayerSource(choice)) return;
     setAnswered(choice);
-    setRoute(routeForPayerSource(choice));
+    const r = routeForPayerSource(choice);
+    setRoute(r);
+    onRoute?.(r);
   }
 
   function reset() {
     setRoute(null);
     setAnswered(null);
+    onRoute?.(null);
   }
 
   const changeAnswer = (

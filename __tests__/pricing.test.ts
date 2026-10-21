@@ -10,8 +10,7 @@ import {
   isPricingFresh,
   pricingView,
   PRICING_FRESH_DAYS,
-  MAX_PRICE,
-} from '@/lib/pricing/pricing';
+  MAX_PRICE, priceSourceLabel } from '@/lib/pricing/pricing';
 
 const SECRET = 'test-secret-pricing';
 const DAY = 86_400_000;
@@ -125,6 +124,22 @@ describe('pricingView — honest, source-labeled, never a guaranteed quote', () 
     expect(at.amount).toBe(4800);
     expect(at.sourceLabel).toBe('families report');
     expect(at.display).toContain('avg of 3');
+  });
+
+  it('AI_CALL (OL-166c) → "reported by the community by phone on <date>", never transparent', () => {
+    const v = pricingView(
+      { startingPriceMonthly: 4200, priceSource: 'AI_CALL', priceUpdatedAt: new Date('2026-10-21T15:05:00.000Z') },
+      undefined,
+      now,
+    );
+    expect(v.hasPrice).toBe(true);
+    expect(v.amount).toBe(4200);
+    expect(v.source).toBe('AI_CALL');
+    expect(v.sourceLabel).toBe('reported by the community by phone on Oct 21, 2026');
+    expect(v.display).toBe('Starting around $4,200/mo · reported by the community by phone on Oct 21, 2026');
+    expect(v.transparent).toBe(false);
+    expect(priceSourceLabel('AI_CALL', null)).toBe('reported by the community by phone');
+    expect(priceSourceLabel('OPERATOR', new Date())).toBe('operator-provided');
   });
 
   it('no price of any kind → contact for pricing, not transparent', () => {

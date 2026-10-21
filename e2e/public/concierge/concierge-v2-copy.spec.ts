@@ -84,11 +84,18 @@ test.describe('@critical /concierge v2 copy (OL-165)', () => {
     await expect(free).toContainText('Free help — always');
     await expect(free).toContainText('Your search is free on CareLinkAI. No fee, no catch.');
     await expect(page.getByTestId('concierge-offer')).toHaveCount(0);
-    expect(await free.innerText()).not.toMatch(PRICE);
-    expect(await page.getByTestId('concierge-page').innerText()).not.toContain('399');
-    // The guarantee subhead stays in the hero for every lane; the free lane card itself carries no price.
-    await expect(page.getByTestId('concierge-subhead')).toHaveText(SUBHEAD);
-    await expect(page.getByTestId('concierge-screener')).toHaveCount(0); // the lane card replaces the screener
+    // OL-166b: the free lane gets its own hero (own H1 + the verified-homes line) and no dollar figure anywhere.
+    await expect(page.getByTestId('concierge-hero')).toHaveAttribute('data-lane', 'free');
+    await expect(page.getByTestId('concierge-headline')).toHaveText('Free help for Medicaid, Medicare and VA families');
+    await expect(page.getByTestId('concierge-subhead')).toContainText('Verified homes, confirmed availability and Medicaid waiver status');
+    const pageText = await page.getByTestId('concierge-page').innerText();
+    expect(pageText).not.toMatch(/\$\s?\d/);
+    expect(pageText).not.toContain('399');
+    expect(pageText).not.toContain('5,000');
+    // "Change my answer" restores the default hero.
+    await page.getByRole('button', { name: 'Change my answer' }).click();
+    await expect(page.getByTestId('concierge-hero')).toHaveAttribute('data-lane', 'default');
+    await expect(page.getByTestId('concierge-headline')).toHaveText(HEADLINE);
   });
 
   test('"not sure yet" renders both lanes on one page, free help first, with the guarantee text', async ({ page }) => {
