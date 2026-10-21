@@ -16,6 +16,7 @@ jest.mock('@/lib/prisma', () => ({
       findUnique: jest.fn(),
       findMany: jest.fn(),
       update: jest.fn(),
+      delete: jest.fn(),
     },
   },
 }));
@@ -29,7 +30,7 @@ jest.mock('@/lib/auth-utils', () => ({ requireRole: jest.fn() }));
 jest.mock('@/lib/sentry', () => ({ captureError: jest.fn() }));
 
 import { POST as leadPost } from '@/app/api/lead/dp/route';
-import { PATCH as adminPatch } from '@/app/api/admin/dp-leads/[id]/route';
+import { PATCH as adminPatch, DELETE as adminDelete } from '@/app/api/admin/dp-leads/[id]/route';
 import { GET as adminGet } from '@/app/api/admin/dp-leads/route';
 import { prisma } from '@/lib/prisma';
 import { startDpSequenceOnLead } from '@/lib/dp-outreach/dp-followup';
@@ -39,6 +40,7 @@ const create = prisma.dPLead.create as jest.Mock;
 const findUnique = prisma.dPLead.findUnique as jest.Mock;
 const update = prisma.dPLead.update as jest.Mock;
 const findMany = prisma.dPLead.findMany as jest.Mock;
+const deleteMock = prisma.dPLead.delete as jest.Mock;
 const startSeq = startDpSequenceOnLead as jest.Mock;
 const roleMock = requireRole as jest.Mock;
 
@@ -69,6 +71,7 @@ beforeEach(() => {
   process.env.ALLOW_DEV_ENDPOINTS = '1'; // bypass rate limit in tests
   create.mockResolvedValue({ id: 'lead-1' } as never);
   update.mockResolvedValue({ id: 'lead-1', status: 'replied' } as never);
+  deleteMock.mockResolvedValue({ id: 'lead-1' } as never);
   startSeq.mockResolvedValue(undefined as never);
   roleMock.mockResolvedValue({ id: 'admin', role: 'ADMIN' } as never);
 });
@@ -167,5 +170,34 @@ describe('GET /api/admin/dp-leads', () => {
     roleMock.mockRejectedValue(err);
     const res = await adminGet(new NextRequest('http://localhost/api/admin/dp-leads'));
     expect(res.status).toBe(401);
+  });
+});
+
+// ------------------------------------------------- DELETE /api/admin/dp-leads/[id]
+describe('DELETE /api/admin/dp-leads/[id]', () => {
+  const delReq = () => new NextRequest('http://localhost/api/admin/dp-leads/lead-1', { method: 'DELETE' });
+
+  it('deletes an existing lead for an admin', async () => {
+    findUnique.mockResolvedValue({ id: 'lead-1' } as never);
+    const res = await adminDelete(delReq(), { params: { id: 'lead-1' } });
+    expect(res.status).toBe(200);
+    expect(deleteMock).toHaveBeenCalledWith({ where: { id: 'lead-1' } });
+    const body = await res.json();
+    expect(body).toMatchObject({ ok: true, deleted: 'lead-1' });
+  });
+
+  it('returns 404 for a missing lead (and deletes nothing)', async () => {
+    findUnique.mockResolvedValue(null as never);
+    const res = await adminDelete(delReq(), { params: { id: 'nope' } });
+    expect(res.status).toBe(404);
+    expect(deleteMock).not.toHaveBeenCalled();
+  });
+
+  it('returns 403 for a non-admin (and deletes nothing)', async () => {
+    const err: any = new Error('Forbidden'); err.name = 'UnauthorizedError';
+    roleMock.mockRejectedValue(err);
+    const res = await adminDelete(delReq(), { params: { id: 'lead-1' } });
+    expect(res.status).toBe(403);
+    expect(deleteMock).not.toHaveBeenCalled();
   });
 });
