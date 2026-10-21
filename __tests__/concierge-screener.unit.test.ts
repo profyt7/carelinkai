@@ -155,7 +155,8 @@ describe('no Stripe in the screener / request files; no price in the server-rend
     );
     for (const q of questions) expect({ q, ai: /\bAI\b/.test(q) }).toEqual({ q, ai: false });
     expect(faq).not.toMatch(/we (will )?save you|guaranteed? (a )?(bed|placement|savings|outcome)|pays CareLinkAI a fee|move-in fee|referral fee/i);
-    expect(faq).toContain('(216) 245-9482');
+    // "Can I call someone?" carries the published number, rendered from the shared constant (OL-167d).
+    expect(faq).toContain('{CONTACT_PHONE_DISPLAY}');
     // The Cleveland hub page carries no "AI" at all.
     expect(/\bAI\b/.test(read('src/app/cleveland/page.tsx'))).toBe(false);
   });
