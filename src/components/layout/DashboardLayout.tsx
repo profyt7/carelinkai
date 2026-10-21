@@ -286,6 +286,7 @@ const navItems: NavItem[] = [
       { name: "Checkout Preflight", icon: <FiBarChart2 size={18} />, href: "/admin/checkout-preflight", showInMobileBar: false, roleRestriction: ["ADMIN"] },
       { name: "DP Leads", icon: <Stethoscope size={18} />, href: "/admin/dp-leads", showInMobileBar: false, roleRestriction: ["ADMIN"] },
       { name: "Availability Pings", icon: <FiHome size={18} />, href: "/admin/availability-pings", showInMobileBar: false, roleRestriction: ["ADMIN"] },
+      { name: "Call QA", icon: <FiHome size={18} />, href: "/admin/call-qa", showInMobileBar: false, roleRestriction: ["ADMIN"] },
       { name: "Analytics", icon: <FiBarChart2 size={18} />, href: "/admin/analytics", showInMobileBar: false, roleRestriction: ["ADMIN"] },
       { name: "Audit Logs", icon: <FiFileText size={18} />, href: "/admin/audit-logs", showInMobileBar: false, roleRestriction: ["ADMIN"] },
       { name: "ePHI Access Log", icon: <FiShield size={18} />, href: "/admin/phi-access", showInMobileBar: false, roleRestriction: ["ADMIN"] },

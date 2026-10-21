@@ -29,12 +29,30 @@ jobs:
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | head -n-1)
 
+          # OL-160: always print status + body (the secret is never echoed), and
+          # name the cause so a red run is diagnosable from the log alone.
+          # Mirrors classifyCronFailure() in src/lib/cron-auth.ts.
           echo "HTTP Status: $http_code"
-          echo "Response: $body"
+          echo "Response: ${body:0:2000}"
 
-          if [ "$http_code" -ne 200 ]; then
-            echo "::error::DP-followups cron failed with status $http_code"
-            exit 1
-          fi
-
-          echo "DP follow-ups advanced successfully"
+          case "$http_code" in
+            2??)
+              echo "DP follow-ups advanced successfully"
+              ;;
+            401|403)
+              echo "::error::DP-followups cron: auth $http_code — CRON_SECRET mismatch (the CRON_SECRET repository secret differs from Render's CRON_SECRET, or Render's is unset). Body: ${body:0:300}"
+              exit 1
+              ;;
+            5??)
+              echo "::error::DP-followups cron: $http_code — app error (5xx). Body: ${body:0:300}. Check Sentry / Render logs."
+              exit 1
+              ;;
+            000|"")
+              echo "::error::DP-followups cron: no HTTP response — host unreachable or DNS/TLS failure"
+              exit 1
+              ;;
+            *)
+              echo "::error::DP-followups cron: $http_code — client error (4xx); check the URL and method. Body: ${body:0:300}"
+              exit 1
+              ;;
+          esac

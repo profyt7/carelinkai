@@ -135,12 +135,14 @@ export type EligibleContact = {
   preferredChannel: AvailabilityPingChannel;
 };
 
-export type SkipReason = 'unclaimed' | 'outstanding_ping' | 'recently_verified' | 'no_email';
+export type SkipReason = 'unclaimed' | 'outstanding_ping' | 'recently_verified' | 'no_email' | 'do_not_call';
 
 /** Who gets pinged this run, and who was skipped and why (for the run report). */
 export async function findEligibleContacts(now: Date = new Date()): Promise<{ eligible: EligibleContact[]; skipped: Record<SkipReason, number> }> {
   const contacts = await prisma.availabilityContact.findMany({
-    where: { optedIn: true, home: { status: 'ACTIVE', isDemo: false } },
+    // doNotCall (OL-163e) is also filtered in the query; the in-loop check keeps
+    // the skip reason visible in the run report if a row slips through.
+    where: { optedIn: true, home: { status: 'ACTIVE', isDemo: false, doNotCall: false } },
     select: {
       id: true,
       homeId: true,
@@ -152,6 +154,7 @@ export async function findEligibleContacts(now: Date = new Date()): Promise<{ el
       home: {
         select: {
           name: true,
+          doNotCall: true,
           availabilityVerifiedAt: true,
           operator: { select: { user: { select: { email: true } } } },
         },
@@ -160,10 +163,11 @@ export async function findEligibleContacts(now: Date = new Date()): Promise<{ el
     },
     take: 1000,
   });
-  const skipped: Record<SkipReason, number> = { unclaimed: 0, outstanding_ping: 0, recently_verified: 0, no_email: 0 };
+  const skipped: Record<SkipReason, number> = { unclaimed: 0, outstanding_ping: 0, recently_verified: 0, no_email: 0, do_not_call: 0 };
   const eligible: EligibleContact[] = [];
   const recentCutoff = now.getTime() - PING_SKIP_IF_VERIFIED_DAYS * DAY_MS;
   for (const c of contacts) {
+    if (c.home.doNotCall) { skipped.do_not_call++; continue; }
     const claimed = isClaimedOperatorEmail(c.home.operator?.user?.email ?? null);
     if (!claimed && c.optedInSource !== 'admin_call') { skipped.unclaimed++; continue; }
     if (c.pings.length > 0) { skipped.outstanding_ping++; continue; }
@@ -229,7 +233,7 @@ export async function runAvailabilityPing(opts: { now?: Date; env?: NodeJS.Proce
   const env = opts.env ?? process.env;
   const base: PingRunResult = {
     disabled: false, expired: 0, eligible: 0,
-    skipped: { unclaimed: 0, outstanding_ping: 0, recently_verified: 0, no_email: 0 },
+    skipped: { unclaimed: 0, outstanding_ping: 0, recently_verified: 0, no_email: 0, do_not_call: 0 },
     sent: 0, skippedNoResend: 0, skippedSms: 0, failed: 0, pings: [],
   };
   if (!pingEnabled(env)) return { ...base, disabled: true };
@@ -394,6 +398,8 @@ export type AdminPingRow = {
   } | null;
   /** Expired ping and still not fresh → VA / AI-voice call list. */
   onCallList: boolean;
+  /** OL-163e: the home asked not to be called — never pinged, never on the VA / agent call list. */
+  doNotCall: boolean;
   /**
    * Static eligibility for the weekly ping (W5-5): opted in, email on file, and
    * claimed (or opt-in captured on an admin call). The run adds the dynamic
@@ -420,6 +426,7 @@ export async function adminPingRows(now: Date = new Date()): Promise<AdminPingRo
       home: {
         select: {
           name: true,
+          doNotCall: true,
           availabilityCount: true, availabilityVerifiedAt: true, availabilitySource: true,
           address: { select: { city: true } },
           operator: { select: { user: { select: { email: true } } } },
@@ -441,7 +448,8 @@ export async function adminPingRows(now: Date = new Date()): Promise<AdminPingRo
       facility: c.home.name,
       city: c.home.address?.city ?? null,
       claimed,
-      eligible: c.optedIn && !!c.email && c.preferredChannel === 'EMAIL' && (claimed || c.optedInSource === 'admin_call'),
+      doNotCall: c.home.doNotCall,
+      eligible: !c.home.doNotCall && c.optedIn && !!c.email && c.preferredChannel === 'EMAIL' && (claimed || c.optedInSource === 'admin_call'),
       contact: {
         id: c.id, name: c.name, email: c.email, mobile: c.mobile, preferredChannel: c.preferredChannel,
         optedIn: c.optedIn, optedInAt: iso(c.optedInAt), optedInSource: c.optedInSource, optedOutAt: iso(c.optedOutAt),
@@ -454,7 +462,7 @@ export async function adminPingRows(now: Date = new Date()): Promise<AdminPingRo
             state: pingState(p.outcome),
           }
         : null,
-      onCallList: !!p && p.outcome === 'EXPIRED' && !fresh,
+      onCallList: !c.home.doNotCall && !!p && p.outcome === 'EXPIRED' && !fresh,
     };
   });
 }
@@ -464,11 +472,11 @@ function csvCell(v: string | number | boolean | null | undefined): string {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-/** VA / AI-voice call list: contacts whose ping expired with no reply and whose listing is no longer fresh. */
+/** VA / AI-voice call list: contacts whose ping expired with no reply and whose listing is no longer fresh. do-not-call homes are never listed (OL-163e). */
 export function callListCsv(rows: AdminPingRow[]): string {
   const header = ['facility', 'city', 'contact_name', 'mobile', 'email', 'preferred_channel', 'ping_sent_at', 'ping_expired_at', 'last_verified_at', 'last_count'];
   const lines = rows
-    .filter((r) => r.onCallList)
+    .filter((r) => r.onCallList && !r.doNotCall)
     .map((r) => [
       r.facility, r.city, r.contact.name, r.contact.mobile, r.contact.email, r.contact.preferredChannel,
       r.lastPing?.sentAt ?? '', r.lastPing?.expiresAt ?? '', r.availability.verifiedAt ?? '', r.availability.count ?? '',
