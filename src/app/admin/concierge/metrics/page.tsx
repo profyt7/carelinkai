@@ -28,7 +28,7 @@ type Block = {
   payerLaneMix: { FEE_ELIGIBLE: number; FREE_LANE: number; UNKNOWN: number };
   payerSourceMix: Array<{ payerSource: string; label: string; count: number }>;
 };
-type Metrics = { generatedAt: string; overall: Block; perDp: Block[] };
+type Metrics = { generatedAt: string; overall: Block; perDp: Block[]; plannerLeads?: { days: Array<{ date: string; count: number }>; total: number } };
 
 const hours = (h: number | null) => (h === null ? '—' : h < 48 ? `${h} h` : `${Math.round((h / 24) * 10) / 10} d`);
 const pct = (r: number | null) => (r === null ? '—' : `${Math.round(r * 100)}%`);
@@ -96,6 +96,24 @@ export default function ConciergeMetricsPage() {
       ) : error ? (
         <div className="bg-error-50 border border-error-200 rounded-xl p-4 text-error-700 text-sm">{error}</div>
       ) : data ? (
+        <>
+        {data.plannerLeads && (
+          <div className="bg-white rounded-2xl shadow p-4" data-testid="planner-leads-daily">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="text-sm font-semibold text-neutral-900">Planner calls to the published number — last 14 days</h2>
+              <Link href="/admin/inbound-leads" className="text-sm font-medium text-primary-600">Inbound leads →</Link>
+            </div>
+            <p className="text-xs text-neutral-500 mt-0.5">Discharge-planner callers (PLANNER lane), one bucket per calendar day, America/New_York. Total <strong className="text-neutral-900" data-testid="planner-leads-total">{data.plannerLeads.total}</strong>.</p>
+            <div className="mt-3 flex gap-1 overflow-x-auto">
+              {data.plannerLeads.days.map((d) => (
+                <div key={d.date} className="min-w-[44px] text-center" data-testid="planner-leads-day" data-date={d.date} data-count={d.count}>
+                  <div className={`rounded px-1 py-1 text-sm tabular-nums ${d.count > 0 ? 'bg-primary-50 text-primary-800 font-semibold' : 'bg-neutral-50 text-neutral-400'}`}>{d.count}</div>
+                  <div className="mt-0.5 text-[10px] text-neutral-500">{d.date.slice(5)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="overflow-x-auto bg-white rounded-2xl shadow">
           <table className="min-w-full text-sm" data-testid="metrics-table">
             <thead className="bg-neutral-50 text-left text-xs uppercase tracking-wide text-neutral-500">
@@ -120,6 +138,7 @@ export default function ConciergeMetricsPage() {
           </table>
           <p className="px-3 py-2 text-xs text-neutral-400">Generated {new Date(data.generatedAt).toLocaleString()}</p>
         </div>
+        </>
       ) : null}
     </div>
   );

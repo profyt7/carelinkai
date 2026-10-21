@@ -7,6 +7,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { computeConciergeMetrics, type ConciergeMetrics, type MetricRequest } from '@/lib/concierge/metrics';
+import { loadPlannerLeadDates } from '@/lib/leads/inbound-lead-admin';
 
 export async function loadConciergeMetricInputs(): Promise<MetricRequest[]> {
   const rows = await prisma.placementSearch.findMany({
@@ -39,5 +40,6 @@ export async function loadConciergeMetricInputs(): Promise<MetricRequest[]> {
 }
 
 export async function getConciergeMetrics(now: Date = new Date()): Promise<ConciergeMetrics> {
-  return computeConciergeMetrics(await loadConciergeMetricInputs(), now);
+  const [reqs, plannerLeadDates] = await Promise.all([loadConciergeMetricInputs(), loadPlannerLeadDates(now)]);
+  return computeConciergeMetrics(reqs, now, plannerLeadDates);
 }
