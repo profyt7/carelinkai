@@ -75,6 +75,7 @@ describe('no Stripe in the screener / request files; no price in the server-rend
   it('none of the screener / request files import or call Stripe', () => {
     for (const f of [
       'src/app/concierge/page.tsx',
+      'src/app/concierge/ConciergeIntro.tsx',
       'src/app/concierge/ConciergeScreener.tsx',
       'src/app/concierge/ConciergeRequestForm.tsx',
       'src/lib/concierge/screener.ts',
@@ -100,7 +101,7 @@ describe('no Stripe in the screener / request files; no price in the server-rend
   });
 
   it('the server page and the components carry no literal dollar amount; only offer.ts does', () => {
-    for (const f of ['src/app/concierge/page.tsx', 'src/app/concierge/ConciergeRequestForm.tsx', 'src/app/concierge/ConciergeScreener.tsx']) {
+    for (const f of ['src/app/concierge/page.tsx', 'src/app/concierge/ConciergeIntro.tsx', 'src/app/concierge/ConciergeRequestForm.tsx', 'src/app/concierge/ConciergeScreener.tsx']) {
       expect({ file: f, dollarPrice: /\$\s?\d/.test(read(f)) }).toEqual({ file: f, dollarPrice: false });
     }
     expect(/\$399/.test(read('src/lib/concierge/offer.ts'))).toBe(true);

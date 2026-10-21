@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { FiCheck } from 'react-icons/fi';
-import ConciergeScreener from './ConciergeScreener';
+import ConciergeIntro from './ConciergeIntro';
 import { CONCIERGE_FIVE_MISTAKES, CONCIERGE_OFFER } from '@/lib/concierge/offer';
 
 /**
@@ -54,40 +54,8 @@ export default function ConciergePage() {
     <main className="min-h-screen bg-neutral-50" data-testid="concierge-page">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
 
-      {/* Hero */}
-      <section className="bg-white border-b border-neutral-200">
-        <div className="max-w-5xl mx-auto px-6 py-16">
-          <p className="text-sm font-semibold text-primary-600 uppercase tracking-wide">Family Concierge · Greater Cleveland</p>
-          {/* "Free for families" stays above the fold (OL-165 a). */}
-          <p
-            className="mt-3 inline-flex items-center rounded-full border border-success-200 bg-success-50 px-4 py-2 text-sm font-semibold text-success-800"
-            data-testid="concierge-free-for-families"
-          >
-            {CONCIERGE_OFFER.freeForFamiliesLine}
-          </p>
-          <h1 className="mt-5 text-4xl sm:text-5xl font-bold text-neutral-900 leading-tight" data-testid="concierge-headline">
-            {CONCIERGE_OFFER.headline}
-          </h1>
-          <p className="mt-4 text-xl font-semibold text-primary-700 max-w-3xl" data-testid="concierge-subhead">
-            {CONCIERGE_OFFER.subhead}
-          </p>
-          <p className="mt-6 text-lg text-neutral-700 max-w-3xl">
-            A hospital gives you 48 hours. In that window families pick a home that can’t handle the care, sign a
-            contract they haven’t read, or run out of money in a place that won’t keep them. A Cleveland person checks
-            fit, prices and the contract with you before you sign — verified homes only, availability confirmed before
-            you visit, the real price in writing.
-          </p>
-          <p className="mt-4 text-neutral-700 max-w-3xl">
-            The concierge is a <strong>private-pay service</strong>. If care will be paid through Medicaid, Medicare or
-            the VA, CareLinkAI’s help is always free — the screener below sends you straight there.
-          </p>
-        </div>
-      </section>
-
-      {/* Screener → offer / free help */}
-      <section id="screener" className="max-w-3xl mx-auto px-6 py-16 scroll-mt-16">
-        <ConciergeScreener />
-      </section>
+      {/* Hero + screener (client: the hero swaps to the free-lane version after a Medicaid / Medicare / VA answer — OL-166b) */}
+      <ConciergeIntro />
 
       {/* The five mistakes (no pricing here) — replaces the old "how it works" steps (OL-165 a). */}
       <section className="bg-white border-y border-neutral-200" data-testid="concierge-five-mistakes">
