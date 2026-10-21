@@ -6,6 +6,7 @@ import { FiArrowRight, FiCheck } from 'react-icons/fi';
 import { PAYER_SOURCE_OPTIONS, isPayerSource, type PayerSource } from '@/lib/payer/payer-source';
 import { WAIVER_DIRECTORY_PATH, routeForPayerSource, type ConciergeRoute } from '@/lib/concierge/screener';
 import { CONCIERGE_OFFER } from '@/lib/concierge/offer';
+import { CONTACT_NO_PHI_LINE, CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from '@/lib/contact';
 import ConciergeRequestForm from './ConciergeRequestForm';
 
 /**
@@ -111,6 +112,11 @@ export default function ConciergeScreener({ onRoute }: { onRoute?: (route: Conci
           </Link>
           {opts.withReset && changeAnswer}
         </div>
+        <p className="mt-4 text-sm text-neutral-700" data-testid="concierge-phone-line">
+          Prefer to talk? Call{' '}
+          <a href={CONTACT_PHONE_TEL} className="font-semibold text-primary-700 hover:underline">{CONTACT_PHONE_DISPLAY}</a>
+          {' '}— our front desk takes your name and number and a person calls you back. Free. {CONTACT_NO_PHI_LINE}
+        </p>
       </div>
     );
   }
@@ -170,6 +176,11 @@ export default function ConciergeScreener({ onRoute }: { onRoute?: (route: Conci
         <p className="mt-4 text-xs text-neutral-500">{CONCIERGE_OFFER.honestyLine}</p>
         <p className="mt-2 text-xs text-neutral-500" data-testid="concierge-no-outcome">{CONCIERGE_OFFER.noOutcomeLine}</p>
         <ConciergeRequestForm payerSource={payer} />
+        <p className="mt-4 text-sm text-neutral-700" data-testid="concierge-phone-line">
+          Prefer to talk? Call{' '}
+          <a href={CONTACT_PHONE_TEL} className="font-semibold text-primary-700 hover:underline">{CONTACT_PHONE_DISPLAY}</a>
+          {' '}— our front desk takes your name and number and a person calls you back. {CONTACT_NO_PHI_LINE}
+        </p>
         <div className="mt-4">{changeAnswer}</div>
       </div>
     );

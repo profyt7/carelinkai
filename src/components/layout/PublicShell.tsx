@@ -1,5 +1,6 @@
 'use client';
 
+import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from '@/lib/contact';
 import Link from 'next/link';
 
 /**
@@ -36,6 +37,7 @@ export default function PublicShell({ children }: { children: React.ReactNode })
       <footer className="border-t border-neutral-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-6 text-center text-xs text-neutral-500">
           CareLinkAI · Greater Cleveland senior-care directory ·{' '}
+          <a href={CONTACT_PHONE_TEL} className="underline hover:text-neutral-700" data-testid="footer-phone">Call {CONTACT_PHONE_DISPLAY}</a> ·{' '}
           <Link href="/privacy" className="underline hover:text-neutral-700">Privacy</Link> ·{' '}
           <Link href="/terms" className="underline hover:text-neutral-700">Terms</Link>
         </div>

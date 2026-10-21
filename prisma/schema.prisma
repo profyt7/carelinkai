@@ -2707,6 +2707,7 @@ enum AvailabilitySource {
   CONCIERGE // Anita / care-team confirmed on demand
   PING      // one-tap weekly availability ping reply (email; SMS stubbed) — sprint W4-1
   AI_CALL   // QA-approved AI availability call (ElevenLabs agent) — OL-163
+  AI_CALL_INBOUND // a facility CALLED US on the published line and gave an update (OL-167a); QA-approved like AI_CALL
 }
 
 /// Transport for the weekly one-tap availability ping (sprint W4-1). SMS is a
@@ -2847,6 +2848,58 @@ model AvailabilityObservation {
   @@index([homeId, calledAt])
   @@index([qaStatus, calledAt])
   @@index([outcome, calledAt])
+}
+
+/// Who called the published CareLinkAI number (OL-167a). The ElevenLabs front
+/// desk collects caller_type / caller_name / organization / callback_phone /
+/// urgency / reason; FACILITY callers become an AvailabilityObservation instead.
+enum InboundCallerType {
+  PLANNER
+  FAMILY
+  FACILITY
+  OTHER
+}
+
+enum InboundLeadUrgency {
+  TODAY
+  THIS_WEEK
+  PLANNING
+}
+
+enum InboundLeadStatus {
+  NEW
+  CONTACTED
+  CLOSED
+}
+
+/// One inbound call to the published number → one callback record (OL-167a).
+/// Business contact details only: `reason` is PHI-guarded (redacted + phiFlag
+/// when it looks like patient detail) and capped at 280 chars.
+model InboundLead {
+  id             String             @id @default(cuid())
+  /// ElevenLabs conversation_id — the idempotency key for the webhook.
+  conversationId String             @unique
+  callerType     InboundCallerType
+  name           String?
+  organization   String?
+  /// E.164 (+1XXXXXXXXXX).
+  callbackPhone  String
+  urgency        InboundLeadUrgency?
+  reason         String?            @db.VarChar(280)
+  transcriptUrl  String?
+  recordingUrl   String?
+  /// Outside Mon–Fri 8–6 ET at the time of the call.
+  afterHours     Boolean            @default(false)
+  status         InboundLeadStatus  @default(NEW)
+  receivedAt     DateTime           @default(now())
+  contactedAt    DateTime?
+  closedAt       DateTime?
+  phiFlag        Boolean            @default(false)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([status, receivedAt])
+  @@index([callerType, receivedAt])
 }
 
 /// Ohio Medicaid Assisted Living Waiver participation (sprint W5-2, G3).
@@ -3700,6 +3753,7 @@ model EmailSuppression {
 /// new values hold IDs, statuses, counts, payer lane, care level, ZIP — never
 /// names, DOB, diagnoses, notes (sanitized by the helper).
 enum EntityType {
+  INBOUND_LEAD
   HOME
   AVAILABILITY
   LISTING_CLAIM
