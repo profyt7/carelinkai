@@ -4,6 +4,11 @@ import { FiArrowRight, FiCheck } from 'react-icons/fi';
 import { SUBURBS, suburbPath } from '@/lib/directory/suburbs';
 import { buildPagesItemListJsonLd } from '@/lib/seo/jsonld';
 
+// OL-159: static content, but re-rendered at least hourly (and on demand via
+// POST /api/admin/revalidate) so the footer build sha and shared copy never
+// outlive a deploy.
+export const revalidate = 3600;
+
 export const metadata: Metadata = {
   title: 'Senior Care in Cleveland, OH — Assisted Living, Memory Care, & More | CareLinkAI',
   description:

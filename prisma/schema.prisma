@@ -574,6 +574,13 @@ model AssistedLivingHome {
   availabilityOptIn       Boolean   @default(false) // TCPA consent to availability-update texts/calls
   availabilityContact     AvailabilityContact?
   availabilityPings       AvailabilityPing[]
+  /// OL-163: AI availability-call observations (one per call; QA'd by an admin).
+  availabilityObservations AvailabilityObservation[]
+  /// OL-163e: the home asked not to be called. Honored by the AI agent list, the
+  /// weekly ping and the VA call-list export. Set from the QA queue or a call.
+  doNotCall               Boolean   @default(false)
+  doNotCallAt             DateTime?
+  doNotCallSource         String?   // 'AI_CALL' | 'ADMIN' | 'OPERATOR'
   // PRICING capture (OL-111): honest "starting around $X" ranges from multiple
   // sources, always source-labeled + "contact for exact quote". Slow-changing +
   // commercially sensitive — NOT API-synced, never presented as an official quote.
@@ -2699,6 +2706,7 @@ enum AvailabilitySource {
   VOICE     // AI-voice fallback call result
   CONCIERGE // Anita / care-team confirmed on demand
   PING      // one-tap weekly availability ping reply (email; SMS stubbed) — sprint W4-1
+  AI_CALL   // QA-approved AI availability call (ElevenLabs agent) — OL-163
 }
 
 /// Transport for the weekly one-tap availability ping (sprint W4-1). SMS is a
@@ -2765,6 +2773,80 @@ model AvailabilityPing {
   @@index([outcome])
   @@index([sentAt])
   @@index([expiresAt])
+}
+
+/// OL-163: one AI availability call → one observation. Written by the
+/// ElevenLabs post-call webhook (qaStatus PENDING), reviewed in /admin/call-qa;
+/// only an APPROVED / CORRECTED observation ever touches the home's public
+/// availability. Business data only (beds, price, waiver answer) — never PHI.
+enum CallOutcome {
+  ANSWERED
+  DECLINED      // "no" to the one-minute ask → retry no sooner than 30 days
+  NO_ANSWER     // voicemail / no pickup → retry next cycle
+  WANTS_HUMAN   // asked for a person → Elizabeth queue
+  WRONG_NUMBER  // not the facility → excluded from the list
+}
+
+enum CallWaiverStatus {
+  ACCEPTING_NEW
+  CURRENT_ONLY
+  NO
+  UNKNOWN
+}
+
+enum MedicaidPendingAnswer {
+  YES
+  NO
+  CASE_BY_CASE
+  UNKNOWN
+}
+
+enum ObservationQaStatus {
+  PENDING
+  APPROVED
+  CORRECTED
+  REJECTED
+}
+
+model AvailabilityObservation {
+  id               String                @id @default(cuid())
+  homeId           String
+  home             AssistedLivingHome    @relation(fields: [homeId], references: [id], onDelete: Cascade)
+  source           AvailabilitySource    @default(AI_CALL)
+  /// ElevenLabs conversation_id — the idempotency key for the webhook.
+  conversationId   String                @unique
+  agentId          String?
+  calledAt         DateTime
+  durationSecs     Int?
+  outcome          CallOutcome
+  bedsAL           Int?
+  bedsMC           Int?
+  priceFromMonthly Int?
+  priceUndisclosed Boolean?
+  waiverStatus     CallWaiverStatus?
+  medicaidPending  MedicaidPendingAnswer?
+  doNotCall        Boolean               @default(false)
+  contactRole      String?
+  notes            String?
+  transcriptUrl    String?
+  recordingUrl     String?
+  /// [{ role: 'agent' | 'user', message, timeSecs? }] — the business call, kept for QA.
+  transcript       Json?
+  confidence       Float?
+  qaStatus         ObservationQaStatus   @default(PENDING)
+  qaByUserId       String?
+  qaAt             DateTime?
+  qaNote           String?
+  /// Field overrides an admin entered on "Correct" (applied values live on the row).
+  corrections      Json?
+  /// When the approved values were written to the home.
+  appliedAt        DateTime?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  @@index([homeId, calledAt])
+  @@index([qaStatus, calledAt])
+  @@index([outcome, calledAt])
 }
 
 /// Ohio Medicaid Assisted Living Waiver participation (sprint W5-2, G3).
@@ -3637,6 +3719,7 @@ enum EventSource {
   IMPORT
   SYSTEM
   STRIPE
+  AI_CALL
 }
 
 model EntityEvent {

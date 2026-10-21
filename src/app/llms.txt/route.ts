@@ -6,7 +6,8 @@
 
 import { buildLlmsTxt } from '@/lib/seo/llms-txt';
 
-export const dynamic = 'force-static';
+// OL-159: static, but rebuilt at least hourly and on demand (POST /api/admin/revalidate).
+export const revalidate = 3600;
 
 export function GET() {
   return new Response(buildLlmsTxt(), {

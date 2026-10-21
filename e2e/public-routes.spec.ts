@@ -54,6 +54,25 @@ test.describe('@critical public routes reachable logged-out', () => {
   });
 });
 
+test.describe('@critical non-GET on page routes → clean 405 (OL-161)', () => {
+  for (const path of ['/', '/cleveland/assisted-living', '/concierge']) {
+    test(`POST ${path} → 405 with Allow, no redirect, no error page`, async ({ request }) => {
+      const res = await request.post(path, { maxRedirects: 0, data: { probe: true } });
+      expect(res.status()).toBe(405);
+      expect(res.headers()['allow']).toBe('GET, HEAD, OPTIONS');
+      expect(res.headers()['location']).toBeUndefined();
+      expect(await res.json()).toEqual({ error: 'Method Not Allowed' });
+    });
+  }
+  test('PUT / DELETE on a page → 405; GET / still 200; API routes keep their own methods', async ({ request }) => {
+    expect((await request.put('/', { maxRedirects: 0 })).status()).toBe(405);
+    expect((await request.delete('/cleveland', { maxRedirects: 0 })).status()).toBe(405);
+    expect((await request.get('/', { maxRedirects: 0 })).status()).toBe(200);
+    // An API route is not a page: the method reaches the handler (401 here, not 405).
+    expect((await request.post('/api/availability/voice-result', { data: {} })).status()).not.toBe(405);
+  });
+});
+
 test.describe('@critical unknown paths 404 instead of login', () => {
   for (const path of UNKNOWN_PATHS) {
     test(`GET ${path} → 404`, async ({ request }) => {

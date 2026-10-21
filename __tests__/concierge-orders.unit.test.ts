@@ -144,11 +144,15 @@ describe('capacity + orders', () => {
     expect(P.conciergeOrder.count).toHaveBeenCalledWith({ where: { status: { in: ['PAID', 'REQUESTED_UNPAID'] }, createdAt: { gte: new Date('2026-10-01T00:00:00.000Z') } } });
     expect(s).toMatchObject({ cap: 4, committed: 4, capReached: true, checkoutEnabled: false, mode: 'waitlist' });
   });
-  it('flag unset → request; flag set and under cap → checkout', async () => {
+  it('flag unset → request; flag set + preflight green and under cap → checkout; flag set but preflight red → request (OL-162)', async () => {
     P.conciergeOrder.count.mockResolvedValue(1);
     expect((await capStatus()).mode).toBe('request');
     process.env['CONCIERGE_CHECKOUT_ENABLED'] = '1';
+    // The flag alone is not enough: the Stripe key / price / webhook / admin email must be in place.
+    expect((await capStatus()).mode).toBe('request');
+    Object.assign(process.env, { STRIPE_SECRET_KEY: 'sk_test_unit', STRIPE_PRICE_FAMILY_CONCIERGE: 'price_unit', STRIPE_WEBHOOK_SECRET: 'whsec_unit', ADMIN_NOTIFY_EMAIL: 'admin@example.com' });
     expect((await capStatus()).mode).toBe('checkout');
+    for (const k of ['STRIPE_SECRET_KEY', 'STRIPE_PRICE_FAMILY_CONCIERGE', 'STRIPE_WEBHOOK_SECRET', 'ADMIN_NOTIFY_EMAIL']) delete process.env[k];
   });
   it('createOrder writes the order + order.created event (source FAMILY) in one transaction', async () => {
     P.conciergeOrder.create.mockResolvedValue({ id: 'ord_9', status: 'REQUESTED_UNPAID' });

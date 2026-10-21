@@ -104,8 +104,30 @@ async function main() {
       written += 1;
     }
     console.log(`\nWrote ${written} home(s). ${plan.skippedProtected.length} protected home(s) left untouched.`);
+    await revalidateHubPages();
   } finally {
     await prisma.$disconnect();
+  }
+}
+
+/**
+ * OL-159: after writing, purge the public hub pages so the waiver lines show
+ * on the next request. Best effort — needs CRON_SECRET (never printed) and the
+ * app URL in the shell env; prints HTTP status + body either way.
+ */
+async function revalidateHubPages(): Promise<void> {
+  const base = (process.env['NEXT_PUBLIC_APP_URL'] || process.env['NEXTAUTH_URL'] || 'https://getcarelinkai.com').replace(/\/$/, '');
+  const secret = process.env['CRON_SECRET'];
+  if (!secret) {
+    console.log(`\nSkipped hub revalidation: CRON_SECRET not in this shell. Run: curl -X POST -H "Authorization: Bearer $CRON_SECRET" ${base}/api/admin/revalidate`);
+    return;
+  }
+  try {
+    const res = await fetch(`${base}/api/admin/revalidate`, { method: 'POST', headers: { authorization: `Bearer ${secret}`, 'content-type': 'application/json' }, body: '{}' });
+    const text = await res.text();
+    console.log(`\nHub revalidation: HTTP ${res.status} ${text.slice(0, 500)}`);
+  } catch (e) {
+    console.log(`\nHub revalidation failed: ${e instanceof Error ? e.message : String(e)}`);
   }
 }
 
