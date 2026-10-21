@@ -203,15 +203,15 @@ export default function HomePage() {
                 <span className="text-sm font-semibold text-neutral-900">Senior care, simplified for Northeast Ohio families</span>
               </div>
               
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-neutral-900 leading-tight">
-                AI-Powered Senior Care{' '}
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-neutral-900 leading-tight" data-testid="home-hero-headline">
+                Verified Cleveland senior living.{' '}
                 <span className="bg-gradient-to-r from-primary-500 to-secondary-500 bg-clip-text text-transparent">
-                  Made Simple
+                  Free for families.
                 </span>
               </h1>
               
-              <p className="mt-6 text-xl text-neutral-700 max-w-xl leading-relaxed">
-                The all-in-one AI platform for senior care — intelligent matching for families, smart shift coverage for operators, and instant placements for discharge planners. Built with HIPAA-aligned safeguards and live today.
+              <p className="mt-6 text-xl text-neutral-700 max-w-xl leading-relaxed" data-testid="home-hero-subhead">
+                Open beds, starting prices and Medicaid waiver status confirmed with Greater Cleveland communities each week — so families and discharge planners act on what a community told us this week, not what a website said once. Built with HIPAA-aligned safeguards.
               </p>
               
               {/* CTAs */}
@@ -487,10 +487,10 @@ export default function HomePage() {
           <div className="text-center mb-16">
             <div className="inline-flex items-center bg-gradient-to-r from-primary-500 to-secondary-500 rounded-full px-4 py-2 shadow-lg mb-6">
               <FiZap className="text-white mr-2" />
-              <span className="text-sm font-bold text-white">POWERED BY AI</span>
+              <span className="text-sm font-bold text-white">LIVE TODAY</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-neutral-900 mb-4">
-              AI-Powered Features Built for Senior Care
+              Tools Built for Senior Care Operators and Planners
             </h2>
             <p className="text-xl text-neutral-500 max-w-3xl mx-auto">
               Our proprietary AI technology transforms how senior care connections are made
@@ -1574,7 +1574,7 @@ export default function HomePage() {
               Built for Senior Care
             </h2>
             <p className="text-xl text-neutral-500 max-w-3xl mx-auto">
-              One AI platform serving families, operators, and discharge planners
+              One platform serving families, operators, and discharge planners
             </p>
           </div>
           
@@ -1633,7 +1633,7 @@ export default function HomePage() {
                 onClick={() => toggleFaq(0)}
                 className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-neutral-100 transition-colors"
               >
-                <span className="font-bold text-lg text-neutral-900">How does the AI matching work?</span>
+                <span className="font-bold text-lg text-neutral-900">How does matching work?</span>
                 <motion.div
                   animate={{ rotate: openFaqIndex === 0 ? 180 : 0 }}
                   transition={{ duration: 0.2 }}
@@ -1651,7 +1651,7 @@ export default function HomePage() {
                     className="overflow-hidden"
                   >
                     <div className="px-6 pb-5 text-neutral-500">
-                      <p>Our AI analyzes over 50 data points including medical needs, care level, location, budget, amenities, and personal preferences. It then matches you with facilities that best fit your specific requirements, providing match scores and detailed comparisons.</p>
+                      <p>You tell us who the care is for, what they need day to day, where they need to be, and how care will be paid for. We match that against what communities have confirmed to us this week — open beds, starting prices, care levels they accept, and Medicaid waiver status — and give you a short list you can act on, not a list of everyone with a website.</p>
                     </div>
                   </motion.div>
                 )}
@@ -1673,7 +1673,7 @@ export default function HomePage() {
                 {openFaqIndex === 1 && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
                     <div className="px-6 pb-5 text-neutral-500">
-                      <p>We follow HIPAA-aligned safeguards: encryption in transit and at rest, role-based access controls, and audit logging. Your health information is protected across the platform.</p>
+                      <p>Yes. Care details you share through the site are encrypted in transit and at rest and are only visible to the communities you choose to contact. Please don’t share health details over the phone line — our front desk takes your name and callback number and a person calls you back, or you can place a request securely at getcarelinkai.com/concierge.</p>
                     </div>
                   </motion.div>
                 )}
@@ -1689,7 +1689,7 @@ export default function HomePage() {
               <AnimatePresence>
                 {openFaqIndex === 2 && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-                    <div className="px-6 pb-5 text-neutral-500"><p>Families, caregivers, and discharge planners use CareLinkAI free — no credit card required. Care home operators have subscription plans starting at $99/month with different tiers based on features and volume needs.</p></div>
+                    <div className="px-6 pb-5 text-neutral-500"><p>Nothing, for families and hospital discharge planners. Searching every Cleveland-area community, seeing current prices and open beds, waiver status and inspection history is free. Care homes pay for their listings and tools, which is how the directory stays free for the people using it. One optional service costs money: our Family Concierge, $399 flat, for families paying privately who want a verified shortlist and a person on the phone through the move. If you’re paying with Medicaid, Medicare or the VA, our help is always free. No hidden fees, ever.</p></div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1704,7 +1704,7 @@ export default function HomePage() {
               <AnimatePresence>
                 {openFaqIndex === 3 && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-                    <div className="px-6 pb-5 text-neutral-500"><p>Our AI provides matches instantly. Most families find the right care home within 3-7 days. Discharge planners can place patients within hours. The speed depends on your specific needs and location, but we're significantly faster than traditional methods.</p></div>
+                    <div className="px-6 pb-5 text-neutral-500"><p>Most families have a verified shortlist within two business days. If a discharge is already scheduled, tell us the date and we work backward from it. Our directory shows which communities had open beds this week, so you’re not calling homes that are full.</p></div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1713,28 +1713,28 @@ export default function HomePage() {
             {/* FAQ 5 */}
             <motion.div className="bg-neutral-50 rounded-xl border border-neutral-200 overflow-hidden" initial={false}>
               <button onClick={() => toggleFaq(4)} className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-neutral-100 transition-colors">
-                <span className="font-bold text-lg text-neutral-900">What makes CareLinkAI different?</span>
+                <span className="font-bold text-lg text-neutral-900">Does CareLinkAI help with Medicaid?</span>
                 <motion.div animate={{ rotate: openFaqIndex === 4 ? 180 : 0 }} transition={{ duration: 0.2 }}><FiChevronDown className="text-primary-500 text-xl" /></motion.div>
               </button>
               <AnimatePresence>
                 {openFaqIndex === 4 && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-                    <div className="px-6 pb-5 text-neutral-500"><p>CareLinkAI is the only platform that serves every stakeholder in senior care — families, operators, caregivers, discharge planners, and affiliates — each with a dedicated AI-powered portal. Features like On-Call AI shift coverage, AI inquiry responses, automatic reliability scores, and tiered commission tracking are live today and built into every plan.</p></div>
+                    <div className="px-6 pb-5 text-neutral-500"><p>Yes. Our Cleveland directory flags every community that accepts the Ohio Assisted Living Waiver, and whether that’s for new residents or current residents only. Tell us you’re paying with Medicaid, Medicare or the VA and we route you to the free lane — same search, same verification, no charge.</p></div>
                   </motion.div>
                 )}
               </AnimatePresence>
             </motion.div>
-            
+
             {/* FAQ 6 */}
             <motion.div className="bg-neutral-50 rounded-xl border border-neutral-200 overflow-hidden" initial={false}>
               <button onClick={() => toggleFaq(5)} className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-neutral-100 transition-colors">
-                <span className="font-bold text-lg text-neutral-900">Can I schedule facility tours through CareLinkAI?</span>
+                <span className="font-bold text-lg text-neutral-900">How do you know a bed is really open?</span>
                 <motion.div animate={{ rotate: openFaqIndex === 5 ? 180 : 0 }} transition={{ duration: 0.2 }}><FiChevronDown className="text-primary-500 text-xl" /></motion.div>
               </button>
               <AnimatePresence>
                 {openFaqIndex === 5 && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-                    <div className="px-6 pb-5 text-neutral-500"><p>Yes! Our AI-powered tour scheduling finds optimal times for both families and facilities. Families book directly from the listing page, and both parties receive automated reminders and confirmations via email and SMS.</p></div>
+                    <div className="px-6 pb-5 text-neutral-500"><p>Because we asked this week. Communities update their own listings, and our team confirms open beds, starting prices and waiver status by phone on a regular cycle. Listings that passed that check show a ‘Verified’ badge with the date. If a listing isn’t verified, we say so.</p></div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1743,13 +1743,13 @@ export default function HomePage() {
             {/* FAQ 7 */}
             <motion.div className="bg-neutral-50 rounded-xl border border-neutral-200 overflow-hidden" initial={false}>
               <button onClick={() => toggleFaq(6)} className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-neutral-100 transition-colors">
-                <span className="font-bold text-lg text-neutral-900">Can operators hire caregivers directly from the marketplace?</span>
+                <span className="font-bold text-lg text-neutral-900">Can I call someone?</span>
                 <motion.div animate={{ rotate: openFaqIndex === 6 ? 180 : 0 }} transition={{ duration: 0.2 }}><FiChevronDown className="text-primary-500 text-xl" /></motion.div>
               </button>
               <AnimatePresence>
                 {openFaqIndex === 6 && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-                    <div className="px-6 pb-5 text-neutral-500"><p>Yes. Operators on any plan can browse caregiver profiles in the marketplace and hire directly with one click — no job posting or application process required. The caregiver is notified instantly, an employment record is created, and the hire is logged for compliance. Professional and Growth plan operators pay no per-hire marketplace fee.</p></div>
+                    <div className="px-6 pb-5 text-neutral-500"><p>Yes — (216) 245-9482. Our front desk answers around the clock, takes your name and callback number, and a person calls you back within one business hour during the day (Mon–Fri 8–6 ET) or first thing the next morning. Please don’t share patient details on the line; share them securely at getcarelinkai.com/concierge.</p></div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1758,11 +1758,56 @@ export default function HomePage() {
             {/* FAQ 8 */}
             <motion.div className="bg-neutral-50 rounded-xl border border-neutral-200 overflow-hidden" initial={false}>
               <button onClick={() => toggleFaq(7)} className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-neutral-100 transition-colors">
-                <span className="font-bold text-lg text-neutral-900">How does the affiliate referral program work?</span>
+                <span className="font-bold text-lg text-neutral-900">What makes CareLinkAI different?</span>
                 <motion.div animate={{ rotate: openFaqIndex === 7 ? 180 : 0 }} transition={{ duration: 0.2 }}><FiChevronDown className="text-primary-500 text-xl" /></motion.div>
               </button>
               <AnimatePresence>
                 {openFaqIndex === 7 && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
+                    <div className="px-6 pb-5 text-neutral-500"><p>We verify. Every week we confirm open beds, starting prices and Medicaid waiver status directly with Cleveland-area communities and mark listings ‘Verified’ with the date. Other directories list what a community said once; we show you what’s true this week. We never charge families, and we don’t take a cut of your move-in.</p></div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+            
+            {/* FAQ 9 */}
+            <motion.div className="bg-neutral-50 rounded-xl border border-neutral-200 overflow-hidden" initial={false}>
+              <button onClick={() => toggleFaq(8)} className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-neutral-100 transition-colors">
+                <span className="font-bold text-lg text-neutral-900">Can I schedule facility tours through CareLinkAI?</span>
+                <motion.div animate={{ rotate: openFaqIndex === 8 ? 180 : 0 }} transition={{ duration: 0.2 }}><FiChevronDown className="text-primary-500 text-xl" /></motion.div>
+              </button>
+              <AnimatePresence>
+                {openFaqIndex === 8 && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
+                    <div className="px-6 pb-5 text-neutral-500"><p>Yes! Our AI-powered tour scheduling finds optimal times for both families and facilities. Families book directly from the listing page, and both parties receive automated reminders and confirmations via email and SMS.</p></div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+
+            {/* FAQ 10 */}
+            <motion.div className="bg-neutral-50 rounded-xl border border-neutral-200 overflow-hidden" initial={false}>
+              <button onClick={() => toggleFaq(9)} className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-neutral-100 transition-colors">
+                <span className="font-bold text-lg text-neutral-900">Can operators hire caregivers directly from the marketplace?</span>
+                <motion.div animate={{ rotate: openFaqIndex === 9 ? 180 : 0 }} transition={{ duration: 0.2 }}><FiChevronDown className="text-primary-500 text-xl" /></motion.div>
+              </button>
+              <AnimatePresence>
+                {openFaqIndex === 9 && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
+                    <div className="px-6 pb-5 text-neutral-500"><p>Yes. Operators on any plan can browse caregiver profiles in the marketplace and hire directly with one click — no job posting or application process required. The caregiver is notified instantly, an employment record is created, and the hire is logged for compliance. Professional and Growth plan operators pay no per-hire marketplace fee.</p></div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+
+            {/* FAQ 11 */}
+            <motion.div className="bg-neutral-50 rounded-xl border border-neutral-200 overflow-hidden" initial={false}>
+              <button onClick={() => toggleFaq(10)} className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-neutral-100 transition-colors">
+                <span className="font-bold text-lg text-neutral-900">How does the affiliate referral program work?</span>
+                <motion.div animate={{ rotate: openFaqIndex === 10 ? 180 : 0 }} transition={{ duration: 0.2 }}><FiChevronDown className="text-primary-500 text-xl" /></motion.div>
+              </button>
+              <AnimatePresence>
+                {openFaqIndex === 10 && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
                     <div className="px-6 pb-5 text-neutral-500"><p>Affiliates get a unique referral link and earn recurring commissions on every operator or family subscription they refer. New affiliates start at 20% commission; reaching 5 active referrals unlocks SILVER tier (25%); 15+ referrals unlocks GOLD tier (30%). Commissions are tracked in real time in your affiliate dashboard and paid monthly.</p></div>
                   </motion.div>
@@ -1770,14 +1815,14 @@ export default function HomePage() {
               </AnimatePresence>
             </motion.div>
 
-            {/* FAQ 9 */}
+            {/* FAQ 12 */}
             <motion.div className="bg-neutral-50 rounded-xl border border-neutral-200 overflow-hidden" initial={false}>
-              <button onClick={() => toggleFaq(8)} className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-neutral-100 transition-colors">
+              <button onClick={() => toggleFaq(11)} className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-neutral-100 transition-colors">
                 <span className="font-bold text-lg text-neutral-900">Do you have compliance resources for Ohio ALF operators?</span>
-                <motion.div animate={{ rotate: openFaqIndex === 8 ? 180 : 0 }} transition={{ duration: 0.2 }}><FiChevronDown className="text-primary-500 text-xl" /></motion.div>
+                <motion.div animate={{ rotate: openFaqIndex === 11 ? 180 : 0 }} transition={{ duration: 0.2 }}><FiChevronDown className="text-primary-500 text-xl" /></motion.div>
               </button>
               <AnimatePresence>
-                {openFaqIndex === 8 && (
+                {openFaqIndex === 11 && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
                     <div className="px-6 pb-5 text-neutral-500"><p>Yes. We offer three downloadable Ohio Assisted Living Facility compliance document kits ($149–$199 one-time purchase) covering state licensing requirements, resident rights, and medication management. Available in your operator portal under Compliance Kits, or from the footer of this page. More states coming soon.</p></div>
                   </motion.div>
@@ -1877,7 +1922,7 @@ export default function HomePage() {
         
         <div className="max-w-5xl mx-auto px-4 md:px-6 text-center relative z-10">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            Senior Care, Reimagined by AI
+            Senior Care, Verified for Cleveland
           </h2>
           <p className="text-xl text-white/90 max-w-3xl mx-auto mb-10">
             Whether you're a family finding care, an operator managing a facility, a caregiver building a career, or a hospital discharge planner — CareLinkAI was built for you. Start free today.
