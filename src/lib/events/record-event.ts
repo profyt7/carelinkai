@@ -52,6 +52,8 @@ export const ALLOWED_VALUE_KEYS: ReadonlySet<string> = new Set([
   // OL-163: AI availability-call observations (business facts only).
   'observationId', 'conversationId', 'calledAt', 'bedsAL', 'bedsMC', 'priceFromMonthly', 'priceUndisclosed',
   'waiverStatus', 'medicaidPending', 'doNotCall', 'confidence', 'qaStatus', 'appliedAt',
+  // OL-167a: inbound leads (business facts only — never the caller's name, number or reason).
+  'leadId', 'callerType', 'urgency', 'afterHours', 'phiFlag',
 ]);
 
 /** Key names that are never allowed even if someone adds them to the allowlist by mistake. */
