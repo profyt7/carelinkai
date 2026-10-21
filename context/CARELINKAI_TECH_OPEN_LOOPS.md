@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-10-17 — sprint W5 batch: six stacked PRs open (#743–#748); OL-155…OL-158 added; OL-148 (W4), OL-140 (W3), OL-146 (font flake), OL-154 (decline flake, #743) closed; OL-141/OL-150 residuals folded into OL-155/#748. Prior: 2026-10-13 (evening) — sprint W4 batch: six more PRs open (#733–#738), OL-148…OL-153 added; OL-142 and OL-143 built (decision residuals only), OL-144 half-closed (Beachwood/Lakewood shipped). Earlier same day — sprint W3 batch: six PRs open (#726–#731), OL-140…OL-147 added; OL-125/OL-129 residuals carried. Previous rebuild 2026-10-05 — **rebuilt from the repo** (sprint W2 item 7). Sources: the 56 open PRs on GitHub, `grep TODO|FIXME` over `src/`, every `test.skip`/`fixme` in `__tests__/`, `tests/`, `e2e/`, the CI workflows, and the previous version of this file (all 115 prior OL ids carried forward below with their last known status). Each entry: **OL id · one-line status · file path**. Triage: **SHIP NOW** = this week, **LATER** = backlog, **FOUNDER** = needs Chris (settings, money, legal), **CLOSED** = verified done (kept for id continuity)._
+_Last updated: 2026-10-21 — 10/20 batch MERGED (#749, #761, #750–#759; see DEV_SESSION_SUMMARIES 2026-10-20/21); OL-163 a–e, OL-159, OL-160, OL-161, OL-162, OL-165 now ✅ MERGED (residuals noted inline); OL-166 follow-ups in flight. Prior: 2026-10-17 — sprint W5 batch: six stacked PRs open (#743–#748); OL-155…OL-158 added; OL-148 (W4), OL-140 (W3), OL-146 (font flake), OL-154 (decline flake, #743) closed; OL-141/OL-150 residuals folded into OL-155/#748. Prior: 2026-10-13 (evening) — sprint W4 batch: six more PRs open (#733–#738), OL-148…OL-153 added; OL-142 and OL-143 built (decision residuals only), OL-144 half-closed (Beachwood/Lakewood shipped). Earlier same day — sprint W3 batch: six PRs open (#726–#731), OL-140…OL-147 added; OL-125/OL-129 residuals carried. Previous rebuild 2026-10-05 — **rebuilt from the repo** (sprint W2 item 7). Sources: the 56 open PRs on GitHub, `grep TODO|FIXME` over `src/`, every `test.skip`/`fixme` in `__tests__/`, `tests/`, `e2e/`, the CI workflows, and the previous version of this file (all 115 prior OL ids carried forward below with their last known status). Each entry: **OL id · one-line status · file path**. Triage: **SHIP NOW** = this week, **LATER** = backlog, **FOUNDER** = needs Chris (settings, money, legal), **CLOSED** = verified done (kept for id continuity)._
 
 _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified after each via the new `prod-verify.yml` workflow): **#723** ops tooling `870a65f` · **#721** OL-124 gate `0df4b18` · **#714** public routes `4f95aec` · **#718** Sentry 401 noise `b402dd5` · **#717** isDemo filter `189dd8d` · **#716** closed as superseded by #721 · **#720** this file `b81fc9f` · **#715** memory restarts `b0b4078` · **#719** Prisma warm-up `97e6583` · **#724** workflow fix `87df579`. All eight sprint PRs are on main and verified live._
 
@@ -8,22 +8,28 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
 ## 🔴 SHIP NOW (this week)
 
 ### OL-163: AI availability-call agent (a–e) — PRs #750–#754 open (stacked), DO NOT MERGE until Chris reviews
+- **Status:** ✅ MERGED 2026-10-21 — #750 `42d6678` · #751 `32eac1f` · #752 `14fa505` · #753 `50dec00` · #754 `fd865ba`. Residual: set `ELEVENLABS_WEBHOOK_SECRET` in Render; run the pilot; OL-166c adds the AI_CALL price write.
 - **Status:** 🟢 BUILT 2026-10-20 — a webhook #750 · b call list #751 · c QA queue #752 · d badge + agent keys #753 · e do-not-call + retry #754. Merge in order; each needs "Update branch" first. Chris: set `ELEVENLABS_WEBHOOK_SECRET` in Render; map the agent's data-collection fields to the observation keys; 12-home pilot Tue–Thu; Elizabeth QAs at `/admin/call-qa`. Decision: price from calls stays on the observation (add `PriceSource.AI_CALL` later?).
 - **Path:** `src/lib/availability/call-result.ts`, `call-rules.ts`, `call-qa.ts`, `src/app/api/webhooks/elevenlabs/call-result`, `src/app/api/admin/availability/call-list`, `src/app/admin/call-qa`, `prisma/migrations/20261020000000_*`, `20261020000001_*`
 
 ### OL-159: hub staleness — PR #756 open
+- **Status:** ✅ MERGED 2026-10-21 `b750d9b`. Prod-verify after `fd865ba` found the footer sha fresh (= main) — staleness did not reproduce; keep watching `post-deploy-revalidate.yml`.
 - **Status:** 🟢 BUILT 2026-10-20 — static hub pages `revalidate = 3600`, `POST /api/admin/revalidate`, import-script purge, `post-deploy-revalidate.yml` asserts footer sha = main + waiver lines after every deploy and dumps cache headers (if `cf-cache-status: HIT` shows up, the fix is an edge-cache rule, not code).
 
 ### OL-160: cron diagnostics — PR #755 open
+- **Status:** ✅ MERGED 2026-10-21 `1f30ff6`.
 - **Status:** 🟢 BUILT 2026-10-20 — `src/lib/cron-auth.ts`; DP Follow-ups workflow + `scripts/run-cron.js` name "auth 401 — CRON_SECRET mismatch" vs "5xx — app error". Found + fixed: reminders cron routes were fail-open when `CRON_SECRET` was unset.
 
 ### OL-161: POST /_error — PR #759 open
+- **Status:** ✅ MERGED 2026-10-21 `ed63db0` (prod `POST / → 405` check runs in verification #2).
 - **Status:** 🟢 BUILT 2026-10-20 — middleware 405 for non-GET on page routes; e2e `POST / → 405`.
 
 ### OL-162: checkout preflight — PR #757 open
+- **Status:** ✅ MERGED 2026-10-21 `b8835e5`.
 - **Status:** 🟢 BUILT 2026-10-20 — `/admin/checkout-preflight` booleans only; `isCheckoutEnabled` refuses on mismatch (live key in production, price id, webhook secret, admin email).
 
 ### OL-165: Family Concierge v2 copy (five-mistakes framing) — PR #761 open, stacked on #749
+- **Status:** ✅ MERGED 2026-10-21 `1ee4d49` (#749 `63e394e` first). Residual → OL-166a (Terms disclosure back) and OL-166b (free-lane hero).
 - **Status:** 🟢 BUILT 2026-10-20 — copy + structure only from the vault v2 offer doc: headline on the $5,000 mistake, guarantee subhead, "Free for families" above the fold, nine deliverables, verbatim not-included list, homepage / dashboard card / Terms §15 aligned; copy-rule tests (no "AI", no "legwork", no promised outcome, no facility fee). Residual: the free lane sees the "$5,000 mistake" H1 (not a price) — Chris to confirm. `src/lib/concierge/offer.ts`.
 
 ### OL-155: Sprint W5 batch — six stacked PRs open (#743–#748), merge in order
