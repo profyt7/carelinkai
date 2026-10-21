@@ -18,6 +18,7 @@
  * same object that renders a card also feeds the JSON-LD.
  */
 
+import { CONTACT_PHONE_E164 } from '@/lib/contact';
 import type { PublicListing } from '@/lib/directory/public-listings';
 
 export const SITE_URL = 'https://getcarelinkai.com';
@@ -274,6 +275,15 @@ export function buildOrganizationJsonLd(): Json {
     name: ORG_NAME,
     url: SITE_URL,
     logo: `${SITE_URL}/logo.png`,
+    telephone: CONTACT_PHONE_E164,
+    contactPoint: {
+      '@type': 'ContactPoint',
+      telephone: CONTACT_PHONE_E164,
+      contactType: 'customer service',
+      areaServed: 'US-OH',
+      availableLanguage: 'en',
+      hoursAvailable: 'Front desk 24/7; callbacks Mon–Fri 08:00–18:00 America/New_York',
+    },
     description:
       'A Cleveland-built senior care directory: licensed assisted living, memory care, independent living and nursing homes with Ohio Department of Health inspection facts, verified availability and published pricing. Families contact homes directly; no broker fees.',
     foundingLocation: { '@type': 'Place', name: 'Cleveland, Ohio' },
