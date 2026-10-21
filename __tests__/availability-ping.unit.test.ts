@@ -50,15 +50,15 @@ const daysAgo = (d: number) => new Date(NOW.getTime() - d * 86_400_000);
 
 function contact(over: Partial<{
   id: string; homeId: string; email: string | null; preferredChannel: 'EMAIL' | 'SMS'; optedInSource: string | null;
-  operatorEmail: string; verifiedAt: Date | null; outstanding: boolean; name: string;
+  operatorEmail: string; verifiedAt: Date | null; outstanding: boolean; name: string; doNotCall: boolean;
 }> = {}) {
   const o = {
     id: 'c1', homeId: 'h1', email: 'ops@facility.com', preferredChannel: 'EMAIL' as const, optedInSource: 'operator_portal',
-    operatorEmail: 'owner@facility.com', verifiedAt: null, outstanding: false, name: 'Facility One', ...over,
+    operatorEmail: 'owner@facility.com', verifiedAt: null, outstanding: false, name: 'Facility One', doNotCall: false, ...over,
   };
   return {
     id: o.id, homeId: o.homeId, name: 'Pat', email: o.email, mobile: null, preferredChannel: o.preferredChannel, optedInSource: o.optedInSource,
-    home: { name: o.name, availabilityVerifiedAt: o.verifiedAt, operator: { user: { email: o.operatorEmail } } },
+    home: { name: o.name, doNotCall: o.doNotCall, availabilityVerifiedAt: o.verifiedAt, operator: { user: { email: o.operatorEmail } } },
     pings: o.outstanding ? [{ id: 'p-open' }] : [],
   };
 }
@@ -142,12 +142,13 @@ describe('findEligibleContacts', () => {
       contact({ id: 'fresh', homeId: 'h5', verifiedAt: daysAgo(1) }),
       contact({ id: 'stale-ok', homeId: 'h6', verifiedAt: daysAgo(7) }),
       contact({ id: 'noemail', homeId: 'h7', email: null }),
+      contact({ id: 'dnc', homeId: 'h8', doNotCall: true }),
     ]);
     const { eligible, skipped } = await findEligibleContacts(NOW);
     expect(eligible.map((e) => e.contactId)).toEqual(['ok', 'warm', 'stale-ok']);
-    expect(skipped).toEqual({ unclaimed: 1, outstanding_ping: 1, recently_verified: 1, no_email: 1 });
-    // The query itself only ever asks for opted-in contacts of ACTIVE, non-demo homes.
-    expect(findMany.mock.calls[0][0].where).toEqual({ optedIn: true, home: { status: 'ACTIVE', isDemo: false } });
+    expect(skipped).toEqual({ unclaimed: 1, outstanding_ping: 1, recently_verified: 1, no_email: 1, do_not_call: 1 });
+    // The query itself only ever asks for opted-in contacts of ACTIVE, non-demo, not-do-not-call homes (OL-163e).
+    expect(findMany.mock.calls[0][0].where).toEqual({ optedIn: true, home: { status: 'ACTIVE', isDemo: false, doNotCall: false } });
   });
 });
 

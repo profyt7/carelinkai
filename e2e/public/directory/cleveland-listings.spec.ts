@@ -10,7 +10,7 @@
  * asserts the listing cards are in the HTML itself.
  *
  * Runs with the ./e2e config:
- *   npx playwright test --config=playwright.e2e.config.ts e2e/public/cleveland-listings.spec.ts
+ *   npx playwright test --config=playwright.e2e.config.ts e2e/public/directory/cleveland-listings.spec.ts
  */
 import { test, expect } from '@playwright/test';
 
@@ -77,7 +77,8 @@ test.describe('@critical /cleveland/assisted-living server-rendered listings', (
     expect(html).not.toContain(DEMO);
 
     // Verified Availability badge + ODH facts for the seeded home.
-    expect(html).toContain('Verified Availability');
+    expect(html).toMatch(/data-testid="availability-badge"[^>]*data-verified-at="20\d\d-[^"]+"/);
+    expect(html).toMatch(/Verified [A-Z][a-z]{2} \d{1,2}/);
     expect(html).toContain('ODH survey Mar 4, 2026 · 2 citations · 2 surveys on file');
     expect(html).toContain(`ODH license E2E${ts % 100000}R`);
     expect(html).toContain('Starting around $4,800/mo');
