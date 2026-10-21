@@ -34,6 +34,17 @@ export const FEE_MODEL_LINE =
 
 type Json = Record<string, unknown>;
 
+/** How a listing's availability was last verified (OL-163d) — plain words for agents. */
+export const AVAILABILITY_SOURCE_LABEL: Record<string, string> = {
+  OPERATOR: 'Entered by the operator',
+  SMS: 'Text reply from the home',
+  EMAIL: 'Email reply from the home',
+  VOICE: 'Automated phone call to the home',
+  CONCIERGE: 'Confirmed by a CareLinkAI concierge call',
+  PING: 'One-tap weekly reply from the home',
+  AI_CALL: "Phone call to the home's business line by CareLinkAI's automated assistant, reviewed by a person before publishing",
+};
+
 function isEmpty(v: unknown): boolean {
   if (v == null) return true;
   if (typeof v === 'string') return v.trim() === '';
@@ -128,6 +139,20 @@ export function buildListingJsonLd(l: PublicListing, opts: { description?: strin
       : undefined,
     l.availability.fresh && l.availability.count != null
       ? { '@type': 'PropertyValue', name: 'Openings (verified)', value: l.availability.count }
+      : undefined,
+    // OL-163d: agent-readable keys. Only a QA-approved source ever sets
+    // availabilityVerifiedAt, so these are reviewed facts, never a guess.
+    l.availability.fresh && l.availability.verifiedAt
+      ? { '@type': 'PropertyValue', name: 'availabilityVerifiedAt', value: l.availability.verifiedAt }
+      : undefined,
+    l.availability.fresh && l.availability.source
+      ? { '@type': 'PropertyValue', name: 'availabilitySource', value: l.availability.source, description: AVAILABILITY_SOURCE_LABEL[l.availability.source] ?? l.availability.source }
+      : undefined,
+    l.medicaidWaiver.line
+      ? { '@type': 'PropertyValue', name: 'medicaidWaiverStatus', value: l.medicaidWaiver.status, description: `${l.medicaidWaiver.line}. ${l.medicaidWaiver.note ?? ''}`.trim() }
+      : undefined,
+    l.medicaidWaiver.pendingAccepted !== null
+      ? { '@type': 'PropertyValue', name: 'medicaidPendingAccepted', value: l.medicaidWaiver.pendingAccepted ? 'yes' : 'no', description: l.medicaidWaiver.pendingLine ?? undefined }
       : undefined,
     { '@type': 'PropertyValue', name: 'ODH surveys on file', value: l.inspections.surveyCount },
     l.inspections.latestSurveyDate

@@ -66,11 +66,14 @@ describe('CTA mode: flag + capacity', () => {
     expect(conciergeCtaMode({ checkoutEnabled: false, capReached: true })).toBe('waitlist');
     expect(ctaLabelFor('waitlist')).toBe('Fully booked this month — join the waitlist');
   });
-  it('reads the env flags; cap defaults to 4', () => {
+  it('reads the env flags; cap defaults to 4; the flag alone never enables checkout (OL-162 preflight)', () => {
+    const ready = { STRIPE_SECRET_KEY: 'sk_test_abc', STRIPE_PRICE_FAMILY_CONCIERGE: 'price_123', STRIPE_WEBHOOK_SECRET: 'whsec_abc', ADMIN_NOTIFY_EMAIL: 'chris@getcarelinkai.com' };
     expect(isCheckoutEnabled({})).toBe(false);
-    expect(isCheckoutEnabled({ CONCIERGE_CHECKOUT_ENABLED: '0' })).toBe(false);
-    expect(isCheckoutEnabled({ CONCIERGE_CHECKOUT_ENABLED: '1' })).toBe(true);
-    expect(isCheckoutEnabled({ CONCIERGE_CHECKOUT_ENABLED: 'true' })).toBe(true);
+    expect(isCheckoutEnabled({ CONCIERGE_CHECKOUT_ENABLED: '0', ...ready })).toBe(false);
+    expect(isCheckoutEnabled({ CONCIERGE_CHECKOUT_ENABLED: '1' })).toBe(false); // flag without the prerequisites
+    expect(isCheckoutEnabled({ CONCIERGE_CHECKOUT_ENABLED: '1', ...ready })).toBe(true);
+    expect(isCheckoutEnabled({ CONCIERGE_CHECKOUT_ENABLED: 'true', ...ready })).toBe(true);
+    expect(isCheckoutEnabled({ CONCIERGE_CHECKOUT_ENABLED: '1', ...ready, NODE_ENV: 'production' })).toBe(false); // test key in production
     expect(monthlyCap({})).toBe(DEFAULT_MONTHLY_CAP);
     expect(DEFAULT_MONTHLY_CAP).toBe(4);
     expect(monthlyCap({ CONCIERGE_MONTHLY_CAP: '2' })).toBe(2);
