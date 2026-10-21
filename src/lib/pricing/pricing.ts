@@ -68,7 +68,20 @@ const SOURCE_LABEL: Record<PriceSource, string> = {
   DP_ESTIMATE: 'estimated',
   PUBLIC: 'estimated',
   FAMILY_AVG: 'families report',
+  AI_CALL: 'reported by the community by phone',
 };
+
+/**
+ * Source label for display / JSON-LD. AI_CALL (OL-166c) carries the date the
+ * home said it on the phone: "reported by the community by phone on Oct 21, 2026".
+ */
+export function priceSourceLabel(source: PriceSource, updatedAt?: Date | string | null): string {
+  const base = SOURCE_LABEL[source];
+  if (source !== 'AI_CALL' || !updatedAt) return base;
+  const d = new Date(updatedAt);
+  if (Number.isNaN(d.getTime())) return base;
+  return `${base} on ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' })}`;
+}
 
 export type PricingView = {
   hasPrice: boolean;
@@ -76,7 +89,7 @@ export type PricingView = {
   low: number | null;
   high: number | null;
   source: PriceSource | null;
-  sourceLabel: string; // "operator-provided" / "estimated" / "families report"
+  sourceLabel: string; // "operator-provided" / "estimated" / "families report" / "reported by the community by phone on <date>"
   /** Full honest line, e.g. "Starting around $5,500/mo · operator-provided". */
   display: string;
   /** Earns the "Transparent Pricing" badge: operator-provided AND recent. */
@@ -115,19 +128,22 @@ export function pricingView(
   }
   // 2) Operator-provided starting price.
   if (starting) {
+    const src = home.priceSource ?? 'OPERATOR';
+    const label = priceSourceLabel(src, home.priceUpdatedAt);
     return {
-      hasPrice: true, amount: starting, low, high, source: home.priceSource ?? 'OPERATOR', sourceLabel: SOURCE_LABEL[home.priceSource ?? 'OPERATOR'],
-      display: `Starting around ${money(starting)}/mo · ${SOURCE_LABEL[home.priceSource ?? 'OPERATOR']}`,
+      hasPrice: true, amount: starting, low, high, source: src, sourceLabel: label,
+      display: `Starting around ${money(starting)}/mo · ${label}`,
       transparent, familyReportCount: familyCount,
     };
   }
   // 3) An estimated range (DP or public).
   if (low) {
     const src = home.priceSource ?? 'PUBLIC';
+    const label = priceSourceLabel(src, home.priceUpdatedAt);
     const range = high && high > low ? `${money(low)}–${money(high)}` : `${money(low)}+`;
     return {
-      hasPrice: true, amount: low, low, high, source: src, sourceLabel: SOURCE_LABEL[src],
-      display: `Starting around ${range}/mo · ${SOURCE_LABEL[src]}`,
+      hasPrice: true, amount: low, low, high, source: src, sourceLabel: label,
+      display: `Starting around ${range}/mo · ${label}`,
       transparent, familyReportCount: familyCount,
     };
   }

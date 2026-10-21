@@ -20,6 +20,7 @@ import { prisma } from '@/lib/prisma';
 import { recordEvent, type EventActor } from '@/lib/events/record-event';
 import { isProtectedSource } from '@/lib/medicaid/waiver';
 import { normalizeCount } from '@/lib/availability/availability';
+import { isPricingFresh, normalizePriceInt } from '@/lib/pricing/pricing';
 
 export const QA_ACTIONS = ['approve', 'correct', 'reject', 'do_not_call'] as const;
 export type QaAction = (typeof QA_ACTIONS)[number];
@@ -96,6 +97,9 @@ const LIST_SELECT = {
       medicaidWaiverStatus: true,
       medicaidWaiverSource: true,
       medicaidPendingAccepted: true,
+      startingPriceMonthly: true,
+      priceSource: true,
+      priceUpdatedAt: true,
       address: { select: { city: true } },
     },
   },
@@ -114,7 +118,7 @@ export async function listObservations(opts: { status?: ObservationQaStatus | 'a
 }
 
 export type QaResult =
-  | { ok: true; observation: QaRow; applied: { availability: boolean; waiver: boolean; pending: boolean; doNotCall: boolean }; skipped: string[] }
+  | { ok: true; observation: QaRow; applied: { availability: boolean; waiver: boolean; pending: boolean; price: boolean; doNotCall: boolean }; skipped: string[] }
   | { ok: false; error: 'not_found' | 'already_reviewed' };
 
 /**
@@ -150,7 +154,7 @@ export async function applyQaAction(args: {
   const markDoNotCall = args.action === 'do_not_call' || (args.action !== 'reject' && effective.doNotCall);
   const qaStatus: ObservationQaStatus = args.action === 'approve' ? 'APPROVED' : args.action === 'correct' ? 'CORRECTED' : 'REJECTED';
   const applyToHome = (args.action === 'approve' || args.action === 'correct') && !markDoNotCall;
-  const applied = { availability: false, waiver: false, pending: false, doNotCall: false };
+  const applied = { availability: false, waiver: false, pending: false, price: false, doNotCall: false };
   const skipped: string[] = [];
   const actor = { userId: args.actor.userId, role: args.actor.role ?? 'ADMIN' };
 
@@ -215,6 +219,34 @@ export async function applyQaAction(args: {
           occurredAt: now,
         });
       }
+
+      // OL-166c: a disclosed "from $X/mo" becomes the home's starting price,
+      // source AI_CALL, dated at the call (priceUpdatedAt = calledAt). Only a
+      // QA-approved / corrected ANSWERED call gets here — pending and rejected
+      // observations never write. A fresh operator-provided price is never
+      // overwritten by a phone answer.
+      const price = effective.priceUndisclosed ? null : normalizePriceInt(effective.priceFromMonthly);
+      if (price) {
+        if (home.priceSource === 'OPERATOR' && isPricingFresh(home.priceUpdatedAt, now.getTime())) {
+          skipped.push('price_operator_fresh');
+        } else {
+          homeData.startingPriceMonthly = price;
+          homeData.priceSource = 'AI_CALL';
+          homeData.priceUpdatedAt = existing.calledAt;
+          applied.price = true;
+          await recordEvent(tx, {
+            entityType: 'HOME',
+            entityId: existing.homeId,
+            eventType: 'pricing.updated',
+            field: 'startingPriceMonthly',
+            oldValue: { startingPriceMonthly: home.startingPriceMonthly, source: home.priceSource, updatedAt: home.priceUpdatedAt },
+            newValue: { startingPriceMonthly: price, source: 'AI_CALL', updatedAt: existing.calledAt, observationId: existing.id },
+            source: 'AI_CALL',
+            actor,
+            occurredAt: now,
+          });
+        }
+      }
     } else if (applyToHome) {
       skipped.push(`outcome_${effective.outcome.toLowerCase()}_not_verifiable`);
     }
@@ -250,7 +282,7 @@ export async function applyQaAction(args: {
         qaByUserId: args.actor.userId,
         qaAt: now,
         qaNote: args.note?.trim() ? args.note.trim().slice(0, 500) : null,
-        appliedAt: applied.availability || applied.waiver || applied.pending ? now : null,
+        appliedAt: applied.availability || applied.waiver || applied.pending || applied.price ? now : null,
       },
       select: LIST_SELECT,
     });
