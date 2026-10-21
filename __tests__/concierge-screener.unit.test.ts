@@ -1,7 +1,8 @@
 /**
  * Sprint W3 item 5 + W4 0a + W5-3 — /concierge screener routing + guards:
- *  - private funds / LTC insurance / not sure → private_pay (the paid, family-paid
- *    offer); Medicaid / Medicare / VA / unanswered → free_help (fail-closed);
+ *  - private funds / LTC insurance → private_pay (the paid, family-paid offer);
+ *    not sure → both (free help first, the offer as a secondary option);
+ *    Medicaid / Medicare / VA / unanswered → free_help (fail-closed);
  *  - the page is public + known to the middleware and in the sitemap;
  *  - the offer is the decided one ($399 flat, one-time, paid by the family) and
  *    lives ONLY in src/lib/concierge/offer.ts + the client-mounted offer card:
@@ -19,10 +20,13 @@ import { isKnownAppPath, isPublicPage } from '@/lib/routing/public-routes';
 import sitemap from '@/app/sitemap';
 
 describe('routeForPayerSource', () => {
-  it('private pay, LTC insurance and "not sure" may see the offer (the family pays)', () => {
+  it('private pay and LTC insurance see the offer (the family pays)', () => {
     expect(routeForPayerSource('PRIVATE_FUNDS')).toBe('private_pay');
     expect(routeForPayerSource('LTC_INSURANCE')).toBe('private_pay');
-    expect(routeForPayerSource('NOT_SURE')).toBe('private_pay');
+  });
+
+  it('"not sure" sees both — free help first, the offer second (never led with a price)', () => {
+    expect(routeForPayerSource('NOT_SURE')).toBe('both');
   });
 
   it('federal-program payers get free help (never the offer / price); unanswered fails closed', () => {
@@ -34,7 +38,7 @@ describe('routeForPayerSource', () => {
   });
 
   it('covers every PayerSource value', () => {
-    for (const v of PAYER_SOURCE_VALUES) expect(['private_pay', 'free_help']).toContain(routeForPayerSource(v));
+    for (const v of PAYER_SOURCE_VALUES) expect(['private_pay', 'free_help', 'both']).toContain(routeForPayerSource(v));
   });
 });
 
@@ -95,10 +99,37 @@ describe('no Stripe in the screener / request files; no price in the server-rend
     expect(offenders).toEqual([]);
   });
 
-  it('the server page and the components carry no literal dollar price; only offer.ts does', () => {
+  it('the server page and the components carry no literal dollar amount; only offer.ts does', () => {
     for (const f of ['src/app/concierge/page.tsx', 'src/app/concierge/ConciergeRequestForm.tsx', 'src/app/concierge/ConciergeScreener.tsx']) {
       expect({ file: f, dollarPrice: /\$\s?\d/.test(read(f)) }).toEqual({ file: f, dollarPrice: false });
     }
     expect(/\$399/.test(read('src/lib/concierge/offer.ts'))).toBe(true);
+  });
+
+  it('OL-165 copy rules on every concierge surface: no "legwork", no "AI" pitch, no facility fee', () => {
+    for (const f of [
+      'src/app/concierge/page.tsx',
+      'src/app/concierge/ConciergeScreener.tsx',
+      'src/app/concierge/ConciergeRequestForm.tsx',
+      'src/components/dashboard/ConciergeUpsellCard.tsx',
+      'src/lib/concierge/offer.ts',
+    ]) {
+      const src = read(f);
+      expect({ file: f, legwork: /legwork/i.test(src), ai: /\bAI\b/.test(src), facilityFee: /pays CareLinkAI a fee|move-in fee|referral fee/i.test(src) }).toEqual({
+        file: f,
+        legwork: false,
+        ai: false,
+        facilityFee: false,
+      });
+    }
+    // The homepage concierge section and the terms section (the files also carry unrelated copy).
+    const home = read('src/app/HomePageClient.tsx');
+    const section = home.slice(home.indexOf('data-testid="home-concierge-section"'), home.indexOf('VALUE PROPOSITION SECTION'));
+    expect(section).not.toMatch(/legwork|\bAI\b|\$\s?\d/);
+    const terms = read('src/app/terms/page.tsx');
+    const tsec = terms.slice(terms.indexOf('data-testid="terms-family-concierge"'), terms.indexOf('Contact Us'));
+    expect(tsec).toMatch(/not medical, legal or financial advice/);
+    expect(tsec).toMatch(/do not promise savings, a particular outcome/);
+    expect(tsec).not.toMatch(/legwork|\bAI\b|pays CareLinkAI a fee|move-in fee/);
   });
 });
