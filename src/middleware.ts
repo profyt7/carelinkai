@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 import { withAuth } from 'next-auth/middleware';
 import { middlewareRateLimitFor, rateLimitExceeded } from '@/lib/edge-rate-limit';
 import { isKnownAppPath, isPublicPage } from '@/lib/routing/public-routes';
+import { isPageMethodAllowed, methodNotAllowedHeaders } from '@/lib/routing/page-methods';
 
 /* ============================================================================
  * CRITICAL FIX FOR IMAGE OPTIMIZATION 400 ERRORS
@@ -86,6 +87,16 @@ export default function middleware(req: NextRequest) {
       Math.random().toString(36).slice(2);
     if (reqId) res.headers.set('x-request-id', reqId);
     return res;
+  }
+
+  /* ------------------------------------------------------------------
+   * OL-161: a POST / PUT / DELETE … to a PAGE route is not a page request.
+   * Answer a clean 405 (Allow: GET, HEAD, OPTIONS) instead of letting Next
+   * render its error page (Sentry logged those as "POST /_error"). Route
+   * handlers (/api/*, /monitoring) and server actions pass through.
+   * ---------------------------------------------------------------- */
+  if (!isPageMethodAllowed(req.method, pathname, req.headers)) {
+    return new NextResponse(JSON.stringify({ error: 'Method Not Allowed' }), { status: 405, headers: methodNotAllowedHeaders() });
   }
 
   /* ------------------------------------------------------------------
