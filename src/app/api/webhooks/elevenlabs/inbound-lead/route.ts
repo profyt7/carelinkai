@@ -16,7 +16,8 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { captureError } from '@/lib/sentry';
 import { ELEVENLABS_SIGNATURE_HEADER, verifyElevenLabsSignature } from '@/lib/availability/call-result';
-import { parseInboundLead, recordInboundLead } from '@/lib/leads/inbound-lead';
+import { parseInboundLead, recordInboundLead, CALLER_TYPE_TO_ENUM, URGENCY_TO_ENUM } from '@/lib/leads/inbound-lead';
+import { sendInboundLeadAlerts } from '@/lib/leads/inbound-alerts';
 
 const noStore = { 'cache-control': 'no-store' };
 
@@ -45,6 +46,25 @@ export async function POST(request: NextRequest) {
   try {
     const result = await recordInboundLead(parsed.value);
     if (result.status === 'invalid') return NextResponse.json({ error: result.error }, { status: 400, headers: noStore });
+    // OL-167b: alerts are fire-and-forget after the write. A failure is logged,
+    // never surfaced to the provider (the lead is already in the table).
+    const v = parsed.value;
+    const phone = v.callbackPhone;
+    if (result.status === 'created' && result.lane === 'lead' && phone) {
+      void sendInboundLeadAlerts({
+        leadId: result.leadId,
+        callerType: CALLER_TYPE_TO_ENUM[v.callerType],
+        name: v.name,
+        organization: v.organization,
+        callbackPhone: phone,
+        urgency: v.urgency ? URGENCY_TO_ENUM[v.urgency] : null,
+        afterHours: v.afterHours,
+        phiFlag: v.callerType === 'facility' ? false : v.phiFlag,
+        transcriptUrl: v.transcriptUrl,
+        recordingUrl: v.recordingUrl,
+        receivedAt: v.receivedAt,
+      }).catch((e) => captureError(e instanceof Error ? e : new Error(String(e)), { tags: { route: 'webhooks/elevenlabs/inbound-lead', step: 'alerts' } }));
+    }
     const body =
       result.lane === 'lead'
         ? { ok: true, lane: 'lead', leadId: result.leadId, duplicate: result.status === 'duplicate', phiFlag: parsed.value.phiFlag }
