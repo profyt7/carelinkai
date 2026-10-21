@@ -223,6 +223,8 @@ describe('buildOrganizationJsonLd', () => {
   it('describes CareLinkAI without any contact email', () => {
     const ld = buildOrganizationJsonLd();
     expect(ld).toMatchObject({ '@type': 'Organization', name: 'CareLinkAI', url: 'https://getcarelinkai.com', logo: 'https://getcarelinkai.com/logo.png' });
+    // OL-167d: the published line on the Organization entity (never on a listing's LocalBusiness — that is the home's own number).
+    expect(ld).toMatchObject({ telephone: '+12162459482', contactPoint: { '@type': 'ContactPoint', telephone: '+12162459482', contactType: 'customer service' } });
     expect(JSON.stringify(ld)).not.toMatch(/@[a-z0-9.-]+\.[a-z]{2,}/i);
     expect(JSON.stringify(ld)).toContain(FEE_MODEL_LINE);
   });

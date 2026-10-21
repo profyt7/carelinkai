@@ -15,6 +15,7 @@ import {
 import { prefersReducedMotion, durations, easings } from "@/lib/animations";
 import DemoRequestForm from "@/components/marketing/DemoRequestForm";
 import DemoVideoModal from "@/components/marketing/DemoVideoModal";
+import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/contact";
 import { CONCIERGE_OFFER } from "@/lib/concierge/offer";
 
 // Animation variants
@@ -1991,7 +1992,13 @@ export default function HomePage() {
           
           {/* Contact Info */}
           <div className="border-t border-neutral-700 pt-8 pb-8">
-            <div className="grid md:grid-cols-2 gap-6 text-sm">
+            <div className="grid md:grid-cols-3 gap-6 text-sm">
+              <div className="flex items-center">
+                <FiPhone className="text-primary-500 mr-3" />
+                <a href={CONTACT_PHONE_TEL} className="hover:text-white transition-colors" data-testid="footer-phone">
+                  {CONTACT_PHONE_DISPLAY}
+                </a>
+              </div>
               <div className="flex items-center">
                 <FiMail className="text-primary-500 mr-3" />
                 <a href="mailto:support@getcarelinkai.com" className="hover:text-white transition-colors">
