@@ -90,6 +90,10 @@ describe('buildListingJsonLd', () => {
     expect(prop(ld, 'Verified availability')).toBe('Verified');
     expect(prop(ld, 'Availability verified at')).toBe('2026-10-11T09:00:00.000Z');
     expect(prop(ld, 'Openings (verified)')).toBe(2);
+    // OL-163d agent-readable keys
+    expect(prop(ld, 'availabilityVerifiedAt')).toBe('2026-10-11T09:00:00.000Z');
+    expect(prop(ld, 'availabilitySource')).toBe('SMS');
+    expect(prop(ld, 'medicaidWaiverStatus')).toBeUndefined(); // UNKNOWN → nothing published
     expect(prop(ld, 'ODH surveys on file')).toBe(2);
     expect(prop(ld, 'Most recent ODH survey date')).toBe('2026-03-04');
     expect(prop(ld, 'Citations on most recent ODH survey')).toBe(2);
@@ -124,6 +128,8 @@ describe('buildListingJsonLd', () => {
     expect(prop(ld, 'Verified availability')).toBe('Contact to confirm');
     expect(prop(ld, 'Availability verified at')).toBeUndefined();
     expect(prop(ld, 'Openings (verified)')).toBeUndefined();
+    expect(prop(ld, 'availabilityVerifiedAt')).toBeUndefined();
+    expect(prop(ld, 'availabilitySource')).toBeUndefined();
     expect(prop(ld, 'ODH surveys on file')).toBe(0);
     expect(prop(ld, 'Most recent ODH survey date')).toBeUndefined();
     expect(prop(ld, 'Total ODH citations on file')).toBeUndefined();
@@ -222,23 +228,58 @@ describe('buildOrganizationJsonLd', () => {
   });
 });
 
+describe('OL-163d: QA-approved AI-call facts in the listing JSON-LD', () => {
+  it('exposes availabilityVerifiedAt + availabilitySource AI_CALL (with the reviewed-by-a-person note) and the waiver answer', () => {
+    const ld = buildListingJsonLd(
+      toPublicListing(
+        fullRow({
+          availabilitySource: 'AI_CALL' as never,
+          availabilityVerifiedAt: new Date('2026-10-12T15:05:00Z'),
+          medicaidWaiverStatus: 'CURRENT_RESIDENTS_ONLY' as never,
+          medicaidWaiverSource: 'AI_CALL',
+          medicaidPendingAccepted: true,
+          medicaidPendingAcceptedVerifiedAt: new Date('2026-10-12T15:05:00Z'),
+        } as Partial<PublicListingRow>),
+        NOW,
+      ),
+    );
+    expect(prop(ld, 'availabilityVerifiedAt')).toBe('2026-10-12T15:05:00.000Z');
+    expect(prop(ld, 'availabilitySource')).toBe('AI_CALL');
+    const src = (ld.additionalProperty as Array<{ name: string; description?: string }>).find((p) => p.name === 'availabilitySource');
+    expect(src?.description).toMatch(/reviewed by a person/);
+    expect(prop(ld, 'medicaidWaiverStatus')).toBe('CURRENT_RESIDENTS_ONLY');
+    expect(prop(ld, 'medicaidPendingAccepted')).toBe('yes');
+  });
+  it('publishes nothing from a stale verification', () => {
+    const ld = buildListingJsonLd(toPublicListing(fullRow({ availabilitySource: 'AI_CALL' as never, availabilityVerifiedAt: new Date('2026-09-01T00:00:00Z') }), NOW));
+    expect(prop(ld, 'availabilityVerifiedAt')).toBeUndefined();
+    expect(prop(ld, 'availabilitySource')).toBeUndefined();
+  });
+});
+
 describe('llms.txt', () => {
   const txt = buildLlmsTxt();
   it('covers what CareLinkAI is, verified vs self-reported, availability, the fee model and links', () => {
     expect(txt).toMatch(/^# CareLinkAI/);
     expect(txt).toContain('## What is verified vs self-reported');
     expect(txt).toContain('## How availability is confirmed');
+    expect(txt).toContain('`availabilityVerifiedAt`');
+    expect(txt).toContain('`availabilitySource`');
+    expect(txt).toContain('`medicaidWaiverStatus`');
+    expect(txt).toMatch(/approves it in QA/);
     expect(txt).toContain('## Fee model');
     expect(txt).toContain(FEE_MODEL_LINE);
     expect(txt).toContain('https://getcarelinkai.com/sitemap.xml');
     expect(txt).toContain('https://getcarelinkai.com/cleveland/assisted-living/westlake');
     expect(txt).toContain('https://getcarelinkai.com/cleveland/memory-care');
   });
-  it('states the fee model in one line: flat, facility-paid, private-pay only, free lane', () => {
-    expect(FEE_MODEL_LINE).toMatch(/flat/i);
-    expect(FEE_MODEL_LINE).toMatch(/paid by the facility/i);
-    expect(FEE_MODEL_LINE).toMatch(/private-pay/i);
-    expect(FEE_MODEL_LINE).toMatch(/Medicaid, Medicare or the VA/);
+  it('states the fee model in one line: free to search, homes never pay, optional $399 family-paid concierge with the refund, free lane; no facility fee', () => {
+    expect(FEE_MODEL_LINE).toMatch(/^Free for families to search and contact homes\./);
+    expect(FEE_MODEL_LINE).toMatch(/Homes never pay to be listed or ranked/);
+    expect(FEE_MODEL_LINE).toMatch(/Family Concierge: \$399 flat for private-pay families/);
+    expect(FEE_MODEL_LINE).toMatch(/refunded if there is no verified shortlist within 2 business days/);
+    expect(FEE_MODEL_LINE).toMatch(/Medicaid, Medicare or the VA always get our help free/);
+    expect(FEE_MODEL_LINE).not.toMatch(/paid by the facility|move-in|placement fee/i);
     expect(FEE_MODEL_LINE.includes('\n')).toBe(false);
   });
   it('publishes no email address', () => {
