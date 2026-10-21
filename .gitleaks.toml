@@ -11,6 +11,13 @@ useDefault = true
 
 [allowlist]
 description = "Known non-secrets matched by the generic rules"
+# OL-162 (#757): the first commit of __tests__/checkout-preflight.unit.test.ts
+# used literal Stripe-SHAPED fixtures (sk_live_51ABCxyz, whsec_9f8e7d — 8-12
+# made-up characters, never real keys); the tree now builds them at runtime.
+# The PR-range history scan still sees that commit, so it is allow-listed here.
+commits = [
+  "12387c3fa42d6851be36cf5b8e36770ddb69e651",
+]
 # Apply the regexes to the whole source line, so a placeholder, a hostname or
 # surrounding prose can identify a match as harmless.
 regexTarget = "line"

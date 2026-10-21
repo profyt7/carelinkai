@@ -15,6 +15,7 @@ import {
 import { prefersReducedMotion, durations, easings } from "@/lib/animations";
 import DemoRequestForm from "@/components/marketing/DemoRequestForm";
 import DemoVideoModal from "@/components/marketing/DemoVideoModal";
+import { CONCIERGE_OFFER } from "@/lib/concierge/offer";
 
 // Animation variants
 const fadeInUp = {
@@ -315,24 +316,22 @@ export default function HomePage() {
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-5 lg:items-center">
             <div className="lg:col-span-3">
               <p className="text-sm font-semibold uppercase tracking-wide text-primary-600">Family Concierge · Greater Cleveland</p>
-              <h2 className="mt-2 text-3xl md:text-4xl font-bold text-neutral-900">Want a person to do the legwork?</h2>
-              <ul className="mt-5 space-y-3">
-                {[
-                  'A verified shortlist of 3–5 homes in 2 business days',
-                  'Tours scheduled, with real prices in writing',
-                  '$399 flat — full refund if we don’t deliver the shortlist on time',
-                ].map((line) => (
-                  <li key={line} className="flex gap-3 text-neutral-800">
-                    <FiCheck className="mt-1 flex-shrink-0 text-success-600" />
-                    <span>{line}</span>
-                  </li>
-                ))}
-              </ul>
+              {/* OL-165: the headline is the mistake, not the time saved. One line + the guarantee + the link. */}
+              <h2 className="mt-2 text-3xl md:text-4xl font-bold text-neutral-900" data-testid="home-concierge-headline">
+                {CONCIERGE_OFFER.headline}
+              </h2>
+              <p className="mt-4 text-lg text-neutral-800">{CONCIERGE_OFFER.oneLine}</p>
+              <p className="mt-3 flex gap-3 text-neutral-800" data-testid="home-concierge-guarantee">
+                <FiCheck className="mt-1 flex-shrink-0 text-success-600" />
+                <span>
+                  <strong>{CONCIERGE_OFFER.subhead}</strong> {CONCIERGE_OFFER.priceDisplay} flat, one time. {CONCIERGE_OFFER.guarantee}
+                </span>
+              </p>
             </div>
             <div className="lg:col-span-2 rounded-2xl border border-primary-200 bg-white p-6 shadow-sm">
               <p className="text-neutral-700">
-                One flat fee, paid by you — never by a home. A Cleveland person confirms availability and prices with each
-                home before you tour.
+                Optional, for families paying privately. Searching, prices, waiver status and inspection history on
+                CareLinkAI are free for every family.
               </p>
               <Link
                 href="/concierge"

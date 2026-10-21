@@ -8,7 +8,7 @@
  *  - operator / anonymous → 403 on the API; the page needs a session.
  *
  * Runs with the ./e2e config:
- *   npx playwright test --config=playwright.e2e.config.ts e2e/public/claim-resend.spec.ts
+ *   npx playwright test --config=playwright.e2e.config.ts e2e/public/directory/claim-resend.spec.ts
  */
 import { test, expect, type Browser, type Page } from '@playwright/test';
 

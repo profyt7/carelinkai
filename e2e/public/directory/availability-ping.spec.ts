@@ -13,7 +13,7 @@
  *  - admin API 403 for operator/anonymous; inbound hook 401 without its secret.
  *
  * Runs with the ./e2e config (needs CRON_SECRET + PING_ENABLED=1 in the server env):
- *   npx playwright test --config=playwright.e2e.config.ts e2e/public/availability-ping.spec.ts
+ *   npx playwright test --config=playwright.e2e.config.ts e2e/public/directory/availability-ping.spec.ts
  */
 import { test, expect, type Browser, type Page } from '@playwright/test';
 

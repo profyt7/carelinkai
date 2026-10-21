@@ -23,9 +23,14 @@ import type { PublicListing } from '@/lib/directory/public-listings';
 export const SITE_URL = 'https://getcarelinkai.com';
 export const ORG_NAME = 'CareLinkAI';
 
-/** The one-line fee model, as published on /llms.txt and in every listing. */
+/**
+ * The one-line fee model, as published on /llms.txt and in the Organization
+ * JSON-LD (decided 2026-10-17, OL-158). Families search and contact homes free;
+ * homes never pay to be listed or ranked; the only paid product is the optional
+ * family-paid concierge. No facility move-in fee is mentioned (not active).
+ */
 export const FEE_MODEL_LINE =
-  'Flat fee, paid by the facility, private-pay placements only. No fee of any kind when care is paid through Medicaid, Medicare or the VA (free lane).';
+  'Free for families to search and contact homes. Homes never pay to be listed or ranked. Optional Family Concierge: $399 flat for private-pay families, refunded if there is no verified shortlist within 2 business days. Families paying through Medicaid, Medicare or the VA always get our help free.';
 
 type Json = Record<string, unknown>;
 
