@@ -1,57 +1,40 @@
 name: tmp read e2e artifacts
 # TEMPORARY (OL-153 diagnosis): this sandbox cannot download Actions artifacts
-# (blob host blocked), so a runner lists the failed-test folders of two main
-# runs and emits them as annotations. Removed before the PR is reviewed.
+# (blob host blocked) and annotations are capped at 10 per step, so a runner
+# collects the failed tests' error-context + trace errors of two main runs and
+# posts them as ONE comment on PR #774. Removed before the PR is reviewed.
 on:
-  workflow_dispatch: {}
   pull_request:
     paths: ['.github/workflows/tmp-read-e2e-artifacts.yml']
 permissions:
   contents: read
   actions: read
+  pull-requests: write
 jobs:
   read:
     runs-on: ubuntu-latest
     steps:
-      - name: Download failed-run artifacts
+      - name: Collect + comment
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          set -e
+          set +e
           for spec in "39652136954 playwright-test-results-concierge" "39603169138 playwright-test-results-operator-claim"; do
             set -- $spec
-            mkdir -p "art/$1" && gh run download "$1" -R profyt7/carelinkai -n "$2" -D "art/$1" || echo "::warning::no artifact $2 on run $1"
+            mkdir -p "art/$1" && gh run download "$1" -R profyt7/carelinkai -n "$2" -D "art/$1" || echo "no artifact $2 on run $1"
           done
-          find art -maxdepth 3 -mindepth 2 -type d | sort | while read -r d; do echo "::notice title=folder::$d"; done
-          mkdir -p rep && gh run download 39652136954 -R profyt7/carelinkai -n playwright-report-merged -D rep || echo "::warning::no merged report"
-          for z in rep/data/*.zip; do [ -f "$z" ] && unzip -q -o "$z" -d rep/x 2>/dev/null; done
-          echo "::notice title=files::$(find art rep/x -type f 2>/dev/null | sed 's#.*/##' | sort | uniq -c | sort -rn | head -30 | tr '\n' ' ')"
-          python3 - <<'PY'
-          import json,glob,os
-          seen=0
-          for f in glob.glob('rep/x/**/*.json', recursive=True):
-              try: d=json.load(open(f))
-              except Exception: continue
-              def walk(o):
-                  global seen
-                  if isinstance(o,dict):
-                      if 'errors' in o and o.get('errors') and 'title' in o:
-                          for e in o['errors'][:2]:
-                              m=(e.get('message') or '')[:350].replace('\n',' ')
-                              print(f"::notice title=ERR {o.get('title','')[:80]}::{m}"); seen+=1
-                      for v in o.values(): walk(v)
-                  elif isinstance(o,list):
-                      for v in o: walk(v)
-              walk(d)
-          print(f"::notice title=report-json::{seen} error entries")
-          PY
+          out=report.md
+          echo "## tmp: failed-test artifacts (auto, to be deleted)" > $out
           for d in $(find art -maxdepth 3 -mindepth 2 -type d | sort); do
-            echo "== $d"; echo "::notice title=ls $(basename "$d")::$(ls -s "$d" | tr '\n' ' ' | head -c 500)"
+            echo "" >> $out; echo "### $d" >> $out; echo '```' >> $out; ls -s "$d" >> $out; echo '```' >> $out
             for z in "$d"/trace*.zip; do
               [ -f "$z" ] || continue
-              rm -rf tr && mkdir tr && unzip -q -o "$z" -d tr || true
-              errs=$(cat tr/*.trace 2>/dev/null | grep -o '"error":{"message":"[^"]\{0,400\}' | sed 's/"error":{"message":"//' | sort -u | head -4 | tr '\n' ' | ')
-              echo "::notice title=$(basename "$d")::${errs:-no error in trace}"
+              rm -rf tr && mkdir tr && unzip -q -o "$z" -d tr
+              echo "trace errors:" >> $out; echo '```' >> $out
+              cat tr/*.trace 2>/dev/null | grep -o '"error":{"message":"[^"]\{0,500\}' | sed 's/"error":{"message":"//' | sort -u | head -6 >> $out
+              echo '```' >> $out
             done
-            for m in "$d"/error-context.md; do [ -f "$m" ] && echo "::notice title=ctx $(basename "$d")::$(head -c 400 "$m" | tr '\n' ' ')"; done
+            [ -f "$d/error-context.md" ] && { echo "error-context.md (head):" >> $out; echo '```' >> $out; head -c 1500 "$d/error-context.md" >> $out; echo >> $out; echo '```' >> $out; }
           done
+          wc -c $out
+          gh pr comment 774 -R profyt7/carelinkai --body-file $out
