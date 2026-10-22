@@ -92,7 +92,7 @@ describe('OL-169 — scripts/post-deploy-verify.sh', () => {
   it('waits for a stable live sha, purges, and re-checks each page with a re-purge; the workflow runs it', () => {
     expect(script).toMatch(/STABLE_HITS/);
     expect(script).toMatch(/re-purging once/);
-    expect(script).toMatch(/note "checked \$p/);
+    expect(script).toMatch(/note "verified @\$target:\$CHECKED"/);
     const wf = fs.readFileSync(path.join(root, '.github/workflows/post-deploy-revalidate.yml'), 'utf8');
     expect(wf).toContain('run: bash scripts/post-deploy-verify.sh');
     expect(wf).toMatch(/pull_request:\n\s+paths:/);

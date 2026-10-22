@@ -16,8 +16,8 @@
 #      equals the target, retrying each page for up to PAGE_WAIT_SECS and
 #      re-purging once halfway through; /cleveland/assisted-living must also
 #      render the Medicaid-waiver lines.
-# Every page checked is echoed as a ::notice:: so the result is readable from
-# the check-run annotations without the job log. Secrets are never echoed.
+# The pages verified are emitted as one ::notice:: (GitHub keeps 10 annotations
+# per step) so the result is readable from the check run without the job log. Secrets are never echoed.
 
 set -u +e +o pipefail
 
@@ -99,7 +99,7 @@ check_page() {
   local p="$1" deadline=$(( $(date +%s) + PAGE_WAIT_SECS )) repurged=0 seen=""
   while :; do
     seen=$(page_sha "$BASE$p")
-    if [ "$seen" = "$target" ]; then note "checked $p → footer @$seen = $target"; return 0; fi
+    if [ "$seen" = "$target" ]; then echo "checked $p → footer @$seen = $target"; echo "- ✅ checked $p → footer @$seen" >> "$SUMMARY"; CHECKED="$CHECKED $p"; return 0; fi
     if [ "$(date +%s)" -ge "$deadline" ]; then fail "footer sha on $p is @${seen:-missing}, expected @$target (after ${PAGE_WAIT_SECS}s)"; return 1; fi
     if [ "$repurged" = 0 ] && [ "$DRY_RUN" != "1" ] && [ "$(date +%s)" -ge $(( deadline - PAGE_WAIT_SECS / 2 )) ]; then
       echo "$p still @${seen:-missing}; re-purging once"; purge; repurged=1
@@ -108,7 +108,10 @@ check_page() {
     sleep "$POLL_SECS"
   done
 }
+CHECKED=""
 for p in $PAGES; do check_page "$p"; done
+# One annotation for the whole list (GitHub keeps only 10 per step).
+note "verified @$target:$CHECKED"
 
 html=$(curl -s -m 40 -A "$UA" -H 'Cache-Control: no-cache' "$BASE/cleveland/assisted-living")
 cards=$(printf '%s' "$html" | grep -o 'data-testid="listing-card"' | wc -l | tr -d ' ')
