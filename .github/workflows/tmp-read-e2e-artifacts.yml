@@ -23,8 +23,13 @@ jobs:
             mkdir -p "art/$1" && gh run download "$1" -R profyt7/carelinkai -n "$2" -D "art/$1" || echo "::warning::no artifact $2 on run $1"
           done
           find art -maxdepth 3 -mindepth 2 -type d | sort | while read -r d; do echo "::notice title=folder::$d"; done
-          for f in $(find art -name 'error-context.md' | sort | head -20); do
-            msg=$(grep -m1 -E "Error|Timeout|expect" "$f" | head -c 300 || true)
-            echo "::notice title=$f::$msg"
+          for d in $(find art -maxdepth 3 -mindepth 2 -type d | sort); do
+            echo "== $d"; ls "$d"
+            for z in "$d"/trace*.zip; do
+              [ -f "$z" ] || continue
+              rm -rf tr && mkdir tr && unzip -q -o "$z" -d tr || true
+              errs=$(cat tr/*.trace 2>/dev/null | grep -o '"error":{"message":"[^"]\{0,400\}' | sed 's/"error":{"message":"//' | sort -u | head -4 | tr '\n' ' | ')
+              echo "::notice title=$(basename "$d")::${errs:-no error in trace}"
+            done
+            for m in "$d"/error-context.md; do [ -f "$m" ] && echo "::notice title=ctx $(basename "$d")::$(head -c 400 "$m" | tr '\n' ' ')"; done
           done
-          find art -name '*.txt' -o -name '*.md' | head -40
