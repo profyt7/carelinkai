@@ -8,7 +8,7 @@
  * sent from here — the weekly ping only runs when PING_ENABLED is set.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export const OPT_IN_LABEL = 'Send me a weekly one-line email asking how many beds are open. Reply with a number or STOP.';
 
@@ -33,27 +33,44 @@ export default function AvailabilityContactCard({ homeId }: { homeId: string }) 
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
+  // The mount effect runs twice in React dev (StrictMode) and the API route
+  // compiles lazily under `next dev`, so two loads can be in flight while the
+  // operator is already typing; a late one must not wipe their edits (it reset
+  // the opt-in checkbox mid-test in CI — OL-153). Only the newest load writes,
+  // and the form fields are only (re)filled when the operator has not touched
+  // them since the last load.
+  const seq = useRef(0);
+  const dirty = useRef(false);
 
   async function load() {
+    const mine = ++seq.current;
     try {
       const r = await fetch(`/api/operator/availability-contact?homeId=${encodeURIComponent(homeId)}`, { cache: 'no-store' });
       if (r.ok) {
         const j = await r.json();
+        if (mine !== seq.current) return;
         const c: Contact = j.contact ?? null;
         setContact(c);
-        setName(c?.name ?? '');
-        setEmail(c?.email ?? '');
-        setMobile(c?.mobile ?? '');
-        setOptedIn(c?.optedIn ?? false);
+        if (!dirty.current) {
+          setName(c?.name ?? '');
+          setEmail(c?.email ?? '');
+          setMobile(c?.mobile ?? '');
+          setOptedIn(c?.optedIn ?? false);
+        }
       }
     } finally {
-      setLoaded(true);
+      if (mine === seq.current) setLoaded(true);
     }
   }
   useEffect(() => {
+    dirty.current = false;
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [homeId]);
+  const edit = <T,>(set: (v: T) => void) => (v: T) => {
+    dirty.current = true;
+    set(v);
+  };
 
   async function save(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -71,6 +88,7 @@ export default function AvailabilityContactCard({ homeId }: { homeId: string }) 
         setErr(j.error || 'Could not save.');
       } else {
         setMsg(optedIn ? 'Saved. You are opted in to the weekly availability email.' : 'Saved. You are not receiving the weekly email.');
+        dirty.current = false; // the server copy is now the truth; let the reload fill the form
         await load();
       }
     } catch {
@@ -98,19 +116,19 @@ export default function AvailabilityContactCard({ homeId }: { homeId: string }) 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label className="form-label" htmlFor={`ac-name-${homeId}`}>Contact name</label>
-            <input id={`ac-name-${homeId}`} name="name" className="form-input" value={name} onChange={(e) => setName(e.target.value)} required minLength={2} maxLength={120} autoComplete="name" />
+            <input id={`ac-name-${homeId}`} name="name" className="form-input" value={name} onChange={(e) => edit(setName)(e.target.value)} required minLength={2} maxLength={120} autoComplete="name" />
           </div>
           <div>
             <label className="form-label" htmlFor={`ac-email-${homeId}`}>Email</label>
-            <input id={`ac-email-${homeId}`} name="email" type="email" className="form-input" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={254} autoComplete="email" />
+            <input id={`ac-email-${homeId}`} name="email" type="email" className="form-input" value={email} onChange={(e) => edit(setEmail)(e.target.value)} maxLength={254} autoComplete="email" />
           </div>
           <div className="sm:col-span-2">
             <label className="form-label" htmlFor={`ac-mobile-${homeId}`}>Mobile (optional, for a future text option)</label>
-            <input id={`ac-mobile-${homeId}`} name="mobile" type="tel" className="form-input" value={mobile} onChange={(e) => setMobile(e.target.value)} maxLength={40} autoComplete="tel" />
+            <input id={`ac-mobile-${homeId}`} name="mobile" type="tel" className="form-input" value={mobile} onChange={(e) => edit(setMobile)(e.target.value)} maxLength={40} autoComplete="tel" />
           </div>
         </div>
         <label className="flex items-start gap-2 text-neutral-800">
-          <input type="checkbox" className="form-checkbox mt-0.5 h-4 w-4" checked={optedIn} onChange={(e) => setOptedIn(e.target.checked)} data-testid="availability-contact-optin" />
+          <input type="checkbox" className="form-checkbox mt-0.5 h-4 w-4" checked={optedIn} onChange={(e) => edit(setOptedIn)(e.target.checked)} data-testid="availability-contact-optin" />
           <span>{OPT_IN_LABEL}</span>
         </label>
         {contact?.optedIn && contact.optedInAt && (

@@ -78,3 +78,23 @@ describe('POST /api/admin/revalidate', () => {
     expect(revalidatePath).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('OL-169 — scripts/post-deploy-verify.sh', () => {
+  const script = fs.readFileSync(path.join(root, 'scripts/post-deploy-verify.sh'), 'utf8');
+  it('its built-in page list is exactly the hub list minus llms.txt / sitemap (so "/" and every /cleveland/* page are verified)', () => {
+    const line = script.match(/^FALLBACK_PAGES='([^']+)'/m)?.[1] ?? '';
+    const pages = line.trim().split(/\s+/);
+    const expected = hubRevalidatePaths().filter((p) => !/\.(txt|xml)$/.test(p));
+    expect(pages).toEqual(expected);
+    expect(pages).toContain('/');
+    expect(pages.filter((p) => p.startsWith('/cleveland'))).toHaveLength(expected.filter((p) => p.startsWith('/cleveland')).length);
+  });
+  it('waits for a stable live sha, purges, and re-checks each page with a re-purge; the workflow runs it', () => {
+    expect(script).toMatch(/STABLE_HITS/);
+    expect(script).toMatch(/re-purging once/);
+    expect(script).toMatch(/note "verified @\$target:\$CHECKED"/);
+    const wf = fs.readFileSync(path.join(root, '.github/workflows/post-deploy-revalidate.yml'), 'utf8');
+    expect(wf).toContain('run: bash scripts/post-deploy-verify.sh');
+    expect(wf).toMatch(/pull_request:\n\s+paths:/);
+  });
+});

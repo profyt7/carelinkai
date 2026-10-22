@@ -1,79 +1,53 @@
 name: Post-deploy revalidate
 
-# OL-159: after every push to main, wait for Render to serve that commit, purge
-# the public hub pages (POST /api/admin/revalidate, CRON_SECRET bearer — the
-# secret is never echoed), then prove the acceptance criteria:
-#   - the footer build sha on /cleveland/assisted-living equals main's sha;
-#   - the Medicaid-waiver lines render on the cards.
-# Fails loudly with the cause (auth 401 — CRON_SECRET mismatch vs 5xx — app error).
+# OL-159 / OL-169: after every push to main, wait until Render stably serves
+# that commit, purge the public hub pages (POST /api/admin/revalidate,
+# CRON_SECRET bearer — never echoed) and prove that "/" and every /cleveland/*
+# page carry that commit's footer sha (each page retried for up to 5 min, one
+# re-purge halfway) and that the Medicaid-waiver lines render.
+#
+# The logic lives in scripts/post-deploy-verify.sh so it can be dry-run
+# locally (DRY_RUN=1 BASE=http://localhost:3000). On a pull request that edits
+# this workflow or the script it runs verify-only against production (no
+# secret, target = the live commit) so the page list and parsing are proven
+# on the merge preview before the change lands.
 
 on:
   push:
     branches: [main]
-  workflow_dispatch: {}
+  pull_request:
+    paths:
+      - '.github/workflows/post-deploy-revalidate.yml'
+      - 'scripts/post-deploy-verify.sh'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Verify only — no purge, target = the live commit'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
 
 concurrency:
-  group: post-deploy-revalidate
-  cancel-in-progress: true
+  group: post-deploy-revalidate-${{ github.event_name == 'push' && 'main' || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
 
 jobs:
   revalidate:
     name: Purge hub pages + verify
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
     steps:
+      - uses: actions/checkout@v4
+
       - name: Wait for the deploy, revalidate, verify
         shell: bash
         env:
           BASE: https://getcarelinkai.com
-          EXPECT_SHA: ${{ github.sha }}
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
-        run: |
-          set +e +o pipefail
-          set -u
-          short="${EXPECT_SHA:0:7}"
-          FAIL=0
-          fail() { echo "::error::$1"; echo "- ❌ $1" >> "$GITHUB_STEP_SUMMARY"; FAIL=1; }
-          pass() { echo "OK: $1"; echo "- ✅ $1" >> "$GITHUB_STEP_SUMMARY"; }
-          echo "## Post-deploy revalidate — $BASE @ $short" >> "$GITHUB_STEP_SUMMARY"
-
-          # 1. wait until /api/version serves this commit (Render deploy ≈ 5–10 min)
-          deadline=$(( $(date +%s) + 25*60 ))
-          while :; do
-            live=$(curl -s -m 30 "$BASE/api/version" | grep -o '"commitSha":"[0-9a-f]*"' | cut -d'"' -f4)
-            echo "$(date -u +%H:%M:%S) /api/version commitSha=${live:-?}"
-            case "${live:-}" in "$short"*) pass "live commit ${live:0:7} = main $short"; break ;; esac
-            if [ "$(date +%s)" -ge "$deadline" ]; then fail "commit $short not live after 25 min (live=${live:-?})"; exit 1; fi
-            sleep 30
-          done
-
-          # 2. purge the hub pages
-          resp=$(curl -s -m 40 -X POST -H "Authorization: Bearer $CRON_SECRET" -H 'Content-Type: application/json' -d '{}' -w '\n%{http_code}' "$BASE/api/admin/revalidate" || printf '\n000')
-          code=$(printf '%s' "$resp" | tail -n1); body=$(printf '%s' "$resp" | sed '$d')
-          echo "POST /api/admin/revalidate → HTTP $code ${body:0:600}"
-          case "$code" in
-            2??) pass "revalidate → $code" ;;
-            401|403) fail "revalidate: auth $code — CRON_SECRET mismatch (repository secret ≠ Render's CRON_SECRET, or Render's is unset)" ;;
-            5??) fail "revalidate: $code — app error (5xx). Body: ${body:0:300}" ;;
-            *) fail "revalidate: HTTP $code. Body: ${body:0:300}" ;;
-          esac
-
-          # 3. acceptance: footer sha on /cleveland/assisted-living = main; waiver lines render
-          html=$(curl -s -m 40 -A 'CareLinkAI-PostDeploy/1.0' "$BASE/cleveland/assisted-living")
-          if printf '%s' "$html" | grep -q "@$short"; then pass "footer sha on /cleveland/assisted-living = $short"; else
-            seen=$(printf '%s' "$html" | grep -oE '@[0-9a-f]{7}' | head -n1)
-            fail "footer sha on /cleveland/assisted-living is ${seen:-missing}, expected @$short"
-          fi
-          cards=$(printf '%s' "$html" | grep -o 'data-testid="listing-card"' | wc -l | tr -d ' ')
-          waiver=$(printf '%s' "$html" | grep -o 'data-testid="listing-waiver-line"' | wc -l | tr -d ' ')
-          echo "cards=$cards waiver-lines=$waiver"
-          if [ "$cards" -gt 0 ] && [ "$waiver" -gt 0 ]; then pass "waiver lines render ($waiver of $cards cards)"; else
-            fail "no Medicaid-waiver line on /cleveland/assisted-living ($cards cards, $waiver waiver lines)"
-          fi
-          echo "cf-cache / age headers:"; curl -s -m 30 -D - -o /dev/null -A 'CareLinkAI-PostDeploy/1.0' "$BASE/cleveland/assisted-living" | grep -iE '^(cf-cache-status|age|cache-control|x-nextjs-cache|server|x-render):' || true
-
-          [ "$FAIL" -ne 0 ] && { echo "::error::Post-deploy revalidate FAILED"; exit 1; }
-          echo "All post-deploy checks passed."
+          # push: the commit that just landed; PR / dry run: verify the live commit.
+          EXPECT_SHA: ${{ github.event_name == 'push' && github.sha || '' }}
+          DRY_RUN: ${{ (github.event_name != 'push' && (github.event_name == 'pull_request' || inputs.dry_run)) && '1' || '0' }}
+          CRON_SECRET: ${{ github.event_name == 'pull_request' && '' || secrets.CRON_SECRET }}
+        run: bash scripts/post-deploy-verify.sh
