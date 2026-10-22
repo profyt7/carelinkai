@@ -25,7 +25,26 @@ jobs:
           find art -maxdepth 3 -mindepth 2 -type d | sort | while read -r d; do echo "::notice title=folder::$d"; done
           mkdir -p rep && gh run download 39652136954 -R profyt7/carelinkai -n playwright-report-merged -D rep || echo "::warning::no merged report"
           for z in rep/data/*.zip; do [ -f "$z" ] && unzip -q -o "$z" -d rep/x 2>/dev/null; done
-          grep -rhoE '"(title|titlePath)":"[^"]{0,120}"|"message":"[^"]{0,300}' rep/x 2>/dev/null | grep -B2 '"message"' | tr '\n' ' ' | sed 's/"titlePath"/\n"titlePath"/g' | grep -i "message" | sort -u | head -12 | while read -r l; do echo "::notice title=report::${l:0:600}"; done
+          echo "::notice title=files::$(find art rep/x -type f 2>/dev/null | sed 's#.*/##' | sort | uniq -c | sort -rn | head -30 | tr '\n' ' ')"
+          python3 - <<'PY'
+          import json,glob,os
+          seen=0
+          for f in glob.glob('rep/x/**/*.json', recursive=True):
+              try: d=json.load(open(f))
+              except Exception: continue
+              def walk(o):
+                  global seen
+                  if isinstance(o,dict):
+                      if 'errors' in o and o.get('errors') and 'title' in o:
+                          for e in o['errors'][:2]:
+                              m=(e.get('message') or '')[:350].replace('\n',' ')
+                              print(f"::notice title=ERR {o.get('title','')[:80]}::{m}"); seen+=1
+                      for v in o.values(): walk(v)
+                  elif isinstance(o,list):
+                      for v in o: walk(v)
+              walk(d)
+          print(f"::notice title=report-json::{seen} error entries")
+          PY
           for d in $(find art -maxdepth 3 -mindepth 2 -type d | sort); do
             echo "== $d"; echo "::notice title=ls $(basename "$d")::$(ls -s "$d" | tr '\n' ' ' | head -c 500)"
             for z in "$d"/trace*.zip; do
