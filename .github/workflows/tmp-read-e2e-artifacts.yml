@@ -1,0 +1,30 @@
+name: tmp read e2e artifacts
+# TEMPORARY (OL-153 diagnosis): this sandbox cannot download Actions artifacts
+# (blob host blocked), so a runner lists the failed-test folders of two main
+# runs and emits them as annotations. Removed before the PR is reviewed.
+on:
+  workflow_dispatch: {}
+  pull_request:
+    paths: ['.github/workflows/tmp-read-e2e-artifacts.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download failed-run artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          for spec in "39652136954 playwright-test-results-concierge" "39603169138 playwright-test-results-operator-claim"; do
+            set -- $spec
+            mkdir -p "art/$1" && gh run download "$1" -R profyt7/carelinkai -n "$2" -D "art/$1" || echo "::warning::no artifact $2 on run $1"
+          done
+          find art -maxdepth 3 -mindepth 2 -type d | sort | while read -r d; do echo "::notice title=folder::$d"; done
+          for f in $(find art -name 'error-context.md' | sort | head -20); do
+            msg=$(grep -m1 -E "Error|Timeout|expect" "$f" | head -c 300 || true)
+            echo "::notice title=$f::$msg"
+          done
+          find art -name '*.txt' -o -name '*.md' | head -40
