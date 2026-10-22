@@ -470,15 +470,33 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
-      - name: Run Playwright (DP concierge flow + /founder intro page + concierge public specs)
+      # OL-153: this job used to run its 80+ specs against one shared `next dev`
+      # server, whose memory watchdog restarted it mid-run (ECONNREFUSED /
+      # ECONNRESET on whichever spec was in flight — red on main, green on a
+      # retry). The build above already exists, so the specs now run against
+      # the production standalone server: no lazy compiles, no restarts.
+      - name: Assemble the standalone server (static assets + public)
         run: |
+          test -f .next/standalone/server.js
+          cp -r public .next/standalone/public
+          mkdir -p .next/standalone/.next && cp -r .next/static .next/standalone/.next/static
+
+      - name: Run Playwright (DP concierge flow + /founder intro page + concierge public specs)
+        env:
+          E2E_WEB_SERVER: node .next/standalone/server.js
+          PORT: "3000"
+        run: |
+          # Bind dual-stack where the runner has IPv6 so both ::1 and 127.0.0.1
+          # answer for "localhost" (Node resolved it to ::1 in the failing runs).
+          export HOSTNAME=$([ -e /proc/net/if_inet6 ] && echo '::' || echo '0.0.0.0')
           # founder-page.spec.ts: the self-hosted founder intro linked from the DP
           # follow-up emails must serve 200 unauthenticated with the local <video>.
           # e2e/public/concierge/: the concierge offer / paid lane, facility
           # accept-decline, Medicaid waiver acceptance, History and concierge
           # metrics specs (admin-heavy pages). New specs dropped in that folder
-          # run here without editing this line.
-          npx playwright test --config=playwright.e2e.config.ts e2e/concierge-flow.spec.ts e2e/founder-page.spec.ts e2e/public/concierge/ --workers=1 --reporter=line
+          # run here without editing this line. The github reporter annotates
+          # each failing test on the check run (the job log is not always reachable).
+          npx playwright test --config=playwright.e2e.config.ts e2e/concierge-flow.spec.ts e2e/founder-page.spec.ts e2e/public/concierge/ --workers=1 --reporter=line,github
 
       - name: Upload Playwright test artifacts (Concierge flow) (always)
         if: always()

@@ -41,7 +41,10 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'npm run dev',
+    // OL-153: a job can point this at the production build (e.g. the
+    // e2e-concierge job runs `node .next/standalone/server.js` after `npm run
+    // build`) — no lazy route compiles, no dev-server memory restarts mid-run.
+    command: process.env.E2E_WEB_SERVER || 'npm run dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 180 * 1000,
