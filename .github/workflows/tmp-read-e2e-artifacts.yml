@@ -23,8 +23,11 @@ jobs:
             mkdir -p "art/$1" && gh run download "$1" -R profyt7/carelinkai -n "$2" -D "art/$1" || echo "::warning::no artifact $2 on run $1"
           done
           find art -maxdepth 3 -mindepth 2 -type d | sort | while read -r d; do echo "::notice title=folder::$d"; done
+          mkdir -p rep && gh run download 39652136954 -R profyt7/carelinkai -n playwright-report-merged -D rep || echo "::warning::no merged report"
+          for z in rep/data/*.zip; do [ -f "$z" ] && unzip -q -o "$z" -d rep/x 2>/dev/null; done
+          grep -rhoE '"(title|titlePath)":"[^"]{0,120}"|"message":"[^"]{0,300}' rep/x 2>/dev/null | grep -B2 '"message"' | tr '\n' ' ' | sed 's/"titlePath"/\n"titlePath"/g' | grep -i "message" | sort -u | head -12 | while read -r l; do echo "::notice title=report::${l:0:600}"; done
           for d in $(find art -maxdepth 3 -mindepth 2 -type d | sort); do
-            echo "== $d"; ls "$d"
+            echo "== $d"; echo "::notice title=ls $(basename "$d")::$(ls -s "$d" | tr '\n' ' ' | head -c 500)"
             for z in "$d"/trace*.zip; do
               [ -f "$z" ] || continue
               rm -rf tr && mkdir tr && unzip -q -o "$z" -d tr || true
