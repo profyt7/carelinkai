@@ -3,6 +3,7 @@ import { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireOperatorOrAdmin, requireAnyRole } from "@/lib/rbac";
 import { captureError } from '@/lib/sentry';
+import { recordEvent } from '@/lib/events/record-event';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -84,29 +85,42 @@ export async function POST(req: NextRequest) {
       operatorId = operator.id;
     }
 
-    const home = await prisma.assistedLivingHome.create({
-      data: {
-        operatorId,
-        name,
-        description,
-        status: 'ACTIVE',
-        careLevel,
-        capacity: Number(capacity),
-        currentOccupancy: 0,
-        priceMin: priceMin ? Number(priceMin) : null,
-        priceMax: priceMax ? Number(priceMax) : null,
-        amenities: Array.isArray(amenities) ? amenities : [],
-        genderRestriction: genderRestriction || null,
-        address: {
-          create: {
-            street: address.street,
-            street2: address.street2 || null,
-            city: address.city,
-            state: address.state,
-            zipCode: address.zipCode,
+    const home = await prisma.$transaction(async (tx) => {
+      const created = await tx.assistedLivingHome.create({
+        data: {
+          operatorId,
+          name,
+          description,
+          status: 'ACTIVE',
+          careLevel,
+          capacity: Number(capacity),
+          currentOccupancy: 0,
+          priceMin: priceMin ? Number(priceMin) : null,
+          priceMax: priceMax ? Number(priceMax) : null,
+          amenities: Array.isArray(amenities) ? amenities : [],
+          genderRestriction: genderRestriction || null,
+          address: {
+            create: {
+              street: address.street,
+              street2: address.street2 || null,
+              city: address.city,
+              state: address.state,
+              zipCode: address.zipCode,
+            },
           },
         },
-      },
+      });
+      // OL-173: capacity / amenities entered here are operator-provided — record
+      // them so the public listing can show them (seeded homes have no such row).
+      const source = user.role === UserRole.ADMIN ? 'ADMIN' : 'OPERATOR';
+      for (const field of ['capacity', 'amenities'] as const) {
+        await recordEvent(tx, {
+          entityType: 'OPERATOR_PROFILE', entityId: created.id, eventType: 'field.changed', field,
+          oldValue: null, newValue: { [field]: created[field] },
+          source, actor: { userId: user.id, role: user.role },
+        });
+      }
+      return created;
     });
     return NextResponse.json({ home }, { status: 201 });
   } catch (e) {

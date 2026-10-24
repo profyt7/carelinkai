@@ -14,7 +14,7 @@ import {
 import { filterGuidesForRole, type ViewerRole } from '@/lib/howto/access';
 
 export const metadata: Metadata = {
-  title: 'Family Education Hub | CareLinkAI',
+  title: 'Family Education Hub',
   description:
     'Free guides and resources to help families find the right assisted living home, understand care costs, and navigate senior care with confidence.',
 };

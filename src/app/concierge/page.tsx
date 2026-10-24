@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { FiCheck } from 'react-icons/fi';
 import ConciergeIntro from './ConciergeIntro';
 import { CONCIERGE_FIVE_MISTAKES, CONCIERGE_OFFER } from '@/lib/concierge/offer';
+import { PAGE_META, publicMetadata } from '@/lib/seo/page-meta';
 import { CONCIERGE_FAQ, buildConciergeFaqJsonLd } from '@/lib/concierge/faq';
 import { CARD } from '@/components/site/brand';
 
@@ -25,20 +26,8 @@ import { CARD } from '@/components/site/brand';
 
 const PAGE_URL = 'https://getcarelinkai.com/concierge';
 
-export const metadata: Metadata = {
-  title: 'Family Concierge — A Verified Shortlist in 2 Business Days or You Pay Nothing | CareLinkAI',
-  description:
-    'A Cleveland person checks fit, prices and the contract with you before you sign: a verified shortlist in 2 business days, a Medicaid runway plan, real prices in writing, a contract red-flag review. Private-pay families only; always free when Medicaid, Medicare or the VA pays.',
-  alternates: { canonical: PAGE_URL },
-  openGraph: {
-    title: 'Family Concierge | CareLinkAI',
-    description:
-      'We keep you from making the expensive mistake under pressure. Assisted living and memory care in Greater Cleveland. Private-pay families only — free help for everyone else.',
-    type: 'website',
-    url: PAGE_URL,
-    siteName: 'CareLinkAI',
-  },
-};
+// OL-172 (a)(b): ≤ 60-char title (root template adds the suffix), 140–155 char description, OG + Twitter.
+export const metadata: Metadata = publicMetadata(PAGE_META.concierge);
 
 const faqJsonLd = buildConciergeFaqJsonLd();
 

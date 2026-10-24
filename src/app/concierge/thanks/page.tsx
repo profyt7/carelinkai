@@ -12,7 +12,7 @@ import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/site/brand';
  */
 
 export const metadata: Metadata = {
-  title: 'Thank you — Family Concierge | CareLinkAI',
+  title: 'Thank you — Family Concierge',
   robots: { index: false, follow: false },
 };
 

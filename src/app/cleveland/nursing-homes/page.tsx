@@ -1,27 +1,23 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import CareTypeListingsSection from '@/components/directory/CareTypeListingsSection';
+import FaqSection from '@/components/site/FaqSection';
+import { CARE_TYPE_PLAN, loadCareTypeListings } from '@/lib/directory/care-type-listings';
+import { careTypeFaqs } from '@/lib/seo/directory-faq';
+import { buildBreadcrumbJsonLd } from '@/lib/seo/jsonld';
+import { PAGE_META, publicMetadata } from '@/lib/seo/page-meta';
 import { BTN_PRIMARY, CARD, HERO_BAND } from '@/components/site/brand';
 import { FiArrowRight, FiCheck } from 'react-icons/fi';
 
 // OL-159: static content, but re-rendered at least hourly (and on demand via
 // POST /api/admin/revalidate) so the footer build sha and shared copy never
 // outlive a deploy.
-export const revalidate = 3600;
+// OL-172 (d): this hub now lists live homes, so it renders per request like the
+// assisted living hub (never a stale count).
+export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
-  title: 'Nursing Homes in Cleveland, OH | CareLinkAI',
-  description:
-    'Nursing homes in Greater Cleveland with skilled medical care. What nursing homes cover, costs, Medicaid in Ohio, and what to look for.',
-  alternates: { canonical: 'https://getcarelinkai.com/cleveland/nursing-homes' },
-  openGraph: {
-    title: 'Nursing Homes in Cleveland, OH | CareLinkAI',
-    description:
-      'Skilled nursing facilities in Greater Cleveland — when nursing home care is right, costs, and how to choose.',
-    type: 'website',
-    url: 'https://getcarelinkai.com/cleveland/nursing-homes',
-    siteName: 'CareLinkAI',
-  },
-};
+// OL-172 (a)(b): title without the suffix (root template adds it), 140–155 char description, OG + Twitter.
+export const metadata: Metadata = publicMetadata(PAGE_META.nursingHomes);
 
 const structuredData = {
   '@context': 'https://schema.org',
@@ -44,13 +40,21 @@ const structuredData = {
   },
 };
 
-export default function ClevelandNursingHomesPage() {
+export default async function ClevelandNursingHomesPage() {
+  const plan = CARE_TYPE_PLAN['nursing-homes'];
+  const result = await loadCareTypeListings(plan);
+  const faqs = careTypeFaqs('nursing-homes', { label: plan.label, total: result.fallback ? 0 : result.total, acceptingWaiver: result.acceptingWaiver, fallbackNote: result.fallback ? `The nearest real option we list is licensed ${result.fallback.label}, shown on this page.` : null });
+  const breadcrumb = buildBreadcrumbJsonLd([
+    { name: 'Cleveland senior care', path: '/cleveland' },
+    { name: 'Nursing homes', path: PAGE_META.nursingHomes.path },
+  ]);
   return (
     <div className="bg-neutral-50">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
 
       <section className={HERO_BAND} data-testid="brand-hero">
         <div aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary-500 to-secondary-500" />
@@ -82,6 +86,8 @@ export default function ClevelandNursingHomesPage() {
           </div>
         </div>
       </section>
+
+      <CareTypeListingsSection path={PAGE_META.nursingHomes.path} typeLabel={plan.label} heading="Skilled nursing homes in Greater Cleveland" result={result} />
 
       <section className="max-w-5xl mx-auto px-6 py-16">
         <h2 className="text-3xl font-bold text-neutral-900">
@@ -258,6 +264,8 @@ export default function ClevelandNursingHomesPage() {
           </Link>
         </div>
       </section>
+
+      <FaqSection faqs={faqs} />
 
       <div className="max-w-5xl mx-auto px-6 py-8 text-sm text-neutral-500" data-testid="page-note">
         Last updated 2026-05-15. Not medical or legal advice. Medicaid eligibility,

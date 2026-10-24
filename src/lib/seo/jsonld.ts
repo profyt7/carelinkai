@@ -266,8 +266,14 @@ export function buildPagesItemListJsonLd(args: { url: string; name: string; page
   });
 }
 
-/** Organization document for the home page (W3 item 6d). No contact email. */
-export function buildOrganizationJsonLd(): Json {
+/**
+ * Organization document (W3 item 6d). No contact email.
+ * OL-172: rendered on EVERY page from the root layout with `includeFeeModel: false` —
+ * the fee-model line names the concierge price, which must never be in the server
+ * HTML of /concierge or any free-lane surface (OL-165 / OL-166b). /llms.txt keeps it.
+ */
+export function buildOrganizationJsonLd(opts: { includeFeeModel?: boolean } = {}): Json {
+  const includeFeeModel = opts.includeFeeModel ?? true;
   return compact({
     '@context': 'https://schema.org',
     '@type': 'Organization',
@@ -296,8 +302,26 @@ export function buildOrganizationJsonLd(): Json {
     knowsAbout: ['Assisted living', 'Memory care', 'Independent living', 'Skilled nursing', 'Home care', 'Ohio Department of Health inspections'],
     slogan: 'Verified senior care in Cleveland. No broker fees.',
     additionalProperty: [
-      { '@type': 'PropertyValue', name: 'Fee model', value: FEE_MODEL_LINE },
+      ...(includeFeeModel ? [{ '@type': 'PropertyValue', name: 'Fee model', value: FEE_MODEL_LINE }] : []),
       { '@type': 'PropertyValue', name: 'Machine-readable overview', value: `${SITE_URL}/llms.txt` },
     ],
   });
+}
+
+/** OL-172 (c): BreadcrumbList for the /cleveland/* pages and listings (paths are site-relative). */
+export function buildBreadcrumbJsonLd(crumbs: ReadonlyArray<{ name: string; path: string }>): Json {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: crumbs.map((c, i) => ({ '@type': 'ListItem', position: i + 1, name: c.name, item: `${SITE_URL}${c.path}` })),
+  };
+}
+
+/** OL-172 (c): FAQPage from the same Q&A array the page renders visibly. */
+export function buildFaqPageJsonLd(faqs: ReadonlyArray<{ q: string; a: string }>): Json {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  };
 }

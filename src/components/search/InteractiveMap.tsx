@@ -9,6 +9,10 @@ import { FiHeart, FiHome, FiMapPin, FiDollarSign } from 'react-icons/fi';
 
 // Import Leaflet CSS
 import 'leaflet/dist/leaflet.css';
+import { getMapTileConfig } from '@/lib/maps/tiles';
+
+// Same tile source + attribution as SimpleMap (OSM default, env override — OL-173).
+const tiles = getMapTileConfig();
 
 // Define types
 interface HomeAddress {
@@ -143,8 +147,10 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
         zoomControl={true}
       >
         <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url={tiles.url}
+          attribution={tiles.attribution}
+          subdomains={tiles.subdomains}
+          maxZoom={tiles.maxZoom}
         />
         
         {validHomes.map((home) => (

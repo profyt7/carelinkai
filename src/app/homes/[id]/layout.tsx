@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import { prisma } from '@/lib/prisma';
 import { PUBLIC_LISTING_SELECT, toPublicListing, type PublicListingRow } from '@/lib/directory/public-listings';
-import { buildListingJsonLd } from '@/lib/seo/jsonld';
+import { buildBreadcrumbJsonLd, buildListingJsonLd } from '@/lib/seo/jsonld';
+import { listingBreadcrumb, listingDescription, listingTitle } from '@/lib/seo/listing-meta';
+import { DEFAULT_OG_IMAGE, publicMetadata } from '@/lib/seo/page-meta';
 
 /**
  * Server layout for /homes/[id].
@@ -65,34 +67,24 @@ export async function generateMetadata({
   // Unknown / non-ACTIVE / demo listings stay out of search results.
   if (!isPublic(home)) {
     return {
-      title: 'Senior care home | CareLinkAI',
+      title: 'Senior care home',
       description: 'Find assisted living, memory care, and senior care homes on CareLinkAI.',
       alternates: { canonical },
       robots: { index: false, follow: true },
     };
   }
 
-  const locality = home.address ? `${home.address.city}, ${home.address.state}` : '';
-  const title = locality
-    ? `${home.name} — Senior Care in ${locality} | CareLinkAI`
-    : `${home.name} | CareLinkAI`;
-
+  // OL-172 (a)(b): ≤ 60-char title (the root template adds the suffix — never doubled),
+  // 140–155 char description, OG + Twitter with the home's photo or the site default.
+  const linkInput = { name: home.name, city: home.address?.city ?? null, state: home.address?.state ?? null, careLevels: home.careLevel ?? [] };
   const rawDescription = (home.aiGeneratedDescription?.trim() || home.description || '').trim();
-  const description = rawDescription.length > 160 ? `${rawDescription.slice(0, 157)}…` : rawDescription;
-  const ogImage = home.photos?.[0]?.url;
-
   return {
-    title,
-    description,
-    alternates: { canonical },
-    openGraph: {
-      title,
-      description,
-      type: 'website',
-      url: canonical,
-      siteName: 'CareLinkAI',
-      ...(ogImage ? { images: [{ url: ogImage }] } : {}),
-    },
+    ...publicMetadata({
+      path: `/homes/${id}`,
+      title: listingTitle(linkInput),
+      description: listingDescription(linkInput, rawDescription),
+      image: home.photos?.[0]?.url || DEFAULT_OG_IMAGE,
+    }),
     robots: { index: true, follow: true },
   };
 }
@@ -114,8 +106,14 @@ export default async function HomeDetailLayout({
       })
     : null;
 
+  // OL-172 (c)(f): Cleveland › care hub › suburb › this home.
+  const breadcrumb = isPublic(home)
+    ? buildBreadcrumbJsonLd(listingBreadcrumb({ id, name: home.name, city: home.address?.city ?? null, careLevels: home.careLevel ?? [] }))
+    : null;
+
   return (
     <>
+      {breadcrumb && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />}
       {jsonLd && (
         <script
           type="application/ld+json"
