@@ -47,6 +47,7 @@ import GoogleRatingBadge from "@/components/homes/GoogleRatingBadge";
 import AvailabilityBadge from "@/components/availability/AvailabilityBadge";
 import HomeReviews from "@/components/homes/HomeReviews";
 import InspectionHistory from "@/components/homes/InspectionHistory";
+import ListingRelatedLinks from "@/components/directory/ListingRelatedLinks";
 import LeadConsentCheckbox, { emptyLeadConsent } from "@/components/consent/LeadConsentCheckbox";
 import type { LeadConsentPayload } from "@/lib/consent/lead-consent-text";
 import { PAYER_SOURCE_OPTIONS } from "@/lib/payer/payer-source";
@@ -1279,6 +1280,9 @@ export default function HomeDetailPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* OL-172 (f): back to the suburb page and care-type hubs */}
+                <ListingRelatedLinks listing={{ name: realHome.name, city: realHome.address?.city ?? null, state: realHome.address?.state ?? null, careLevels: realHome.careLevel ?? [] }} />
 
                 {/* Contact */}
                 <div ref={contactRef} className="mb-8 scroll-mt-20">

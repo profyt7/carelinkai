@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const guide = getHowToGuide(params.slug);
   if (!guide) return {};
   return {
-    title: `${guide.title} | How-To Guides | CareLinkAI`,
+    title: `${guide.title} | How-To Guides`,
     description: guide.summary,
   };
 }
