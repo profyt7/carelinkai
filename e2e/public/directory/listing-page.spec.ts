@@ -8,8 +8,8 @@
  * unverified. It carries a Medicaid waiver status so the waiver line shows.
  *
  * Asserts:
- *   (a) the Leaflet map initialises, uses the OSM tile template, shows the OSM
- *       attribution, and never shows "Failed to initialize map";
+ *   (a) the Leaflet map initialises, uses the MapTiler tile template (OL-178),
+ *       shows the MapTiler + OSM attribution, never "Failed to initialize map";
  *   (b) no "100 Residents" / "spots available" / waitlist copy — availability
  *       reads "Availability: contact to confirm" in tile, Quick Facts and sidebar;
  *   (c) no "24/7" staffing claim; amenities labelled as reported by the home;
@@ -86,16 +86,18 @@ test.describe('@critical /homes/[id] listing page (OL-173)', () => {
     await location.scrollIntoViewIfNeeded();
     const leaflet = page.locator('#map-container.leaflet-container');
     await expect(leaflet).toBeVisible({ timeout: 30000 });
-    // Tile <img>s are created by Leaflet with the OSM template expanded; assert
-    // the host (not the pixels — CI shouldn't depend on tiles loading).
+    // OL-178: MapTiler tiles (the job sets a fake NEXT_PUBLIC_MAPTILER_KEY);
+    // assert the host + attribution, not the pixels. listing-map-tiles.spec.ts
+    // intercepts the requests and checks nothing goes to OSM / CARTO.
     const tile = leaflet.locator('img.leaflet-tile').first();
     await expect(tile).toBeAttached({ timeout: 30000 });
     const src = (await tile.getAttribute('src')) ?? '';
-    expect(src).toMatch(/^https:\/\/[abc]\.tile\.openstreetmap\.org\/\d+\/\d+\/\d+\.png$/);
+    expect(src).toMatch(/^https:\/\/api\.maptiler\.com\/maps\/streets-v2\/256\/\d+\/\d+\/\d+(@2x)?\.png\?key=/);
     const attribution = leaflet.locator('.leaflet-control-attribution');
-    await expect(attribution).toContainText('OpenStreetMap');
-    await expect(attribution).toContainText('contributors');
+    await expect(attribution).toContainText('MapTiler');
+    await expect(attribution).toContainText('OpenStreetMap contributors');
     await expect(attribution.locator('a[href="https://www.openstreetmap.org/copyright"]')).toHaveCount(1);
+    await expect(attribution.locator('a[href="https://www.maptiler.com/copyright/"]')).toHaveCount(1);
     await expect(leaflet.locator('.leaflet-marker-icon')).toHaveCount(1);
     await expect(page.getByText('Failed to initialize map')).toHaveCount(0);
     await expect(page.getByText(/cartocdn|API KEY REQUIRED/i)).toHaveCount(0);

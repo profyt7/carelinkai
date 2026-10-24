@@ -325,7 +325,10 @@ function applySecurityHeaders(req: any, res: NextResponse) {
   // Common security headers
   res.headers.set('X-Content-Type-Options', 'nosniff');
   res.headers.set('X-Frame-Options', 'DENY');
-  res.headers.set('Referrer-Policy', 'no-referrer');
+  // OL-178: cross-origin requests carry the origin only (never a path or query —
+  // claim / one-tap tokens stay private). `no-referrer` made OpenStreetMap block
+  // every tile, and MapTiler's key restriction checks the origin.
+  res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.headers.set(
     'Permissions-Policy',
     [

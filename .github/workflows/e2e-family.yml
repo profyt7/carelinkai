@@ -417,6 +417,10 @@ jobs:
       # Ephemeral service-container DB only — NEVER prod (see note in the other
       # e2e jobs). ALLOW_DEV_ENDPOINTS seeding must not reach a real database.
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/carelinkai_marketplace?schema=public
+      # OL-178: a FAKE MapTiler key so the listing map builds its MapTiler tile
+      # URLs; listing-map-tiles.spec.ts intercepts api.maptiler.com (no real
+      # request leaves the runner) and asserts no OSM / CARTO tile request.
+      NEXT_PUBLIC_MAPTILER_KEY: e2e-fake-maptiler-key
       S3_DISABLE: "1"
       # Disable Sentry in e2e — see note in the residents/family jobs (OL-121).
       SENTRY_DSN: ""
