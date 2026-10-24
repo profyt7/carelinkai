@@ -2872,6 +2872,13 @@ enum InboundLeadStatus {
   CLOSED
 }
 
+/// Where an inbound lead came from (OL-177): a call to the published number,
+/// or a family's web inquiry on an UNCLAIMED listing (no operator to receive it).
+enum InboundLeadSource {
+  CALL
+  WEB_INQUIRY
+}
+
 /// One inbound call to the published number → one callback record (OL-167a).
 /// Business contact details only: `reason` is PHI-guarded (redacted + phiFlag
 /// when it looks like patient detail) and capped at 280 chars.
@@ -2882,8 +2889,8 @@ model InboundLead {
   callerType     InboundCallerType
   name           String?
   organization   String?
-  /// E.164 (+1XXXXXXXXXX).
-  callbackPhone  String
+  /// E.164 (+1XXXXXXXXXX). Always set for calls; optional on web inquiries.
+  callbackPhone  String?
   urgency        InboundLeadUrgency?
   reason         String?            @db.VarChar(280)
   transcriptUrl  String?
@@ -2895,11 +2902,18 @@ model InboundLead {
   contactedAt    DateTime?
   closedAt       DateTime?
   phiFlag        Boolean            @default(false)
+  /// OL-177: CALL (default) or WEB_INQUIRY. Web rows use conversationId "web-inquiry:<inquiryId>".
+  source         InboundLeadSource  @default(CALL)
+  contactEmail   String?
+  homeId         String?
+  /// The Inquiry row a WEB_INQUIRY lead mirrors (the full message stays there).
+  inquiryId      String?            @unique
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
 
   @@index([status, receivedAt])
   @@index([callerType, receivedAt])
+  @@index([source, receivedAt])
 }
 
 /// Ohio Medicaid Assisted Living Waiver participation (sprint W5-2, G3).

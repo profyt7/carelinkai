@@ -2,6 +2,22 @@
 
 ---
 
+### 2026-10-24 — #783 merged; OL-177 unclaimed inquiries + OL-178 MapTiler (one PR, not merged)
+- **Objective:** Merge #783 and verify the deploy. Then one PR: OL-177 (trace the inquiry flow; route unclaimed-home inquiries to the admin inbound queue + `ADMIN_NOTIFY_EMAIL`) and OL-178 (OSM tiles 403 in production → MapTiler).
+- **Work completed:**
+  - **#783 deploy:** #783 was squash-merged as `3af16f2c` (branch deleted). Post-deploy revalidate run 40102182104 succeeded; prod-verify run 40102205609 succeeded, with `/homes/cmql0xbos0006r7jcitqgqhds` → 200, footer `@3af16f2`.
+  - **OL-177 trace:** "Send a Message" / "Send Inquiry" → step-1 form → step 2 → `POST /api/inquiries`. That creates an `Inquiry` (+ `LeadConsent`, FollowUp rows by rule) and notifies:
+    - **claimed homes:** operator SMS (if a phone is on file) + operator email (`sendNewLeadOperatorEmail`) + the operator portal inbox (`/operator/inquiries`);
+    - **unclaimed homes:** only `notifyUnclaimedHomeInquiry` → claim drip, which is paused, so nobody was notified;
+    - in both cases there was no family email.
+  - **OL-177 fix and OL-178:** see the open loops.
+- **Files changed:** `prisma/schema.prisma`, `prisma/migrations/20261024000000_inbound_lead_web_inquiry/`, `src/lib/leads/{web-inquiry-lead,advisor-copy,inbound-alerts,inbound-lead-admin}.ts`, `src/app/api/inquiries/route.ts`, `src/app/admin/inbound-leads/page.tsx`, `src/app/homes/[id]/page.tsx`, `src/app/api/dev/upsert-operator/route.ts`, `src/lib/maps/tiles.ts`, `src/components/search/{SimpleMap,InteractiveMap}.tsx`, `src/middleware.ts`, `.env.example`, `docs/PWA_IMPLEMENTATION.md`, `.github/workflows/e2e-family.yml` (fake MapTiler key in e2e-public-directory), tests (`web-inquiry-lead.unit`, `simple-map-placeholder.render`, `listing-facts.unit`, e2e `unclaimed-inquiry`, `listing-map-tiles`, `listing-page`), context files.
+- **Commands run:** `prisma migrate deploy` (local), `prisma generate`, `npx tsc --noEmit`, eslint, `npx jest --ci`, and Playwright (`unclaimed-inquiry`, `inbound-leads`, `listing-map-tiles`, `listing-page`) on a local dev server with a fake MapTiler key.
+- **Tests/build status:** tsc clean · eslint clean · jest 125/125 suites (1242 passed) · e2e 9/9 locally.
+- **Deployment impact:** One additive migration (runs via `migrate deploy`). Maps render a placeholder until `NEXT_PUBLIC_MAPTILER_KEY` is set and a redeploy happens. Referrer-Policy changes sitewide to `strict-origin-when-cross-origin`.
+- **New risks/blockers:** `ADMIN_NOTIFY_EMAIL` is unset in Render (fallback: chris@). The family tour modal on unclaimed homes still black-holes (noted on OL-177).
+- **Recommended next step:** Chris sets `NEXT_PUBLIC_MAPTILER_KEY` (+ `ADMIN_NOTIFY_EMAIL`) in Render, reviews and merges, then sends one test inquiry on an unclaimed listing.
+
 ### 2026-10-24 — #782 merged + OL-176 unverified listing claims (PR open, not merged)
 - **Objective:** Merge #782 and verify the deploy. Then one PR applying the OL-173(c) rule to amenities and sweeping `/homes/[id]` for other unverified facts.
 - **Work completed:**

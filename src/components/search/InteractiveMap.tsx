@@ -11,7 +11,7 @@ import { FiHeart, FiHome, FiMapPin, FiDollarSign } from 'react-icons/fi';
 import 'leaflet/dist/leaflet.css';
 import { getMapTileConfig } from '@/lib/maps/tiles';
 
-// Same tile source + attribution as SimpleMap (OSM default, env override — OL-173).
+// Same MapTiler source + attribution as SimpleMap (OL-178); null when the key is unset.
 const tiles = getMapTileConfig();
 
 // Define types
@@ -138,6 +138,14 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
         validHomes.length
       : FALLBACK_CENTER[1];
 
+  if (!tiles) {
+    return (
+      <div className="flex h-full w-full items-center justify-center rounded-lg border-2 border-dashed border-neutral-300 bg-neutral-50 text-sm text-neutral-600" data-testid="map-placeholder">
+        Map unavailable — use the address on each listing.
+      </div>
+    );
+  }
+
   return (
     <div className="relative h-full w-full">
       <MapContainer
@@ -149,8 +157,9 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
         <TileLayer
           url={tiles.url}
           attribution={tiles.attribution}
-          subdomains={tiles.subdomains}
           maxZoom={tiles.maxZoom}
+          tileSize={256}
+          referrerPolicy={tiles.referrerPolicy}
         />
         
         {validHomes.map((home) => (

@@ -199,7 +199,7 @@ server {
   add_header Strict-Transport-Security "max-age=63072000; includeSubDomains" always;
   add_header Content-Security-Policy "
     default-src 'self';
-    img-src 'self' data: https://*.tile.openstreetmap.org;
+    img-src 'self' data: https://api.maptiler.com;
     connect-src 'self' wss:;
     script-src 'self' 'unsafe-inline' 'unsafe-eval';
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
@@ -217,7 +217,7 @@ server {
 | Symptom | Likely Cause | Fix |
 |---------|--------------|-----|
 | `react-hot-toast` _module not found_ | package missing | `npm i react-hot-toast` and uncomment imports |
-| Map tiles grey / no imagery | CSP blocks OSM servers | add `https://*.tile.openstreetmap.org` to `img-src` |
+| Map tiles grey / no imagery | `NEXT_PUBLIC_MAPTILER_KEY` unset, or CSP blocks MapTiler | set the key (OL-178); add `https://api.maptiler.com` to `img-src` |
 | `Invalid LatLng object: (NaN, NaN)` | missing coords | check API returns `lat`+`lng` or `latitude`+`longitude` |
 | Install prompt never fires | not served over HTTPS / SW error | check console; ensure `manifest.json` is fetched (status 200) |
 | Updates don’t show | cached SW | DevTools → Application → “Update on reload” or bump cache version inside `sw.js` |

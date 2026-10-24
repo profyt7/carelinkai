@@ -1,7 +1,8 @@
 'use client';
 
 /**
- * /admin/inbound-leads — callbacks from the published phone number (OL-167c).
+ * /admin/inbound-leads — callbacks from the published phone number (OL-167c),
+ * plus family web inquiries on UNCLAIMED listings (OL-177, "web inquiry" flag).
  * One row per call: who called (planner / family / facility / other), name,
  * org, callback number (tap to call), urgency, reason (PHI-guarded), flags,
  * recording + transcript links. Mark contacted / Close. Admin only — the API
@@ -19,7 +20,7 @@ type Row = {
   callerType: CallerType;
   name: string | null;
   organization: string | null;
-  callbackPhone: string;
+  callbackPhone: string | null;
   urgency: 'TODAY' | 'THIS_WEEK' | 'PLANNING' | null;
   reason: string | null;
   transcriptUrl: string | null;
@@ -30,6 +31,9 @@ type Row = {
   contactedAt: string | null;
   closedAt: string | null;
   phiFlag: boolean;
+  source: 'CALL' | 'WEB_INQUIRY';
+  contactEmail: string | null;
+  inquiryId: string | null;
 };
 type Data = { rows: Row[]; counts: Record<string, number>; generatedAt: string };
 
@@ -178,21 +182,30 @@ export default function InboundLeadsPage() {
                 <tr key={r.id} data-testid="inbound-lead-row" data-lead-id={r.id} data-status={r.status} data-caller-type={r.callerType}>
                   <td className="px-3 py-2 whitespace-nowrap text-neutral-700">{fmtDate(r.receivedAt)}</td>
                   <td className="px-3 py-2"><span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${TYPE_STYLE[r.callerType]}`}>{label(r.callerType)}</span></td>
-                  <td className="px-3 py-2 text-neutral-900">{r.name ?? '—'}</td>
+                  <td className="px-3 py-2 text-neutral-900">
+                    {r.name ?? '—'}
+                    {r.contactEmail && (
+                      <a href={`mailto:${r.contactEmail}`} className="block text-xs text-primary-700 hover:underline" data-testid="inbound-lead-email">{r.contactEmail}</a>
+                    )}
+                  </td>
                   <td className="px-3 py-2 text-neutral-700">{r.organization ?? '—'}</td>
                   <td className="px-3 py-2 whitespace-nowrap">
-                    <a href={telHref(r.callbackPhone)} className="inline-flex items-center gap-1 font-medium text-primary-700 hover:underline" data-testid="inbound-lead-phone"><Phone className="h-3.5 w-3.5" /> {r.callbackPhone}</a>
+                    {r.callbackPhone ? (
+                      <a href={telHref(r.callbackPhone)} className="inline-flex items-center gap-1 font-medium text-primary-700 hover:underline" data-testid="inbound-lead-phone"><Phone className="h-3.5 w-3.5" /> {r.callbackPhone}</a>
+                    ) : '—'}
                   </td>
                   <td className="px-3 py-2">{r.urgency ? <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${URGENCY_STYLE[r.urgency] ?? ''}`}>{label(r.urgency)}</span> : '—'}</td>
                   <td className="px-3 py-2 max-w-xs text-neutral-800" data-testid="inbound-lead-reason">{r.reason ?? '—'}</td>
                   <td className="px-3 py-2 whitespace-nowrap">
                     <div className="flex flex-wrap gap-1">
+                      {r.source === 'WEB_INQUIRY' && <span className="rounded-full bg-primary-50 px-2 py-0.5 text-xs font-semibold text-primary-700" data-testid="flag-web-inquiry">web inquiry</span>}
                       {r.afterHours && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800" data-testid="flag-after-hours">after hours</span>}
                       {r.phiFlag && <span className="rounded-full bg-error-50 px-2 py-0.5 text-xs font-semibold text-error-700" data-testid="flag-phi">possible PHI</span>}
                     </div>
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">
                     <div className="flex items-center gap-2">
+                      {r.inquiryId && <a href={`/admin/inquiries/${r.inquiryId}`} className="inline-flex items-center gap-1 text-primary-700 hover:underline" data-testid="inbound-lead-inquiry"><ExternalLink className="h-4 w-4" /> Inquiry</a>}
                       {r.recordingUrl && <a href={r.recordingUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary-700 hover:underline" data-testid="inbound-lead-recording"><Headphones className="h-4 w-4" /> Recording</a>}
                       {r.transcriptUrl && <a href={r.transcriptUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary-700 hover:underline" data-testid="inbound-lead-transcript"><ExternalLink className="h-4 w-4" /> Transcript</a>}
                     </div>

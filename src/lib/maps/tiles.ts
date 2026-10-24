@@ -1,50 +1,59 @@
 /**
- * Map tile source for the Leaflet maps (OL-173).
+ * Map tile source for the Leaflet maps (OL-173 → OL-178).
  *
- * Default: OpenStreetMap standard tiles — no API key. (CARTO's basemaps now
- * answer "API KEY REQUIRED", which is what broke the listing-page map.)
- * OSM's tile policy requires the "© OpenStreetMap contributors" attribution,
- * linked to the copyright page, wherever the tiles are shown.
+ * MapTiler "streets-v2", 256px tiles with a Leaflet {r} retina suffix ("@2x"
+ * on high-DPI screens), keyed by NEXT_PUBLIC_MAPTILER_KEY (build-time —
+ * NEXT_PUBLIC_ vars are inlined by Next; set it in Render). OpenStreetMap's
+ * own tile servers answered 403 "Access blocked" in production — their usage
+ * policy blocks heavy/app use and requests without a referrer — and CARTO's
+ * basemaps answer "API KEY REQUIRED", so neither is used anywhere.
  *
- * Override (optional, build-time — NEXT_PUBLIC_ vars are inlined by Next):
- *   NEXT_PUBLIC_MAP_TILE_URL          e.g. a keyed provider's {z}/{x}/{y} template
- *   NEXT_PUBLIC_MAP_TILE_ATTRIBUTION  HTML attribution that provider requires
- * A custom URL without its own attribution keeps the OSM attribution (most
- * hosted providers serve OSM data, and showing it is never wrong).
+ * MapTiler's terms: show "© MapTiler © OpenStreetMap contributors" (both
+ * linked) and, on the free plan, the MapTiler logo linked to maptiler.com.
+ * Tiles are requested with a strict-origin-when-cross-origin referrer, so a
+ * key restricted to getcarelinkai.com works and no page path ever leaks.
+ *
+ * No key → `null`: callers render a static placeholder (address + directions
+ * stay), never a broken map, and log one warning.
  */
 
-export const OSM_TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-export const OSM_ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+export const MAPTILER_TILE_URL_PREFIX = 'https://api.maptiler.com/maps/streets-v2/256/{z}/{x}/{y}{r}.png?key=';
+export const MAPTILER_ATTRIBUTION =
+  '<a href="https://www.maptiler.com/copyright/" target="_blank" rel="noopener">&copy; MapTiler</a> ' +
+  '<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">&copy; OpenStreetMap contributors</a>';
+export const MAPTILER_LOGO = { href: 'https://www.maptiler.com/', src: 'https://api.maptiler.com/resources/logo.svg', alt: 'MapTiler logo' } as const;
+export const TILE_REFERRER_POLICY = 'strict-origin-when-cross-origin' as const;
+export const MAP_TILES_MISSING_WARNING = '[maps] NEXT_PUBLIC_MAPTILER_KEY is not set — showing the static map placeholder';
 
 export type MapTileConfig = {
   url: string;
   attribution: string;
-  /** Leaflet `subdomains` for the {s} placeholder. */
-  subdomains: string;
   maxZoom: number;
+  referrerPolicy: typeof TILE_REFERRER_POLICY;
+  logo: typeof MAPTILER_LOGO;
 };
 
-/** Pure: resolve the tile config from (possibly empty) override values. */
-export function resolveMapTileConfig(
-  overrideUrl?: string | null,
-  overrideAttribution?: string | null,
-): MapTileConfig {
-  const url = (overrideUrl ?? '').trim();
-  const attribution = (overrideAttribution ?? '').trim();
-  const isCustom = url.length > 0 && /^https:\/\//i.test(url) && url.includes('{z}');
+/** Pure: the MapTiler config for a key, or null when the key is missing. */
+export function resolveMapTileConfig(key?: string | null): MapTileConfig | null {
+  const k = (key ?? '').trim();
+  if (!k) return null;
   return {
-    url: isCustom ? url : OSM_TILE_URL,
-    attribution: isCustom && attribution ? attribution : OSM_ATTRIBUTION,
-    subdomains: 'abc',
+    url: `${MAPTILER_TILE_URL_PREFIX}${encodeURIComponent(k)}`,
+    attribution: MAPTILER_ATTRIBUTION,
     maxZoom: 19,
+    referrerPolicy: TILE_REFERRER_POLICY,
+    logo: MAPTILER_LOGO,
   };
 }
 
-/** The tile config for this build. Literal `process.env.NEXT_PUBLIC_*` reads so Next inlines them. */
-export function getMapTileConfig(): MapTileConfig {
-  return resolveMapTileConfig(
-    process.env.NEXT_PUBLIC_MAP_TILE_URL,
-    process.env.NEXT_PUBLIC_MAP_TILE_ATTRIBUTION,
-  );
+let warned = false;
+
+/** The tile config for this build (literal env read so Next inlines it). Warns once when unset. */
+export function getMapTileConfig(): MapTileConfig | null {
+  const config = resolveMapTileConfig(process.env.NEXT_PUBLIC_MAPTILER_KEY);
+  if (!config && !warned) {
+    warned = true;
+    console.warn(MAP_TILES_MISSING_WARNING);
+  }
+  return config;
 }

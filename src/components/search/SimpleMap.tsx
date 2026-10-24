@@ -128,6 +128,8 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
   const [mapError, setMapError] = useState<string | null>(null);
+  // OL-178: MapTiler config, or null when NEXT_PUBLIC_MAPTILER_KEY is unset (→ static placeholder, no broken map).
+  const tiles = useMemo(() => getMapTileConfig(), []);
   const [isReady, setIsReady] = useState(false);
   
   // Store callbacks in refs to avoid dependency changes
@@ -193,14 +195,29 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
         return;
       }
 
+      if (!tiles) return; // no key → the placeholder renders instead
       try {
-        const tiles = getMapTileConfig();
         const map = L.map(container, { center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM, zoomControl: true });
         L.tileLayer(tiles.url, {
           attribution: tiles.attribution,
           maxZoom: tiles.maxZoom,
-          subdomains: tiles.subdomains,
+          tileSize: 256,
+          // Leaflet 1.9 sets this on each tile <img>: MapTiler sees our origin (key
+          // restrictions work); no path or query ever leaves the page.
+          referrerPolicy: tiles.referrerPolicy,
         }).addTo(map);
+        // MapTiler's terms (free plan): their logo, linked, on the map.
+        const Logo = L.Control.extend({
+          onAdd() {
+            const a = L.DomUtil.create('a', 'maptiler-logo');
+            a.href = tiles.logo.href;
+            a.target = '_blank';
+            a.rel = 'noopener';
+            a.innerHTML = `<img src="${tiles.logo.src}" alt="${tiles.logo.alt}" width="67" height="20" style="display:block" />`;
+            return a;
+          },
+        });
+        new Logo({ position: 'bottomleft' }).addTo(map);
 
         mapInstanceRef.current = map;
         setIsReady(true);
@@ -226,7 +243,7 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
       markersRef.current = {};
       setIsReady(false);
     };
-  }, []);
+  }, [tiles]);
 
   // Update markers when data changes - STABLE dependencies only
   useEffect(() => {
@@ -299,6 +316,18 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
     map.on('popupopen', handlePopupOpen);
     return () => { map.off('popupopen', handlePopupOpen); };
   }, [isReady]); // Only depends on isReady - callbacks accessed via ref
+
+  if (!tiles) {
+    return (
+      <div className="flex h-full items-center justify-center rounded-lg border-2 border-dashed border-neutral-300 bg-neutral-50" style={{ minHeight: "320px" }} data-testid="map-placeholder">
+        <div className="p-4 text-center">
+          <FiMapPin className="mx-auto h-10 w-10 text-neutral-400" />
+          <p className="mt-2 text-sm font-medium text-neutral-600">Map unavailable</p>
+          <p className="text-xs text-neutral-500">Use the address and directions{showCount ? ' on each listing' : ' below'}.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (mapError) {
     return (

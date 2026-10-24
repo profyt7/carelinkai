@@ -60,6 +60,7 @@ import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
 import { toggleFavorite as toggleFavoriteApi } from "@/lib/favoritesService";
 import { listingFacts } from "@/lib/homes/listing-facts";
+import { ADVISOR_FOLLOW_UP_TEXT } from "@/lib/leads/advisor-copy";
 
 // Dynamically import the SimpleMap component with SSR disabled
 const SimpleMap = dynamic(
@@ -1310,8 +1311,9 @@ export default function HomeDetailPage() {
                       <h3 className="mb-2 text-lg font-semibold text-neutral-800">Request Submitted!</h3>
                       {realHome.unclaimed ? (
                         <>
-                          <p className="mb-3 text-sm text-neutral-600">
-                            We&apos;ve sent your inquiry to {realHome.name} and let them know a family is waiting. Some communities haven&apos;t set up their CareLinkAI page yet, so a direct reply can take a little longer — we&apos;ll route their response to you as soon as it comes in.
+                          {/* OL-177: unclaimed → the inquiry goes to CareLinkAI's inbound queue, not the home. No time promise. */}
+                          <p className="mb-3 text-sm text-neutral-600" data-testid="inquiry-confirmation-unclaimed">
+                            We&apos;ve received your message about {realHome.name}. {ADVISOR_FOLLOW_UP_TEXT}
                           </p>
                           <a
                             href={`/search?location=${encodeURIComponent(realHome.address?.city || '')}${realHome.careLevel?.[0] ? `&careLevel=${encodeURIComponent(realHome.careLevel[0])}` : ''}`}

@@ -156,6 +156,7 @@ export async function DELETE(req: NextRequest) {
       : [];
     const ids = [...new Set([...homes.map((h) => h.id), ...moved.map((h) => h.id)])];
     if (ids.length) {
+      await prisma.inboundLead.deleteMany({ where: { homeId: { in: ids } } }); // OL-177 web-inquiry queue rows
       await prisma.facilityInspection.deleteMany({ where: { facilityId: { in: ids } } });
       await prisma.homePhoto.deleteMany({ where: { homeId: { in: ids } } });
       await prisma.address.deleteMany({ where: { homeId: { in: ids } } });

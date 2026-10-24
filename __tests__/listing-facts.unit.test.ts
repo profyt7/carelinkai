@@ -11,7 +11,7 @@ import {
   AMENITIES_UNVERIFIED_LABEL,
   DESCRIPTION_UNVERIFIED_NOTE,
 } from '@/lib/homes/listing-facts';
-import { resolveMapTileConfig, OSM_TILE_URL, OSM_ATTRIBUTION } from '@/lib/maps/tiles';
+import { resolveMapTileConfig, MAPTILER_ATTRIBUTION, MAPTILER_TILE_URL_PREFIX } from '@/lib/maps/tiles';
 
 // An unclaimed / dev-seeded listing as /api/homes/:id serves it: seed default
 // capacity 100, occupancy 0 (→ legacy availability 100), a seeded amenity, no
@@ -112,33 +112,42 @@ describe('verifiedFieldsFromEvents', () => {
   });
 });
 
-describe('map tiles (OL-173)', () => {
-  it('defaults to keyless OSM tiles with the required attribution', () => {
-    const t = resolveMapTileConfig(undefined, undefined);
-    expect(t.url).toBe(OSM_TILE_URL);
-    expect(t.url).toBe('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
-    expect(t.attribution).toBe(OSM_ATTRIBUTION);
+describe('map tiles (OL-178: MapTiler)', () => {
+  it('builds the 256px MapTiler streets-v2 URL with the {r} retina suffix and the key', () => {
+    const t = resolveMapTileConfig('abc 123')!;
+    expect(t.url).toBe('https://api.maptiler.com/maps/streets-v2/256/{z}/{x}/{y}{r}.png?key=abc%20123');
+    expect(t.url.startsWith(MAPTILER_TILE_URL_PREFIX)).toBe(true);
+    expect(t.referrerPolicy).toBe('strict-origin-when-cross-origin');
+  });
+
+  it('carries the MapTiler + OpenStreetMap attribution and the MapTiler logo', () => {
+    const t = resolveMapTileConfig('k')!;
+    expect(t.attribution).toBe(MAPTILER_ATTRIBUTION);
+    expect(t.attribution).toContain('https://www.maptiler.com/copyright/');
+    expect(t.attribution).toContain('&copy; MapTiler');
     expect(t.attribution).toContain('https://www.openstreetmap.org/copyright');
-    expect(t.attribution).toContain('OpenStreetMap</a> contributors');
+    expect(t.attribution).toContain('&copy; OpenStreetMap contributors');
+    expect(t.logo.href).toBe('https://www.maptiler.com/');
   });
 
-  it('honours a valid override and keeps OSM attribution when none is given', () => {
-    const url = 'https://tiles.example.org/{z}/{x}/{y}.png';
-    expect(resolveMapTileConfig(url, 'Example')).toMatchObject({ url, attribution: 'Example' });
-    expect(resolveMapTileConfig(url, '')).toMatchObject({ url, attribution: OSM_ATTRIBUTION });
+  it('no key → null (callers show the static placeholder)', () => {
+    expect(resolveMapTileConfig(undefined)).toBeNull();
+    expect(resolveMapTileConfig('   ')).toBeNull();
   });
 
-  it('ignores a malformed override', () => {
-    expect(resolveMapTileConfig('http://insecure/{z}/{x}/{y}.png', 'x').url).toBe(OSM_TILE_URL);
-    expect(resolveMapTileConfig('https://no-template.example', 'x').url).toBe(OSM_TILE_URL);
-  });
-
-  it('no map component still points at the CARTO basemaps', () => {
-    for (const f of ['src/components/search/SimpleMap.tsx', 'src/components/search/InteractiveMap.tsx']) {
+  it('no map component or the tile config points at OSM tile servers or CARTO', () => {
+    for (const f of ['src/lib/maps/tiles.ts', 'src/components/search/SimpleMap.tsx', 'src/components/search/InteractiveMap.tsx']) {
       const src = fs.readFileSync(path.join(process.cwd(), f), 'utf8');
-      expect({ f, carto: /cartocdn/.test(src) }).toEqual({ f, carto: false });
+      expect({ f, osm: /tile\.openstreetmap\.org/.test(src), carto: /cartocdn/.test(src) }).toEqual({ f, osm: false, carto: false });
     }
   });
+
+  it('the site no longer strips the referrer (OSM blocked tiles for it; MapTiler key restrictions need the origin)', () => {
+    const mw = fs.readFileSync(path.join(process.cwd(), 'src/middleware.ts'), 'utf8');
+    expect(mw).toContain("res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')");
+    expect(mw).not.toContain("'no-referrer'");
+  });
+
 });
 
 describe('listing page copy (OL-173)', () => {
