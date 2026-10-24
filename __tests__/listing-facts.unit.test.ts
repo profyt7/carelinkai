@@ -141,19 +141,13 @@ describe('map tiles (OL-173)', () => {
 
 describe('listing page copy (OL-173)', () => {
   const src = fs.readFileSync(path.join(process.cwd(), 'src/app/homes/[id]/page.tsx'), 'utf8');
-  // The real-data branch ends where the mock-mode render (`home.name`) begins.
-  const start = src.indexOf('if (!showMock) {');
-  const end = src.indexOf('<BrowseShell title={`Home Details - ${home.name}`}>');
-  const real = src.slice(start, end);
-
-  it('locates the real-data branch', () => {
-    expect(start).toBeGreaterThan(0);
-    expect(end).toBeGreaterThan(start);
-  });
+  // The page has a single, real-data render (the mock listing was removed),
+  // so the whole file is checked.
+  const real = src;
 
   it('makes no CareCredit partnership claim', () => {
     expect(src).not.toMatch(/partnered with CareCredit/i);
-    expect(src).toContain('Financing option (CareCredit)');
+    expect(src).toContain('{CARECREDIT_TITLE}');
   });
 
   it('real-data render has no hardcoded staffing / waitlist / static capacity copy', () => {

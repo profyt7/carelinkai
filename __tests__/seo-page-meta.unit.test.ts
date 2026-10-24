@@ -4,8 +4,8 @@
  *      template adds it once), rendered titles ≤ 60 chars, descriptions 140–155;
  *  (b) og:title / og:description / twitter:card on every public page;
  *  (c) BreadcrumbList / FAQPage builders; FAQ answers come from data, no promises;
- *  (e) 15 suburbs: every one has ≥ 2 licensed homes in the ODH roster, unique
- *      title / description, the ten new ones carry a 120–180 word intro;
+ *  (e) 20 suburbs: every one has ≥ 2 licensed homes in the ODH roster, unique
+ *      title / description, the fifteen newer ones carry a 120–180 word intro;
  *  (f) each suburb links 4 nearby suburbs; listings link to suburb + hubs.
  */
 import fs from 'fs';
@@ -226,17 +226,18 @@ describe('OL-172 (e)(f) suburbs', () => {
     return out;
   };
   const roster = read('scripts/data/odh_rcf_cleveland_metro_2026_07_04.csv').trim().split('\n').slice(1).map(splitCsv);
-  const NEW = ['mentor', 'cuyahoga-falls', 'rocky-river', 'medina', 'hudson', 'north-olmsted', 'avon', 'twinsburg', 'chardon', 'stow'];
+  const NEW = ['mentor', 'cuyahoga-falls', 'rocky-river', 'medina', 'hudson', 'north-olmsted', 'avon', 'twinsburg', 'chardon', 'stow', 'lyndhurst', 'mayfield-heights', 'shaker-heights', 'euclid', 'solon'];
 
-  it('15 suburbs; each has ≥ 2 licensed homes in the ODH roster', () => {
-    expect(SUBURBS).toHaveLength(15);
+  it('20 suburbs (Cleveland Heights skipped: 1 roster home); each has ≥ 2 licensed homes in the ODH roster', () => {
+    expect(SUBURBS).toHaveLength(20);
+    expect(SUBURBS.map((s) => s.slug)).not.toContain('cleveland-heights');
     for (const s of SUBURBS) {
       const n = roster.filter((r) => s.cities.some((c) => c.toUpperCase() === (r[2] ?? '').trim().toUpperCase())).length;
       expect({ slug: s.slug, enough: n >= 2 }).toEqual({ slug: s.slug, enough: true });
     }
   });
 
-  it('the ten new suburbs each carry a unique 120–180 word intro and real hospital / landmark facts', () => {
+  it('the fifteen newer suburbs each carry a unique 120–180 word intro and real hospital / landmark facts', () => {
     const intros = new Set<string>();
     for (const slug of NEW) {
       const s = SUBURBS.find((x) => x.slug === slug)!;
@@ -256,7 +257,7 @@ describe('OL-172 (e)(f) suburbs', () => {
       expect(n.map((x) => x.slug)).not.toContain(s.slug);
       expect(new Set(n.map((x) => x.slug)).size).toBe(4);
     }
-    expect(nearbySuburbs(SUBURBS.find((x) => x.slug === 'beachwood')!, 4).map((x) => x.slug)).toEqual(expect.arrayContaining(['twinsburg']));
+    expect(nearbySuburbs(SUBURBS.find((x) => x.slug === 'beachwood')!, 4).map((x) => x.slug)).toEqual(expect.arrayContaining(['lyndhurst', 'mayfield-heights', 'shaker-heights', 'solon']));
     expect(read('src/app/cleveland/assisted-living/[suburb]/page.tsx')).toContain('data-testid="nearby-suburb"');
   });
 

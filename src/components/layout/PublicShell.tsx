@@ -1,7 +1,7 @@
 'use client';
 
 import SiteFooter from '@/components/site/SiteFooter';
-import SiteHeader from '@/components/site/SiteHeader';
+import SiteHeader, { SITE_HEADER_HEIGHT_PX } from '@/components/site/SiteHeader';
 
 /**
  * Public chrome for ANONYMOUS (logged-out) visitors browsing the directory
@@ -15,7 +15,7 @@ import SiteHeader from '@/components/site/SiteHeader';
  */
 export default function PublicShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col bg-neutral-50" data-testid="site-shell">
+    <div className="flex min-h-screen flex-col bg-neutral-50" data-testid="site-shell" style={{ ['--site-header-h' as string]: `${SITE_HEADER_HEIGHT_PX}px` }}>
       <SiteHeader />
       <div className="flex-1">{children}</div>
       <SiteFooter />
