@@ -3,7 +3,7 @@ import Link from "next/link";
 import { FiArrowLeft, FiLock, FiShield } from "react-icons/fi";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | CareLinkAI",
+  title: "Privacy Policy",
   description: "Privacy Policy for CareLinkAI - Learn how we collect, use, and protect your personal information",
 };
 

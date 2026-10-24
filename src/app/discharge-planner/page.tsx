@@ -8,7 +8,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import DischargePlannerDashboard from "./_components/DischargePlannerDashboard";
 
 export const metadata: Metadata = {
-  title: "Discharge Planner Dashboard | CareLinkAI",
+  title: "Discharge Planner Dashboard",
   description: "AI-powered placement assistance for social workers and case managers",
 };
 

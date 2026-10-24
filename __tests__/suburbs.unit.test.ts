@@ -9,8 +9,11 @@ import sitemap from '@/app/sitemap';
 import { isKnownAppPath, isPublicPage } from '@/lib/routing/public-routes';
 
 describe('SUBURBS registry', () => {
-  it('ships the five suburbs with the most roster homes among Cuyahoga suburbs', () => {
-    expect(SUBURBS.map((s) => s.slug)).toEqual(['westlake', 'strongsville', 'parma', 'beachwood', 'lakewood']);
+  it('ships the original five Cuyahoga suburbs first, then the OL-172 ten (next ten by roster count)', () => {
+    expect(SUBURBS.map((s) => s.slug)).toEqual([
+      'westlake', 'strongsville', 'parma', 'beachwood', 'lakewood',
+      'mentor', 'cuyahoga-falls', 'rocky-river', 'medina', 'hudson', 'north-olmsted', 'avon', 'twinsburg', 'chardon', 'stow',
+    ]);
   });
 
   it('has unique slugs, titles, H1s and meta descriptions (≤ 160 chars)', () => {

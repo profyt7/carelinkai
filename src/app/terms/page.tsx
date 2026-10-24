@@ -4,7 +4,7 @@ import { FiArrowLeft, FiShield, FiFileText } from "react-icons/fi";
 import { CONCIERGE_OFFER } from "@/lib/concierge/offer";
 
 export const metadata: Metadata = {
-  title: "Terms of Service | CareLinkAI",
+  title: "Terms of Service",
   description: "Terms of Service for CareLinkAI - AI-powered senior care placement platform",
 };
 
