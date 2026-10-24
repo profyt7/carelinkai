@@ -320,7 +320,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       // Medicaid Assisted Living Waiver line + "pending accepted" (sprint W5-2).
       // Public facts only; line is null for NOT_ON_LIST / UNKNOWN.
       medicaidWaiver: medicaidWaiverPublicView(home),
-      gender: home.genderRestriction || 'ALL',
+      // OL-176: raw value — null when never set. The page shows it only when an
+      // accountable source wrote it (verifiedFields); it used to default to 'ALL'.
+      gender: home.genderRestriction ?? null,
       amenities: home.amenities,
       // VA-collected (phone) price/amenities are approximate until the operator
       // confirms — surfaced as "pending operator confirmation", cleared on claim+edit.
@@ -328,7 +330,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       amenitiesPending: (home.preFilledFields as Record<string, unknown> | null)?.amenities === 'VA_UNVERIFIED',
       primaryPhoto,
       photos: (home.photos || []).map((p) => ({ id: p.id, url: p.url, caption: p.caption || '' })),
-      operator: home.operator
+      // OL-176: an unclaimed listing's operator is the directory placeholder
+      // account — never present it (or its system email) as the facility contact.
+      operator: home.operator && !unclaimed
         ? {
             name: `${home.operator.user.firstName} ${home.operator.user.lastName}`,
             email: home.operator.user.email,

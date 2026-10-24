@@ -2,6 +2,23 @@
 
 ---
 
+### 2026-10-24 — #782 merged + OL-176 unverified listing claims (PR open, not merged)
+- **Objective:** Merge #782 and verify the deploy. Then one PR applying the OL-173(c) rule to amenities and sweeping `/homes/[id]` for other unverified facts.
+- **Work completed:**
+  - **#782 deploy:** #782 was squash-merged as `3c08889d` (branch deleted). Post-deploy revalidate run 40070145299 succeeded, footer-verifying all 20 suburbs. prod-verify run 40070964276, dispatched from the OL-176 branch for its new inputs, passed every check; the five new suburbs and `/homes/cmql0xbos0006r7jcitqgqhds` returned 200 with footer `@3c08889`, and all five suburbs are in sitemap.xml.
+  - **OL-176:** see the open loop. Windsor Heights' "24/7 on-site support", "Chef-prepared MIND-diet dining" and "Sensory spa" came from `scripts/enrich-batch2-held-homes.ts` (no EntityEvent), so they now render under "Reported features — confirm on your tour". The sweep also found and fixed:
+    - the directory placeholder account shown as "Facility Contact" on every unclaimed listing;
+    - a default "All genders welcome";
+    - an unlabeled description and tagline;
+    - an unlabeled imported price range;
+    - a "within 24 hours" reply promise.
+- **Files changed:** `src/lib/homes/listing-facts.ts`, `src/app/homes/[id]/page.tsx`, `src/app/api/homes/[id]/route.ts`, `src/app/api/operator/homes/route.ts`, `src/app/api/dev/upsert-operator/route.ts`, `.github/workflows/prod-verify.yml`, `__tests__/listing-facts.unit.test.ts`, `e2e/public/directory/listing-page.spec.ts`, `e2e/public/directory/listing-unverified-claims.spec.ts` (new), context files.
+- **Commands run:** `npx tsc --noEmit`, eslint, `npx jest --ci`, Playwright (listing-unverified-claims, listing-page, listing-no-mock) against a local dev server, and before/after screenshots of a local copy of Windsor Heights built from the enrichment script's own data.
+- **Tests/build status:** tsc clean · eslint clean · jest 123/123 suites (1225 passed) · e2e 7/7 locally.
+- **Deployment impact:** No schema or env changes. Unclaimed listings lose the placeholder contact block and gain the labels.
+- **New risks/blockers:** A stale local `.next` cache made every `/api/homes/*` route 404 in dev; `rm -rf .next` fixed it (local only).
+- **Recommended next step:** Chris reviews and merges the OL-176 PR; then re-run prod-verify with `footer_pages=/homes/cmql0xbos0006r7jcitqgqhds`.
+
 ### 2026-10-24 — OL-175 follow-up: listing mock mode removed, /learn CareCredit wording, sticky-bar offset, five east-side suburbs (PR open, not merged)
 - **Objective:** Close the OL-171…OL-174 follow-ups in one PR off main `bfba374c` (after #781).
 - **Work completed:**

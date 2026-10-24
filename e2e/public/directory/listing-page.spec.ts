@@ -113,7 +113,7 @@ test.describe('@critical /homes/[id] listing page (OL-173)', () => {
 
     // (c) staffing + amenities
     await expect(body).not.toContainText('24/7');
-    await expect(page.getByTestId('amenities-unverified-label')).toHaveText('Reported by the home — confirm on your tour');
+    await expect(page.getByTestId('amenities-heading')).toHaveText('Reported features — confirm on your tour');
     await expect(page.getByTestId('listing-amenities')).toHaveAttribute('data-verified', 'false');
 
     // (d) CareCredit
