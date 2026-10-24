@@ -3,8 +3,10 @@
 import { useState } from 'react';
 import { CONCIERGE_OFFER } from '@/lib/concierge/offer';
 import type { ConciergeRoute } from '@/lib/concierge/screener';
+import { CONTACT_NO_PHI_LINE, CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from '@/lib/contact';
 import ConciergeScreener from './ConciergeScreener';
-import { HERO_BAND } from '@/components/site/brand';
+import ConciergeLaneCards from './ConciergeLaneCards';
+import { BTN_PRIMARY, BTN_SECONDARY, HERO_BAND } from '@/components/site/brand';
 
 /**
  * Hero + screener for /concierge (OL-166b). The default hero (the paid offer's
@@ -12,6 +14,10 @@ import { HERO_BAND } from '@/components/site/brand';
  * screener answers Medicaid / Medicare / VA the hero swaps to the free-lane
  * version so that lane never sees a dollar figure — not the headline's mistake,
  * not the price. "Not sure" and private-pay keep the default hero.
+ *
+ * OL-174: a CTA row with the published phone line (tel: link + the
+ * no-patient-details line) under the hero, then the two lane cards
+ * (ConciergeLaneCards) driven by the same screener answer.
  */
 export default function ConciergeIntro() {
   const [route, setRoute] = useState<ConciergeRoute | null>(null);
@@ -58,8 +64,20 @@ export default function ConciergeIntro() {
               </p>
             </>
           )}
+          <div className="mt-8 flex flex-wrap gap-3" data-testid="concierge-hero-ctas">
+            <a href="#screener" className={BTN_PRIMARY}>
+              {route ? 'See your options' : 'Start with one question'}
+            </a>
+            <a href={CONTACT_PHONE_TEL} className={BTN_SECONDARY} data-testid="concierge-hero-phone">
+              Call {CONTACT_PHONE_DISPLAY}
+            </a>
+          </div>
+          <p className="mt-3 text-sm text-neutral-600">{CONTACT_NO_PHI_LINE}</p>
         </div>
       </section>
+
+      {/* OL-174: the two lanes as two cards; the private-pay card (and its price) disappears for the free lane. */}
+      <ConciergeLaneCards route={route} />
 
       {/* Screener → offer / free help */}
       <section id="screener" className="max-w-3xl mx-auto px-6 py-16 scroll-mt-16">
