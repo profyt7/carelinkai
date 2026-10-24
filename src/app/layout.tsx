@@ -226,7 +226,7 @@ export default function RootLayout({
         <AnalyticsScripts />
 
         {/* OL-172 (c): Organization (with the published phone number) on every page. */}
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(buildOrganizationJsonLd()) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(buildOrganizationJsonLd({ includeFeeModel: false })) }} />
 
         <WebSocketProvider>
           <Providers>

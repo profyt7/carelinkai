@@ -266,8 +266,14 @@ export function buildPagesItemListJsonLd(args: { url: string; name: string; page
   });
 }
 
-/** Organization document for the home page (W3 item 6d). No contact email. */
-export function buildOrganizationJsonLd(): Json {
+/**
+ * Organization document (W3 item 6d). No contact email.
+ * OL-172: rendered on EVERY page from the root layout with `includeFeeModel: false` —
+ * the fee-model line names the concierge price, which must never be in the server
+ * HTML of /concierge or any free-lane surface (OL-165 / OL-166b). /llms.txt keeps it.
+ */
+export function buildOrganizationJsonLd(opts: { includeFeeModel?: boolean } = {}): Json {
+  const includeFeeModel = opts.includeFeeModel ?? true;
   return compact({
     '@context': 'https://schema.org',
     '@type': 'Organization',
@@ -296,7 +302,7 @@ export function buildOrganizationJsonLd(): Json {
     knowsAbout: ['Assisted living', 'Memory care', 'Independent living', 'Skilled nursing', 'Home care', 'Ohio Department of Health inspections'],
     slogan: 'Verified senior care in Cleveland. No broker fees.',
     additionalProperty: [
-      { '@type': 'PropertyValue', name: 'Fee model', value: FEE_MODEL_LINE },
+      ...(includeFeeModel ? [{ '@type': 'PropertyValue', name: 'Fee model', value: FEE_MODEL_LINE }] : []),
       { '@type': 'PropertyValue', name: 'Machine-readable overview', value: `${SITE_URL}/llms.txt` },
     ],
   });

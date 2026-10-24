@@ -29,7 +29,7 @@ import { SUBURBS, nearbySuburbs, suburbForCity } from '@/lib/directory/suburbs';
 import { PAGE_META, TITLE_SUFFIX, renderedTitle } from '@/lib/seo/page-meta';
 import { listingBreadcrumb, listingDescription, listingRelatedLinks, listingTitle } from '@/lib/seo/listing-meta';
 import { careTypeFaqs, hubFaqs, suburbFaqs } from '@/lib/seo/directory-faq';
-import { buildBreadcrumbJsonLd, buildFaqPageJsonLd } from '@/lib/seo/jsonld';
+import { buildBreadcrumbJsonLd, buildFaqPageJsonLd, buildOrganizationJsonLd } from '@/lib/seo/jsonld';
 
 const root = path.join(__dirname, '..');
 const read = (f: string) => fs.readFileSync(path.join(root, f), 'utf8');
@@ -169,7 +169,11 @@ describe('OL-172 (c) structured data + FAQ', () => {
 
   it('Organization (with the published phone number) is rendered from the root layout on every page', () => {
     const layout = read('src/app/layout.tsx');
-    expect(layout).toMatch(/JSON\.stringify\(buildOrganizationJsonLd\(\)\)/);
+    expect(layout).toMatch(/JSON\.stringify\(buildOrganizationJsonLd\(\{ includeFeeModel: false \}\)\)/);
+    // The sitewide copy never carries a price (it renders on /concierge before the payer question).
+    const sitewide = JSON.stringify(buildOrganizationJsonLd({ includeFeeModel: false }));
+    expect(sitewide).not.toMatch(/\$\s?\d/);
+    expect(sitewide).toContain('+12162459482');
     expect(read('src/app/page.tsx')).not.toMatch(/buildOrganizationJsonLd/); // no duplicate on the homepage
   });
 
