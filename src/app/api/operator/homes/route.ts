@@ -110,10 +110,11 @@ export async function POST(req: NextRequest) {
           },
         },
       });
-      // OL-173: capacity / amenities entered here are operator-provided — record
-      // them so the public listing can show them (seeded homes have no such row).
+      // OL-173 / OL-176: fields entered here are operator-provided — record them so
+      // the public listing can show them (seeded homes have no such row).
       const source = user.role === UserRole.ADMIN ? 'ADMIN' : 'OPERATOR';
-      for (const field of ['capacity', 'amenities'] as const) {
+      for (const field of ['capacity', 'amenities', 'description', 'genderRestriction'] as const) {
+        if (created[field] == null) continue;
         await recordEvent(tx, {
           entityType: 'OPERATOR_PROFILE', entityId: created.id, eventType: 'field.changed', field,
           oldValue: null, newValue: { [field]: created[field] },

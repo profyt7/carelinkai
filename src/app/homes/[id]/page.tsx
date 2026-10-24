@@ -680,8 +680,9 @@ export default function HomeDetailPage() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <h1 className="text-2xl font-bold text-neutral-800 md:text-3xl">{realHome.name}</h1>
-                    {realHome.tagline && (
-                      <p className="mt-1 text-sm italic text-neutral-500">{realHome.tagline}</p>
+                    {/* OL-176: the tagline is marketing copy — only when the description is operator/admin-verified. */}
+                    {facts.description.tagline && (
+                      <p className="mt-1 text-sm italic text-neutral-500">{facts.description.tagline}</p>
                     )}
                     <div className="mt-1 flex items-center">
                       <FiMapPin className="mr-1 h-4 w-4 text-neutral-500" />
@@ -809,7 +810,7 @@ export default function HomeDetailPage() {
                         activeTab === tab ? 'border-primary-500 text-primary-600' : 'border-transparent text-neutral-600 hover:text-neutral-800'
                       }`}
                     >
-                      {tab === 'overview' ? 'Overview' : tab === 'amenities' ? 'Amenities' : tab === 'pricing' ? 'Pricing' : tab === 'location' ? 'Location' : 'Contact'}
+                      {tab === 'overview' ? 'Overview' : tab === 'amenities' ? (facts.amenities.verified ? 'Amenities' : 'Features') : tab === 'pricing' ? 'Pricing' : tab === 'location' ? 'Location' : 'Contact'}
                     </button>
                   ))}
                 </div>
@@ -818,21 +819,30 @@ export default function HomeDetailPage() {
               {/* Overview */}
               <div ref={overviewRef} className="mb-8 scroll-mt-20">
                 <h2 className="mb-4 text-xl font-semibold text-neutral-800">About {realHome.name}</h2>
-                <div className="mb-6 rounded-lg border border-neutral-200 bg-white p-6">
+                <div className="mb-6 rounded-lg border border-neutral-200 bg-white p-6" data-testid="listing-description" data-verified={facts.description.verified ? 'true' : 'false'}>
                   <p className="text-neutral-700 whitespace-pre-line leading-relaxed">
-                    {realHome.description || 'No description available for this facility.'}
+                    {facts.description.text || 'No description available for this facility.'}
                   </p>
+                  {/* OL-176: imported / enriched descriptions are not the community's own confirmed words. */}
+                  {facts.description.note && (
+                    <p className="mt-3 border-t border-neutral-100 pt-3 text-xs text-neutral-500" data-testid="description-source-note">
+                      {facts.description.note}
+                    </p>
+                  )}
                 </div>
                 <div className="rounded-lg border border-neutral-200 bg-white p-6">
                   <h3 className="mb-4 text-lg font-medium text-neutral-800">Quick Facts</h3>
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="flex items-start">
-                      <div className="mr-3 rounded-full bg-primary-100 p-2 text-primary-600 flex-shrink-0"><FiUsers className="h-5 w-5" /></div>
-                      <div>
-                        <p className="font-medium text-neutral-800">Resident Gender</p>
-                        <p className="text-sm text-neutral-600">{!realHome.gender || realHome.gender === 'ALL' ? 'All genders welcome' : `${realHome.gender} residents only`}</p>
+                    {/* OL-176: only when an operator / admin set it — an empty column says nothing about who is accepted. */}
+                    {facts.gender && (
+                      <div className="flex items-start" data-testid="quick-facts-gender">
+                        <div className="mr-3 rounded-full bg-primary-100 p-2 text-primary-600 flex-shrink-0"><FiUsers className="h-5 w-5" /></div>
+                        <div>
+                          <p className="font-medium text-neutral-800">Resident Gender</p>
+                          <p className="text-sm text-neutral-600">{facts.gender}</p>
+                        </div>
                       </div>
-                    </div>
+                    )}
                     <div className="flex items-start">
                       <div className="mr-3 rounded-full bg-primary-100 p-2 text-primary-600 flex-shrink-0"><FiHome className="h-5 w-5" /></div>
                       <div>
@@ -870,16 +880,11 @@ export default function HomeDetailPage() {
 
               {/* Amenities */}
               <div ref={amenitiesRef} className="mb-8 scroll-mt-20">
-                <div className="mb-4 flex flex-wrap items-center gap-2">
-                  <h2 className="text-xl font-semibold text-neutral-800">Amenities & Services</h2>
-                  {/* OL-173: unless an operator / admin / VA call set them, amenities are
-                      the home's own claims — say so instead of presenting them as checked. */}
-                  {facts.amenities.label && (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800" data-testid="amenities-unverified-label">
-                      {facts.amenities.label}
-                    </span>
-                  )}
-                </div>
+                {/* OL-173 / OL-176: unless an operator / admin / VA call set them, amenities are
+                    reported features (import, enrichment, seed) — own heading, no checkmarks. */}
+                <h2 className="mb-4 text-xl font-semibold text-neutral-800" data-testid="amenities-heading" data-verified={facts.amenities.verified ? 'true' : 'false'}>
+                  {facts.amenities.items.length > 0 ? facts.amenities.heading : 'Amenities & Services'}
+                </h2>
                 {facts.amenities.items.length > 0 ? (
                   <div className="rounded-lg border border-neutral-200 bg-white p-6" data-testid="listing-amenities" data-verified={facts.amenities.verified ? 'true' : 'false'}>
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
@@ -902,7 +907,7 @@ export default function HomeDetailPage() {
                         {amenitiesExpanded['all'] ? (
                           <><FiChevronUp className="mr-1 h-4 w-4" />Show less</>
                         ) : (
-                          <><FiChevronDown className="mr-1 h-4 w-4" />Show all {facts.amenities.items.length} amenities</>
+                          <><FiChevronDown className="mr-1 h-4 w-4" />Show all {facts.amenities.items.length}</>
                         )}
                       </button>
                     )}
@@ -942,6 +947,12 @@ export default function HomeDetailPage() {
                             : `Up to ${formatCurrency(realHome.priceRange.max)}`}
                         </p>
                         <p className="text-sm text-neutral-500 mt-1">per month</p>
+                        {/* OL-176: an imported / estimated range is not a quote from the community. */}
+                        {!realHome.pricePending && realHome.pricing?.source !== 'OPERATOR' && (
+                          <p className="mt-2 text-xs text-neutral-500" data-testid="pricing-range-source">
+                            Estimated range — confirm the current rate with the community.
+                          </p>
+                        )}
                         {realHome.pricePending && (
                           <p className="mt-2 inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
                             Approximate starting price · pending operator confirmation
@@ -952,7 +963,8 @@ export default function HomeDetailPage() {
                         Actual costs vary based on care level, room type, and additional services required. Contact the facility for a personalized quote.
                       </p>
                       <div className="rounded-lg bg-neutral-50 border border-neutral-200 p-4 text-sm text-neutral-600">
-                        <p className="font-medium text-neutral-800 mb-1">What's typically included:</p>
+                        {/* OL-176: not a statement about this home — a question to ask. */}
+                        <p className="font-medium text-neutral-800 mb-1">Ask what the monthly rate includes. It often covers:</p>
                         <ul className="space-y-1 list-disc list-inside">
                           <li>Room and board</li>
                           <li>Meals and snacks</li>
@@ -1098,7 +1110,22 @@ export default function HomeDetailPage() {
                       </div>
                     </div>
                   ) : (
-                    <p className="text-neutral-600">Contact information not available.</p>
+                    // OL-176: unclaimed listings have no facility contact on file (the API no longer
+                    // exposes the directory placeholder account) — route families through the inquiry.
+                    <div data-testid="contact-unclaimed">
+                      <p className="text-sm text-neutral-600 mb-3">
+                        {realHome.unclaimed
+                          ? "This community hasn't claimed its listing yet, so we don't publish a direct contact. Send a message and we'll pass it on."
+                          : 'Contact information not available.'}
+                      </p>
+                      <button
+                        onClick={() => setBookingStep(1)}
+                        className="flex items-center rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600"
+                      >
+                        <MessageSquare className="mr-2 h-4 w-4" />
+                        Send a Message
+                      </button>
+                    </div>
                   )}
                   <div className="mt-6 rounded-lg bg-neutral-100 p-4">
                     <h3 className="mb-2 text-base font-medium text-neutral-800">Need Help?</h3>
@@ -1157,7 +1184,7 @@ export default function HomeDetailPage() {
                   {bookingStep === 1 && (
                     <>
                       <h3 className="mb-3 text-lg font-semibold text-neutral-800">Contact {realHome.name}</h3>
-                      <p className="mb-4 text-sm text-neutral-600">Fill out this form and a representative will contact you shortly.</p>
+                      <p className="mb-4 text-sm text-neutral-600">Fill out this form and we&apos;ll send your message to the community.</p>
                       <form onSubmit={handleInquirySubmit}>
                         <div className="mb-3">
                           <label htmlFor="name" className="mb-1 block text-sm font-medium text-neutral-700">Your Name*</label>
@@ -1294,7 +1321,7 @@ export default function HomeDetailPage() {
                           </a>
                         </>
                       ) : (
-                        <p className="mb-4 text-sm text-neutral-600">We&apos;ve received your inquiry for {realHome.name}. A representative will contact you within 24 hours.</p>
+                        <p className="mb-4 text-sm text-neutral-600">We&apos;ve received your inquiry and sent it to {realHome.name}. The community will reply by email or phone.</p>
                       )}
                       <div className="mt-3">
                         <button onClick={() => setBookingStep(0)} className="text-sm text-primary-600 hover:underline">Submit another inquiry</button>

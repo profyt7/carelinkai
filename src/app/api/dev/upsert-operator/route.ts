@@ -36,11 +36,45 @@ type HomeSeed = {
   /** Sprint W5-2: seed a Medicaid waiver status so the directory filter can be exercised. */
   medicaidWaiverStatus?: 'ACCEPTING_NEW' | 'CURRENT_RESIDENTS_ONLY' | 'NOT_ACCEPTING_REFERRALS' | 'NOT_ON_LIST' | 'UNKNOWN';
   inspections?: Array<{ surveyDate: string; surveyType?: string; citationCount?: number }>;
+  /** OL-176: listing copy as a directory import / enrichment script writes it (no EntityEvent rows). */
+  description?: string;
+  tagline?: string;
+  amenities?: string[];
+  /** OL-176: hand the home to the directory placeholder operator, as an unclaimed import is. */
+  unclaimed?: boolean;
 };
+
+// The account that owns every unclaimed directory home (scripts/seed-cleveland-directory.ts).
+const DIRECTORY_UNCLAIMED_EMAIL = 'directory-unclaimed@carelinkai.system';
+
+async function directoryPlaceholderOperatorId(): Promise<string> {
+  const user = await prisma.user.upsert({
+    where: { email: DIRECTORY_UNCLAIMED_EMAIL },
+    update: {},
+    create: {
+      email: DIRECTORY_UNCLAIMED_EMAIL,
+      passwordHash: await bcrypt.hash(`unusable-${Date.now()}-${Math.random()}`, 10),
+      firstName: 'CareLinkAI',
+      lastName: 'Directory (Unclaimed)',
+      role: 'OPERATOR' as any,
+      status: 'ACTIVE' as any,
+    },
+  });
+  const op = await prisma.operator.upsert({
+    where: { userId: user.id },
+    update: {},
+    create: { userId: user.id, companyName: 'CareLinkAI Directory - Unclaimed Listings' },
+  });
+  return op.id;
+}
 
 async function applyDirectorySeed(homeId: string, h: HomeSeed) {
   const data: Record<string, unknown> = {};
   if (Array.isArray(h.careLevel) && h.careLevel.length) data['careLevel'] = h.careLevel;
+  if (typeof h.description === 'string') data['description'] = h.description;
+  if (typeof h.tagline === 'string') data['tagline'] = h.tagline;
+  if (Array.isArray(h.amenities)) data['amenities'] = h.amenities;
+  if (h.unclaimed === true) data['operatorId'] = await directoryPlaceholderOperatorId();
   if (typeof h.availabilityVerifiedDaysAgo === 'number') {
     data['availabilityVerifiedAt'] = new Date(Date.now() - h.availabilityVerifiedDaysAgo * 86_400_000);
     data['availabilityCount'] = typeof h.availabilityCount === 'number' ? h.availabilityCount : 1;
@@ -92,9 +126,10 @@ async function applyDirectorySeed(homeId: string, h: HomeSeed) {
 }
 
 /**
- * DELETE /api/dev/upsert-operator  { email }
+ * DELETE /api/dev/upsert-operator  { email, homeIds? }
  * Removes every home this dev operator owns (inspections, photos, address
- * first), so an e2e spec can clean up what it seeded and never crowd the
+ * first) plus any `homeIds` it seeded as unclaimed (those now belong to the
+ * directory placeholder, which is never deleted), so an e2e spec can clean up what it seeded and never crowd the
  * public directory for the specs that run after it (the /search page shows
  * 10 per page). Dev-only, same ALLOW_DEV_ENDPOINTS gate. Best effort: a
  * cleanup failure must never fail the caller.
@@ -109,9 +144,17 @@ export async function DELETE(req: NextRequest) {
     if (!email) return NextResponse.json({ error: 'email required' }, { status: 400 });
     const user = await prisma.user.findUnique({ where: { email }, select: { id: true } });
     const op = user ? await prisma.operator.findUnique({ where: { userId: user.id }, select: { id: true } }) : null;
-    if (!op) return NextResponse.json({ ok: true, deleted: 0 });
-    const homes = await prisma.assistedLivingHome.findMany({ where: { operatorId: op.id }, select: { id: true } });
-    const ids = homes.map((h) => h.id);
+    const extra: string[] = Array.isArray(body?.homeIds) ? body.homeIds.filter((x: unknown) => typeof x === 'string') : [];
+    if (!op && !extra.length) return NextResponse.json({ ok: true, deleted: 0 });
+    const homes = op ? await prisma.assistedLivingHome.findMany({ where: { operatorId: op.id }, select: { id: true } }) : [];
+    // Only unclaimed (placeholder-owned) homes may be named explicitly — never someone else's.
+    const moved = extra.length
+      ? await prisma.assistedLivingHome.findMany({
+          where: { id: { in: extra }, operator: { user: { email: DIRECTORY_UNCLAIMED_EMAIL } } },
+          select: { id: true },
+        })
+      : [];
+    const ids = [...new Set([...homes.map((h) => h.id), ...moved.map((h) => h.id)])];
     if (ids.length) {
       await prisma.facilityInspection.deleteMany({ where: { facilityId: { in: ids } } });
       await prisma.homePhoto.deleteMany({ where: { homeId: { in: ids } } });
