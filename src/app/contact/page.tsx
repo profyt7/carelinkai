@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { publicMetadata } from '@/lib/seo/page-meta';
 import Link from 'next/link';
 import { FiMail, FiMapPin, FiPhone } from 'react-icons/fi';
 import { CONTACT_HOURS_LINE, CONTACT_NO_PHI_LINE, CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from '@/lib/contact';
@@ -8,11 +9,13 @@ import { CONTACT_HOURS_LINE, CONTACT_NO_PHI_LINE, CONTACT_PHONE_DISPLAY, CONTACT
  * that involves a patient (OL-167d). Public, no form (nothing to store here).
  */
 
-export const metadata: Metadata = {
-  title: `Contact CareLinkAI — ${CONTACT_PHONE_DISPLAY} | Cleveland senior care directory`,
-  description: `Call ${CONTACT_PHONE_DISPLAY}. Our front desk answers around the clock and a person calls you back. Families, discharge planners and communities in Greater Cleveland.`,
-  alternates: { canonical: 'https://getcarelinkai.com/contact' },
-};
+// OL-172 (a)(b): suffix once (root template), 140–155 char description, OG + Twitter.
+export const metadata: Metadata = publicMetadata({
+  path: '/contact',
+  title: `Contact us — ${CONTACT_PHONE_DISPLAY}`,
+  description: `Call ${CONTACT_PHONE_DISPLAY}. Our front desk answers around the clock and a person calls you back. For families, planners and care homes in Greater Cleveland.`,
+  image: '/images/og-image.jpg',
+});
 
 export default function ContactPage() {
   return (

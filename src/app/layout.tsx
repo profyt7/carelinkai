@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { buildOrganizationJsonLd } from "@/lib/seo/jsonld";
 // Fonts are served from this repo (src/app/fonts) — no build-time Google fetch (OL-146).
 import { inter, dmSerif } from "./fonts";
 import "./globals.css";
@@ -57,7 +58,8 @@ export const metadata: Metadata = {
     telephone: false,
   },
   metadataBase: new URL(
-    process.env["NEXT_PUBLIC_APP_URL"] || "http://localhost:5000"
+    // OL-172: absolute og:image / canonical URLs must point at production even if the env var is unset.
+    process.env["NEXT_PUBLIC_APP_URL"] || "https://getcarelinkai.com"
   ),
   // Google Search Console domain verification. Renders
   // <meta name="google-site-verification" content="..."> into <head> on every
@@ -222,6 +224,9 @@ export default function RootLayout({
             ONLY after explicit cookie consent — see AnalyticsScripts. Nothing
             fires before the user opts in (OL-078). */}
         <AnalyticsScripts />
+
+        {/* OL-172 (c): Organization (with the published phone number) on every page. */}
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(buildOrganizationJsonLd()) }} />
 
         <WebSocketProvider>
           <Providers>

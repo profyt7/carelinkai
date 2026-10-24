@@ -301,3 +301,21 @@ export function buildOrganizationJsonLd(): Json {
     ],
   });
 }
+
+/** OL-172 (c): BreadcrumbList for the /cleveland/* pages and listings (paths are site-relative). */
+export function buildBreadcrumbJsonLd(crumbs: ReadonlyArray<{ name: string; path: string }>): Json {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: crumbs.map((c, i) => ({ '@type': 'ListItem', position: i + 1, name: c.name, item: `${SITE_URL}${c.path}` })),
+  };
+}
+
+/** OL-172 (c): FAQPage from the same Q&A array the page renders visibly. */
+export function buildFaqPageJsonLd(faqs: ReadonlyArray<{ q: string; a: string }>): Json {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  };
+}

@@ -1,5 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import CareTypeListingsSection from '@/components/directory/CareTypeListingsSection';
+import FaqSection from '@/components/site/FaqSection';
+import { CARE_TYPE_PLAN, loadCareTypeListings } from '@/lib/directory/care-type-listings';
+import { careTypeFaqs } from '@/lib/seo/directory-faq';
+import { buildBreadcrumbJsonLd } from '@/lib/seo/jsonld';
+import { PAGE_META, publicMetadata } from '@/lib/seo/page-meta';
 import { BTN_PRIMARY, BTN_SECONDARY, CARD, HERO_BAND } from '@/components/site/brand';
 import { FiArrowRight, FiCheck } from 'react-icons/fi';
 import { verifyClaimToken } from '@/lib/claim-token';
@@ -21,20 +27,11 @@ import AgencyClaimForm from './AgencyClaimForm';
 
 const PAGE_URL = 'https://getcarelinkai.com/cleveland/home-care-agencies';
 
-export const metadata: Metadata = {
-  title: 'Home Care Agencies in Cleveland, OH — Claim Your Agency Listing | CareLinkAI',
-  description:
-    'Cleveland home care agencies: get a verified listing families and discharge planners actually use, and post aide shifts to local caregivers. Free to claim. No broker fees, no lead resale.',
-  alternates: { canonical: PAGE_URL },
-  openGraph: {
-    title: 'Home Care Agencies in Cleveland, OH | CareLinkAI',
-    description:
-      'A verified listing for your home care agency, in front of Cleveland families and discharge planners — plus a local aide pool for open shifts. Free to claim.',
-    type: 'website',
-    url: PAGE_URL,
-    siteName: 'CareLinkAI',
-  },
-};
+// OL-172 (d): lists live homes (the nearest real alternative) — rendered per request.
+export const dynamic = 'force-dynamic';
+
+// OL-172 (a)(b): title without the suffix (root template adds it), 140–155 char description, OG + Twitter.
+export const metadata: Metadata = publicMetadata(PAGE_META.homeCareAgencies);
 
 const structuredData = {
   '@context': 'https://schema.org',
@@ -55,6 +52,13 @@ const structuredData = {
 type SearchParams = Promise<{ token?: string | string[] }>;
 
 export default async function ClevelandHomeCareAgenciesPage({ searchParams }: { searchParams: SearchParams }) {
+  const plan = CARE_TYPE_PLAN['home-care-agencies'];
+  const result = await loadCareTypeListings(plan);
+  const faqs = careTypeFaqs('home-care-agencies', { label: plan.label, total: result.fallback ? 0 : result.total, acceptingWaiver: result.acceptingWaiver, fallbackNote: result.fallback ? `The nearest real option we list is licensed ${result.fallback.label}, shown on this page.` : null });
+  const breadcrumb = buildBreadcrumbJsonLd([
+    { name: 'Cleveland senior care', path: '/cleveland' },
+    { name: 'Home care agencies', path: PAGE_META.homeCareAgencies.path },
+  ]);
   const sp = (await searchParams) ?? {};
   const rawToken = Array.isArray(sp.token) ? sp.token[0] : sp.token;
   // Only a validly signed CLEVELAND_AGENCIES token is handed to the form;
@@ -66,6 +70,7 @@ export default async function ClevelandHomeCareAgenciesPage({ searchParams }: { 
   return (
     <div className="bg-neutral-50">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
 
       {/* Hero */}
       <section className={HERO_BAND} data-testid="brand-hero">
@@ -187,6 +192,8 @@ export default async function ClevelandHomeCareAgenciesPage({ searchParams }: { 
         </div>
       </section>
 
+      <CareTypeListingsSection path={PAGE_META.homeCareAgencies.path} typeLabel={plan.label} heading="Home care agencies in Greater Cleveland" result={result} />
+
       {/* Related */}
       <section className="max-w-5xl mx-auto px-6 py-12">
         <h2 className="text-2xl font-bold text-neutral-900">Also on CareLinkAI</h2>
@@ -205,6 +212,8 @@ export default async function ClevelandHomeCareAgenciesPage({ searchParams }: { 
           </Link>
         </div>
       </section>
+
+      <FaqSection faqs={faqs} />
 
       <div className="max-w-5xl mx-auto px-6 py-8 text-sm text-neutral-500" data-testid="page-note">
         Last updated 2026-10-13. CareLinkAI does not provide care and is not a licensed home
