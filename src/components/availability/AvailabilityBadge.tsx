@@ -57,7 +57,7 @@ export default function AvailabilityBadge({
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-500 ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-700 ${className}`}
       data-testid="availability-badge"
       data-verified-at=""
     >

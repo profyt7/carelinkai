@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { CONCIERGE_OFFER } from '@/lib/concierge/offer';
 import type { ConciergeRoute } from '@/lib/concierge/screener';
 import ConciergeScreener from './ConciergeScreener';
+import { HERO_BAND } from '@/components/site/brand';
 
 /**
  * Hero + screener for /concierge (OL-166b). The default hero (the paid offer's
@@ -18,9 +19,10 @@ export default function ConciergeIntro() {
 
   return (
     <>
-      <section className="bg-white border-b border-neutral-200" data-testid="concierge-hero" data-lane={freeLane ? 'free' : 'default'}>
-        <div className="max-w-5xl mx-auto px-6 py-16">
-          <p className="text-sm font-semibold text-primary-600 uppercase tracking-wide">
+      <section className={HERO_BAND} data-testid="concierge-hero" data-lane={freeLane ? 'free' : 'default'}>
+        <div aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary-500 to-secondary-500" />
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 py-12 md:py-16">
+          <p className="text-sm font-semibold text-primary-700 uppercase tracking-wide">
             {freeLane ? 'Free help · Greater Cleveland' : 'Family Concierge · Greater Cleveland'}
           </p>
           {/* "Free for families" stays above the fold (OL-165 a). */}

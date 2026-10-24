@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { BTN_PRIMARY, BTN_SECONDARY, CARD, HERO_BAND } from '@/components/site/brand';
 import { FiArrowRight, FiCheck } from 'react-icons/fi';
 import { SUBURBS, suburbPath } from '@/lib/directory/suburbs';
 import { buildPagesItemListJsonLd } from '@/lib/seo/jsonld';
@@ -102,7 +103,7 @@ const directoryItemList = buildPagesItemListJsonLd({
 
 export default function ClevelandLandingPage() {
   return (
-    <main className="min-h-screen bg-neutral-50">
+    <div className="bg-neutral-50">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
@@ -110,9 +111,10 @@ export default function ClevelandLandingPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(directoryItemList) }} />
 
       {/* Hero */}
-      <section className="bg-white border-b border-neutral-200">
-        <div className="max-w-5xl mx-auto px-6 py-16 sm:py-24">
-          <p className="text-sm font-semibold text-primary-600 uppercase tracking-wide">
+      <section className={HERO_BAND} data-testid="brand-hero">
+        <div aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary-500 to-secondary-500" />
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
+          <p className="text-sm font-semibold text-primary-700 uppercase tracking-wide">
             Cleveland, Ohio
           </p>
           <h1 className="mt-3 text-4xl sm:text-5xl font-bold text-neutral-900 leading-tight">
@@ -128,14 +130,14 @@ export default function ClevelandLandingPage() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href="/search"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700"
+              className={BTN_PRIMARY}
             >
               Search homes
               <FiArrowRight />
             </Link>
             <Link
               href="#care-types"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-neutral-300 text-neutral-900 rounded-lg font-semibold hover:bg-neutral-50"
+              className={BTN_SECONDARY}
             >
               Explore care types
             </Link>
@@ -158,7 +160,7 @@ export default function ClevelandLandingPage() {
             <Link
               key={c.href}
               href={c.href}
-              className="block p-6 bg-white border border-neutral-200 rounded-xl hover:border-primary-400 hover:shadow-md transition"
+              className={`block p-6 ${CARD}`}
             >
               <h3 className="text-xl font-bold text-neutral-900">{c.title}</h3>
               <p className="mt-2 text-neutral-700">{c.blurb}</p>
@@ -176,9 +178,9 @@ export default function ClevelandLandingPage() {
       <section className="max-w-5xl mx-auto px-6 pb-16">
         <Link
           href="/cleveland/home-care-agencies"
-          className="block p-6 bg-white border border-neutral-200 rounded-xl hover:border-primary-400 hover:shadow-md transition"
+          className={`block p-6 ${CARD}`}
         >
-          <p className="text-sm font-semibold text-primary-600 uppercase tracking-wide">Care at home</p>
+          <p className="text-sm font-semibold text-primary-700 uppercase tracking-wide">Care at home</p>
           <h3 className="mt-2 text-xl font-bold text-neutral-900">Home care agencies in Cleveland</h3>
           <p className="mt-2 text-neutral-700">
             Aides and nurses who come to you. Run a Cleveland home care agency? Claim your free
@@ -348,7 +350,7 @@ export default function ClevelandLandingPage() {
       </section>
 
       {/* CTA */}
-      <section className="bg-primary-600">
+      <section className="bg-gradient-to-r from-primary-600 to-secondary-500">
         <div className="max-w-5xl mx-auto px-6 py-12 text-center">
           <h2 className="text-3xl font-bold text-white">
             Ready to find the right home?
@@ -367,11 +369,11 @@ export default function ClevelandLandingPage() {
         </div>
       </section>
 
-      <footer className="max-w-5xl mx-auto px-6 py-8 text-sm text-neutral-500">
+      <div className="max-w-5xl mx-auto px-6 py-8 text-sm text-neutral-500" data-testid="page-note">
         Last updated 2026-05-15. CareLinkAI is an independent Cleveland directory. We do
         not provide medical advice; talk with a healthcare professional before making care
         decisions.
-      </footer>
-    </main>
+      </div>
+    </div>
   );
 }

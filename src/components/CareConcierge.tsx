@@ -60,7 +60,7 @@ export default function CareConcierge() {
       <button
         onClick={() => setOpen(true)}
         className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 bg-primary-600 text-white rounded-full shadow-lg hover:bg-primary-700 transition-all ${open ? 'hidden' : ''}`}
-        aria-label="Open care advisor"
+        aria-label="Ask a Care Advisor"
       >
         <FiMessageCircle size={20} />
         <span className="text-sm font-medium">Ask a Care Advisor</span>
