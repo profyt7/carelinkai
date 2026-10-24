@@ -9,10 +9,11 @@ import sitemap from '@/app/sitemap';
 import { isKnownAppPath, isPublicPage } from '@/lib/routing/public-routes';
 
 describe('SUBURBS registry', () => {
-  it('ships the original five Cuyahoga suburbs first, then the OL-172 ten (next ten by roster count)', () => {
+  it('ships the original five Cuyahoga suburbs first, then the OL-172 ten (next ten by roster count), then the five east-side additions', () => {
     expect(SUBURBS.map((s) => s.slug)).toEqual([
       'westlake', 'strongsville', 'parma', 'beachwood', 'lakewood',
       'mentor', 'cuyahoga-falls', 'rocky-river', 'medina', 'hudson', 'north-olmsted', 'avon', 'twinsburg', 'chardon', 'stow',
+      'lyndhurst', 'mayfield-heights', 'shaker-heights', 'euclid', 'solon',
     ]);
   });
 

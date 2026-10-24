@@ -2,6 +2,20 @@
 
 ---
 
+### 2026-10-24 — OL-175 follow-up: listing mock mode removed, /learn CareCredit wording, sticky-bar offset, five east-side suburbs (PR open, not merged)
+- **Objective:** Close the OL-171…OL-174 follow-ups in one PR off main `bfba374c` (after #781).
+- **Work completed:**
+  - **Mock mode on `/homes/[id]` removed entirely.** No hard-coded "Sunshine Care Home" listing, no `carelink_mock_mode` / `/api/runtime/mocks` check, no mock render branch; the page always loads `/api/homes/:id`. Other pages' mock modes (search, marketplace, operator) are untouched.
+  - **CareCredit copy shared.** `src/lib/financing/carecredit.ts` holds the title "Financing option (CareCredit)", the not-affiliated line and the apply URL. `/learn` and the listing both use it; `/learn` no longer says "partnered with CareCredit".
+  - **Sticky bar.** The listing's sticky bar slid 65px under the sticky site header. `SiteHeader` now has a fixed `h-16` (65px with its border, exported as `SITE_HEADER_HEIGHT_PX`); `SiteShell` and `PublicShell` set `--site-header-h`; the listing bar uses `top-[var(--site-header-h,0px)]` and the booking sidebar is offset by the same amount. Mid-scroll overlap measured 65/66px before, 0 after, on desktop 1280 and mobile 390.
+  - **Five suburbs:** Lyndhurst (2 roster homes), Mayfield Heights (3), Shaker Heights (2), Euclid (2), Solon (2). Each has a 144–154 word intro built from the roster addresses plus hospitals and landmarks. Cleveland Heights is skipped (1 roster home). The sitemap, the suburb grids, the revalidate list and post-deploy verification all read `SUBURBS`; the script's `FALLBACK_PAGES` is updated. Beachwood's 4 nearby suburbs are now Shaker Heights, Lyndhurst, Mayfield Heights and Solon.
+- **Files changed:** `src/app/homes/[id]/page.tsx`, `src/app/learn/page.tsx`, `src/lib/financing/carecredit.ts` (new), `src/components/site/SiteHeader.tsx`, `SiteShell.tsx`, `src/components/layout/PublicShell.tsx`, `src/lib/directory/suburbs.ts`, `scripts/post-deploy-verify.sh`, `__tests__/listing-followups.unit.test.ts` (new), `listing-facts`, `suburbs`, `seo-page-meta` unit tests, `e2e/public/directory/listing-no-mock.spec.ts` (new), `seo-pass.spec.ts`, context files.
+- **Commands run:** `npx tsc --noEmit`, eslint on changed files, `npx jest --ci`, and Playwright on listing-no-mock + listing-page + seo-pass + suburb-pages against a local dev server.
+- **Tests/build status:** tsc clean · eslint clean · jest 123/123 suites (on main `bfba374c`) · e2e 19/19 locally.
+- **Deployment impact:** No schema or env changes. Five new indexable URLs; the post-deploy revalidate checks 28 pages instead of 23.
+- **New risks/blockers:** None. Mock modes elsewhere (search/marketplace/operator pages) still honour the cookie — out of scope.
+- **Recommended next step:** Chris reviews and merges, then skims the five new intros for local accuracy.
+
 ### 2026-10-24 — OL-171…OL-174: brand shell, SEO pass, listing fixes, concierge polish (built, then MERGED the same day on Chris's authorization: #777 `ba7d9ba3` → #778 `972c8b63` → #779 `83367965` → #780 `3c29ad10`; branches brought up to date by merging main, not rebasing)
 - **Objective:** Chris's brief: four PRs, one per task, off main `80349db`, CI green, no merges; report PR # + CI + decisions + before/after screenshots of Beachwood, a listing and /concierge (desktop + mobile).
 - **Work completed:** #777 OL-171 shared header/footer/hero on every public page (+ four site-wide Lighthouse fixes); #778 OL-172 titles/descriptions/OG/Twitter, branded OG images, Breadcrumb/FAQ/ItemList/Organization, care-type listings with honest fallbacks, ten new suburbs, internal links; #779 OL-173 map (OSM + StrictMode init bug), no unverified capacity/availability/staffing, amenities labeled, CareCredit wording, waiver line; #780 OL-174 lane cards, phone + promise by the CTA, FAQ + FAQPage. OL-173 and OL-174 were built by two parallel agents in separate worktrees and reviewed before push; #778–#780 are stacked on #777.

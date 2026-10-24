@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { CARECREDIT_APPLY_URL, CARECREDIT_DISCLOSURE, CARECREDIT_TITLE } from '@/lib/financing/carecredit';
 import type { Metadata } from 'next';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -181,16 +182,16 @@ export default async function LearnPage({
         <div className="mt-8 bg-amber-50 border border-amber-200 rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className="text-2xl">💳</div>
           <div className="flex-1">
-            <p className="font-semibold text-neutral-900">Need help affording care?</p>
-            <p className="text-sm text-neutral-600">CareLinkAI has partnered with CareCredit — a healthcare credit card accepted at thousands of senior care providers. Apply in minutes, decisions are fast.</p>
+            <p className="font-semibold text-neutral-900">{CARECREDIT_TITLE}</p>
+            <p className="text-sm text-neutral-600" data-testid="carecredit-disclosure">{CARECREDIT_DISCLOSURE}</p>
           </div>
           <a
-            href="https://www.carecredit.com/apply/"
+            href={CARECREDIT_APPLY_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="flex-shrink-0 px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-semibold hover:bg-amber-600 transition-colors"
           >
-            Apply for CareCredit →
+            Apply with CareCredit →
           </a>
         </div>
 

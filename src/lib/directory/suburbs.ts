@@ -331,6 +331,104 @@ export const SUBURBS: readonly Suburb[] = [
     lat: 41.1595,
     lng: -81.4404,
   },
+  // ---- Follow-up (Chris, 2026-10-24): east-side suburbs he named, kept only
+  // where the ODH roster lists ≥ 2 licensed homes. Cleveland Heights (1 home)
+  // is skipped.
+  {
+    slug: 'lyndhurst',
+    name: 'Lyndhurst',
+    county: 'Cuyahoga',
+    cities: ['Lyndhurst'],
+    title: 'Assisted Living in Lyndhurst, OH',
+    description:
+      'Licensed assisted living homes in Lyndhurst, OH, on Rae Road and Brainard Road near Legacy Village: Ohio inspection facts and open beds confirmed by homes.',
+    h1: 'Assisted Living in Lyndhurst, OH',
+    intro:
+      'Lyndhurst is a residential east-side suburb between South Euclid, Mayfield Heights and Pepper Pike, best known locally for Legacy Village at Cedar and Richmond roads. Its two licensed assisted living homes are on Rae Road and on Brainard Road near the Pepper Pike line, a few minutes from the I-271 interchanges at Cedar Road and Mayfield Road. Cleveland Clinic Hillcrest Hospital in Mayfield Heights and UH Ahuja Medical Center in Beachwood are each about ten minutes away, so families can usually stay with the hospital system a parent already uses. Many Lyndhurst families also look at homes in Mayfield Heights, Beachwood and Shaker Heights, since all four are a short drive apart along Cedar and Mayfield roads. With only two licensed homes inside the city, it is worth touring both and asking each one which levels of care it is licensed to provide and what the base monthly rate includes.',
+    nearby: [
+      'Cleveland Clinic Hillcrest Hospital (Mayfield Heights)',
+      'University Hospitals Ahuja Medical Center (Beachwood)',
+      'Legacy Village (Cedar and Richmond roads)',
+    ],
+    lat: 41.52,
+    lng: -81.4887,
+  },
+  {
+    slug: 'mayfield-heights',
+    name: 'Mayfield Heights',
+    county: 'Cuyahoga',
+    cities: ['Mayfield Heights'],
+    title: 'Assisted Living in Mayfield Heights, OH',
+    description:
+      'Licensed assisted living homes in Mayfield Heights, OH, near Cleveland Clinic Hillcrest Hospital: Ohio inspection facts and open beds confirmed by homes.',
+    h1: 'Assisted Living in Mayfield Heights, OH',
+    intro:
+      'Mayfield Heights sits on Cleveland’s east side where Mayfield Road (US-322) meets I-271, and it is home to Cleveland Clinic Hillcrest Hospital, one of the larger hospitals east of the city. One of its three licensed assisted living homes is on the same stretch of Mayfield Road as the hospital, another is on Cedar Road, and the third is on Landerhaven Drive near the I-271 interchange. That makes Mayfield Heights a practical choice when a parent is being discharged from Hillcrest or already sees doctors there, and UH Ahuja Medical Center in Beachwood is about ten minutes south. Families from Highland Heights, Mayfield Village, Gates Mills, Lyndhurst and Richmond Heights often compare homes here, and it is easy to tour Lyndhurst and Beachwood homes on the same afternoon. Ask each home how it coordinates with Hillcrest’s case managers on admission paperwork and follow-up appointments after a hospital stay.',
+    nearby: [
+      'Cleveland Clinic Hillcrest Hospital (Mayfield Heights)',
+      'University Hospitals Ahuja Medical Center (Beachwood)',
+      'The Mayfield Road (US-322) / I-271 interchange',
+    ],
+    lat: 41.5192,
+    lng: -81.4579,
+  },
+  {
+    slug: 'shaker-heights',
+    name: 'Shaker Heights',
+    county: 'Cuyahoga',
+    cities: ['Shaker Heights'],
+    title: 'Assisted Living in Shaker Heights, OH',
+    description:
+      'Licensed assisted living homes in Shaker Heights, OH, on Chagrin Boulevard and Northfield Road: Ohio inspection facts and open beds confirmed by each home.',
+    h1: 'Assisted Living in Shaker Heights, OH',
+    intro:
+      'Shaker Heights is the inner-ring suburb directly east of Cleveland, planned in the early twentieth century as a garden suburb and still served by the RTA Blue and Green Line rapid trains along Shaker and Van Aken boulevards. Its two licensed assisted living homes are on Chagrin Boulevard and on Northfield Road toward the Highland Hills line, both close to the Van Aken District at Chagrin and Warrensville Center Road. University Hospitals Cleveland Medical Center and the Cleveland Clinic main campus in the University Circle area are roughly 15 minutes west, and UH Ahuja Medical Center in Beachwood is a similar drive east, so families can usually keep a parent with the same specialists. Shaker homes are often compared with options in Beachwood, Lyndhurst and Cleveland’s east side. For a parent who no longer drives, ask whether the home helps with rides to appointments and how close the nearest rapid stop is.',
+    nearby: [
+      'University Hospitals Cleveland Medical Center (University Circle)',
+      'Cleveland Clinic main campus',
+      'Van Aken District and the RTA Blue / Green Line',
+    ],
+    lat: 41.4739,
+    lng: -81.5371,
+  },
+  {
+    slug: 'euclid',
+    name: 'Euclid',
+    county: 'Cuyahoga',
+    cities: ['Euclid'],
+    title: 'Assisted Living in Euclid, OH: Licensed Homes',
+    description:
+      'Assisted living homes in Euclid, OH, on Euclid Avenue near Cleveland Clinic Euclid Hospital: Ohio inspection facts and open beds confirmed by homes.',
+    h1: 'Assisted Living in Euclid, OH',
+    intro:
+      'Euclid is the lakefront city just northeast of Cleveland, stretched along Lake Erie between Cleveland’s Collinwood neighbourhood and Willowick in Lake County. Its two licensed assisted living homes are on Euclid Avenue (US-20), the city’s main east–west road, and on Gateway Drive, and both are a short drive from I-90 and Route 2. Cleveland Clinic Euclid Hospital, on Lake Shore Boulevard, is the closest hospital for most residents, and Cleveland Clinic Hillcrest Hospital in Mayfield Heights is about 15 minutes south. Families from Wickliffe, Willowick, Richmond Heights, South Euclid and the Collinwood area often look here first, and some compare Euclid homes with options in Mentor or Mayfield Heights. Euclid Creek Reservation and the lakefront parks are nearby for visits. When you tour, ask which hospital the home sends residents to in an emergency and how it handles medication changes after a hospital stay.',
+    nearby: [
+      'Cleveland Clinic Euclid Hospital',
+      'Cleveland Clinic Hillcrest Hospital (Mayfield Heights)',
+      'Cleveland Metroparks Euclid Creek Reservation',
+    ],
+    lat: 41.5931,
+    lng: -81.5268,
+  },
+  {
+    slug: 'solon',
+    name: 'Solon',
+    county: 'Cuyahoga',
+    cities: ['Solon'],
+    title: 'Assisted Living in Solon, OH: Licensed Homes',
+    description:
+      'Licensed assisted living homes in Solon, OH, off US-422 and SOM Center Road: Ohio Department of Health inspection facts and open beds confirmed by homes.',
+    h1: 'Assisted Living in Solon, OH',
+    intro:
+      'Solon is in the southeast corner of Cuyahoga County, where US-422 crosses SOM Center Road (State Route 91), with large business parks on one side of the highway and residential neighbourhoods on the other. Its two licensed homes are on Emerald Ridge Parkway and on Kruse Drive, and one of them is an active-adult community, so ask each one which levels of care it is licensed to provide before you tour. UH Ahuja Medical Center in Beachwood is about 15 minutes north via I-271, and Cleveland Clinic Hillcrest Hospital in Mayfield Heights is a little farther, which matters when a parent is moving straight from a hospital stay. Families from Bainbridge, Chagrin Falls, Glenwillow, Aurora and Twinsburg commonly compare homes here, and the Twinsburg and Beachwood homes are close enough to see on the same day. Ask how each home handles transportation to appointments, since Solon is spread out and public transit is limited.',
+    nearby: [
+      'University Hospitals Ahuja Medical Center (Beachwood)',
+      'Cleveland Clinic Hillcrest Hospital (Mayfield Heights)',
+      'The US-422 / SOM Center Road interchange',
+    ],
+    lat: 41.3898,
+    lng: -81.4412,
+  },
 ];
 
 export function findSuburb(slug: string | undefined | null): Suburb | null {

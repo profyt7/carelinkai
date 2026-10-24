@@ -4,7 +4,7 @@
  *    description 140–155, og:title / og:description / og:image, twitter:card;
  *  - Beachwood: BreadcrumbList + FAQPage (questions = the visible FAQ) +
  *    ItemList + Organization with the published phone number;
- *  - the sitemap lists all 15 suburb pages; the hubs show the suburb grid;
+ *  - the sitemap lists all 20 suburb pages; the hubs show the suburb grid;
  *  - care-type hubs list real homes with a count (or a named fallback);
  *  - a listing links back to its suburb page and care-type hubs;
  *  - the branded OG image routes answer image/png.
@@ -15,7 +15,7 @@ import { test, expect, type APIRequestContext } from '@playwright/test';
 
 const ts = Date.now();
 const OP_EMAIL = `seo-pass-op-${ts}@test.carelinkai.com`;
-const NEW_SUBURBS = ['mentor', 'cuyahoga-falls', 'rocky-river', 'medina', 'hudson', 'north-olmsted', 'avon', 'twinsburg', 'chardon', 'stow'];
+const NEW_SUBURBS = ['mentor', 'cuyahoga-falls', 'rocky-river', 'medina', 'hudson', 'north-olmsted', 'avon', 'twinsburg', 'chardon', 'stow', 'lyndhurst', 'mayfield-heights', 'shaker-heights', 'euclid', 'solon'];
 const ALL_SUBURBS = ['westlake', 'strongsville', 'parma', 'beachwood', 'lakewood', ...NEW_SUBURBS];
 
 let beachwoodHomeId = '';
@@ -114,7 +114,7 @@ test.describe('@critical OL-172 SEO pass', () => {
     expect((html.match(/data-testid="nearby-suburb"/g) ?? []).length).toBe(4);
   });
 
-  test('sitemap lists all 15 suburb pages; both hubs show the suburb grid', async ({ request }) => {
+  test('sitemap lists all 20 suburb pages; both hubs show the suburb grid', async ({ request }) => {
     const xml = await getHtml(request, '/sitemap.xml');
     for (const s of ALL_SUBURBS) expect(xml, s).toContain(`https://getcarelinkai.com/cleveland/assisted-living/${s}`);
     for (const hub of ['/cleveland', '/cleveland/assisted-living']) {

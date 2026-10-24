@@ -16,10 +16,17 @@ export const SITE_NAV: ReadonlyArray<{ href: string; label: string }> = [
   { href: '/auth/register?role=operator', label: 'For care homes' },
 ];
 
+/**
+ * The header is one fixed height on every breakpoint (h-16 + 1px border) so
+ * pages with their own sticky bars can sit just below it: SiteShell /
+ * PublicShell publish it as the CSS variable --site-header-h.
+ */
+export const SITE_HEADER_HEIGHT_PX = 65;
+
 export default function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/95 backdrop-blur-sm" data-testid="site-header">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 md:px-6">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 md:px-6">
         <Link href="/" className="flex shrink-0 items-center" aria-label="CareLinkAI home" data-testid="site-logo">
           {/* Lazy, not `priority`/eager: React 19 preloads every non-lazy SSR image, and the logo must
               never compete with the page's LCP text. It is in the first viewport, so it still loads at once. */}
