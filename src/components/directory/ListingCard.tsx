@@ -3,6 +3,7 @@ import { FiMapPin } from 'react-icons/fi';
 import AvailabilityBadge from '@/components/availability/AvailabilityBadge';
 import GoogleRatingBadge from '@/components/homes/GoogleRatingBadge';
 import type { PublicListing } from '@/lib/directory/public-listings';
+import { CARD } from '@/components/site/brand';
 
 /**
  * Server-rendered listing card for the public SEO pages (sprint W3 items 3 + 4).
@@ -17,7 +18,7 @@ export default function ListingCard({ listing, priority = false }: { listing: Pu
     <article
       data-testid="listing-card"
       data-home-id={l.id}
-      className="flex flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm transition hover:border-primary-400 hover:shadow-md"
+      className={`flex flex-col overflow-hidden ${CARD}`}
     >
       <Link href={l.href} className="block">
         {/* eslint-disable-next-line @next/next/no-img-element -- plain <img> keeps the card static HTML; images are Cloudinary/placeholder URLs */}
@@ -61,7 +62,7 @@ export default function ListingCard({ listing, priority = false }: { listing: Pu
         <div className="mt-auto pt-4">
           <Link
             href={l.href}
-            className="inline-flex items-center gap-1 text-sm font-semibold text-primary-600 hover:text-primary-700"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-primary-700 hover:text-secondary-600"
           >
             View listing →
           </Link>

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { BTN_PRIMARY, BTN_SECONDARY, CARD, HERO_BAND } from '@/components/site/brand';
 import { notFound } from 'next/navigation';
 import { FiArrowRight, FiCheck } from 'react-icons/fi';
 import ListingCard from '@/components/directory/ListingCard';
@@ -67,16 +68,17 @@ export default async function SuburbAssistedLivingPage({ params }: { params: Par
   const itemList = buildListingsItemListJsonLd({ url, name: `Assisted living homes in ${s.name}, OH`, listings });
 
   return (
-    <main className="min-h-screen bg-neutral-50">
+    <div className="bg-neutral-50">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       {listings.length > 0 && (
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }} />
       )}
 
       {/* Hero */}
-      <section className="bg-white border-b border-neutral-200">
-        <div className="max-w-5xl mx-auto px-6 py-16">
-          <nav className="text-sm text-neutral-600">
+      <section className={HERO_BAND} data-testid="brand-hero">
+        <div aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary-500 to-secondary-500" />
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 py-16">
+          <nav aria-label="Breadcrumb" className="text-sm text-neutral-600">
             <Link href="/cleveland" className="hover:text-primary-600">
               Cleveland senior care
             </Link>
@@ -87,7 +89,7 @@ export default async function SuburbAssistedLivingPage({ params }: { params: Par
             <span className="mx-2 text-neutral-400">/</span>
             <span className="text-neutral-900 font-medium">{s.name}</span>
           </nav>
-          <p className="mt-4 text-sm font-semibold text-primary-600 uppercase tracking-wide">
+          <p className="mt-4 text-sm font-semibold text-primary-700 uppercase tracking-wide">
             {s.name}, {s.county} County
           </p>
           <h1 className="mt-3 text-4xl sm:text-5xl font-bold text-neutral-900 leading-tight">{s.h1}</h1>
@@ -95,14 +97,14 @@ export default async function SuburbAssistedLivingPage({ params }: { params: Par
           <div className="mt-8 flex flex-wrap gap-3">
             <a
               href="#listings"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700"
+              className={BTN_PRIMARY}
             >
               See {s.name} assisted living homes
               <FiArrowRight />
             </a>
             <Link
               href={`/search?careLevel=ASSISTED&location=${encodeURIComponent(`${s.name}, OH`)}`}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-neutral-300 text-neutral-900 rounded-lg font-semibold hover:bg-neutral-50"
+              className={BTN_SECONDARY}
             >
               Search near {s.name}
             </Link>
@@ -188,7 +190,7 @@ export default async function SuburbAssistedLivingPage({ params }: { params: Par
             <Link
               key={o.slug}
               href={suburbPath(o)}
-              className="block p-5 bg-white border border-neutral-200 rounded-xl hover:border-primary-400 hover:shadow-md transition"
+              className={`block p-5 ${CARD}`}
             >
               <p className="font-semibold text-neutral-900">{o.name} →</p>
               <p className="mt-1 text-sm text-neutral-600">{o.county} County</p>
@@ -196,7 +198,7 @@ export default async function SuburbAssistedLivingPage({ params }: { params: Par
           ))}
           <Link
             href="/cleveland/assisted-living"
-            className="block p-5 bg-white border border-neutral-200 rounded-xl hover:border-primary-400 hover:shadow-md transition"
+            className={`block p-5 ${CARD}`}
           >
             <p className="font-semibold text-neutral-900">All of Greater Cleveland →</p>
             <p className="mt-1 text-sm text-neutral-600">Seven counties, one directory.</p>
@@ -204,10 +206,10 @@ export default async function SuburbAssistedLivingPage({ params }: { params: Par
         </div>
       </section>
 
-      <footer className="max-w-5xl mx-auto px-6 py-8 text-sm text-neutral-500">
+      <div className="max-w-5xl mx-auto px-6 py-8 text-sm text-neutral-500" data-testid="page-note">
         Last updated 2026-10-13. Inspection data is sourced from Ohio Department of Health public
         records and presented as facts without grading. Not medical advice.
-      </footer>
-    </main>
+      </div>
+    </div>
   );
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { BTN_PRIMARY, BTN_SECONDARY, CARD, HERO_BAND } from '@/components/site/brand';
 import { FiArrowRight, FiCheck } from 'react-icons/fi';
 import ListingCard from '@/components/directory/ListingCard';
 import { fetchPublicListings, waiverFilterFromSearchParams } from '@/lib/directory/public-listings';
@@ -64,7 +65,7 @@ export default async function ClevelandAssistedLivingPage({ searchParams }: { se
   });
 
   return (
-    <main className="min-h-screen bg-neutral-50">
+    <div className="bg-neutral-50">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
@@ -74,9 +75,10 @@ export default async function ClevelandAssistedLivingPage({ searchParams }: { se
       )}
 
       {/* Hero */}
-      <section className="bg-white border-b border-neutral-200">
-        <div className="max-w-5xl mx-auto px-6 py-16">
-          <nav className="text-sm text-neutral-600">
+      <section className={HERO_BAND} data-testid="brand-hero">
+        <div aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary-500 to-secondary-500" />
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 py-16">
+          <nav aria-label="Breadcrumb" className="text-sm text-neutral-600">
             <Link href="/cleveland" className="hover:text-primary-600">
               Cleveland senior care
             </Link>
@@ -95,14 +97,14 @@ export default async function ClevelandAssistedLivingPage({ searchParams }: { se
           <div className="mt-8 flex flex-wrap gap-3">
             <a
               href="#listings"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700"
+              className={BTN_PRIMARY}
             >
               See assisted living homes
               <FiArrowRight />
             </a>
             <Link
               href="/search?careLevel=ASSISTED"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-neutral-300 text-neutral-900 rounded-lg font-semibold hover:bg-neutral-50"
+              className={BTN_SECONDARY}
             >
               Search all homes
             </Link>
@@ -291,21 +293,21 @@ export default async function ClevelandAssistedLivingPage({ searchParams }: { se
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Link
             href="/cleveland/memory-care"
-            className="block p-5 bg-white border border-neutral-200 rounded-xl hover:border-primary-400 hover:shadow-md transition"
+            className={`block p-5 ${CARD}`}
           >
             <p className="font-semibold text-neutral-900">Memory care →</p>
             <p className="mt-1 text-sm text-neutral-600">Specialized care for dementia.</p>
           </Link>
           <Link
             href="/cleveland/independent-living"
-            className="block p-5 bg-white border border-neutral-200 rounded-xl hover:border-primary-400 hover:shadow-md transition"
+            className={`block p-5 ${CARD}`}
           >
             <p className="font-semibold text-neutral-900">Independent living →</p>
             <p className="mt-1 text-sm text-neutral-600">For active seniors who don’t need daily help.</p>
           </Link>
           <Link
             href="/cleveland/nursing-homes"
-            className="block p-5 bg-white border border-neutral-200 rounded-xl hover:border-primary-400 hover:shadow-md transition"
+            className={`block p-5 ${CARD}`}
           >
             <p className="font-semibold text-neutral-900">Nursing homes →</p>
             <p className="mt-1 text-sm text-neutral-600">Skilled medical care, 24/7.</p>
@@ -314,7 +316,7 @@ export default async function ClevelandAssistedLivingPage({ searchParams }: { se
       </section>
 
       {/* CTA */}
-      <section className="bg-primary-600">
+      <section className="bg-gradient-to-r from-primary-600 to-secondary-500">
         <div className="max-w-5xl mx-auto px-6 py-12 text-center">
           <h2 className="text-3xl font-bold text-white">
             Browse assisted living in Cleveland
@@ -333,10 +335,10 @@ export default async function ClevelandAssistedLivingPage({ searchParams }: { se
         </div>
       </section>
 
-      <footer className="max-w-5xl mx-auto px-6 py-8 text-sm text-neutral-500">
+      <div className="max-w-5xl mx-auto px-6 py-8 text-sm text-neutral-500" data-testid="page-note">
         Last updated 2026-05-15. Not medical advice. Talk with a healthcare professional
         before making care decisions.
-      </footer>
-    </main>
+      </div>
+    </div>
   );
 }

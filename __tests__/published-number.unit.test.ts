@@ -19,8 +19,8 @@ describe('published number', () => {
     expect(CONTACT_PHONE_E164).toBe('+12162459482');
     expect(CONTACT_PHONE_TEL).toBe('tel:+12162459482');
   });
-  it('footer (public shell + homepage), /contact and /concierge (both lanes) render it from the constant with a tel: link', () => {
-    for (const f of ['src/components/layout/PublicShell.tsx', 'src/app/HomePageClient.tsx', 'src/app/contact/page.tsx', 'src/app/concierge/ConciergeScreener.tsx']) {
+  it('site header + footer (every public page, OL-171), homepage, /contact and /concierge (both lanes) render it from the constant with a tel: link', () => {
+    for (const f of ['src/components/site/SiteHeader.tsx', 'src/components/site/SiteFooter.tsx', 'src/app/HomePageClient.tsx', 'src/app/contact/page.tsx', 'src/app/concierge/ConciergeScreener.tsx']) {
       const src = read(f);
       expect({ f, imports: /from ['"]@\/lib\/contact['"]/.test(src), tel: /CONTACT_PHONE_TEL/.test(src), display: /CONTACT_PHONE_DISPLAY/.test(src), literal: /245-9482/.test(src) }).toEqual({ f, imports: true, tel: true, display: true, literal: false });
     }

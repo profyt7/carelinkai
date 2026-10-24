@@ -51,7 +51,7 @@ const structuredData = {
 
 export default function ConciergePage() {
   return (
-    <main className="min-h-screen bg-neutral-50" data-testid="concierge-page">
+    <div className="bg-neutral-50" data-testid="concierge-page">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
 
       {/* Hero + screener (client: the hero swaps to the free-lane version after a Medicaid / Medicare / VA answer — OL-166b) */}
@@ -68,7 +68,7 @@ export default function ConciergePage() {
           <ol className="mt-8 space-y-6 max-w-3xl">
             {CONCIERGE_FIVE_MISTAKES.map((m, i) => (
               <li key={m.mistake} className="flex gap-4">
-                <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary-600 text-sm font-bold text-white">
+                <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-600 to-secondary-500 text-sm font-bold text-white">
                   {i + 1}
                 </span>
                 <div>
@@ -113,9 +113,9 @@ export default function ConciergePage() {
         </p>
       </section>
 
-      <footer className="max-w-5xl mx-auto px-6 py-8 text-sm text-neutral-500">
+      <div className="max-w-5xl mx-auto px-6 py-8 text-sm text-neutral-500" data-testid="page-note">
         CareLinkAI is not a licensed care provider, broker or insurer. Not medical, legal or financial advice.
-      </footer>
-    </main>
+      </div>
+    </div>
   );
 }

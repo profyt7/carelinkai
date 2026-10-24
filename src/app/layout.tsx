@@ -109,8 +109,8 @@ export const viewport: Viewport = {
   themeColor: "#3978FC",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // OL-171: pinch-zoom stays on (WCAG 1.4.4 / Lighthouse meta-viewport).
+  maximumScale: 5,
   viewportFit: "cover",
 };
 
