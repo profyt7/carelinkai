@@ -21,8 +21,9 @@ export default function SiteHeader() {
     <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/95 backdrop-blur-sm" data-testid="site-header">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 md:px-6">
         <Link href="/" className="flex shrink-0 items-center" aria-label="CareLinkAI home" data-testid="site-logo">
-          {/* eager but NOT `priority`: no preload, so the logo never competes with the page's LCP text (OL-171 perf check). */}
-          <Image src="/images/logo.png" alt="CareLinkAI" width={171} height={40} sizes="171px" loading="eager" className="h-10 w-auto" />
+          {/* Lazy, not `priority`/eager: React 19 preloads every non-lazy SSR image, and the logo must
+              never compete with the page's LCP text. It is in the first viewport, so it still loads at once. */}
+          <Image src="/images/logo.png" alt="CareLinkAI" width={171} height={40} sizes="171px" loading="lazy" className="h-10 w-auto" />
         </Link>
 
         <nav aria-label="Main" className="hidden items-center gap-6 lg:flex">
