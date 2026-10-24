@@ -105,7 +105,7 @@ export default function ConciergeScreener({ onRoute }: { onRoute?: (route: Conci
           <Link
             href={cta.href}
             data-testid="concierge-free-cta"
-            className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-6 py-3 font-semibold text-white hover:bg-primary-700"
+            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-primary-600 to-secondary-500 px-6 py-3 font-semibold text-white shadow-md hover:opacity-90"
           >
             {cta.label}
             <FiArrowRight />
@@ -237,7 +237,7 @@ export default function ConciergeScreener({ onRoute }: { onRoute?: (route: Conci
       <button
         type="submit"
         disabled={!hydrated || !choice}
-        className="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary-600 px-6 py-3 font-semibold text-white hover:bg-primary-700 disabled:opacity-60"
+        className="mt-6 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-primary-600 to-secondary-500 px-6 py-3 font-semibold text-white shadow-md hover:opacity-90 disabled:opacity-60"
       >
         Continue
         <FiArrowRight />

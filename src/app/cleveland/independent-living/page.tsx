@@ -1,26 +1,23 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import CareTypeListingsSection from '@/components/directory/CareTypeListingsSection';
+import FaqSection from '@/components/site/FaqSection';
+import { CARE_TYPE_PLAN, loadCareTypeListings } from '@/lib/directory/care-type-listings';
+import { careTypeFaqs } from '@/lib/seo/directory-faq';
+import { buildBreadcrumbJsonLd } from '@/lib/seo/jsonld';
+import { PAGE_META, publicMetadata } from '@/lib/seo/page-meta';
+import { BTN_PRIMARY, CARD, HERO_BAND } from '@/components/site/brand';
 import { FiArrowRight, FiCheck } from 'react-icons/fi';
 
 // OL-159: static content, but re-rendered at least hourly (and on demand via
 // POST /api/admin/revalidate) so the footer build sha and shared copy never
 // outlive a deploy.
-export const revalidate = 3600;
+// OL-172 (d): this hub now lists live homes, so it renders per request like the
+// assisted living hub (never a stale count).
+export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
-  title: 'Independent Living in Cleveland, OH | CareLinkAI',
-  description:
-    'Independent living communities in Greater Cleveland for active seniors. What’s included, typical costs, and how to choose. No broker fees.',
-  alternates: { canonical: 'https://getcarelinkai.com/cleveland/independent-living' },
-  openGraph: {
-    title: 'Independent Living in Cleveland, OH | CareLinkAI',
-    description:
-      'Apartment-style senior communities in Cleveland for active seniors who want amenities without daily care.',
-    type: 'website',
-    url: 'https://getcarelinkai.com/cleveland/independent-living',
-    siteName: 'CareLinkAI',
-  },
-};
+// OL-172 (a)(b): title without the suffix (root template adds it), 140–155 char description, OG + Twitter.
+export const metadata: Metadata = publicMetadata(PAGE_META.independentLiving);
 
 const structuredData = {
   '@context': 'https://schema.org',
@@ -43,17 +40,26 @@ const structuredData = {
   },
 };
 
-export default function ClevelandIndependentLivingPage() {
+export default async function ClevelandIndependentLivingPage() {
+  const plan = CARE_TYPE_PLAN['independent-living'];
+  const result = await loadCareTypeListings(plan);
+  const faqs = careTypeFaqs('independent-living', { label: plan.label, total: result.fallback ? 0 : result.total, acceptingWaiver: result.acceptingWaiver, fallbackNote: result.fallback ? `The nearest real option we list is licensed ${result.fallback.label}, shown on this page.` : null });
+  const breadcrumb = buildBreadcrumbJsonLd([
+    { name: 'Cleveland senior care', path: '/cleveland' },
+    { name: 'Independent living', path: PAGE_META.independentLiving.path },
+  ]);
   return (
-    <main className="min-h-screen bg-neutral-50">
+    <div className="bg-neutral-50">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
 
-      <section className="bg-white border-b border-neutral-200">
-        <div className="max-w-5xl mx-auto px-6 py-16">
-          <nav className="text-sm text-neutral-600">
+      <section className={HERO_BAND} data-testid="brand-hero">
+        <div aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary-500 to-secondary-500" />
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 py-16">
+          <nav aria-label="Breadcrumb" className="text-sm text-neutral-600">
             <Link href="/cleveland" className="hover:text-primary-600">
               Cleveland senior care
             </Link>
@@ -72,7 +78,7 @@ export default function ClevelandIndependentLivingPage() {
           <div className="mt-8">
             <Link
               href="/search?careLevel=INDEPENDENT"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700"
+              className={BTN_PRIMARY}
             >
               Browse Cleveland independent living
               <FiArrowRight />
@@ -80,6 +86,8 @@ export default function ClevelandIndependentLivingPage() {
           </div>
         </div>
       </section>
+
+      <CareTypeListingsSection path={PAGE_META.independentLiving.path} typeLabel={plan.label} heading="Homes offering independent living in Greater Cleveland" result={result} />
 
       <section className="max-w-5xl mx-auto px-6 py-16">
         <h2 className="text-3xl font-bold text-neutral-900">Who independent living is for</h2>
@@ -182,21 +190,21 @@ export default function ClevelandIndependentLivingPage() {
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Link
             href="/cleveland/assisted-living"
-            className="block p-5 bg-white border border-neutral-200 rounded-xl hover:border-primary-400 hover:shadow-md transition"
+            className={`block p-5 ${CARD}`}
           >
             <p className="font-semibold text-neutral-900">Assisted living →</p>
             <p className="mt-1 text-sm text-neutral-600">Daily-living help in a residential setting.</p>
           </Link>
           <Link
             href="/cleveland/memory-care"
-            className="block p-5 bg-white border border-neutral-200 rounded-xl hover:border-primary-400 hover:shadow-md transition"
+            className={`block p-5 ${CARD}`}
           >
             <p className="font-semibold text-neutral-900">Memory care →</p>
             <p className="mt-1 text-sm text-neutral-600">Specialized care for dementia.</p>
           </Link>
           <Link
             href="/cleveland/nursing-homes"
-            className="block p-5 bg-white border border-neutral-200 rounded-xl hover:border-primary-400 hover:shadow-md transition"
+            className={`block p-5 ${CARD}`}
           >
             <p className="font-semibold text-neutral-900">Nursing homes →</p>
             <p className="mt-1 text-sm text-neutral-600">Skilled medical care, 24/7.</p>
@@ -204,7 +212,7 @@ export default function ClevelandIndependentLivingPage() {
         </div>
       </section>
 
-      <section className="bg-primary-600">
+      <section className="bg-gradient-to-r from-primary-600 to-secondary-500">
         <div className="max-w-5xl mx-auto px-6 py-12 text-center">
           <h2 className="text-3xl font-bold text-white">Find independent living in Cleveland</h2>
           <p className="mt-3 text-primary-100 max-w-2xl mx-auto">
@@ -220,9 +228,11 @@ export default function ClevelandIndependentLivingPage() {
         </div>
       </section>
 
-      <footer className="max-w-5xl mx-auto px-6 py-8 text-sm text-neutral-500">
+      <FaqSection faqs={faqs} />
+
+      <div className="max-w-5xl mx-auto px-6 py-8 text-sm text-neutral-500" data-testid="page-note">
         Last updated 2026-05-15.
-      </footer>
-    </main>
+      </div>
+    </div>
   );
 }

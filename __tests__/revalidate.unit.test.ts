@@ -36,14 +36,15 @@ describe('hubRevalidatePaths', () => {
   });
   it('every static hub page + llms.txt + sitemap revalidates within an hour', () => {
     expect(HUB_REVALIDATE_SECONDS).toBeLessThanOrEqual(3600);
-    for (const f of ['src/app/cleveland/page.tsx', 'src/app/cleveland/memory-care/page.tsx', 'src/app/cleveland/independent-living/page.tsx', 'src/app/cleveland/nursing-homes/page.tsx', 'src/app/llms.txt/route.ts', 'src/app/sitemap.ts']) {
+    for (const f of ['src/app/cleveland/page.tsx', 'src/app/llms.txt/route.ts', 'src/app/sitemap.ts']) {
       const src = fs.readFileSync(path.join(root, f), 'utf8');
       const m = /export const revalidate = (\d+);/.exec(src);
       expect({ file: f, revalidate: m ? Number(m[1]) : null }).toEqual({ file: f, revalidate: expect.any(Number) });
       expect(Number(m![1])).toBeLessThanOrEqual(3600);
     }
-    // The listing pages are rendered per request (never cached).
-    for (const f of ['src/app/cleveland/assisted-living/page.tsx', 'src/app/cleveland/assisted-living/[suburb]/page.tsx']) {
+    // The listing pages are rendered per request (never cached). OL-172 (d): the care-type
+    // hubs now list live homes too, so they joined this group.
+    for (const f of ['src/app/cleveland/assisted-living/page.tsx', 'src/app/cleveland/assisted-living/[suburb]/page.tsx', 'src/app/cleveland/memory-care/page.tsx', 'src/app/cleveland/independent-living/page.tsx', 'src/app/cleveland/nursing-homes/page.tsx']) {
       expect(fs.readFileSync(path.join(root, f), 'utf8')).toContain("export const dynamic = 'force-dynamic'");
     }
   });

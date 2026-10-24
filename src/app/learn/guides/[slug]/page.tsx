@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const guide = getGuide(params.slug);
   if (!guide) return {};
   return {
-    title: `${guide.title} | CareLinkAI`,
+    title: guide.title,
     description: guide.description,
   };
 }

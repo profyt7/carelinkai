@@ -101,6 +101,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     // History (sprint W5-1): one row per changed business field; free text
     // (description) is recorded as a change marker only. Same transaction as the write.
     const diffs = diffFields(home as unknown as Record<string, unknown>, parsed.data as Record<string, unknown>, TRACKED_HOME_FIELDS);
+    // OL-173: a submitted-but-unchanged capacity / amenities is still the
+    // operator vouching for a (possibly seeded) value — record it so the public
+    // listing can show it as operator-provided.
+    const changed = new Set(diffs.map((d) => d.field));
+    const confirmed = (['capacity', 'amenities'] as const).filter(
+      (f) => parsed.data[f] !== undefined && !changed.has(f),
+    );
     const updated = await prisma.$transaction(async (tx) => {
       const u = await tx.assistedLivingHome.update({ where: { id: home.id }, data });
       for (const d of diffs) {
@@ -108,6 +115,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         await recordEvent(tx, {
           entityType: 'OPERATOR_PROFILE', entityId: home.id, eventType: 'field.changed', field: d.field,
           oldValue: isText ? { changed: true } : d.oldValue, newValue: isText ? { changed: true } : d.newValue,
+          source: user.role === UserRole.ADMIN ? 'ADMIN' : 'OPERATOR', actor: { userId: user.id, role: user.role },
+        });
+      }
+      for (const f of confirmed) {
+        await recordEvent(tx, {
+          entityType: 'OPERATOR_PROFILE', entityId: home.id, eventType: 'field.confirmed', field: f,
+          oldValue: null, newValue: { [f]: parsed.data[f] },
           source: user.role === UserRole.ADMIN ? 'ADMIN' : 'OPERATOR', actor: { userId: user.id, role: user.role },
         });
       }
@@ -168,7 +182,19 @@ export async function POST(req: Request, ctx: { params: { id: string } }) {
     if (currentOccupancy !== undefined) data.currentOccupancy = currentOccupancy;
     if (amenities !== undefined) data.amenities = amenities;
 
-    await prisma.assistedLivingHome.update({ where: { id: home.id }, data });
+    // History (OL-173): the quick-update form is an operator edit too — record
+    // changed tracked fields so the public listing's provenance sees them.
+    const diffs = diffFields(home as unknown as Record<string, unknown>, data as Record<string, unknown>, TRACKED_HOME_FIELDS);
+    await prisma.$transaction(async (tx) => {
+      await tx.assistedLivingHome.update({ where: { id: home.id }, data });
+      for (const d of diffs) {
+        await recordEvent(tx, {
+          entityType: 'OPERATOR_PROFILE', entityId: home.id, eventType: 'field.changed', field: d.field,
+          oldValue: d.oldValue, newValue: d.newValue,
+          source: user.role === UserRole.ADMIN ? 'ADMIN' : 'OPERATOR', actor: { userId: user.id, role: user.role },
+        });
+      }
+    });
     return NextResponse.redirect(new URL(`/operator/homes/${home.id}`, req.url));
   } catch (e) {
     captureError(e instanceof Error ? e : new Error(String(e)), {

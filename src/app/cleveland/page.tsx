@@ -1,28 +1,20 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { BTN_PRIMARY, BTN_SECONDARY, CARD, HERO_BAND } from '@/components/site/brand';
 import { FiArrowRight, FiCheck } from 'react-icons/fi';
 import { SUBURBS, suburbPath } from '@/lib/directory/suburbs';
-import { buildPagesItemListJsonLd } from '@/lib/seo/jsonld';
+import FaqSection from '@/components/site/FaqSection';
+import { hubFaqs } from '@/lib/seo/directory-faq';
+import { buildBreadcrumbJsonLd, buildPagesItemListJsonLd } from '@/lib/seo/jsonld';
+import { PAGE_META, publicMetadata } from '@/lib/seo/page-meta';
 
 // OL-159: static content, but re-rendered at least hourly (and on demand via
 // POST /api/admin/revalidate) so the footer build sha and shared copy never
 // outlive a deploy.
 export const revalidate = 3600;
 
-export const metadata: Metadata = {
-  title: 'Senior Care in Cleveland, OH — Assisted Living, Memory Care, & More | CareLinkAI',
-  description:
-    'A Cleveland-built directory of assisted living, memory care, independent living, and nursing homes across Cuyahoga, Summit, Lake, Lorain, Medina, Geauga, and Portage counties. No broker fees. Contact homes directly.',
-  alternates: { canonical: 'https://getcarelinkai.com/cleveland' },
-  openGraph: {
-    title: 'Senior Care in Cleveland, OH | CareLinkAI',
-    description:
-      'Verified senior care options across Greater Cleveland. Assisted living, memory care, independent living, nursing homes. No broker fees.',
-    type: 'website',
-    url: 'https://getcarelinkai.com/cleveland',
-    siteName: 'CareLinkAI',
-  },
-};
+// OL-172 (a)(b): title without the suffix (root template adds it), 140–155 char description, OG + Twitter.
+export const metadata: Metadata = publicMetadata(PAGE_META.cleveland);
 
 const careTypes = [
   {
@@ -100,19 +92,26 @@ const directoryItemList = buildPagesItemListJsonLd({
   ],
 });
 
+const breadcrumb = buildBreadcrumbJsonLd([
+  { name: 'CareLinkAI', path: '/' },
+  { name: 'Cleveland senior care', path: '/cleveland' },
+]);
+
 export default function ClevelandLandingPage() {
   return (
-    <main className="min-h-screen bg-neutral-50">
+    <div className="bg-neutral-50">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(directoryItemList) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
 
       {/* Hero */}
-      <section className="bg-white border-b border-neutral-200">
-        <div className="max-w-5xl mx-auto px-6 py-16 sm:py-24">
-          <p className="text-sm font-semibold text-primary-600 uppercase tracking-wide">
+      <section className={HERO_BAND} data-testid="brand-hero">
+        <div aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary-500 to-secondary-500" />
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
+          <p className="text-sm font-semibold text-primary-700 uppercase tracking-wide">
             Cleveland, Ohio
           </p>
           <h1 className="mt-3 text-4xl sm:text-5xl font-bold text-neutral-900 leading-tight">
@@ -128,14 +127,14 @@ export default function ClevelandLandingPage() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href="/search"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700"
+              className={BTN_PRIMARY}
             >
               Search homes
               <FiArrowRight />
             </Link>
             <Link
               href="#care-types"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-neutral-300 text-neutral-900 rounded-lg font-semibold hover:bg-neutral-50"
+              className={BTN_SECONDARY}
             >
               Explore care types
             </Link>
@@ -158,7 +157,7 @@ export default function ClevelandLandingPage() {
             <Link
               key={c.href}
               href={c.href}
-              className="block p-6 bg-white border border-neutral-200 rounded-xl hover:border-primary-400 hover:shadow-md transition"
+              className={`block p-6 ${CARD}`}
             >
               <h3 className="text-xl font-bold text-neutral-900">{c.title}</h3>
               <p className="mt-2 text-neutral-700">{c.blurb}</p>
@@ -176,9 +175,9 @@ export default function ClevelandLandingPage() {
       <section className="max-w-5xl mx-auto px-6 pb-16">
         <Link
           href="/cleveland/home-care-agencies"
-          className="block p-6 bg-white border border-neutral-200 rounded-xl hover:border-primary-400 hover:shadow-md transition"
+          className={`block p-6 ${CARD}`}
         >
-          <p className="text-sm font-semibold text-primary-600 uppercase tracking-wide">Care at home</p>
+          <p className="text-sm font-semibold text-primary-700 uppercase tracking-wide">Care at home</p>
           <h3 className="mt-2 text-xl font-bold text-neutral-900">Home care agencies in Cleveland</h3>
           <p className="mt-2 text-neutral-700">
             Aides and nurses who come to you. Run a Cleveland home care agency? Claim your free
@@ -189,6 +188,20 @@ export default function ClevelandLandingPage() {
             <FiArrowRight />
           </p>
         </Link>
+      </section>
+
+      {/* OL-172 (e): every suburb page, from the registry */}
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 pb-16" data-testid="suburb-grid">
+        <h2 className="text-2xl font-bold text-neutral-900">Assisted living by suburb</h2>
+        <p className="mt-2 max-w-3xl text-neutral-700">Suburbs where we list at least two licensed homes, each with its own page of homes, inspection facts and local hospitals.</p>
+        <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {SUBURBS.map((s) => (
+            <Link key={s.slug} href={suburbPath(s)} className={`block p-4 ${CARD}`}>
+              <p className="font-semibold text-neutral-900">{s.name}</p>
+              <p className="mt-0.5 text-xs text-neutral-600">{s.county} County</p>
+            </Link>
+          ))}
+        </div>
       </section>
 
       {/* Counties served */}
@@ -295,60 +308,10 @@ export default function ClevelandLandingPage() {
         </div>
       </section>
 
-      {/* FAQ */}
-      <section className="max-w-5xl mx-auto px-6 py-16">
-        <h2 className="text-3xl font-bold text-neutral-900">Common questions</h2>
-        <dl className="mt-8 space-y-8">
-          <div>
-            <dt className="text-lg font-semibold text-neutral-900">
-              How is assisted living different from a nursing home?
-            </dt>
-            <dd className="mt-2 text-neutral-700">
-              Assisted living provides help with daily activities (bathing, dressing,
-              medication management) in a residential setting. Nursing homes provide
-              skilled medical care 24/7, including IV therapy, wound care, and complex
-              medical management. Most seniors don’t need nursing-home-level care.
-            </dd>
-          </div>
-          <div>
-            <dt className="text-lg font-semibold text-neutral-900">
-              Does Medicare pay for assisted living in Ohio?
-            </dt>
-            <dd className="mt-2 text-neutral-700">
-              No. Medicare covers short-term skilled nursing after a hospital stay, but does
-              not cover ongoing assisted living or memory care. Long-term care insurance,
-              private pay, VA benefits (for veterans), and Ohio Medicaid (in certain
-              circumstances and at certain levels of care) may help offset costs.
-            </dd>
-          </div>
-          <div>
-            <dt className="text-lg font-semibold text-neutral-900">
-              How do I know a home is well-run?
-            </dt>
-            <dd className="mt-2 text-neutral-700">
-              Look at three things: Ohio Department of Health survey/inspection history
-              (publicly available), staff turnover and staff-to-resident ratios (ask
-              directly), and direct conversations with current residents and their families.
-              Tour at multiple times of day. CareLinkAI listings include licensing details
-              from the state where available.
-            </dd>
-          </div>
-          <div>
-            <dt className="text-lg font-semibold text-neutral-900">
-              What’s the right time to start looking?
-            </dt>
-            <dd className="mt-2 text-neutral-700">
-              Earlier than most families do. The decision is rarely urgent on paper and
-              often urgent in real life — a fall, a hospital discharge, a caregiver
-              burnout point. Touring homes when there’s no crisis lets you choose,
-              not settle.
-            </dd>
-          </div>
-        </dl>
-      </section>
+      <FaqSection faqs={hubFaqs(SUBURBS.length)} />
 
       {/* CTA */}
-      <section className="bg-primary-600">
+      <section className="bg-gradient-to-r from-primary-600 to-secondary-500">
         <div className="max-w-5xl mx-auto px-6 py-12 text-center">
           <h2 className="text-3xl font-bold text-white">
             Ready to find the right home?
@@ -367,11 +330,11 @@ export default function ClevelandLandingPage() {
         </div>
       </section>
 
-      <footer className="max-w-5xl mx-auto px-6 py-8 text-sm text-neutral-500">
+      <div className="max-w-5xl mx-auto px-6 py-8 text-sm text-neutral-500" data-testid="page-note">
         Last updated 2026-05-15. CareLinkAI is an independent Cleveland directory. We do
         not provide medical advice; talk with a healthcare professional before making care
         decisions.
-      </footer>
-    </main>
+      </div>
+    </div>
   );
 }

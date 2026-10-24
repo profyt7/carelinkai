@@ -11,6 +11,7 @@ import { isUnclaimedHome } from '@/lib/claim-engine/inquiry-claim-notification';
 import { availabilityView } from '@/lib/availability/availability';
 import { pricingView, computeFamilyAvg } from '@/lib/pricing/pricing';
 import { medicaidWaiverPublicView } from '@/lib/medicaid/waiver';
+import { verifiedFieldsFromEvents, PROVENANCE_FIELDS, VERIFIED_FIELD_SOURCES } from '@/lib/homes/listing-facts';
 
 /**
  * City coordinates lookup for homes without geo data
@@ -50,6 +51,31 @@ const CITY_COORDINATES: Record<string, { lat: number; lng: number }> = {
   'parma, oh': { lat: 41.3845, lng: -81.7290 },
   'euclid, oh': { lat: 41.5931, lng: -81.5268 },
   'mentor, oh': { lat: 41.6661, lng: -81.3396 },
+  // Greater Cleveland suburbs (OL-173) — city centroids, so a listing map lands
+  // in the right town instead of the state-level fallback.
+  'beachwood, oh': { lat: 41.4645, lng: -81.5087 },
+  'lakewood, oh': { lat: 41.4820, lng: -81.7982 },
+  'shaker heights, oh': { lat: 41.4739, lng: -81.5371 },
+  'cleveland heights, oh': { lat: 41.5200, lng: -81.5562 },
+  'university heights, oh': { lat: 41.4978, lng: -81.5379 },
+  'south euclid, oh': { lat: 41.5231, lng: -81.5185 },
+  'lyndhurst, oh': { lat: 41.5200, lng: -81.4887 },
+  'mayfield heights, oh': { lat: 41.5192, lng: -81.4579 },
+  'solon, oh': { lat: 41.3898, lng: -81.4412 },
+  'garfield heights, oh': { lat: 41.4170, lng: -81.6057 },
+  'independence, oh': { lat: 41.3687, lng: -81.6379 },
+  'seven hills, oh': { lat: 41.3953, lng: -81.6762 },
+  'brecksville, oh': { lat: 41.3198, lng: -81.6268 },
+  'broadview heights, oh': { lat: 41.3139, lng: -81.6851 },
+  'strongsville, oh': { lat: 41.3145, lng: -81.8357 },
+  'middleburg heights, oh': { lat: 41.3614, lng: -81.8129 },
+  'berea, oh': { lat: 41.3662, lng: -81.8543 },
+  'brook park, oh': { lat: 41.3984, lng: -81.8046 },
+  'fairview park, oh': { lat: 41.4414, lng: -81.8643 },
+  'rocky river, oh': { lat: 41.4756, lng: -81.8393 },
+  'north olmsted, oh': { lat: 41.4156, lng: -81.9235 },
+  'westlake, oh': { lat: 41.4553, lng: -81.9179 },
+  'bay village, oh': { lat: 41.4848, lng: -81.9220 },
   // State-level fallbacks
   'ca': { lat: 36.7783, lng: -119.4179 },
   'wa': { lat: 47.7511, lng: -120.7401 },
@@ -234,6 +260,24 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       : null;
     const coordinates = dbCoords || fallbackCoords;
 
+    // OL-173: field provenance from the append-only event log — which of
+    // capacity / amenities an operator, admin or VA call actually set. Seeds
+    // (directory import, dev endpoint) write no events, so their defaults
+    // (e.g. capacity 100) never render as fact on the listing page.
+    // Fails closed: if the history read errors, every field reads as unverified.
+    const provenanceEvents = await (async () => prisma.entityEvent.findMany({
+      where: {
+        entityType: 'OPERATOR_PROFILE',
+        entityId: home.id,
+        eventType: { in: ['field.changed', 'field.confirmed'] },
+        field: { in: [...PROVENANCE_FIELDS] },
+        source: { in: [...VERIFIED_FIELD_SOURCES] },
+      },
+      select: { field: true, source: true },
+      distinct: ['field'],
+    }))().catch(() => [] as Array<{ field: string | null; source: string }>);
+    const verifiedFields = verifiedFieldsFromEvents(provenanceEvents);
+
     const data = {
       id: home.id,
       name: home.name,
@@ -251,6 +295,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
             state: home.address.state,
             zipCode: home.address.zipCode,
             coordinates,
+            // City/state centroid (not geocoded) — the map shows it as approximate.
+            coordinatesApproximate: !dbCoords && Boolean(fallbackCoords),
           }
         : null,
       careLevel: home.careLevel,
@@ -261,7 +307,11 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         formattedMax: home.priceMax ? formatCurrency(Number(home.priceMax)) : null,
       },
       capacity: home.capacity,
+      // Legacy static math (seed defaults, stale). The listing page no longer
+      // renders it (OL-173) — it uses availabilityFreshness + verifiedFields.
       availability: home.capacity - home.currentOccupancy,
+      // OL-173: which fields an OPERATOR / ADMIN / VA_CALL write backs.
+      verifiedFields,
       // Live-ish verified availability (OL-110) — honest freshness, never fake "live".
       // Prefer this over the static capacity math when fresh; else "contact to confirm".
       availabilityFreshness: availabilityView(home),

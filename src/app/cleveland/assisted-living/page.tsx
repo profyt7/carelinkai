@@ -1,10 +1,15 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { BTN_PRIMARY, BTN_SECONDARY, CARD, HERO_BAND } from '@/components/site/brand';
 import { FiArrowRight, FiCheck } from 'react-icons/fi';
 import ListingCard from '@/components/directory/ListingCard';
-import { fetchPublicListings, waiverFilterFromSearchParams } from '@/lib/directory/public-listings';
+import FaqSection from '@/components/site/FaqSection';
+import { countPublicListings, fetchPublicListings, waiverFilterFromSearchParams } from '@/lib/directory/public-listings';
+import { SUBURBS, suburbPath } from '@/lib/directory/suburbs';
+import { careTypeFaqs } from '@/lib/seo/directory-faq';
+import { PAGE_META, publicMetadata } from '@/lib/seo/page-meta';
 import { AVAILABILITY_FRESH_DAYS } from '@/lib/availability/availability';
-import { buildListingsItemListJsonLd } from '@/lib/seo/jsonld';
+import { buildBreadcrumbJsonLd, buildListingsItemListJsonLd } from '@/lib/seo/jsonld';
 
 // Server-rendered listings (sprint W3 item 4): the top verified, non-demo
 // assisted-living homes are queried per request and emitted as plain HTML so a
@@ -15,20 +20,8 @@ export const dynamic = 'force-dynamic';
 
 const LISTINGS_LIMIT = 12;
 
-export const metadata: Metadata = {
-  title: 'Assisted Living in Cleveland, OH | CareLinkAI',
-  description:
-    'Compare assisted living communities in Greater Cleveland. What assisted living covers, typical costs, what to look for, and how to choose. No broker fees.',
-  alternates: { canonical: 'https://getcarelinkai.com/cleveland/assisted-living' },
-  openGraph: {
-    title: 'Assisted Living in Cleveland, OH | CareLinkAI',
-    description:
-      'A clear, local guide to assisted living in Cleveland — what it covers, costs, and how to choose.',
-    type: 'website',
-    url: 'https://getcarelinkai.com/cleveland/assisted-living',
-    siteName: 'CareLinkAI',
-  },
-};
+// OL-172 (a)(b): title without the suffix (root template adds it), 140–155 char description, OG + Twitter.
+export const metadata: Metadata = publicMetadata(PAGE_META.assistedLiving);
 
 const structuredData = {
   '@context': 'https://schema.org',
@@ -56,7 +49,16 @@ type PageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 export default async function ClevelandAssistedLivingPage({ searchParams }: { searchParams?: PageSearchParams }) {
   // ?waiver=1 (sprint W5-2): only homes ACCEPTING_NEW Medicaid waiver residents.
   const waiverOnly = waiverFilterFromSearchParams(searchParams ? await searchParams : undefined);
-  const listings = await fetchPublicListings({ careLevel: 'ASSISTED', medicaidWaiver: waiverOnly, take: LISTINGS_LIMIT });
+  const [listings, total, acceptingWaiver] = await Promise.all([
+    fetchPublicListings({ careLevel: 'ASSISTED', medicaidWaiver: waiverOnly, take: LISTINGS_LIMIT }),
+    countPublicListings({ careLevel: 'ASSISTED' }).catch(() => 0),
+    countPublicListings({ careLevel: 'ASSISTED', medicaidWaiver: true }).catch(() => 0),
+  ]);
+  const faqs = careTypeFaqs('assisted-living', { label: 'assisted living', total, acceptingWaiver });
+  const breadcrumb = buildBreadcrumbJsonLd([
+    { name: 'Cleveland senior care', path: '/cleveland' },
+    { name: 'Assisted living', path: '/cleveland/assisted-living' },
+  ]);
   const itemList = buildListingsItemListJsonLd({
     url: 'https://getcarelinkai.com/cleveland/assisted-living',
     name: 'Assisted living homes in Greater Cleveland, OH',
@@ -64,19 +66,21 @@ export default async function ClevelandAssistedLivingPage({ searchParams }: { se
   });
 
   return (
-    <main className="min-h-screen bg-neutral-50">
+    <div className="bg-neutral-50">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
       {listings.length > 0 && (
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }} />
       )}
 
       {/* Hero */}
-      <section className="bg-white border-b border-neutral-200">
-        <div className="max-w-5xl mx-auto px-6 py-16">
-          <nav className="text-sm text-neutral-600">
+      <section className={HERO_BAND} data-testid="brand-hero">
+        <div aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary-500 to-secondary-500" />
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 py-16">
+          <nav aria-label="Breadcrumb" className="text-sm text-neutral-600">
             <Link href="/cleveland" className="hover:text-primary-600">
               Cleveland senior care
             </Link>
@@ -95,14 +99,14 @@ export default async function ClevelandAssistedLivingPage({ searchParams }: { se
           <div className="mt-8 flex flex-wrap gap-3">
             <a
               href="#listings"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700"
+              className={BTN_PRIMARY}
             >
               See assisted living homes
               <FiArrowRight />
             </a>
             <Link
               href="/search?careLevel=ASSISTED"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-neutral-300 text-neutral-900 rounded-lg font-semibold hover:bg-neutral-50"
+              className={BTN_SECONDARY}
             >
               Search all homes
             </Link>
@@ -291,21 +295,21 @@ export default async function ClevelandAssistedLivingPage({ searchParams }: { se
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Link
             href="/cleveland/memory-care"
-            className="block p-5 bg-white border border-neutral-200 rounded-xl hover:border-primary-400 hover:shadow-md transition"
+            className={`block p-5 ${CARD}`}
           >
             <p className="font-semibold text-neutral-900">Memory care →</p>
             <p className="mt-1 text-sm text-neutral-600">Specialized care for dementia.</p>
           </Link>
           <Link
             href="/cleveland/independent-living"
-            className="block p-5 bg-white border border-neutral-200 rounded-xl hover:border-primary-400 hover:shadow-md transition"
+            className={`block p-5 ${CARD}`}
           >
             <p className="font-semibold text-neutral-900">Independent living →</p>
             <p className="mt-1 text-sm text-neutral-600">For active seniors who don’t need daily help.</p>
           </Link>
           <Link
             href="/cleveland/nursing-homes"
-            className="block p-5 bg-white border border-neutral-200 rounded-xl hover:border-primary-400 hover:shadow-md transition"
+            className={`block p-5 ${CARD}`}
           >
             <p className="font-semibold text-neutral-900">Nursing homes →</p>
             <p className="mt-1 text-sm text-neutral-600">Skilled medical care, 24/7.</p>
@@ -314,7 +318,7 @@ export default async function ClevelandAssistedLivingPage({ searchParams }: { se
       </section>
 
       {/* CTA */}
-      <section className="bg-primary-600">
+      <section className="bg-gradient-to-r from-primary-600 to-secondary-500">
         <div className="max-w-5xl mx-auto px-6 py-12 text-center">
           <h2 className="text-3xl font-bold text-white">
             Browse assisted living in Cleveland
@@ -333,10 +337,25 @@ export default async function ClevelandAssistedLivingPage({ searchParams }: { se
         </div>
       </section>
 
-      <footer className="max-w-5xl mx-auto px-6 py-8 text-sm text-neutral-500">
+      {/* OL-172 (e): every suburb page, from the registry */}
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 py-12" data-testid="suburb-grid">
+        <h2 className="text-2xl font-bold text-neutral-900">Assisted living by suburb</h2>
+        <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {SUBURBS.map((s) => (
+            <Link key={s.slug} href={suburbPath(s)} className={`block p-4 ${CARD}`}>
+              <p className="font-semibold text-neutral-900">{s.name}</p>
+              <p className="mt-0.5 text-xs text-neutral-600">{s.county} County</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <FaqSection faqs={faqs} />
+
+      <div className="max-w-5xl mx-auto px-6 py-8 text-sm text-neutral-500" data-testid="page-note">
         Last updated 2026-05-15. Not medical advice. Talk with a healthcare professional
         before making care decisions.
-      </footer>
-    </main>
+      </div>
+    </div>
   );
 }

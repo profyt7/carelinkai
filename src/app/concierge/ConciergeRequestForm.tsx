@@ -159,7 +159,7 @@ export default function ConciergeRequestForm({ payerSource }: { payerSource: Pay
         type="submit"
         disabled={state === 'submitting'}
         data-testid="concierge-request-cta"
-        className="mt-5 inline-flex items-center gap-2 rounded-lg bg-primary-600 px-6 py-3 font-semibold text-white hover:bg-primary-700 disabled:opacity-60"
+        className="mt-5 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-primary-600 to-secondary-500 px-6 py-3 font-semibold text-white shadow-md hover:opacity-90 disabled:opacity-60"
       >
         {state === 'submitting' ? 'Sending…' : ctaLabelFor(mode)}
       </button>

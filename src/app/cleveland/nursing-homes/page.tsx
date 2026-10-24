@@ -1,26 +1,23 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import CareTypeListingsSection from '@/components/directory/CareTypeListingsSection';
+import FaqSection from '@/components/site/FaqSection';
+import { CARE_TYPE_PLAN, loadCareTypeListings } from '@/lib/directory/care-type-listings';
+import { careTypeFaqs } from '@/lib/seo/directory-faq';
+import { buildBreadcrumbJsonLd } from '@/lib/seo/jsonld';
+import { PAGE_META, publicMetadata } from '@/lib/seo/page-meta';
+import { BTN_PRIMARY, CARD, HERO_BAND } from '@/components/site/brand';
 import { FiArrowRight, FiCheck } from 'react-icons/fi';
 
 // OL-159: static content, but re-rendered at least hourly (and on demand via
 // POST /api/admin/revalidate) so the footer build sha and shared copy never
 // outlive a deploy.
-export const revalidate = 3600;
+// OL-172 (d): this hub now lists live homes, so it renders per request like the
+// assisted living hub (never a stale count).
+export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
-  title: 'Nursing Homes in Cleveland, OH | CareLinkAI',
-  description:
-    'Nursing homes in Greater Cleveland with skilled medical care. What nursing homes cover, costs, Medicaid in Ohio, and what to look for.',
-  alternates: { canonical: 'https://getcarelinkai.com/cleveland/nursing-homes' },
-  openGraph: {
-    title: 'Nursing Homes in Cleveland, OH | CareLinkAI',
-    description:
-      'Skilled nursing facilities in Greater Cleveland — when nursing home care is right, costs, and how to choose.',
-    type: 'website',
-    url: 'https://getcarelinkai.com/cleveland/nursing-homes',
-    siteName: 'CareLinkAI',
-  },
-};
+// OL-172 (a)(b): title without the suffix (root template adds it), 140–155 char description, OG + Twitter.
+export const metadata: Metadata = publicMetadata(PAGE_META.nursingHomes);
 
 const structuredData = {
   '@context': 'https://schema.org',
@@ -43,17 +40,26 @@ const structuredData = {
   },
 };
 
-export default function ClevelandNursingHomesPage() {
+export default async function ClevelandNursingHomesPage() {
+  const plan = CARE_TYPE_PLAN['nursing-homes'];
+  const result = await loadCareTypeListings(plan);
+  const faqs = careTypeFaqs('nursing-homes', { label: plan.label, total: result.fallback ? 0 : result.total, acceptingWaiver: result.acceptingWaiver, fallbackNote: result.fallback ? `The nearest real option we list is licensed ${result.fallback.label}, shown on this page.` : null });
+  const breadcrumb = buildBreadcrumbJsonLd([
+    { name: 'Cleveland senior care', path: '/cleveland' },
+    { name: 'Nursing homes', path: PAGE_META.nursingHomes.path },
+  ]);
   return (
-    <main className="min-h-screen bg-neutral-50">
+    <div className="bg-neutral-50">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
 
-      <section className="bg-white border-b border-neutral-200">
-        <div className="max-w-5xl mx-auto px-6 py-16">
-          <nav className="text-sm text-neutral-600">
+      <section className={HERO_BAND} data-testid="brand-hero">
+        <div aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary-500 to-secondary-500" />
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 py-16">
+          <nav aria-label="Breadcrumb" className="text-sm text-neutral-600">
             <Link href="/cleveland" className="hover:text-primary-600">
               Cleveland senior care
             </Link>
@@ -72,7 +78,7 @@ export default function ClevelandNursingHomesPage() {
           <div className="mt-8">
             <Link
               href="/search?careLevel=SKILLED_NURSING"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700"
+              className={BTN_PRIMARY}
             >
               Browse Cleveland nursing homes
               <FiArrowRight />
@@ -80,6 +86,8 @@ export default function ClevelandNursingHomesPage() {
           </div>
         </div>
       </section>
+
+      <CareTypeListingsSection path={PAGE_META.nursingHomes.path} typeLabel={plan.label} heading="Skilled nursing homes in Greater Cleveland" result={result} />
 
       <section className="max-w-5xl mx-auto px-6 py-16">
         <h2 className="text-3xl font-bold text-neutral-900">
@@ -218,21 +226,21 @@ export default function ClevelandNursingHomesPage() {
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Link
             href="/cleveland/assisted-living"
-            className="block p-5 bg-white border border-neutral-200 rounded-xl hover:border-primary-400 hover:shadow-md transition"
+            className={`block p-5 ${CARD}`}
           >
             <p className="font-semibold text-neutral-900">Assisted living →</p>
             <p className="mt-1 text-sm text-neutral-600">Daily-living help in a residential setting.</p>
           </Link>
           <Link
             href="/cleveland/memory-care"
-            className="block p-5 bg-white border border-neutral-200 rounded-xl hover:border-primary-400 hover:shadow-md transition"
+            className={`block p-5 ${CARD}`}
           >
             <p className="font-semibold text-neutral-900">Memory care →</p>
             <p className="mt-1 text-sm text-neutral-600">Specialized care for dementia.</p>
           </Link>
           <Link
             href="/cleveland/independent-living"
-            className="block p-5 bg-white border border-neutral-200 rounded-xl hover:border-primary-400 hover:shadow-md transition"
+            className={`block p-5 ${CARD}`}
           >
             <p className="font-semibold text-neutral-900">Independent living →</p>
             <p className="mt-1 text-sm text-neutral-600">For active seniors who don’t need daily help.</p>
@@ -240,7 +248,7 @@ export default function ClevelandNursingHomesPage() {
         </div>
       </section>
 
-      <section className="bg-primary-600">
+      <section className="bg-gradient-to-r from-primary-600 to-secondary-500">
         <div className="max-w-5xl mx-auto px-6 py-12 text-center">
           <h2 className="text-3xl font-bold text-white">Find a nursing home in Cleveland</h2>
           <p className="mt-3 text-primary-100 max-w-2xl mx-auto">
@@ -257,11 +265,13 @@ export default function ClevelandNursingHomesPage() {
         </div>
       </section>
 
-      <footer className="max-w-5xl mx-auto px-6 py-8 text-sm text-neutral-500">
+      <FaqSection faqs={faqs} />
+
+      <div className="max-w-5xl mx-auto px-6 py-8 text-sm text-neutral-500" data-testid="page-note">
         Last updated 2026-05-15. Not medical or legal advice. Medicaid eligibility,
         spend-down rules, and look-back periods are complex; consult an Ohio elder-law
         attorney for your specific situation.
-      </footer>
-    </main>
+      </div>
+    </div>
   );
 }

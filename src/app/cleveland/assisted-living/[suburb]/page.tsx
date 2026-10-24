@@ -1,13 +1,17 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { BTN_PRIMARY, BTN_SECONDARY, CARD, HERO_BAND } from '@/components/site/brand';
 import { notFound } from 'next/navigation';
 import { FiArrowRight, FiCheck } from 'react-icons/fi';
 import ListingCard from '@/components/directory/ListingCard';
-import { fetchPublicListings } from '@/lib/directory/public-listings';
-import { SUBURBS, findSuburb, suburbPath } from '@/lib/directory/suburbs';
+import FaqSection from '@/components/site/FaqSection';
+import { countPublicListings, fetchPublicListings } from '@/lib/directory/public-listings';
+import { SUBURBS, findSuburb, nearbySuburbs, suburbPath } from '@/lib/directory/suburbs';
+import { suburbFaqs } from '@/lib/seo/directory-faq';
+import { publicMetadata } from '@/lib/seo/page-meta';
 import { suburbListingsQuery, warnSuburbEmptyState } from '@/lib/directory/suburb-guard';
 import { AVAILABILITY_FRESH_DAYS } from '@/lib/availability/availability';
-import { buildListingsItemListJsonLd } from '@/lib/seo/jsonld';
+import { buildBreadcrumbJsonLd, buildListingsItemListJsonLd } from '@/lib/seo/jsonld';
 
 /**
  * Suburb SEO page: /cleveland/assisted-living/<slug> (sprint W3 item 3).
@@ -26,14 +30,9 @@ type Params = Promise<{ suburb: string }>;
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { suburb: slug } = await params;
   const s = findSuburb(slug);
-  if (!s) return { title: 'Not found | CareLinkAI', robots: { index: false } };
-  const url = `${SITE_URL}${suburbPath(s)}`;
-  return {
-    title: s.title,
-    description: s.description,
-    alternates: { canonical: url },
-    openGraph: { title: s.title, description: s.description, type: 'website', url, siteName: 'CareLinkAI' },
-  };
+  if (!s) return { title: 'Not found', robots: { index: false } };
+  // OL-172 (a)(b): short title (the root template adds the suffix), 140–155 char description, OG + Twitter.
+  return publicMetadata({ path: suburbPath(s), title: s.title, description: s.description });
 }
 
 export default async function SuburbAssistedLivingPage({ params }: { params: Params }) {
@@ -41,12 +40,24 @@ export default async function SuburbAssistedLivingPage({ params }: { params: Par
   const s = findSuburb(slug);
   if (!s) notFound();
 
-  const listings = await fetchPublicListings(suburbListingsQuery(s, LISTINGS_LIMIT));
+  const [listings, total, acceptingWaiver] = await Promise.all([
+    fetchPublicListings(suburbListingsQuery(s, LISTINGS_LIMIT)),
+    countPublicListings(suburbListingsQuery(s)).catch(() => null),
+    countPublicListings({ ...suburbListingsQuery(s), medicaidWaiver: true }).catch(() => 0),
+  ]);
   // Empty-state guard (W4 0c): a WARN with the live count + the exact filter,
   // so a suburb that silently lost its homes shows up in the Render logs.
   if (listings.length === 0) await warnSuburbEmptyState(s, 0);
   const url = `${SITE_URL}${suburbPath(s)}`;
-  const others = SUBURBS.filter((x) => x.slug !== s.slug);
+  // OL-172 (f): the four nearest suburbs first, then every other suburb page.
+  const nearby = nearbySuburbs(s, 4);
+  const rest = SUBURBS.filter((x) => x.slug !== s.slug && !nearby.some((n) => n.slug === x.slug));
+  const faqs = suburbFaqs(s.name, s.cities, { total: total ?? listings.length, acceptingWaiver });
+  const breadcrumb = buildBreadcrumbJsonLd([
+    { name: 'Cleveland senior care', path: '/cleveland' },
+    { name: 'Assisted living', path: '/cleveland/assisted-living' },
+    { name: s.name, path: suburbPath(s) },
+  ]);
 
   const structuredData = {
     '@context': 'https://schema.org',
@@ -67,16 +78,18 @@ export default async function SuburbAssistedLivingPage({ params }: { params: Par
   const itemList = buildListingsItemListJsonLd({ url, name: `Assisted living homes in ${s.name}, OH`, listings });
 
   return (
-    <main className="min-h-screen bg-neutral-50">
+    <div className="bg-neutral-50">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
       {listings.length > 0 && (
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }} />
       )}
 
       {/* Hero */}
-      <section className="bg-white border-b border-neutral-200">
-        <div className="max-w-5xl mx-auto px-6 py-16">
-          <nav className="text-sm text-neutral-600">
+      <section className={HERO_BAND} data-testid="brand-hero">
+        <div aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary-500 to-secondary-500" />
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 py-16">
+          <nav aria-label="Breadcrumb" className="text-sm text-neutral-600">
             <Link href="/cleveland" className="hover:text-primary-600">
               Cleveland senior care
             </Link>
@@ -87,7 +100,7 @@ export default async function SuburbAssistedLivingPage({ params }: { params: Par
             <span className="mx-2 text-neutral-400">/</span>
             <span className="text-neutral-900 font-medium">{s.name}</span>
           </nav>
-          <p className="mt-4 text-sm font-semibold text-primary-600 uppercase tracking-wide">
+          <p className="mt-4 text-sm font-semibold text-primary-700 uppercase tracking-wide">
             {s.name}, {s.county} County
           </p>
           <h1 className="mt-3 text-4xl sm:text-5xl font-bold text-neutral-900 leading-tight">{s.h1}</h1>
@@ -95,14 +108,14 @@ export default async function SuburbAssistedLivingPage({ params }: { params: Par
           <div className="mt-8 flex flex-wrap gap-3">
             <a
               href="#listings"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700"
+              className={BTN_PRIMARY}
             >
               See {s.name} assisted living homes
               <FiArrowRight />
             </a>
             <Link
               href={`/search?careLevel=ASSISTED&location=${encodeURIComponent(`${s.name}, OH`)}`}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-neutral-300 text-neutral-900 rounded-lg font-semibold hover:bg-neutral-50"
+              className={BTN_SECONDARY}
             >
               Search near {s.name}
             </Link>
@@ -180,34 +193,40 @@ export default async function SuburbAssistedLivingPage({ params }: { params: Par
         </div>
       </section>
 
-      {/* Other suburbs */}
-      <section className="max-w-5xl mx-auto px-6 py-12">
-        <h2 className="text-2xl font-bold text-neutral-900">Assisted living in other Cleveland suburbs</h2>
-        <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {others.map((o) => (
-            <Link
-              key={o.slug}
-              href={suburbPath(o)}
-              className="block p-5 bg-white border border-neutral-200 rounded-xl hover:border-primary-400 hover:shadow-md transition"
-            >
+      <FaqSection faqs={faqs} title={`Assisted living in ${s.name}: common questions`} />
+
+      {/* OL-172 (f): four nearby suburbs + every other suburb page */}
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 py-12" data-testid="nearby-suburbs">
+        <h2 className="text-2xl font-bold text-neutral-900">Assisted living near {s.name}</h2>
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {nearby.map((o) => (
+            <Link key={o.slug} href={suburbPath(o)} className={`block p-5 ${CARD}`} data-testid="nearby-suburb">
               <p className="font-semibold text-neutral-900">{o.name} →</p>
               <p className="mt-1 text-sm text-neutral-600">{o.county} County</p>
             </Link>
           ))}
-          <Link
-            href="/cleveland/assisted-living"
-            className="block p-5 bg-white border border-neutral-200 rounded-xl hover:border-primary-400 hover:shadow-md transition"
-          >
-            <p className="font-semibold text-neutral-900">All of Greater Cleveland →</p>
-            <p className="mt-1 text-sm text-neutral-600">Seven counties, one directory.</p>
-          </Link>
         </div>
+        <h3 className="mt-10 text-lg font-semibold text-neutral-900">Other Cleveland suburbs</h3>
+        <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm" data-testid="other-suburbs">
+          {rest.map((o) => (
+            <li key={o.slug}>
+              <Link href={suburbPath(o)} className="font-medium text-primary-700 hover:underline">
+                {o.name}
+              </Link>
+            </li>
+          ))}
+          <li>
+            <Link href="/cleveland/assisted-living" className="font-medium text-primary-700 hover:underline">
+              All of Greater Cleveland
+            </Link>
+          </li>
+        </ul>
       </section>
 
-      <footer className="max-w-5xl mx-auto px-6 py-8 text-sm text-neutral-500">
+      <div className="max-w-5xl mx-auto px-6 py-8 text-sm text-neutral-500" data-testid="page-note">
         Last updated 2026-10-13. Inspection data is sourced from Ohio Department of Health public
         records and presented as facts without grading. Not medical advice.
-      </footer>
-    </main>
+      </div>
+    </div>
   );
 }

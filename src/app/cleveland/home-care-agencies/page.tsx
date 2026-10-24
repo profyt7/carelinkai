@@ -1,5 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import CareTypeListingsSection from '@/components/directory/CareTypeListingsSection';
+import FaqSection from '@/components/site/FaqSection';
+import { CARE_TYPE_PLAN, loadCareTypeListings } from '@/lib/directory/care-type-listings';
+import { careTypeFaqs } from '@/lib/seo/directory-faq';
+import { buildBreadcrumbJsonLd } from '@/lib/seo/jsonld';
+import { PAGE_META, publicMetadata } from '@/lib/seo/page-meta';
+import { BTN_PRIMARY, BTN_SECONDARY, CARD, HERO_BAND } from '@/components/site/brand';
 import { FiArrowRight, FiCheck } from 'react-icons/fi';
 import { verifyClaimToken } from '@/lib/claim-token';
 import { CLEVELAND_AGENCIES } from '@/lib/claim-engine/cohorts';
@@ -20,20 +27,11 @@ import AgencyClaimForm from './AgencyClaimForm';
 
 const PAGE_URL = 'https://getcarelinkai.com/cleveland/home-care-agencies';
 
-export const metadata: Metadata = {
-  title: 'Home Care Agencies in Cleveland, OH — Claim Your Agency Listing | CareLinkAI',
-  description:
-    'Cleveland home care agencies: get a verified listing families and discharge planners actually use, and post aide shifts to local caregivers. Free to claim. No broker fees, no lead resale.',
-  alternates: { canonical: PAGE_URL },
-  openGraph: {
-    title: 'Home Care Agencies in Cleveland, OH | CareLinkAI',
-    description:
-      'A verified listing for your home care agency, in front of Cleveland families and discharge planners — plus a local aide pool for open shifts. Free to claim.',
-    type: 'website',
-    url: PAGE_URL,
-    siteName: 'CareLinkAI',
-  },
-};
+// OL-172 (d): lists live homes (the nearest real alternative) — rendered per request.
+export const dynamic = 'force-dynamic';
+
+// OL-172 (a)(b): title without the suffix (root template adds it), 140–155 char description, OG + Twitter.
+export const metadata: Metadata = publicMetadata(PAGE_META.homeCareAgencies);
 
 const structuredData = {
   '@context': 'https://schema.org',
@@ -54,6 +52,13 @@ const structuredData = {
 type SearchParams = Promise<{ token?: string | string[] }>;
 
 export default async function ClevelandHomeCareAgenciesPage({ searchParams }: { searchParams: SearchParams }) {
+  const plan = CARE_TYPE_PLAN['home-care-agencies'];
+  const result = await loadCareTypeListings(plan);
+  const faqs = careTypeFaqs('home-care-agencies', { label: plan.label, total: result.fallback ? 0 : result.total, acceptingWaiver: result.acceptingWaiver, fallbackNote: result.fallback ? `The nearest real option we list is licensed ${result.fallback.label}, shown on this page.` : null });
+  const breadcrumb = buildBreadcrumbJsonLd([
+    { name: 'Cleveland senior care', path: '/cleveland' },
+    { name: 'Home care agencies', path: PAGE_META.homeCareAgencies.path },
+  ]);
   const sp = (await searchParams) ?? {};
   const rawToken = Array.isArray(sp.token) ? sp.token[0] : sp.token;
   // Only a validly signed CLEVELAND_AGENCIES token is handed to the form;
@@ -63,20 +68,22 @@ export default async function ClevelandHomeCareAgenciesPage({ searchParams }: { 
   const tokenEmail = token ? payload?.operatorEmail : undefined;
 
   return (
-    <main className="min-h-screen bg-neutral-50">
+    <div className="bg-neutral-50">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
 
       {/* Hero */}
-      <section className="bg-white border-b border-neutral-200">
-        <div className="max-w-5xl mx-auto px-6 py-16">
-          <nav className="text-sm text-neutral-600">
+      <section className={HERO_BAND} data-testid="brand-hero">
+        <div aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary-500 to-secondary-500" />
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 py-16">
+          <nav aria-label="Breadcrumb" className="text-sm text-neutral-600">
             <Link href="/cleveland" className="hover:text-primary-600">
               Cleveland senior care
             </Link>
             <span className="mx-2 text-neutral-400">/</span>
             <span className="text-neutral-900 font-medium">Home care agencies</span>
           </nav>
-          <p className="mt-4 text-sm font-semibold text-primary-600 uppercase tracking-wide">For Cleveland home care agencies</p>
+          <p className="mt-4 text-sm font-semibold text-primary-700 uppercase tracking-wide">For Cleveland home care agencies</p>
           <h1 className="mt-3 text-4xl sm:text-5xl font-bold text-neutral-900 leading-tight">
             Home Care Agencies in Cleveland, OH
           </h1>
@@ -89,7 +96,7 @@ export default async function ClevelandHomeCareAgenciesPage({ searchParams }: { 
           <div className="mt-8 flex flex-wrap gap-3">
             <a
               href="#claim"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700"
+              className={BTN_PRIMARY}
               data-testid="agency-claim-cta"
             >
               Claim your agency listing
@@ -97,7 +104,7 @@ export default async function ClevelandHomeCareAgenciesPage({ searchParams }: { 
             </a>
             <Link
               href="/cleveland"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-neutral-300 text-neutral-900 rounded-lg font-semibold hover:bg-neutral-50"
+              className={BTN_SECONDARY}
             >
               See the Cleveland directory
             </Link>
@@ -110,7 +117,7 @@ export default async function ClevelandHomeCareAgenciesPage({ searchParams }: { 
         <h2 className="text-3xl font-bold text-neutral-900">Two problems every Cleveland agency has</h2>
         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="p-6 bg-white rounded-xl border border-neutral-200">
-            <p className="text-sm font-semibold text-primary-600 uppercase tracking-wide">Families</p>
+            <p className="text-sm font-semibold text-primary-700 uppercase tracking-wide">Families</p>
             <h3 className="mt-2 text-xl font-bold text-neutral-900">Being found by the right families</h3>
             <p className="mt-3 text-neutral-700">
               National lead sites sell the same family to five agencies and charge you for the
@@ -119,7 +126,7 @@ export default async function ClevelandHomeCareAgenciesPage({ searchParams }: { 
             </p>
           </div>
           <div className="p-6 bg-white rounded-xl border border-neutral-200">
-            <p className="text-sm font-semibold text-primary-600 uppercase tracking-wide">Aides</p>
+            <p className="text-sm font-semibold text-primary-700 uppercase tracking-wide">Aides</p>
             <h3 className="mt-2 text-xl font-bold text-neutral-900">Covering the shifts you can’t staff</h3>
             <p className="mt-3 text-neutral-700">
               STNAs, HHAs and companions in Greater Cleveland use CareLinkAI’s marketplace to find
@@ -185,30 +192,34 @@ export default async function ClevelandHomeCareAgenciesPage({ searchParams }: { 
         </div>
       </section>
 
+      <CareTypeListingsSection path={PAGE_META.homeCareAgencies.path} typeLabel={plan.label} heading="Home care agencies in Greater Cleveland" result={result} />
+
       {/* Related */}
       <section className="max-w-5xl mx-auto px-6 py-12">
         <h2 className="text-2xl font-bold text-neutral-900">Also on CareLinkAI</h2>
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Link href="/cleveland/assisted-living" className="block p-5 bg-white border border-neutral-200 rounded-xl hover:border-primary-400 hover:shadow-md transition">
+          <Link href="/cleveland/assisted-living" className={`block p-5 ${CARD}`}>
             <p className="font-semibold text-neutral-900">Assisted living →</p>
             <p className="mt-1 text-sm text-neutral-600">When care at home is no longer enough.</p>
           </Link>
-          <Link href="/cleveland/memory-care" className="block p-5 bg-white border border-neutral-200 rounded-xl hover:border-primary-400 hover:shadow-md transition">
+          <Link href="/cleveland/memory-care" className={`block p-5 ${CARD}`}>
             <p className="font-semibold text-neutral-900">Memory care →</p>
             <p className="mt-1 text-sm text-neutral-600">Specialized care for dementia.</p>
           </Link>
-          <Link href="/marketplace" className="block p-5 bg-white border border-neutral-200 rounded-xl hover:border-primary-400 hover:shadow-md transition">
+          <Link href="/marketplace" className={`block p-5 ${CARD}`}>
             <p className="font-semibold text-neutral-900">Caregiver marketplace →</p>
             <p className="mt-1 text-sm text-neutral-600">Local aides, open shifts.</p>
           </Link>
         </div>
       </section>
 
-      <footer className="max-w-5xl mx-auto px-6 py-8 text-sm text-neutral-500">
+      <FaqSection faqs={faqs} />
+
+      <div className="max-w-5xl mx-auto px-6 py-8 text-sm text-neutral-500" data-testid="page-note">
         Last updated 2026-10-13. CareLinkAI does not provide care and is not a licensed home
         health agency; listings are verified against public Ohio records and the agency’s own
         confirmation.
-      </footer>
-    </main>
+      </div>
+    </div>
   );
 }

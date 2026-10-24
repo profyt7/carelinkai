@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { FiCheck } from 'react-icons/fi';
 import { CONCIERGE_OFFER } from '@/lib/concierge/offer';
+import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/site/brand';
 
 /**
  * Stripe Checkout success page for the Family Concierge (sprint W5-3). Public,
@@ -11,7 +12,7 @@ import { CONCIERGE_OFFER } from '@/lib/concierge/offer';
  */
 
 export const metadata: Metadata = {
-  title: 'Thank you — Family Concierge | CareLinkAI',
+  title: 'Thank you — Family Concierge',
   robots: { index: false, follow: false },
 };
 
@@ -22,7 +23,7 @@ export default async function ConciergeThanksPage({ searchParams }: { searchPara
   const raw = Array.isArray(sp.order) ? sp.order[0] : sp.order;
   const orderId = raw && /^[a-z0-9]{10,40}$/i.test(raw) ? raw : null;
   return (
-    <main className="min-h-screen bg-neutral-50" data-testid="concierge-thanks">
+    <div className="bg-neutral-50" data-testid="concierge-thanks">
       <section className="max-w-3xl mx-auto px-6 py-20">
         <div className="rounded-2xl border border-success-200 bg-success-50 p-8">
           <p className="text-sm font-semibold uppercase tracking-wide text-success-700">Family Concierge</p>
@@ -48,15 +49,15 @@ export default async function ConciergeThanksPage({ searchParams }: { searchPara
             ) : null}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/cleveland" className="inline-flex items-center rounded-lg bg-primary-600 px-5 py-2.5 font-semibold text-white hover:bg-primary-700">
+            <Link href="/cleveland" className={BTN_PRIMARY}>
               Browse the directory while you wait
             </Link>
-            <Link href="/" className="inline-flex items-center rounded-lg border border-neutral-300 bg-white px-5 py-2.5 font-semibold text-neutral-900 hover:bg-neutral-50">
+            <Link href="/" className={BTN_SECONDARY}>
               Back to home
             </Link>
           </div>
         </div>
       </section>
-    </main>
+    </div>
   );
 }
