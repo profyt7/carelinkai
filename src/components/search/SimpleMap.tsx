@@ -7,9 +7,11 @@ import { FiMapPin } from 'react-icons/fi';
 // Import Leaflet CSS
 import 'leaflet/dist/leaflet.css';
 
-// GLOBAL singleton to prevent ANY re-initialization across component remounts
-let GLOBAL_MAP_INIT_COUNT = 0;
-const GLOBAL_MAX_INIT = 10;
+import { getMapTileConfig } from '@/lib/maps/tiles';
+
+// Default view when no home has coordinates: Greater Cleveland (the directory's market).
+const DEFAULT_CENTER: [number, number] = [41.4993, -81.6944];
+const DEFAULT_ZOOM = 9;
 
 // Define types
 interface HomeAddress {
@@ -19,7 +21,9 @@ interface HomeAddress {
   zipCode: string;
   latitude?: number;
   longitude?: number;
-  coordinates?: { lat: number; lng: number };
+  coordinates?: { lat: number; lng: number } | null;
+  /** True when coordinates are a city/state centroid, not a geocoded address. */
+  coordinatesApproximate?: boolean;
 }
 
 interface HomeData {
@@ -42,6 +46,10 @@ interface SimpleMapProps {
   onHomeSelect?: (homeId: string) => void;
   onToggleFavorite?: (homeId: string) => void;
   favorites?: string[];
+  /** Zoom used when exactly one home is shown (listing page). Default 14. */
+  singleHomeZoom?: number;
+  /** Show the "N of M homes" badge (search page). Default true. */
+  showCount?: boolean;
 }
 
 // Helper functions outside component to avoid recreating
@@ -112,13 +120,13 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
   selectedHome,
   onHomeSelect,
   onToggleFavorite,
-  favorites = []
+  favorites = [],
+  singleHomeZoom = 14,
+  showCount = true,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
-  const isInitializedRef = useRef(false);
-  const isInitializingRef = useRef(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
   
@@ -161,79 +169,64 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
     return filtered;
   }, [homes]);
 
-  // ONE-TIME map initialization with empty deps
+  // ONE-TIME map initialization.
+  //
+  // OL-173 root cause of "Failed to initialize map": the old effect scheduled
+  // L.map() in a setTimeout it never cleared. Under React StrictMode (dev) — and
+  // on any fast unmount/remount — the effect runs twice, so TWO timers fired and
+  // the second L.map() on the same container threw "Map container is already
+  // initialized", which the catch turned into the error panel. A module-level
+  // GLOBAL_MAP_INIT_COUNT (never decremented) also hard-failed the map after ten
+  // mounts in one SPA session. Now: every pending timer is cleared on cleanup,
+  // a cancelled flag stops late callbacks, and we re-check the instance first.
   useEffect(() => {
-    // Guard 1: Already initialized this instance
-    if (isInitializedRef.current) {
-      return;
-    }
-    
-    // Guard 2: Currently initializing
-    if (isInitializingRef.current) {
-      return;
-    }
-    
-    // Guard 3: Global limit reached
-    if (GLOBAL_MAP_INIT_COUNT >= GLOBAL_MAX_INIT) {
-      console.log(`[SimpleMap] GLOBAL limit reached (${GLOBAL_MAP_INIT_COUNT}/${GLOBAL_MAX_INIT}), showing fallback`);
-      setMapError('Map failed to load. Please refresh the page.');
-      return;
-    }
-
-    isInitializingRef.current = true;
-    GLOBAL_MAP_INIT_COUNT++;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
 
     const initMap = () => {
+      timer = null;
+      if (cancelled || mapInstanceRef.current) return;
       const container = mapContainerRef.current;
-      if (!container) {
-        setTimeout(initMap, 200);
-        return;
-      }
-
-      if (container.clientWidth === 0 || container.clientHeight === 0) {
-        setTimeout(initMap, 200);
+      // Not laid out yet (hidden tab, still hydrating) — try again shortly.
+      if (!container || container.clientWidth === 0 || container.clientHeight === 0) {
+        timer = setTimeout(initMap, 200);
         return;
       }
 
       try {
-        const map = L.map(container, {
-          center: [36.7783, -119.4179],
-          zoom: 7,
-          zoomControl: true
-        });
-
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-          maxZoom: 19,
-          subdomains: 'abcd',
+        const tiles = getMapTileConfig();
+        const map = L.map(container, { center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM, zoomControl: true });
+        L.tileLayer(tiles.url, {
+          attribution: tiles.attribution,
+          maxZoom: tiles.maxZoom,
+          subdomains: tiles.subdomains,
         }).addTo(map);
 
         mapInstanceRef.current = map;
-        isInitializedRef.current = true;
-        isInitializingRef.current = false;
         setIsReady(true);
-        
-        setTimeout(() => map.invalidateSize(true), 100);
-        console.log('[SimpleMap] ✅ Map initialized successfully');
+        timer = setTimeout(() => {
+          timer = null;
+          if (!cancelled) map.invalidateSize(true);
+        }, 100);
       } catch (error) {
-        console.error('[SimpleMap] ❌ Init error:', error);
-        isInitializingRef.current = false;
+        console.error('[SimpleMap] Init error:', error);
         setMapError('Failed to initialize map');
       }
     };
 
-    setTimeout(initMap, 100);
+    timer = setTimeout(initMap, 0);
 
     return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
       markersRef.current = {};
-      isInitializedRef.current = false;
-      isInitializingRef.current = false;
+      setIsReady(false);
     };
-  }, []); // EMPTY DEPS - runs once only
+  }, []);
 
   // Update markers when data changes - STABLE dependencies only
   useEffect(() => {
@@ -278,13 +271,17 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
       }
     });
 
-    // Fit bounds if we have homes
-    if (validHomes.length > 0) {
-      const centerLat = validHomes.reduce((sum, h) => sum + (getLat(h) ?? 0), 0) / validHomes.length;
-      const centerLng = validHomes.reduce((sum, h) => sum + (getLng(h) ?? 0), 0) / validHomes.length;
-      map.setView([centerLat, centerLng], 8);
+    // Fit the view to the homes
+    if (validHomes.length === 1) {
+      const only = validHomes[0]!;
+      const approx = typeof only.address !== 'string' && only.address?.coordinatesApproximate;
+      // A city/state centroid is not the building — don't zoom to street level on it.
+      map.setView([getLat(only)!, getLng(only)!], approx ? Math.min(singleHomeZoom, 11) : singleHomeZoom);
+    } else if (validHomes.length > 1) {
+      const bounds = L.latLngBounds(validHomes.map((h) => [getLat(h)!, getLng(h)!] as [number, number]));
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
     }
-  }, [isReady, homeIdsKey, selectedHome, validHomes]); // Stable deps: primitive values only
+  }, [isReady, homeIdsKey, selectedHome, validHomes, singleHomeZoom]); // Stable deps: primitive values only
 
   // Handle popup favorite button - separate effect with stable deps
   useEffect(() => {
@@ -315,12 +312,25 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
     );
   }
 
+  const singleApprox =
+    !showCount &&
+    validHomes.length === 1 &&
+    typeof validHomes[0]!.address !== 'string' &&
+    Boolean(validHomes[0]!.address?.coordinatesApproximate);
+
   return (
-    <div className="relative h-full w-full" style={{ minHeight: "400px" }}>
-      <div ref={mapContainerRef} className="h-full w-full rounded-lg border-2 border-neutral-300" style={{ minHeight: "400px" }} id="map-container" />
-      <div className="absolute top-4 right-4 bg-white rounded-lg shadow-md p-2 z-[1000]">
-        <div className="text-xs text-neutral-600">{validHomes.length} of {homes.length} homes</div>
-      </div>
+    <div className="relative h-full w-full" style={{ minHeight: "320px" }} data-testid="simple-map">
+      <div ref={mapContainerRef} className="h-full w-full rounded-lg border-2 border-neutral-300" style={{ minHeight: "320px" }} id="map-container" />
+      {showCount && (
+        <div className="absolute top-4 right-4 bg-white rounded-lg shadow-md p-2 z-[1000]">
+          <div className="text-xs text-neutral-600">{validHomes.length} of {homes.length} homes</div>
+        </div>
+      )}
+      {singleApprox && (
+        <div className="absolute top-3 right-3 z-[1000] rounded-md bg-white/95 px-2 py-1 text-xs text-neutral-600 shadow" data-testid="map-approximate-note">
+          Approximate area — see the address below
+        </div>
+      )}
     </div>
   );
 };
@@ -329,6 +339,7 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
 export default memo(SimpleMap, (prevProps, nextProps) => {
   // Only re-render if these change
   if (prevProps.selectedHome !== nextProps.selectedHome) return false;
+  if (prevProps.singleHomeZoom !== nextProps.singleHomeZoom || prevProps.showCount !== nextProps.showCount) return false;
   if (prevProps.homes.length !== nextProps.homes.length) return false;
   
   // Compare home IDs

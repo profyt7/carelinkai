@@ -57,6 +57,7 @@ import { buildInquiryPayload } from "@/lib/inquiries/payload";
 import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
 import { toggleFavorite as toggleFavoriteApi } from "@/lib/favoritesService";
+import { listingFacts } from "@/lib/homes/listing-facts";
 
 // Dynamically import the SimpleMap component with SSR disabled
 const SimpleMap = dynamic(
@@ -827,6 +828,9 @@ export default function HomeDetailPage() {
       ? [realHome.address.street, realHome.address.city && `${realHome.address.city}, ${realHome.address.state}`, realHome.address.zipCode].filter(Boolean).join(', ')
       : '';
     const photos = (realHome.photos || []).map((p: any) => ({ id: p.id, url: p.url, caption: p.caption || '' }));
+    // OL-173: capacity / availability / staffing / amenities only as far as an
+    // operator, admin or verified call backs them (see src/lib/homes/listing-facts.ts).
+    const facts = listingFacts(realHome);
 
     return (
       <BrowseShell title={`Home Details - ${realHome.name}`}>
@@ -939,6 +943,15 @@ export default function HomeDetailPage() {
                           </span>
                         ))}
                       </div>
+                      {/* Medicaid Assisted Living Waiver (sprint W5-2, OL-173) — same helper +
+                          wording as the directory ListingCard; nothing for NOT_ON_LIST / UNKNOWN. */}
+                      {realHome.medicaidWaiver?.line && (
+                        <p className="mt-3 text-sm text-neutral-700" data-testid="listing-page-waiver-line" data-waiver-status={realHome.medicaidWaiver.status}>
+                          <span className="font-semibold">Medicaid Assisted Living Waiver:</span>{' '}
+                          <span data-testid="medicaid-waiver-line" data-waiver-status={realHome.medicaidWaiver.status}>{realHome.medicaidWaiver.line}</span>
+                          <span className="block text-xs text-neutral-500">{realHome.medicaidWaiver.note}</span>
+                        </p>
+                      )}
                     </div>
                     {realHome.rating != null && (
                       <div className="flex items-center rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 mt-2 md:mt-0">
@@ -949,32 +962,33 @@ export default function HomeDetailPage() {
                     )}
                   </div>
 
-                  {/* Key stats */}
-                  <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-                    <div className="rounded-lg border border-neutral-200 bg-white p-3">
-                      <div className="flex items-center text-neutral-600">
-                        <FiUsers className="mr-2 h-5 w-5 flex-shrink-0" />
-                        <div>
-                          <p className="text-xs text-neutral-500">Capacity</p>
-                          <p className="font-medium">{realHome.capacity} Residents</p>
+                  {/* Key stats — capacity only when an operator/verified source set it;
+                      no staffing tile (no field backs a staffing claim). OL-173. */}
+                  <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3" data-testid="listing-key-stats">
+                    {facts.capacity != null && (
+                      <div className="rounded-lg border border-neutral-200 bg-white p-3" data-testid="listing-capacity-tile">
+                        <div className="flex items-center text-neutral-600">
+                          <FiUsers className="mr-2 h-5 w-5 flex-shrink-0" />
+                          <div>
+                            <p className="text-xs text-neutral-500">Capacity</p>
+                            <p className="font-medium">{facts.capacity} residents</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="rounded-lg border border-neutral-200 bg-white p-3">
+                    )}
+                    <div className="rounded-lg border border-neutral-200 bg-white p-3" data-testid="listing-availability-tile">
                       <div className="flex items-center text-neutral-600">
                         <FiHome className="mr-2 h-5 w-5 flex-shrink-0" />
                         <div>
                           <p className="text-xs text-neutral-500">Availability</p>
-                          {realHome.availabilityFreshness?.fresh ? (
+                          {facts.availability.known ? (
                             <>
-                              <p className="font-medium">
-                                {realHome.availabilityFreshness.count != null
-                                  ? `${realHome.availabilityFreshness.count} open`
-                                  : 'Confirmed'}
-                              </p>
+                              <p className="font-medium">{facts.availability.headline}</p>
                               <div className="mt-1.5">
                                 <AvailabilityBadge availability={realHome.availabilityFreshness} />
-                                <p className="mt-1 text-xs text-neutral-500">{realHome.availabilityFreshness.label}</p>
+                                {facts.availability.detail && (
+                                  <p className="mt-1 text-xs text-neutral-500">{facts.availability.detail}</p>
+                                )}
                               </div>
                             </>
                           ) : (
@@ -1007,15 +1021,6 @@ export default function HomeDetailPage() {
                           ) : (
                             <p className="font-medium text-neutral-400">Contact us</p>
                           )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="rounded-lg border border-neutral-200 bg-white p-3">
-                      <div className="flex items-center text-neutral-600">
-                        <FiClock className="mr-2 h-5 w-5 flex-shrink-0" />
-                        <div>
-                          <p className="text-xs text-neutral-500">Staffing</p>
-                          <p className="font-medium text-sm">24/7 On-Site</p>
                         </div>
                       </div>
                     </div>
@@ -1060,8 +1065,10 @@ export default function HomeDetailPage() {
                       <div className="flex items-start">
                         <div className="mr-3 rounded-full bg-primary-100 p-2 text-primary-600 flex-shrink-0"><FiHome className="h-5 w-5" /></div>
                         <div>
-                          <p className="font-medium text-neutral-800">Facility Size</p>
-                          <p className="text-sm text-neutral-600">{realHome.capacity} beds · {realHome.availability > 0 ? `${realHome.availability} available` : 'Waitlist only'}</p>
+                          <p className="font-medium text-neutral-800">{facts.capacity != null ? 'Facility Size' : 'Availability'}</p>
+                          <p className="text-sm text-neutral-600" data-testid="quick-facts-availability">
+                            {facts.capacity != null ? `${facts.capacity} beds · ` : ''}{facts.availability.line}
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-start">
@@ -1073,25 +1080,13 @@ export default function HomeDetailPage() {
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-start">
-                        <div className="mr-3 rounded-full bg-primary-100 p-2 text-primary-600 flex-shrink-0"><FiClock className="h-5 w-5" /></div>
-                        <div>
-                          <p className="font-medium text-neutral-800">Staff Availability</p>
-                          <p className="text-sm text-neutral-600">24/7 care staff on-site</p>
-                        </div>
-                      </div>
-                      {/* Medicaid Assisted Living Waiver (sprint W5-2) — nothing renders for NOT_ON_LIST / UNKNOWN. */}
-                      {(realHome.medicaidWaiver?.line || realHome.medicaidWaiver?.pendingLine) && (
+                      {/* Medicaid pending-application acceptance (sprint W5-2). The waiver
+                          status line itself sits under the header (listing-page-waiver-line). */}
+                      {realHome.medicaidWaiver?.pendingLine && (
                         <div className="flex items-start md:col-span-2" data-testid="medicaid-waiver-block">
                           <div className="mr-3 rounded-full bg-primary-100 p-2 text-primary-600 flex-shrink-0"><FiShield className="h-5 w-5" /></div>
                           <div>
-                            <p className="font-medium text-neutral-800">Medicaid Assisted Living Waiver</p>
-                            {realHome.medicaidWaiver?.line && (
-                              <>
-                                <p className="text-sm text-neutral-700" data-testid="medicaid-waiver-line" data-waiver-status={realHome.medicaidWaiver.status}>{realHome.medicaidWaiver.line}</p>
-                                <p className="text-xs text-neutral-500">{realHome.medicaidWaiver.note}</p>
-                              </>
-                            )}
+                            <p className="font-medium text-neutral-800">Medicaid application pending</p>
                             {realHome.medicaidWaiver?.pendingLine && (
                               <p className="mt-1 text-sm text-neutral-700" data-testid="medicaid-pending-line">{realHome.medicaidWaiver.pendingLine}</p>
                             )}
@@ -1106,23 +1101,29 @@ export default function HomeDetailPage() {
                 <div ref={amenitiesRef} className="mb-8 scroll-mt-20">
                   <div className="mb-4 flex flex-wrap items-center gap-2">
                     <h2 className="text-xl font-semibold text-neutral-800">Amenities & Services</h2>
-                    {realHome.amenitiesPending && Array.isArray(realHome.amenities) && realHome.amenities.length > 0 && (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
-                        Approximate · pending operator confirmation
+                    {/* OL-173: unless an operator / admin / VA call set them, amenities are
+                        the home's own claims — say so instead of presenting them as checked. */}
+                    {facts.amenities.label && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800" data-testid="amenities-unverified-label">
+                        {facts.amenities.label}
                       </span>
                     )}
                   </div>
-                  {Array.isArray(realHome.amenities) && realHome.amenities.length > 0 ? (
-                    <div className="rounded-lg border border-neutral-200 bg-white p-6">
+                  {facts.amenities.items.length > 0 ? (
+                    <div className="rounded-lg border border-neutral-200 bg-white p-6" data-testid="listing-amenities" data-verified={facts.amenities.verified ? 'true' : 'false'}>
                       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
-                        {(amenitiesExpanded['all'] ? realHome.amenities : realHome.amenities.slice(0, 12)).map((a: string) => (
+                        {(amenitiesExpanded['all'] ? facts.amenities.items : facts.amenities.items.slice(0, 12)).map((a: string) => (
                           <div key={a} className="flex items-center">
-                            <FiCheck className="mr-2 h-5 w-5 text-success-500 flex-shrink-0" />
+                            {facts.amenities.verified ? (
+                              <FiCheck className="mr-2 h-5 w-5 text-success-500 flex-shrink-0" />
+                            ) : (
+                              <span className="mr-2 h-1.5 w-1.5 rounded-full bg-neutral-400 flex-shrink-0" aria-hidden="true" />
+                            )}
                             <span className="text-neutral-700">{a}</span>
                           </div>
                         ))}
                       </div>
-                      {realHome.amenities.length > 12 && (
+                      {facts.amenities.items.length > 12 && (
                         <button
                           onClick={() => toggleAmenityCategory('all')}
                           className="mt-4 flex items-center text-sm font-medium text-primary-600 hover:text-primary-700"
@@ -1130,7 +1131,7 @@ export default function HomeDetailPage() {
                           {amenitiesExpanded['all'] ? (
                             <><FiChevronUp className="mr-1 h-4 w-4" />Show less</>
                           ) : (
-                            <><FiChevronDown className="mr-1 h-4 w-4" />Show all {realHome.amenities.length} amenities</>
+                            <><FiChevronDown className="mr-1 h-4 w-4" />Show all {facts.amenities.items.length} amenities</>
                           )}
                         </button>
                       )}
@@ -1212,8 +1213,10 @@ export default function HomeDetailPage() {
                     <div className="mt-4 rounded-lg bg-amber-50 border border-amber-200 p-4 flex items-start gap-3">
                       <span className="text-xl">💳</span>
                       <div className="flex-1">
-                        <p className="text-sm font-semibold text-neutral-800">Need help affording care?</p>
-                        <p className="text-xs text-neutral-600 mt-0.5">CareLinkAI has partnered with CareCredit — fast decisions, accepted at thousands of senior care providers.</p>
+                        {/* OL-173: no executed CareCredit agreement and the link carries no
+                            affiliate parameter — so no "partnered" / affiliate claim. */}
+                        <p className="text-sm font-semibold text-neutral-800">Financing option (CareCredit)</p>
+                        <p className="text-xs text-neutral-600 mt-0.5" data-testid="carecredit-disclosure">CareCredit is a third-party financing company; CareLinkAI is not affiliated with it. Approval is not guaranteed.</p>
                       </div>
                       <a
                         href="https://www.carecredit.com/apply/"
@@ -1252,7 +1255,7 @@ export default function HomeDetailPage() {
                   <h2 className="mb-4 text-xl font-semibold text-neutral-800">Location</h2>
                   <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
                     <div className="h-80 w-full">
-                      <SimpleMap homes={[realHome]} />
+                      <SimpleMap homes={[realHome]} showCount={false} />
                     </div>
                     <div className="p-6">
                       <div className="flex items-start">
@@ -1353,9 +1356,8 @@ export default function HomeDetailPage() {
                           </div>
                         ) : (
                           <p className="mb-4 text-sm text-neutral-600">
-                            {realHome.availability > 0
-                              ? `${realHome.availability} spot${realHome.availability > 1 ? 's' : ''} available. Schedule a tour or send an inquiry.`
-                              : 'Currently on waitlist. Send an inquiry to learn more.'}
+                            <span data-testid="sidebar-availability">{facts.availability.line}.</span>{' '}
+                            Schedule a tour or send an inquiry.
                           </p>
                         )}
                         <div className="space-y-3">
