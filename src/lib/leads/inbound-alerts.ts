@@ -72,47 +72,59 @@ async function sendSms(lead: InboundAlertInput): Promise<InboundAlertResult['sms
   }
 }
 
-async function sendEmail(lead: InboundAlertInput): Promise<InboundAlertResult['email']> {
-  const to = process.env['ADMIN_NOTIFY_EMAIL'] || process.env['CLAIM_NOTIFY_EMAIL'] || 'chris@getcarelinkai.com';
+/** Where admin lead alerts go: ADMIN_NOTIFY_EMAIL → legacy CLAIM_NOTIFY_EMAIL → Chris. */
+export function adminNotifyEmail(): string {
+  return process.env['ADMIN_NOTIFY_EMAIL'] || process.env['CLAIM_NOTIFY_EMAIL'] || 'chris@getcarelinkai.com';
+}
+
+/**
+ * One admin alert email through the suppression-guarded Resend path. Shared by
+ * call leads and (OL-177) web inquiries on unclaimed homes. Never throws.
+ */
+export async function sendAdminLeadEmail(msg: { leadId: string; subject: string; text: string; html: string; feature: string }): Promise<'sent' | 'failed' | 'skipped'> {
   if (!process.env['RESEND_API_KEY']) {
-    console.warn('[inbound-alert] RESEND_API_KEY not set — email skipped', { leadId: lead.leadId });
+    console.warn(`[${msg.feature}] RESEND_API_KEY not set — email skipped`, { leadId: msg.leadId });
     return 'skipped';
   }
-  const line = alertLine(lead);
-  const adminLink = `${appUrl()}/admin/inbound-leads`;
   const from = process.env['EMAIL_FROM'] || 'noreply@getcarelinkai.com';
-  const flags = [lead.afterHours ? 'after hours' : null, lead.phiFlag ? 'reason redacted (possible PHI)' : null].filter(Boolean).join(' · ');
   try {
-    const { error } = await guardedResendSend({
-      from: `CareLinkAI <${from}>`,
-      to: [to],
-      subject: `📞 ${line}`,
-      text:
-        `${line}\n` +
-        (flags ? `${flags}\n` : '') +
-        `Received ${lead.receivedAt.toISOString()}\n\n` +
-        (lead.recordingUrl ? `Recording: ${lead.recordingUrl}\n` : '') +
-        (lead.transcriptUrl ? `Transcript: ${lead.transcriptUrl}\n` : '') +
-        `\nMark contacted / close: ${adminLink}\n`,
-      html:
-        `<p><strong>${esc(line)}</strong></p>` +
-        (flags ? `<p style="color:#b45309">${esc(flags)}</p>` : '') +
-        `<p style="color:#6b7280;font-size:13px">Received ${esc(lead.receivedAt.toISOString())}</p>` +
-        `<ul>` +
-        (lead.recordingUrl ? `<li><a href="${esc(lead.recordingUrl)}">Recording</a></li>` : '') +
-        (lead.transcriptUrl ? `<li><a href="${esc(lead.transcriptUrl)}">Transcript</a></li>` : '') +
-        `</ul>` +
-        `<p><a href="${esc(adminLink)}">Mark contacted / close →</a></p>`,
-    });
+    const { error } = await guardedResendSend({ from: `CareLinkAI <${from}>`, to: [adminNotifyEmail()], subject: msg.subject, text: msg.text, html: msg.html });
     if (error) {
-      console.error('[inbound-alert] Resend error', { leadId: lead.leadId, message: error.message ?? error.name });
+      console.error(`[${msg.feature}] Resend error`, { leadId: msg.leadId, message: error.message ?? error.name });
       return 'failed';
     }
     return 'sent';
   } catch (e) {
-    captureError(e instanceof Error ? e : new Error(String(e)), { tags: { feature: 'inbound-alert', channel: 'email' }, extra: { leadId: lead.leadId } });
+    captureError(e instanceof Error ? e : new Error(String(e)), { tags: { feature: msg.feature, channel: 'email' }, extra: { leadId: msg.leadId } });
     return 'failed';
   }
+}
+
+async function sendEmail(lead: InboundAlertInput): Promise<InboundAlertResult['email']> {
+  const line = alertLine(lead);
+  const adminLink = `${appUrl()}/admin/inbound-leads`;
+  const flags = [lead.afterHours ? 'after hours' : null, lead.phiFlag ? 'reason redacted (possible PHI)' : null].filter(Boolean).join(' · ');
+  return sendAdminLeadEmail({
+    leadId: lead.leadId,
+    feature: 'inbound-alert',
+    subject: `📞 ${line}`,
+    text:
+      `${line}\n` +
+      (flags ? `${flags}\n` : '') +
+      `Received ${lead.receivedAt.toISOString()}\n\n` +
+      (lead.recordingUrl ? `Recording: ${lead.recordingUrl}\n` : '') +
+      (lead.transcriptUrl ? `Transcript: ${lead.transcriptUrl}\n` : '') +
+      `\nMark contacted / close: ${adminLink}\n`,
+    html:
+      `<p><strong>${esc(line)}</strong></p>` +
+      (flags ? `<p style="color:#b45309">${esc(flags)}</p>` : '') +
+      `<p style="color:#6b7280;font-size:13px">Received ${esc(lead.receivedAt.toISOString())}</p>` +
+      `<ul>` +
+      (lead.recordingUrl ? `<li><a href="${esc(lead.recordingUrl)}">Recording</a></li>` : '') +
+      (lead.transcriptUrl ? `<li><a href="${esc(lead.transcriptUrl)}">Transcript</a></li>` : '') +
+      `</ul>` +
+      `<p><a href="${esc(adminLink)}">Mark contacted / close →</a></p>`,
+  });
 }
 
 /** Never throws. Returns what happened per channel (for logs / tests). */

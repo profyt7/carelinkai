@@ -56,6 +56,10 @@ export const LEAD_SELECT = {
   contactedAt: true,
   closedAt: true,
   phiFlag: true,
+  // OL-177: web inquiries on unclaimed listings share this queue.
+  source: true,
+  contactEmail: true,
+  inquiryId: true,
 } satisfies Prisma.InboundLeadSelect;
 
 export type InboundLeadRow = Prisma.InboundLeadGetPayload<{ select: typeof LEAD_SELECT }>;

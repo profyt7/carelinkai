@@ -15,6 +15,7 @@ import { isPayerSource } from '@/lib/payer/payer-source';
 import { notifyUnclaimedHomeInquiry, isUnclaimedHome } from '@/lib/claim-engine/inquiry-claim-notification';
 import { sendNewLeadOperatorEmail } from '@/lib/email';
 import { coordinateConciergeInquiry } from '@/lib/concierge/tour-coordination';
+import { routeUnclaimedInquiry } from '@/lib/leads/web-inquiry-lead';
 
 /**
  * POST /api/inquiries - Create a new inquiry
@@ -158,6 +159,25 @@ export async function POST(request: NextRequest) {
     // unclaimed homes with a known outreach email; non-blocking.
     notifyUnclaimedHomeInquiry({ homeId: inquiry.homeId, inquiryId: inquiry.id }).catch(() => {});
 
+    // OL-177: an UNCLAIMED home has no operator to receive this, and the claim
+    // drip is paused — so it lands in the admin inbound queue (same table as
+    // inbound calls), ADMIN_NOTIFY_EMAIL gets an alert, and the family gets an
+    // "a CareLinkAI advisor will follow up" confirmation. Never throws.
+    const unclaimed = isUnclaimedHome(operatorEmail);
+    if (unclaimed) {
+      await routeUnclaimedInquiry({
+        inquiryId: inquiry.id,
+        homeId: inquiry.homeId,
+        homeName: inquiry.home?.name ?? 'a listed home',
+        contactName: inquiry.contactName,
+        contactEmail: inquiry.contactEmail,
+        contactPhone: inquiry.contactPhone,
+        payerSource: inquiry.payerSource,
+        additionalInfo: inquiry.additionalInfo,
+        receivedAt: inquiry.createdAt,
+      });
+    }
+
     // Concierge-aware (Option 3): if this inquiry came from a DP's concierge
     // shortlist (the "View listing" deep link carries ?concierge=<searchId>),
     // loop in the care team to coordinate + mark the shortlist so the DP sees a
@@ -175,7 +195,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { success: true, inquiry },
+      { success: true, inquiry, unclaimed },
       { status: 201 }
     );
   } catch (error) {
