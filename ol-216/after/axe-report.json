@@ -1,0 +1,197 @@
+[
+  {
+    "file": "search-grid-anon-1280.png",
+    "status": 200,
+    "axe": [
+      {
+        "id": "button-name",
+        "impact": "critical",
+        "nodes": [
+          ".rounded-r-lg"
+        ]
+      },
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": [
+          ".md\\:flex.hidden.bg-white:nth-child(1) > .bg-primary-500.py-1\\.5.text-white"
+        ]
+      }
+    ],
+    "cards": 20
+  },
+  {
+    "file": "search-grid-anon-820.png",
+    "status": 200,
+    "cards": 20
+  },
+  {
+    "file": "search-grid-anon-390.png",
+    "status": 200,
+    "axe": [
+      {
+        "id": "button-name",
+        "impact": "critical",
+        "nodes": [
+          ".rounded-r-lg"
+        ]
+      },
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": [
+          ".md\\:hidden.bg-white.rounded-md > .bg-primary-500.py-1\\.5.text-white"
+        ]
+      }
+    ],
+    "cards": 20
+  },
+  {
+    "file": "search-list-anon-1280.png",
+    "status": 200,
+    "cards": 20
+  },
+  {
+    "file": "search-list-anon-820.png",
+    "status": 200,
+    "cards": 20
+  },
+  {
+    "file": "search-list-anon-390.png",
+    "status": 200,
+    "cards": 20
+  },
+  {
+    "file": "search-grid-family-1280.png",
+    "status": 200,
+    "axe": [
+      {
+        "id": "button-name",
+        "impact": "critical",
+        "nodes": [
+          ".rounded-r-lg"
+        ]
+      },
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": [
+          ".md\\:flex.hidden.bg-white:nth-child(1) > .bg-primary-500.py-1\\.5.text-white"
+        ]
+      }
+    ],
+    "cards": 20
+  },
+  {
+    "file": "search-grid-family-820.png",
+    "status": 200,
+    "cards": 20
+  },
+  {
+    "file": "search-grid-family-390.png",
+    "status": 200,
+    "axe": [
+      {
+        "id": "button-name",
+        "impact": "critical",
+        "nodes": [
+          ".rounded-r-lg"
+        ]
+      },
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": [
+          ".md\\:hidden.bg-white.border-neutral-200 > .bg-primary-500.py-1\\.5.text-white"
+        ]
+      }
+    ],
+    "cards": 20
+  },
+  {
+    "file": "search-list-family-1280.png",
+    "status": 200,
+    "cards": 20
+  },
+  {
+    "file": "search-list-family-820.png",
+    "status": 200,
+    "cards": 20
+  },
+  {
+    "file": "search-list-family-390.png",
+    "status": 200,
+    "cards": 20
+  },
+  {
+    "file": "search-empty-anon-1280.png",
+    "status": 200,
+    "cards": 0
+  },
+  {
+    "file": "search-empty-anon-390.png",
+    "status": 200,
+    "cards": 0
+  },
+  {
+    "file": "search-loading-anon-1280.png",
+    "status": 200,
+    "cards": 0
+  },
+  {
+    "file": "search-insights-family-1280.png",
+    "status": 200,
+    "cards": 20
+  },
+  {
+    "file": "search-insights-family-list-1280.png",
+    "status": 200,
+    "cards": 20
+  },
+  {
+    "file": "ol208-widgets-anon-390x660.png",
+    "status": 200,
+    "cards": 20,
+    "advisor": {
+      "x": 177,
+      "y": 592,
+      "w": 189,
+      "h": 44
+    },
+    "bug": {
+      "x": 322,
+      "y": 536,
+      "w": 52,
+      "h": 44
+    },
+    "more": null,
+    "moreCenterHit": null,
+    "offset": "(unset)"
+  },
+  {
+    "file": "ol208-widgets-family-390x660.png",
+    "status": 200,
+    "cards": 20,
+    "advisor": {
+      "x": 177,
+      "y": 528,
+      "w": 189,
+      "h": 44
+    },
+    "bug": {
+      "x": 322,
+      "y": 472,
+      "w": 52,
+      "h": 44
+    },
+    "more": {
+      "x": 312,
+      "y": 597,
+      "w": 78,
+      "h": 63
+    },
+    "moreCenterHit": "More",
+    "offset": "64px",
+    "drawerOpened": true
+  }
+]
