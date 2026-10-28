@@ -271,7 +271,7 @@ export default function AdminUsersPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <Link href="/admin" className="text-sm text-[#3978FC] hover:text-[#3167d4] mb-2 inline-block">
+              <Link href="/admin" className="text-sm text-primary-500 hover:text-[#3167d4] mb-2 inline-block">
                 ← Back to Dashboard
               </Link>
               <h1 className="text-3xl font-bold text-neutral-900">User Management</h1>
@@ -301,7 +301,7 @@ export default function AdminUsersPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search by email or name..."
-                  className="w-full pl-10 pr-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-[#3978FC] focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
             </div>
@@ -310,7 +310,7 @@ export default function AdminUsersPage() {
               <select
                 value={filterRole}
                 onChange={(e) => setFilterRole(e.target.value)}
-                className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-[#3978FC] focus:border-transparent"
+                className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="ALL">All Roles</option>
                 <option value="FAMILY">Family</option>
@@ -325,7 +325,7 @@ export default function AdminUsersPage() {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-[#3978FC] focus:border-transparent"
+                className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="ALL">All Status</option>
                 <option value="ACTIVE">Active</option>
@@ -355,7 +355,7 @@ export default function AdminUsersPage() {
                     type="checkbox"
                     checked={users.length > 0 && selectedIds.size === users.length}
                     onChange={toggleSelectAll}
-                    className="rounded border-neutral-300 text-[#3978FC] focus:ring-[#3978FC]"
+                    className="rounded border-neutral-300 text-primary-500 focus:ring-primary-500"
                   />
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 uppercase tracking-wider">User</th>
@@ -383,7 +383,7 @@ export default function AdminUsersPage() {
                         type="checkbox"
                         checked={selectedIds.has(user.id)}
                         onChange={() => toggleSelection(user.id)}
-                        className="rounded border-neutral-300 text-[#3978FC] focus:ring-[#3978FC]"
+                        className="rounded border-neutral-300 text-primary-500 focus:ring-primary-500"
                       />
                     </td>
                     <td className="px-6 py-4 max-w-[260px]">
@@ -410,7 +410,7 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end space-x-2">
-                        <Link href={`/admin/users/${user.id}`} className="text-[#3978FC] hover:text-[#3167d4] p-2" title="Edit user">
+                        <Link href={`/admin/users/${user.id}`} className="text-primary-500 hover:text-[#3167d4] p-2" title="Edit user">
                           <FiEdit />
                         </Link>
                         {user.role !== 'ADMIN' && user.status === 'ACTIVE' && (
