@@ -13,6 +13,213 @@ services:
         value: production
     healthCheckPath: /
 
+  # ---------------------------------------------------------------------------
+  # Cron jobs (they exist in Render; declared here after the 2026-10-28 repo switch
+  # wiped their env vars). Every cron gets DATABASE_URL from carelinkai-db and
+  # CRON_SECRET from the carelinkai-shared group. Every other name is sync: false:
+  # Render prompts for a value and never overwrites one already set. No values here.
+  # Names, schedules, region, plan and auto-deploy match Render as found 2026-10-28.
+  # Commands are the fixed ones: the job calls the deployed app's endpoint (the old
+  # `npm run build` + `npm run start` ran migrations and booted a second web server).
+  # ---------------------------------------------------------------------------
+  - type: cron
+    name: carelinkai Reminders Processor
+    runtime: node
+    region: oregon
+    plan: starter
+    schedule: "0 * * * *"
+    autoDeploy: false
+    buildCommand: echo no-build-needed
+    startCommand: node scripts/run-cron.js
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: carelinkai-db
+          property: connectionString
+      - fromGroup: carelinkai-shared
+      - key: ADMIN_NOTIFY_EMAIL
+        sync: false
+      - key: ADMIN_NOTIFY_MOBILE
+        sync: false
+      - key: CALENDAR_USE_MOCKS
+        sync: false
+      - key: CLAIM_NOTIFY_CC
+        sync: false
+      - key: CLAIM_NOTIFY_EMAIL
+        sync: false
+      - key: CRON_MAX_PER_RUN
+        sync: false
+      - key: CRON_WINDOW_MINUTES
+        sync: false
+      - key: DP_LEAD_FROM_EMAIL
+        sync: false
+      - key: DP_LEAD_FROM_NAME
+        sync: false
+      - key: DP_LEAD_REPLY_TO
+        sync: false
+      - key: DP_PLACEMENTS_PHONE
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: EMAIL_FROM_NAME
+        sync: false
+      - key: EMAIL_REPLY_TO
+        sync: false
+      - key: NEXTAUTH_URL
+        sync: false
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+      - key: NODE_ENV
+        sync: false
+      - key: OUTREACH_REPLY_TO
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+
+  - type: cron
+    name: carelinkai On-Call Wave Dispatch
+    runtime: node
+    region: oregon
+    plan: starter
+    schedule: "*/10 * * * *"
+    autoDeploy: false
+    buildCommand: echo no-build-needed
+    startCommand: 'curl -fsS -X POST -H "x-cron-secret: $CRON_SECRET" https://getcarelinkai.com/api/cron/oncall-waves'
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: carelinkai-db
+          property: connectionString
+      - fromGroup: carelinkai-shared
+      - key: ADMIN_NOTIFY_MOBILE
+        sync: false
+      - key: NEXTAUTH_URL
+        sync: false
+      - key: NODE_ENV
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_PHONE_NUMBER
+        sync: false
+
+  - type: cron
+    name: carelinkai Credential Expiry Check
+    runtime: node
+    region: oregon
+    plan: starter
+    schedule: "0 6 * * *"
+    autoDeploy: false
+    buildCommand: echo no-build-needed
+    startCommand: 'curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://getcarelinkai.com/api/cron/credential-expiry'
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: carelinkai-db
+          property: connectionString
+      - fromGroup: carelinkai-shared
+      - key: EMAIL_FROM
+        sync: false
+      - key: NEXTAUTH_URL
+        sync: false
+      - key: NODE_ENV
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+
+  - type: cron
+    name: carelinkai ride-reminders
+    runtime: node
+    region: oregon
+    plan: starter
+    schedule: "0 8 * * *"
+    autoDeploy: false
+    buildCommand: echo no-build-needed
+    startCommand: 'curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://getcarelinkai.com/api/cron/ride-reminders'
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: carelinkai-db
+          property: connectionString
+      - fromGroup: carelinkai-shared
+      - key: EMAIL_FROM
+        sync: false
+      - key: NEXTAUTH_URL
+        sync: false
+      - key: NODE_ENV
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+
+  - type: cron
+    name: carelinkai Monthly Reset Cron
+    runtime: node
+    region: oregon
+    plan: starter
+    schedule: "0 0 1 * *"
+    autoDeploy: false
+    buildCommand: echo no-build-needed
+    startCommand: 'curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://getcarelinkai.com/api/cron/reset-application-counts'
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: carelinkai-db
+          property: connectionString
+      - fromGroup: carelinkai-shared
+      - key: NODE_ENV
+        sync: false
+
+  - type: cron
+    name: carelinkai Tour Reminder
+    runtime: node
+    region: oregon
+    plan: starter
+    schedule: "0 9 * * *"
+    autoDeploy: false
+    buildCommand: echo no-build-needed
+    startCommand: 'curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://getcarelinkai.com/api/cron/tour-reminders'
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: carelinkai-db
+          property: connectionString
+      - fromGroup: carelinkai-shared
+      - key: ADMIN_NOTIFY_MOBILE
+        sync: false
+      - key: NODE_ENV
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_PHONE_NUMBER
+        sync: false
+
+  - type: cron
+    name: carelinkai Recurring rides
+    runtime: node
+    region: oregon
+    plan: starter
+    schedule: "0 7 * * *"
+    autoDeploy: false
+    buildCommand: echo no-build-needed
+    startCommand: 'curl -fsS -H "x-cron-secret: $CRON_SECRET" https://getcarelinkai.com/api/cron/recurring-rides'
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: carelinkai-db
+          property: connectionString
+      - fromGroup: carelinkai-shared
+      - key: NODE_ENV
+        sync: false
+
+envVarGroups:
+  - name: carelinkai-shared
+    envVars:
+      - key: CRON_SECRET
+        sync: false
+
 # Render Cron Jobs (Requires Standard Plan or Higher)
 # Uncomment and configure when upgrading from Starter plan
 # 
