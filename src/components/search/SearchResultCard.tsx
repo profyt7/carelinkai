@@ -91,7 +91,7 @@ export default function SearchResultCard({
       <div className={`relative flex-shrink-0 ${list ? 'md:w-1/3' : ''}`}>
         <a href={link} className="block h-full" tabIndex={-1} aria-hidden="true">
           {noPhoto ? (
-            <HomeImagePlaceholder className={imgSize} label="Photos coming soon" subtitle="No photos yet" />
+            <HomeImagePlaceholder className={`${imgSize} pt-8`} label="Photos coming soon" subtitle="No photos yet" />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element -- same plain <img> as the previous search cards
             <img src={home.imageUrl!} alt="" loading="lazy" onError={() => setBroken(true)} className={`${imgSize} object-cover`} />
@@ -148,7 +148,8 @@ export default function SearchResultCard({
 
         {insights && <div className="mt-3">{insights}</div>}
 
-        <div className="mt-auto flex items-center gap-2 pt-4">
+        {/* Wraps on narrow cards (3-up next to the app sidebar) so View details is never clipped. */}
+        <div className="mt-auto flex flex-wrap items-center gap-2 pt-4">
           <button
             type="button"
             data-testid="card-save"
