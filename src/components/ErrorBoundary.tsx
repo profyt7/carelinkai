@@ -71,7 +71,7 @@ class ErrorBoundary extends Component<Props, State> {
             <div className="flex flex-col space-y-3">
               <button
                 onClick={this.handleReset}
-                className="flex items-center justify-center gap-2 bg-gradient-to-r from-[#3978FC] to-[#7253B7] text-white px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity"
+                className="flex items-center justify-center gap-2 bg-gradient-to-r from-primary-500 to-secondary-500 text-white px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity"
               >
                 <FiRefreshCw className="w-4 h-4" />
                 Try Again
