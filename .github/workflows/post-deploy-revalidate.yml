@@ -1,0 +1,53 @@
+name: Post-deploy revalidate
+
+# OL-159 / OL-169: after every push to main, wait until Render stably serves
+# that commit, purge the public hub pages (POST /api/admin/revalidate,
+# CRON_SECRET bearer — never echoed) and prove that "/" and every /cleveland/*
+# page carry that commit's footer sha (each page retried for up to 5 min, one
+# re-purge halfway) and that the Medicaid-waiver lines render.
+#
+# The logic lives in scripts/post-deploy-verify.sh so it can be dry-run
+# locally (DRY_RUN=1 BASE=http://localhost:3000). On a pull request that edits
+# this workflow or the script it runs verify-only against production (no
+# secret, target = the live commit) so the page list and parsing are proven
+# on the merge preview before the change lands.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - '.github/workflows/post-deploy-revalidate.yml'
+      - 'scripts/post-deploy-verify.sh'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Verify only — no purge, target = the live commit'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: post-deploy-revalidate-${{ github.event_name == 'push' && 'main' || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
+
+jobs:
+  revalidate:
+    name: Purge hub pages + verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for the deploy, revalidate, verify
+        shell: bash
+        env:
+          BASE: https://getcarelinkai.com
+          # push: the commit that just landed; PR / dry run: verify the live commit.
+          EXPECT_SHA: ${{ github.event_name == 'push' && github.sha || '' }}
+          DRY_RUN: ${{ (github.event_name != 'push' && (github.event_name == 'pull_request' || inputs.dry_run)) && '1' || '0' }}
+          CRON_SECRET: ${{ github.event_name == 'pull_request' && '' || secrets.CRON_SECRET }}
+        run: bash scripts/post-deploy-verify.sh

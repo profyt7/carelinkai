@@ -1,0 +1,599 @@
+/**
+ * Inquiry to Resident Conversion Service
+ *
+ * Handles the conversion of inquiries to residents with proper data mapping
+ * and validation.
+ */
+
+import { ResidentStatus } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
+import { z } from 'zod';
+import { stripe } from '@/lib/stripe';
+import { placementFeeCents as getPlacementFeeCents } from '@/lib/billing/fees';
+import { deriveFeeLane, type FeeLane, type PayerSource } from '@/lib/payer/payer-source';
+
+
+/**
+ * Validation schema for conversion data
+ */
+export const ConversionDataSchema = z.object({
+  inquiryId: z.string().cuid(),
+  convertedByUserId: z.string().cuid(),
+  conversionNotes: z.string().optional(),
+  
+  // Resident-specific data (some may come from inquiry, others from form)
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+  dateOfBirth: z.coerce.date(),
+  gender: z.enum(['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY']),
+
+  // Optional fields
+  careNeeds: z.any().optional(), // JSON field
+  medicalConditions: z.string().optional(),
+  medications: z.string().optional(),
+  allergies: z.string().optional(),
+  dietaryRestrictions: z.string().optional(),
+  notes: z.string().optional(),
+
+  // Move-in details
+  moveInDate: z.coerce.date().optional(),
+});
+
+export type ConversionData = z.infer<typeof ConversionDataSchema>;
+
+export interface ConversionResult {
+  success: boolean;
+  residentId?: string;
+  inquiryId: string;
+  error?: string;
+  validationErrors?: Record<string, string[]>;
+}
+
+/**
+ * Convert an inquiry to a resident
+ */
+export async function convertInquiryToResident(
+  data: ConversionData
+): Promise<ConversionResult> {
+  try {
+    // Validate input data
+    const validated = ConversionDataSchema.parse(data);
+
+    // Fetch the inquiry
+    const inquiry = await prisma.inquiry.findUnique({
+      where: { id: validated.inquiryId },
+      include: {
+        family: {
+          include: {
+            user: true,
+          },
+        },
+        home: {
+          include: {
+            operator: {
+              select: { id: true, userId: true, stripeCustomerId: true },
+            },
+          },
+        },
+      },
+    });
+
+    // affiliateCode is a scalar on the inquiry record — included automatically
+
+    if (!inquiry) {
+      return {
+        success: false,
+        inquiryId: validated.inquiryId,
+        error: 'Inquiry not found',
+      };
+    }
+
+    // Anonymous (no-family) inquiries cannot be converted until linked to a
+    // family account — a Resident requires a family. The operator links the
+    // lead to a family first, then converts.
+    if (!inquiry.familyId) {
+      return {
+        success: false,
+        inquiryId: validated.inquiryId,
+        error: 'This lead is not linked to a family account yet. Link it to a family before converting to a resident.',
+      };
+    }
+    const familyId = inquiry.familyId; // non-null past the guard
+
+    // Check if already converted
+    if (inquiry.convertedToResidentId) {
+      return {
+        success: false,
+        inquiryId: validated.inquiryId,
+        error: 'Inquiry has already been converted to a resident',
+      };
+    }
+
+    // Check if inquiry status allows conversion
+    const allowedStatuses = ['QUALIFIED', 'CONVERTING', 'TOUR_COMPLETED', 'PLACEMENT_OFFERED'];
+    if (!allowedStatuses.includes(inquiry.status)) {
+      return {
+        success: false,
+        inquiryId: validated.inquiryId,
+        error: `Inquiry must be in QUALIFIED, CONVERTING, TOUR_COMPLETED, or PLACEMENT_OFFERED status to convert. Current status: ${inquiry.status}`,
+      };
+    }
+
+    // Perform conversion in a transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // Create resident record
+      const resident = await tx.resident.create({
+        data: {
+          familyId,
+          homeId: inquiry.homeId,
+          firstName: validated.firstName,
+          lastName: validated.lastName,
+          dateOfBirth: new Date(validated.dateOfBirth),
+          gender: validated.gender,
+          status: ResidentStatus.PENDING, // Start as PENDING, admin will activate
+          careNeeds: validated.careNeeds || null,
+          medicalConditions: validated.medicalConditions || null,
+          medications: validated.medications || null,
+          allergies: validated.allergies || null,
+          dietaryRestrictions: validated.dietaryRestrictions || null,
+          notes: validated.notes || null,
+          admissionDate: validated.moveInDate ? new Date(validated.moveInDate) : null,
+        },
+      });
+
+      // Create primary family contact from inquiry family
+      if (inquiry.family?.user) {
+        await tx.familyContact.create({
+          data: {
+            residentId: resident.id,
+            name: `${inquiry.family.user.firstName} ${inquiry.family.user.lastName}`,
+            relationship: 'Primary Contact',
+            phone: inquiry.family.user.phone || inquiry.family.phone || null,
+            email: inquiry.family.user.email,
+            isPrimaryContact: true,
+            permissionLevel: 'FULL_ACCESS',
+            contactPreference: 'EMAIL',
+          },
+        });
+      }
+
+      // Update inquiry with conversion data
+      await tx.inquiry.update({
+        where: { id: validated.inquiryId },
+        data: {
+          status: 'CONVERTED',
+          convertedToResidentId: resident.id,
+          convertedByUserId: validated.convertedByUserId,
+          conversionDate: new Date(),
+          conversionNotes: validated.conversionNotes || null,
+        },
+      });
+
+
+      return resident;
+    });
+
+    // Fire placement fee charge — non-blocking. Gated (OL-124): only when
+    // PLACEMENT_FEE_ENABLED is on AND the inquiry's payer lane is FEE_ELIGIBLE.
+    const payerSource = (inquiry as { payerSource?: PayerSource | null }).payerSource ?? null;
+    const placementFee = triggerPlacementFee(
+      inquiry.home.operator,
+      { id: result.id, firstName: validated.firstName, lastName: validated.lastName },
+      validated.inquiryId,
+      payerSource
+    ).catch((err): PlacementFeeOutcome => {
+      console.error('[PLACEMENT_FEE] Unexpected error:', err);
+      return { invoiced: false };
+    });
+
+    // Fire affiliate commission — non-blocking, and only once the placement fee
+    // invoice item exists (OL-185).
+    if (inquiry.affiliateCode) {
+      // Determine referral type: if affiliateCode came from the family's stored referredByCode,
+      // it's a FAMILY referral; otherwise it's an OPERATOR referral (default)
+      const referralType = inquiry.family?.referredByCode === inquiry.affiliateCode
+        ? 'FAMILY'
+        : 'OPERATOR';
+      const affiliateCode = inquiry.affiliateCode;
+      const referredEmail = inquiry.contactEmail || inquiry.family?.user?.email || null;
+      placementFee
+        .then((fee) =>
+          triggerAffiliateCommission(
+            affiliateCode,
+            referredEmail,
+            validated.inquiryId,
+            referralType as 'FAMILY' | 'OPERATOR',
+            payerSource,
+            fee
+          )
+        )
+        .catch((err) => console.error('[AFFILIATE] Unexpected error:', err));
+    }
+
+    return {
+      success: true,
+      residentId: result.id,
+      inquiryId: validated.inquiryId,
+    };
+  } catch (error) {
+    console.error('Conversion error:', error);
+
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        inquiryId: data.inquiryId,
+        error: 'Validation failed',
+        validationErrors: error.flatten().fieldErrors as Record<string, string[]>,
+      };
+    }
+
+    return {
+      success: false,
+      inquiryId: data.inquiryId,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
+}
+
+/** PLACEMENT_FEE_ENABLED: unset / anything but 1|true|yes|on = OFF (OL-124). */
+export function isPlacementFeeEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+  const raw = (env.PLACEMENT_FEE_ENABLED ?? '').toString().trim().toLowerCase();
+  return ['1', 'true', 'yes', 'on'].includes(raw);
+}
+
+/**
+ * The OL-124 gate, in one place so it can be unit-tested without Prisma/Stripe.
+ * Returns null when the fee may fire, otherwise the reason it must not.
+ *
+ * ⚖️ Anti-Kickback hard line (attorney engagement, Haran): a placement fee may
+ * only attach to a placement paid with private funds or LTC insurance
+ * (FEE_ELIGIBLE). Medicaid/waiver, Medicare/MA, VA (FREE_LANE) and any
+ * unknown/missing lane (UNKNOWN) never bill — "not sure" is not consent.
+ */
+export function placementFeeBlockReason(
+  payerSource: PayerSource | null | undefined,
+  env: NodeJS.ProcessEnv = process.env
+): { lane: FeeLane; reason: 'disabled' | 'free_lane' | 'unknown_lane' } | null {
+  const lane = deriveFeeLane(payerSource);
+  if (!isPlacementFeeEnabled(env)) return { lane, reason: 'disabled' };
+  if (lane === 'FREE_LANE') return { lane, reason: 'free_lane' };
+  if (lane !== 'FEE_ELIGIBLE') return { lane, reason: 'unknown_lane' };
+  return null;
+}
+
+/** What triggerPlacementFee did: `invoiced` only when a Stripe invoice item was created. */
+export interface PlacementFeeOutcome {
+  invoiced: boolean;
+}
+
+/**
+ * OL-185: an affiliate commission is a payout liability, so it may only accrue
+ * against a placement fee that was actually billed — PLACEMENT_FEE_ENABLED on,
+ * private-pay (FEE_ELIGIBLE) lane, and a Stripe invoice item created. A fee
+ * recorded as PENDING for manual collection (operator has no Stripe customer)
+ * does not count: nothing has been billed. Returns null when it may accrue.
+ */
+export function affiliateCommissionBlockReason(
+  payerSource: PayerSource | null | undefined,
+  placementFee: PlacementFeeOutcome,
+  env: NodeJS.ProcessEnv = process.env
+): 'disabled' | 'free_lane' | 'unknown_lane' | 'no_invoice' | null {
+  const blocked = placementFeeBlockReason(payerSource, env);
+  if (blocked) return blocked.reason;
+  if (!placementFee.invoiced) return 'no_invoice';
+  return null;
+}
+
+/**
+ * Attempt to charge the operator a placement fee after a successful conversion.
+ * Never throws — conversion must always succeed regardless of billing outcome.
+ *
+ * Gated (OL-124): writes NOTHING (no Payment row, no Stripe invoice item) unless
+ * PLACEMENT_FEE_ENABLED is on AND the inquiry's payer lane is FEE_ELIGIBLE. When
+ * skipped it logs one structured line so the decision is visible in Render logs.
+ */
+async function triggerPlacementFee(
+  operator: { id: string; userId: string; stripeCustomerId: string | null } | null,
+  resident: { id: string; firstName: string; lastName: string },
+  inquiryId: string,
+  payerSource: PayerSource | null | undefined
+): Promise<PlacementFeeOutcome> {
+  const blocked = placementFeeBlockReason(payerSource);
+  if (blocked) {
+    console.info(
+      JSON.stringify({
+        event: 'placement_fee_skipped',
+        inquiryId,
+        operatorId: operator?.id ?? null,
+        residentId: resident.id,
+        payerSource: payerSource ?? null,
+        lane: blocked.lane,
+        reason: blocked.reason,
+        ref: 'OL-124',
+      })
+    );
+    return { invoiced: false };
+  }
+
+  const placementFeeCents = getPlacementFeeCents();
+  const residentName = `${resident.firstName} ${resident.lastName}`;
+
+  if (!operator) {
+    console.error('[PLACEMENT_FEE] No operator found for inquiry', inquiryId);
+    return { invoiced: false };
+  }
+
+  // Create a PENDING payment record regardless of Stripe outcome
+  let payment: { id: string } | null = null;
+  try {
+    payment = await prisma.payment.create({
+      data: {
+        userId: operator.userId,
+        amount: placementFeeCents / 100,
+        status: 'PENDING',
+        type: 'PLACEMENT_FEE',
+        description: `Placement fee — ${residentName}`,
+      },
+    });
+  } catch (err) {
+    console.error('[PLACEMENT_FEE] Could not create payment record:', err);
+    return { invoiced: false };
+  }
+
+  if (!operator.stripeCustomerId) {
+    console.warn('[PLACEMENT_FEE] No Stripe customer — fee recorded as PENDING for manual collection', { paymentId: payment.id, inquiryId });
+    return { invoiced: false };
+  }
+
+  let invoiced = false;
+  try {
+    // Queue as an invoice line item — collected automatically on next billing cycle
+    const invoiceItem = await stripe.invoiceItems.create({
+      customer: operator.stripeCustomerId,
+      amount: placementFeeCents,
+      currency: 'usd',
+      description: `Placement fee — ${residentName}`,
+      metadata: { inquiryId, residentId: resident.id, type: 'PLACEMENT_FEE' },
+    });
+    invoiced = true;
+
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        status: 'PROCESSING',
+        stripePaymentId: invoiceItem.id,
+        description: `Placement fee — ${residentName} (queued for next invoice)`,
+      },
+    });
+
+    console.log(`[PLACEMENT_FEE] ✅ Queued $${placementFeeCents / 100} for ${residentName} on next invoice`, { invoiceItemId: invoiceItem.id });
+  } catch (err: any) {
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: { status: 'FAILED' },
+    }).catch(() => {});
+    console.error('[PLACEMENT_FEE] Failed to queue invoice item — fee marked FAILED:', err?.message ?? err);
+  }
+  return { invoiced };
+}
+
+/**
+ * Record an affiliate commission after a successful inquiry → resident conversion.
+ * Never throws — conversion must always succeed regardless of commission outcome.
+ *
+ * Gated (OL-185): writes nothing (no AffiliateReferral, no pending payout) unless
+ * affiliateCommissionBlockReason allows it.
+ */
+async function triggerAffiliateCommission(
+  affiliateCode: string,
+  referredEmail: string | null,
+  inquiryId: string,
+  referralType: 'FAMILY' | 'OPERATOR',
+  payerSource: PayerSource | null | undefined,
+  placementFee: PlacementFeeOutcome
+): Promise<void> {
+  const blocked = affiliateCommissionBlockReason(payerSource, placementFee);
+  if (blocked) {
+    console.info(
+      JSON.stringify({ event: 'affiliate_commission_skipped', inquiryId, payerSource: payerSource ?? null, reason: blocked, ref: 'OL-185' })
+    );
+    return;
+  }
+
+  const defaultPct = parseFloat(process.env.DEFAULT_AFFILIATE_COMMISSION_PCT ?? '20');
+  const placementFeeCents = getPlacementFeeCents();
+
+  try {
+    const affiliate = await prisma.affiliate.findUnique({
+      where: { affiliateCode },
+      select: { id: true, userId: true, commissionRate: true, commissionTier: true },
+    });
+
+    if (!affiliate) {
+      console.warn('[AFFILIATE] Unknown affiliate code:', affiliateCode);
+      return;
+    }
+
+    // Tier rates: STANDARD=20%, SILVER=25%, GOLD=30%
+    const TIER_RATES: Record<string, number> = { STANDARD: 20, SILVER: 25, GOLD: 30 };
+    const tierPct = TIER_RATES[affiliate.commissionTier ?? 'STANDARD'] ?? defaultPct;
+    const commissionPct = affiliate.commissionRate
+      ? parseFloat(affiliate.commissionRate.toString())
+      : tierPct;
+    const commissionAmount = (placementFeeCents * commissionPct) / 100 / 100; // dollars
+
+    // Upsert AffiliateReferral — create or update to CONVERTED
+    const existingReferral = referredEmail
+      ? await prisma.affiliateReferral.findFirst({
+          where: { affiliateId: affiliate.id, referredEmail },
+        })
+      : null;
+
+    if (existingReferral) {
+      await prisma.affiliateReferral.update({
+        where: { id: existingReferral.id },
+        data: {
+          status: 'CONVERTED',
+          referralType,
+          conversionDate: new Date(),
+          commissionAmount,
+        },
+      });
+    } else {
+      await prisma.affiliateReferral.create({
+        data: {
+          affiliateId: affiliate.id,
+          referredEmail: referredEmail ?? `inquiry:${inquiryId}`,
+          referralType,
+          status: 'CONVERTED',
+          conversionDate: new Date(),
+          commissionAmount,
+          commissionPaid: false,
+        },
+      });
+    }
+
+    // Create a PENDING payment record for the affiliate
+    await prisma.payment.create({
+      data: {
+        userId: affiliate.userId,
+        amount: commissionAmount,
+        status: 'PENDING',
+        type: 'AFFILIATE_COMMISSION',
+        description: `Affiliate commission (${commissionPct}%) — inquiry ${inquiryId.slice(0, 8)}`,
+      },
+    });
+
+    console.log(`[AFFILIATE] ✅ Commission $${commissionAmount.toFixed(2)} recorded for affiliate ${affiliateCode}`);
+  } catch (err: any) {
+    console.error('[AFFILIATE] Failed to record commission:', err?.message ?? err);
+  }
+}
+
+/**
+ * Get inquiry details for conversion preview
+ */
+export async function getInquiryForConversion(inquiryId: string) {
+  return await prisma.inquiry.findUnique({
+    where: { id: inquiryId },
+    include: {
+      family: {
+        include: {
+          user: true,
+        },
+      },
+      home: {
+        include: {
+          address: true,
+        },
+      },
+      convertedBy: true,
+      convertedResident: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          status: true,
+        },
+      },
+    },
+  });
+}
+
+/**
+ * Check if an inquiry can be converted
+ */
+export async function canConvertInquiry(inquiryId: string): Promise<{
+  canConvert: boolean;
+  reason?: string;
+}> {
+  const inquiry = await prisma.inquiry.findUnique({
+    where: { id: inquiryId },
+  });
+
+  if (!inquiry) {
+    return { canConvert: false, reason: 'Inquiry not found' };
+  }
+
+  if (inquiry.convertedToResidentId) {
+    return { canConvert: false, reason: 'Already converted to resident' };
+  }
+
+  if (!inquiry.familyId) {
+    return {
+      canConvert: false,
+      reason: 'Lead is not linked to a family account yet. Link it to a family before converting.',
+    };
+  }
+
+  const allowedStatuses = ['QUALIFIED', 'CONVERTING', 'TOUR_COMPLETED', 'PLACEMENT_OFFERED'];
+  if (!allowedStatuses.includes(inquiry.status)) {
+    return {
+      canConvert: false,
+      reason: `Status must be QUALIFIED, CONVERTING, TOUR_COMPLETED, or PLACEMENT_OFFERED. Current: ${inquiry.status}`,
+    };
+  }
+
+  return { canConvert: true };
+}
+
+/**
+ * Get conversion statistics for pipeline dashboard
+ */
+export async function getConversionStats(operatorId?: string) {
+  const whereClause = operatorId
+    ? {
+        home: {
+          operatorId: operatorId,
+        },
+      }
+    : {};
+
+  const [
+    totalInquiries,
+    statusCounts,
+    conversionRate,
+    avgConversionTime,
+  ] = await Promise.all([
+    // Total inquiries
+    prisma.inquiry.count({ where: whereClause }),
+
+    // Count by status
+    prisma.inquiry.groupBy({
+      by: ['status'],
+      where: whereClause,
+      _count: true,
+    }),
+
+    // Conversion rate
+    prisma.inquiry.aggregate({
+      where: {
+        ...whereClause,
+        convertedToResidentId: { not: null },
+      },
+      _count: true,
+    }),
+
+    // Average conversion time (days from creation to conversion)
+    // Note: This requires manual calculation as Prisma doesn't support date difference aggregation
+    Promise.resolve({ _avg: null }),
+  ]);
+
+  const statusMap: Record<string, number> = {};
+  statusCounts.forEach((item: any) => {
+    statusMap[item.status] = item._count;
+  });
+
+  const conversionRatePercent =
+    totalInquiries > 0
+      ? (conversionRate._count / totalInquiries) * 100
+      : 0;
+
+  return {
+    total: totalInquiries,
+    byStatus: statusMap,
+    converted: conversionRate._count,
+    conversionRate: Math.round(conversionRatePercent * 10) / 10,
+    avgConversionTime: avgConversionTime._avg,
+  };
+}

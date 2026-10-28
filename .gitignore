@@ -1,0 +1,47 @@
+**/node_modules
+.next
+.cache
+.build
+*.nfs*
+**/.yarn/
+!**/.yarn/patches
+!**/.yarn/plugins
+!**/.yarn/releases
+!**/.yarn/sdks
+!**/.yarn/versions
+!**/.yarn/cache
+**/.yarn/build-state.yml
+**/.yarn/install-state.gz
+dist
+target
+out
+.deploy
+.logs
+*.tsbuildinfo
+
+# Playwright test artifacts
+test-results/
+playwright-report/
+
+# Operator website scrape cache
+scripts/scraped-cache/
+
+# Local environment files — never commit (OL-149). Only the documented
+# templates stay tracked.
+.env*
+!.env.example
+!.env.prisma
+
+# Exported PDFs (chat logs / generated reports) and logs — never commit.
+/*.pdf
+docs/**/*.pdf
+/export/
+/exports/
+*.log
+
+# One-off scripts that held live credentials in the past (OL-213).
+verify_*.mjs
+test-cloudinary-*.js
+
+# Agent tooling state (not part of the app).
+.abacus.donotdelete

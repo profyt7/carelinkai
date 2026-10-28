@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      # No feat/** or chore/**: an open PR already runs this via pull_request,
+      # so a branch push used to run build-and-test twice.
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect code changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - id: filter
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          # Docs-only PRs (Markdown, PDFs, docs/, context/) skip the heavy jobs;
+          # anything else, and every non-PR event, runs them. A skipped job still
+          # satisfies a required check; a workflow-level `paths:` filter would
+          # leave it pending forever instead.
+          if [ -z "$PR" ]; then echo "code=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          # If the file list can't be read, run everything rather than skip.
+          if ! files=$(gh api "repos/${{ github.repository }}/pulls/$PR/files" --paginate --jq '.[].filename'); then
+            echo "::warning::could not list PR files; running all jobs"; echo "code=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if printf '%s\n' "$files" | grep -qvE '^(docs/|context/)|\.(md|pdf)$'; then code=true; else code=false; fi
+          echo "$(printf '%s\n' "$files" | grep -c .) changed file(s); code=$code"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+
+  build-and-test:
+    needs: changes
+    if: ${{ needs.changes.outputs.code == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies (ci)
+        run: npm ci
+
+      - name: Cache Next.js build cache
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          # Source in the key so the cache is re-saved as the code changes; the
+          # lockfile-only prefix restores the nearest previous build.
+          key: next-cache-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('src/**', 'next.config.js') }}
+          restore-keys: |
+            next-cache-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+            next-cache-${{ runner.os }}-
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type Check
+        run: npm run type-check
+
+      - name: Unit Tests
+        run: npm test -- --ci --reporters=default
+
+      - name: Build
+        run: npm run build

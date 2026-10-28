@@ -1,0 +1,30 @@
+{
+  "extends": ["next", "next/core-web-vitals"],
+
+  /* Ensure TypeScript-aware linting */
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
+
+  "ignorePatterns": ["src/unused/**", "src/lib/services/calendar-backup.ts"],
+
+  "rules": {
+    /* Keep adjustments minimal; can be expanded later */
+    "react/no-unescaped-entities": "off",
+
+    /* Disable rule that fails due to missing type info / commonjs requires */
+    "@typescript-eslint/no-var-requires": "off",
+
+    /* OL-194: credentials never reach logs (the guard test lints scripts/ with this rule too) */
+    "no-restricted-syntax": [
+          "error",
+          {
+                "selector": "CallExpression[callee.object.name='console'] Identifier[name=/^(password|newPassword|currentPassword|plainPassword|passwordHash|token|accessToken|refreshToken|idToken|sessionToken|verificationToken|resetToken|claimToken|rawToken|jwt|secret|clientSecret|webhookSecret|apiKey|authorization|cookie|cookies|otp|totpSecret|backupCodes|resetUrl|resetLink|verifyUrl|verificationUrl|verificationLink|verifyLink|magicLink|claimUrl|claimLink)$/]:not(MemberExpression > Identifier.object):not(CallExpression[callee.name=/^(redactString|redactSecrets|maskSecret)$/] *)",
+                "message": "OL-194: do not log credentials or sign-in links. Log an id, or wrap the value in maskSecret() from @/lib/redact."
+          },
+          {
+                "selector": "CallExpression[callee.object.name='logger'] > TemplateLiteral Identifier[name=/^(password|newPassword|currentPassword|plainPassword|passwordHash|token|accessToken|refreshToken|idToken|sessionToken|verificationToken|resetToken|claimToken|rawToken|jwt|secret|clientSecret|webhookSecret|apiKey|authorization|cookie|cookies|otp|totpSecret|backupCodes|resetUrl|resetLink|verifyUrl|verificationUrl|verificationLink|verifyLink|magicLink|claimUrl|claimLink)$/]:not(MemberExpression > Identifier.object):not(CallExpression[callee.name=/^(redactString|redactSecrets|maskSecret)$/] *)",
+                "message": "OL-194: do not log credentials or sign-in links. Log an id, or wrap the value in maskSecret() from @/lib/redact."
+          }
+    ]
+  }
+}

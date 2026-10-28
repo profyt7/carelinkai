@@ -1,0 +1,430 @@
+import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import { cookies, headers } from 'next/headers';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { getBaseUrl } from '@/lib/http';
+import { getMockResident, getMockAssessments, getMockIncidents, getMockNotes } from '@/lib/mock/residents';
+import { prisma } from '@/lib/prisma';
+import { StatusActions } from '@/components/operator/residents/StatusActions';
+import { ArchiveButton } from '@/components/operator/residents/ArchiveButton';
+import { CreateNoteForm } from '@/components/operator/residents/forms/CreateNoteForm';
+import { CreateAssessmentForm } from '@/components/operator/residents/forms/CreateAssessmentForm';
+import { CreateIncidentForm } from '@/components/operator/residents/forms/CreateIncidentForm';
+import { CompliancePanel } from '@/components/operator/residents/CompliancePanel';
+import { ContactsPanel } from '@/components/operator/residents/ContactsPanel';
+import { DocumentsPanel } from '@/components/operator/residents/DocumentsPanel';
+import { TimelinePanel } from '@/components/operator/residents/TimelinePanel';
+import { ResidentTimeline } from '@/components/operator/residents/ResidentTimeline';
+import { ResidentNotes } from '@/components/operator/residents/ResidentNotes';
+import { AssessmentsList } from '@/components/operator/residents/AssessmentsList';
+import { IncidentsList } from '@/components/operator/residents/IncidentsList';
+import { ResidentOverview } from '@/components/operator/residents/ResidentOverview';
+import { ResidentPhotoUpload } from '@/components/operator/residents/ResidentPhotoUpload';
+import { AssessmentsTab } from '@/components/operator/residents/AssessmentsTab';
+import { IncidentsTab } from '@/components/operator/residents/IncidentsTab';
+import { ComplianceTab } from '@/components/operator/residents/ComplianceTab';
+import { FamilyTab } from '@/components/operator/residents/FamilyTab';
+import { DocumentsSection } from '@/components/operator/residents/DocumentsSection';
+import { ResidentDetailActionsBar } from '@/components/operator/residents/ResidentDetailActions';
+import { ResidentQuickActionsMenu } from '@/components/operator/residents/ResidentQuickActionsMenu';
+import { UpcomingAssessmentsWidget } from '@/components/operator/residents/UpcomingAssessmentsWidget';
+import { RecentIncidentsWidget } from '@/components/operator/residents/RecentIncidentsWidget';
+import Breadcrumbs from '@/components/ui/breadcrumbs';
+import { StatCard } from '@/components/ui/StatCard';
+import Image from 'next/image';
+import { FiEdit, FiFileText, FiUser, FiClipboard, FiAlertTriangle, FiShield, FiUsers, FiFolder, FiCalendar } from 'react-icons/fi';
+import { getDaysSinceAdmission } from '@/lib/resident-analytics';
+import BookTransportButton from '@/components/transport/BookTransportButton';
+
+function AccessDenied() {
+  return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="text-center max-w-sm">
+        <div className="h-14 w-14 rounded-full bg-error-100 flex items-center justify-center mx-auto mb-4">
+          <FiShield className="h-7 w-7 text-error-600" />
+        </div>
+        <h2 className="text-xl font-bold text-neutral-900 mb-2">Access Restricted</h2>
+        <p className="text-neutral-500 text-sm">
+          You don&apos;t have permission to view this resident&apos;s details. Contact your operator if you need access.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+async function fetchResident(id: string) {
+  const cookieHeader = (await cookies()).toString();
+  const h = await headers();
+  const base = getBaseUrl(h);
+  const res = await fetch(`${base}/api/residents/${id}`, {
+    cache: 'no-store',
+    headers: { cookie: cookieHeader },
+  });
+  if (res.status === 404) return null;
+  if (res.status === 401 || res.status === 403) return { _forbidden: true } as const;
+  if (!res.ok) return null;
+  return res.json();
+}
+
+async function fetchContacts(id: string) {
+  const cookieHeader = (await cookies()).toString();
+  const h = await headers();
+  const base = getBaseUrl(h);
+  const res = await fetch(`${base}/api/residents/${id}/contacts`, {
+    cache: 'no-store',
+    headers: { cookie: cookieHeader },
+  });
+  if (!res.ok) return { items: [] };
+  return res.json();
+}
+
+async function fetchTimeline(id: string) {
+  const cookieHeader = (await cookies()).toString();
+  const h = await headers();
+  const base = getBaseUrl(h);
+  const res = await fetch(`${base}/api/residents/${id}/timeline?limit=10`, {
+    cache: 'no-store',
+    headers: { cookie: cookieHeader },
+  });
+  if (!res.ok) return { items: [] };
+  return res.json();
+}
+
+async function fetchSection(id: string, section: 'assessments' | 'incidents' | 'notes') {
+  const cookieHeader = (await cookies()).toString();
+  const h = await headers();
+  const base = getBaseUrl(h);
+  const res = await fetch(`${base}/api/residents/${id}/${section}?limit=5`, {
+    cache: 'no-store',
+    headers: { cookie: cookieHeader },
+  });
+  if (!res.ok) return { items: [] };
+  return res.json();
+}
+
+export default async function ResidentDetail({ params, searchParams }: { params: { id: string }; searchParams?: { tab?: string } }) {
+  if (process.env['NEXT_PUBLIC_RESIDENTS_ENABLED'] === 'false') return notFound();
+  
+  const activeTab = searchParams?.tab || 'overview';
+  
+  // Get current user for notes editing permissions
+  const session = await getServerSession(authOptions);
+  let currentUserId: string | undefined;
+  if (session?.user?.email) {
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true },
+    });
+    currentUserId = user?.id;
+  }
+  
+  const mockCookie = (await cookies()).get('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
+  const showMock = ['1','true','yes','on'].includes(mockCookie);
+  let resident: any = null;
+  let contacts: any = { items: [] };
+  let timeline: any = { items: [] };
+  let assessments: any = { items: [] };
+  let incidents: any = { items: [] };
+  let notes: any = { items: [] };
+  
+  if (showMock) {
+    const r = getMockResident(params.id);
+    if (r) {
+      resident = r;
+      assessments = getMockAssessments(r.id);
+      incidents = getMockIncidents(r.id);
+      notes = getMockNotes(r.id);
+      contacts = { items: [] }; // Mock data doesn't have contacts yet
+      timeline = { items: [] }; // Mock data doesn't have timeline yet
+    } else {
+      // Fallback to live data when ID not in mock set
+      const data = await fetchResident(params.id);
+      if (data && '_forbidden' in data) return <AccessDenied />;
+      if (!data?.resident) return notFound();
+      resident = data.resident;
+      [contacts, timeline, assessments, incidents, notes] = await Promise.all([
+        fetchContacts(resident.id),
+        fetchTimeline(resident.id),
+        fetchSection(resident.id, 'assessments'),
+        fetchSection(resident.id, 'incidents'),
+        fetchSection(resident.id, 'notes'),
+      ]);
+    }
+  } else {
+    const data = await fetchResident(params.id);
+    if (data && '_forbidden' in data) return <AccessDenied />;
+    if (!data?.resident) return notFound();
+    resident = data.resident;
+    [contacts, timeline, assessments, incidents, notes] = await Promise.all([
+      fetchContacts(resident.id),
+      fetchTimeline(resident.id),
+      fetchSection(resident.id, 'assessments'),
+      fetchSection(resident.id, 'incidents'),
+      fetchSection(resident.id, 'notes'),
+    ]);
+  }
+  
+  // Check if resident data was loaded successfully
+  if (!resident) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="mb-4 text-6xl">😔</div>
+          <h2 className="text-2xl font-bold text-neutral-900 mb-2">Resident Not Found</h2>
+          <p className="text-neutral-600 mb-6">The resident you're looking for doesn't exist or you don't have access to view it.</p>
+          <Link
+            href="/operator/residents"
+            className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+          >
+            ← Back to Residents
+          </Link>
+        </div>
+      </div>
+    );
+  }
+  
+  // Calculate age
+  const calculateAge = (dob: string) => {
+    const birthDate = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+  
+  const age = resident.dateOfBirth ? calculateAge(resident.dateOfBirth) : null;
+  
+  // Get counts for tabs
+  const assessmentCount = assessments.items?.length || 0;
+  const incidentCount = incidents.items?.length || 0;
+  const contactsCount = contacts.items?.length || 0;
+  
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: FiUser, count: null },
+    { id: 'assessments', label: 'Assessments', icon: FiClipboard, count: assessmentCount },
+    { id: 'incidents', label: 'Incidents', icon: FiAlertTriangle, count: incidentCount },
+    { id: 'compliance', label: 'Compliance', icon: FiShield, count: null },
+    { id: 'documents', label: 'Documents', icon: FiFolder, count: null },
+    { id: 'family', label: 'Family', icon: FiUsers, count: contactsCount },
+    { id: 'details', label: 'Details', icon: FiFileText, count: null },
+  ];
+  
+  return (
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
+      <Breadcrumbs items={[
+        { label: 'Operator', href: '/operator' },
+        { label: 'Residents', href: '/operator/residents' },
+        { label: `${resident.firstName} ${resident.lastName}` }
+      ]} />
+      
+      {/* Header with Photo */}
+      <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6 mb-6">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+          <div className="flex items-start gap-4">
+            {resident.photoUrl ? (
+              <Image
+                src={resident.photoUrl}
+                alt={`${resident.firstName} ${resident.lastName}`}
+                width={96}
+                height={96}
+                className="h-24 w-24 rounded-lg object-cover border-2 border-neutral-200"
+              />
+            ) : (
+              <div className="h-24 w-24 rounded-lg bg-neutral-200 flex items-center justify-center">
+                <span className="text-neutral-600 font-semibold text-2xl">
+                  {resident.firstName?.[0] || '?'}{resident.lastName?.[0] || '?'}
+                </span>
+              </div>
+            )}
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900">{resident.firstName} {resident.lastName}</h1>
+              {age && (
+                <p className="text-neutral-600 mt-1">{age} years old</p>
+              )}
+              <div className="flex items-center gap-3 mt-2">
+                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                  resident.status === 'ACTIVE' ? 'bg-success-100 text-success-800' :
+                  resident.status === 'INQUIRY' ? 'bg-primary-100 text-primary-800' :
+                  resident.status === 'PENDING' ? 'bg-warning-100 text-warning-800' :
+                  resident.status === 'DISCHARGED' ? 'bg-neutral-100 text-neutral-800' :
+                  'bg-error-100 text-error-800'
+                }`}>
+                  {resident.status}
+                </span>
+                {resident.careNeeds?.roomNumber && (
+                  <span className="text-sm text-neutral-600">Room {resident.careNeeds.roomNumber}</span>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2 flex-wrap">
+            <BookTransportButton residentName={`${resident.firstName} ${resident.lastName}`} />
+            <ResidentDetailActionsBar
+              residentId={resident.id}
+              residentName={`${resident.firstName} ${resident.lastName}`}
+              showArchiveButton={!resident.archivedAt}
+            />
+            <ResidentQuickActionsMenu
+              residentId={resident.id}
+              residentName={`${resident.firstName} ${resident.lastName}`}
+            />
+          </div>
+        </div>
+        
+        <div className="mt-6">
+          <StatusActions residentId={resident.id} status={resident.status} />
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="border-b border-neutral-200 mb-6">
+        <nav className="-mb-px flex gap-6 overflow-x-auto">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <Link
+                key={tab.id}
+                href={`/operator/residents/${resident.id}?tab=${tab.id}`}
+                className={`
+                  inline-flex items-center gap-2 py-4 px-2 border-b-2 font-medium text-sm transition-all whitespace-nowrap
+                  ${isActive 
+                    ? 'border-primary-600 text-primary-600' 
+                    : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300'
+                  }
+                `}
+              >
+                <Icon className={`w-4 h-4 ${isActive ? 'text-primary-600' : 'text-neutral-400'}`} />
+                <span>{tab.label}</span>
+                {tab.count !== null && tab.count > 0 && (
+                  <span className={`
+                    inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-medium
+                    ${isActive 
+                      ? 'bg-primary-100 text-primary-700' 
+                      : 'bg-neutral-100 text-neutral-600'
+                    }
+                  `}>
+                    {tab.count}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'overview' && (
+        <>
+          {/* Quick Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <StatCard
+              title="Total Assessments"
+              value={resident._count?.assessments || 0}
+              icon={<FiClipboard className="w-4 h-4" />}
+              color="blue"
+            />
+            <StatCard
+              title="Recent Incidents"
+              value={resident._count?.incidents || 0}
+              icon={<FiAlertTriangle className="w-4 h-4" />}
+              color="orange"
+            />
+            <StatCard
+              title="Assigned Caregivers"
+              value={resident._count?.caregiverAssignments || 0}
+              icon={<FiUsers className="w-4 h-4" />}
+              color="green"
+            />
+            <StatCard
+              title="Days Since Admission"
+              value={resident.admissionDate ? getDaysSinceAdmission(resident.admissionDate) : 0}
+              icon={<FiCalendar className="w-4 h-4" />}
+              color="purple"
+            />
+          </div>
+
+          {/* Widgets */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <UpcomingAssessmentsWidget assessments={assessments.items || []} />
+            <RecentIncidentsWidget incidents={incidents.items || []} />
+          </div>
+
+          <ResidentOverview 
+            resident={{
+              ...resident,
+              contacts: contacts.items || [],
+              timeline: timeline.items || [],
+              notes: notes.items || [],
+            }} 
+          />
+        </>
+      )}
+
+      {activeTab === 'assessments' && (
+        <AssessmentsTab residentId={resident.id} />
+      )}
+
+      {activeTab === 'incidents' && (
+        <IncidentsTab residentId={resident.id} />
+      )}
+
+      {activeTab === 'compliance' && (
+        <ComplianceTab residentId={resident.id} />
+      )}
+
+      {activeTab === 'documents' && (
+        <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
+          <DocumentsSection residentId={resident.id} />
+        </div>
+      )}
+
+      {activeTab === 'family' && (
+        <FamilyTab residentId={resident.id} />
+      )}
+
+      {activeTab === 'details' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <section className="lg:col-span-3">
+            <CompliancePanel residentId={resident.id} />
+          </section>
+          <section className="lg:col-span-3">
+            <DocumentsPanel residentId={resident.id} />
+          </section>
+          
+          {/* Timeline Section */}
+          <section className="lg:col-span-2 card">
+            <h2 className="font-semibold mb-4 text-neutral-800 text-lg">Resident Timeline</h2>
+            <ResidentTimeline residentId={resident.id} />
+          </section>
+          
+          {/* Quick Actions */}
+          <section className="lg:col-span-1 space-y-6">
+            <section className="card">
+              <h2 className="font-semibold mb-2 text-neutral-800">Assessments</h2>
+              <AssessmentsList residentId={resident.id} items={(assessments.items ?? []) as any[]} />
+              <CreateAssessmentForm residentId={resident.id} />
+            </section>
+            <section className="card">
+              <h2 className="font-semibold mb-2 text-neutral-800">Incidents</h2>
+              <IncidentsList residentId={resident.id} items={(incidents.items ?? []) as any[]} />
+              <CreateIncidentForm residentId={resident.id} />
+            </section>
+          </section>
+          
+          {/* Notes Section */}
+          <section className="lg:col-span-3 card">
+            <h2 className="font-semibold mb-4 text-neutral-800 text-lg">Resident Notes</h2>
+            <ResidentNotes residentId={resident.id} currentUserId={currentUserId} />
+          </section>
+        </div>
+      )}
+    </div>
+  );
+}
+

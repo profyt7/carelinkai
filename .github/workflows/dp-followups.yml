@@ -1,0 +1,58 @@
+name: DP Follow-ups
+
+# Advances the discharge-planner nurture sequence (Touch 2/3/4) once a day.
+#
+# SAFE-BY-DESIGN: the endpoint self-gates on DP_FOLLOWUP_ENABLED, so this
+# workflow is a daily no-op until Chris sets that flag in Render. Unlike the cold
+# claim drip (paused under OL-109 for bounce reasons), this lane is 1:1 warm
+# outreach to planners who verbally agreed to be contacted — low bounce risk — so
+# the schedule stays ACTIVE and just does nothing until the flag flips.
+#
+# Touch 1 (the immediate one) is sent inline on form submit, NOT here.
+
+on:
+  schedule:
+    - cron: '0 14 * * *' # daily ~14:00 UTC ≈ 9-10am ET
+  workflow_dispatch:
+
+jobs:
+  dp-followups:
+    name: Advance due DP follow-ups
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call DP-Followups Cron Endpoint
+        run: |
+          response=$(curl -s -w "\n%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://carelinkai.onrender.com/api/cron/dp-followups)
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n-1)
+
+          # OL-160: always print status + body (the secret is never echoed), and
+          # name the cause so a red run is diagnosable from the log alone.
+          # Mirrors classifyCronFailure() in src/lib/cron-auth.ts.
+          echo "HTTP Status: $http_code"
+          echo "Response: ${body:0:2000}"
+
+          case "$http_code" in
+            2??)
+              echo "DP follow-ups advanced successfully"
+              ;;
+            401|403)
+              echo "::error::DP-followups cron: auth $http_code — CRON_SECRET mismatch (the CRON_SECRET repository secret differs from Render's CRON_SECRET, or Render's is unset). Body: ${body:0:300}"
+              exit 1
+              ;;
+            5??)
+              echo "::error::DP-followups cron: $http_code — app error (5xx). Body: ${body:0:300}. Check Sentry / Render logs."
+              exit 1
+              ;;
+            000|"")
+              echo "::error::DP-followups cron: no HTTP response — host unreachable or DNS/TLS failure"
+              exit 1
+              ;;
+            *)
+              echo "::error::DP-followups cron: $http_code — client error (4xx); check the URL and method. Body: ${body:0:300}"
+              exit 1
+              ;;
+          esac

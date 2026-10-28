@@ -1,0 +1,290 @@
+import { redirect } from 'next/navigation';
+import { getServerSession } from 'next-auth';
+import authOptions from '@/lib/auth';
+import { FiUsers, FiHome, FiActivity, FiTrendingUp, FiMessageSquare, FiFileText, FiAlertCircle, FiDollarSign, FiCreditCard, FiTruck, FiShield } from 'react-icons/fi';
+import Link from 'next/link';
+import { getAdminStats } from '@/lib/admin/stats';
+
+export const dynamic = 'force-dynamic';
+
+export default async function AdminDashboard({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[]>>;
+}) {
+  const session = await getServerSession(authOptions);
+
+  if (!session || session.user?.role !== 'ADMIN') {
+    redirect('/auth/login');
+  }
+
+  // OL-112: metrics exclude demo/tutorial fixtures unless the admin flips the
+  // "Show demo data" toggle (?showDemo=1). Next 15: searchParams is async.
+  const sp = (await searchParams) ?? {};
+  const showDemo = sp['showDemo'] === '1';
+  const stats = await getAdminStats(showDemo);
+
+  const quickActions = [
+    {
+      title: 'User Management',
+      description: 'Manage users, roles, and permissions',
+      icon: FiUsers,
+      href: '/admin/users',
+      color: 'from-primary-500 to-primary-600',
+    },
+    {
+      title: 'Bug Reports',
+      description: 'Review and manage bug reports from beta testing',
+      icon: FiAlertCircle,
+      href: '/admin/bug-reports',
+      color: 'from-red-500 to-red-600',
+    },
+    {
+      title: 'Listing Management',
+      description: 'Review and manage home listings',
+      icon: FiHome,
+      href: '/admin/homes',
+      color: 'from-purple-500 to-purple-600',
+    },
+    {
+      title: 'Affiliate Management',
+      description: 'View affiliates, referrals, and commissions owed',
+      icon: FiMessageSquare,
+      href: '/admin/affiliates',
+      color: 'from-pink-500 to-pink-600',
+    },
+    {
+      title: 'Operator Management',
+      description: 'View operators, subscription plans, billing status, and MRR',
+      icon: FiHome,
+      href: '/admin/operators',
+      color: 'from-indigo-500 to-indigo-600',
+    },
+    {
+      title: 'Discharge Planners',
+      description: 'Manage hospital discharge planner accounts (free access)',
+      icon: FiActivity,
+      href: '/admin/discharge-planners',
+      color: 'from-teal-500 to-teal-600',
+    },
+    {
+      title: 'Transport Dashboard',
+      description: 'Ride volume, platform fees, provider performance',
+      icon: FiTruck,
+      href: '/admin/rides',
+      color: 'from-primary-500 to-primary-600',
+    },
+    {
+      title: 'Credentials Queue',
+      description: 'Review and verify provider-submitted credentials',
+      icon: FiShield,
+      href: '/admin/credentials',
+      color: 'from-violet-500 to-violet-600',
+    },
+    {
+      title: 'System Analytics',
+      description: 'View platform metrics and insights',
+      icon: FiTrendingUp,
+      href: '/admin/analytics',
+      color: 'from-success-500 to-success-600',
+    },
+    {
+      title: 'Inquiries Management',
+      description: 'View and manage all platform inquiries',
+      icon: FiFileText,
+      href: '/admin/inquiries',
+      color: 'from-cyan-500 to-cyan-600',
+    },
+  ];
+
+  return (
+    <div className="min-h-screen bg-neutral-50">
+      {/* Header */}
+      <header className="bg-white border-b border-neutral-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-neutral-900">Admin Dashboard</h1>
+              <p className="mt-1 text-neutral-600">Welcome back, {session.user?.name || session.user?.email}</p>
+            </div>
+            <div className="flex items-center gap-4">
+              {/* OL-112: demo rows are retained for tutorials but filtered from
+                  metrics; this toggle restores them for tutorial recording. */}
+              <Link
+                href={showDemo ? '/admin' : '/admin?showDemo=1'}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                  showDemo
+                    ? 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                    : 'border-neutral-300 bg-white text-neutral-600 hover:bg-neutral-50'
+                }`}
+              >
+                {showDemo ? 'Showing demo data — click to hide' : 'Show demo data'}
+              </Link>
+              <Link
+                href="/"
+                className="text-[#3978FC] hover:text-[#3167d4] font-medium transition-colors"
+              >
+                ← Back to App
+              </Link>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow-sm p-6 border border-neutral-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-neutral-600">Total Users</p>
+                <p className="text-3xl font-bold text-neutral-900 mt-2">{stats.userCount}</p>
+                <p className="text-sm text-success-600 mt-1">{stats.activeUsers} active (30d)</p>
+              </div>
+              <div className="p-3 bg-primary-100 rounded-lg">
+                <FiUsers className="text-primary-600 text-2xl" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6 border border-neutral-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-neutral-600">Care Homes</p>
+                <p className="text-3xl font-bold text-neutral-900 mt-2">{stats.homeCount}</p>
+              </div>
+              <div className="p-3 bg-secondary-100 rounded-lg">
+                <FiHome className="text-secondary-600 text-2xl" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6 border border-neutral-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-neutral-600">Caregivers</p>
+                <p className="text-3xl font-bold text-neutral-900 mt-2">{stats.caregiverCount}</p>
+              </div>
+              <div className="p-3 bg-success-100 rounded-lg">
+                <FiActivity className="text-success-600 text-2xl" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6 border border-neutral-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-neutral-600">Inquiries</p>
+                <p className="text-3xl font-bold text-neutral-900 mt-2">{stats.inquiryCount}</p>
+              </div>
+              <div className="p-3 bg-pink-100 rounded-lg">
+                <FiMessageSquare className="text-pink-600 text-2xl" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6 border border-neutral-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-neutral-600">Placements</p>
+                <p className="text-3xl font-bold text-neutral-900 mt-2">{stats.placementCount}</p>
+              </div>
+              <div className="p-3 bg-warning-100 rounded-lg">
+                <FiFileText className="text-warning-600 text-2xl" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* MRR Revenue Overview */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <FiDollarSign className="text-success-600 text-xl" />
+            <h2 className="text-xl font-bold text-neutral-900">Revenue Overview (Est. MRR)</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
+            <div className="lg:col-span-1 bg-gradient-to-br from-success-500 to-success-600 rounded-lg p-5 text-white">
+              <p className="text-sm font-medium text-success-100">Total MRR</p>
+              <p className="text-3xl font-bold mt-1">${stats.mrr.total.toLocaleString()}</p>
+              <p className="text-xs text-success-200 mt-1">Active + trialing</p>
+            </div>
+            <div className="bg-white rounded-lg border border-neutral-200 p-5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Operators</p>
+                <FiCreditCard className="text-primary-400 text-sm" />
+              </div>
+              <p className="text-2xl font-bold text-neutral-900">${stats.mrr.operator.toLocaleString()}</p>
+              <p className="text-xs text-neutral-500 mt-1">{stats.mrrCounts.operators} active · $99–$499/mo</p>
+            </div>
+            <div className="bg-white rounded-lg border border-neutral-200 p-5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Providers</p>
+                <FiCreditCard className="text-secondary-400 text-sm" />
+              </div>
+              <p className="text-2xl font-bold text-neutral-900">${stats.mrr.provider.toLocaleString()}</p>
+              <p className="text-xs text-neutral-500 mt-1">{stats.mrrCounts.providers} active · $99/mo</p>
+            </div>
+            <div className="bg-white rounded-lg border border-neutral-200 p-5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Pro Caregivers</p>
+                <FiCreditCard className="text-warning-400 text-sm" />
+              </div>
+              <p className="text-2xl font-bold text-neutral-900">${stats.mrr.caregiver.toLocaleString()}</p>
+              <p className="text-xs text-neutral-500 mt-1">{stats.mrrCounts.proCaregiversCount} active · $19/mo</p>
+            </div>
+            <div className="bg-white rounded-lg border border-neutral-200 p-5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Discharge Planners</p>
+                <FiCreditCard className="text-teal-400 text-sm" />
+              </div>
+              <p className="text-2xl font-bold text-neutral-900">Free</p>
+              <p className="text-xs text-neutral-500 mt-1">
+                no subscription · operator revenue only
+              </p>
+            </div>
+            <div className="bg-white rounded-lg border border-neutral-200 p-5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Families</p>
+                <FiCreditCard className="text-pink-400 text-sm" />
+              </div>
+              <p className="text-2xl font-bold text-neutral-900">Free</p>
+              <p className="text-xs text-neutral-500 mt-1">no subscription · Plus retired (OL-189)</p>
+            </div>
+            <div className="bg-white rounded-lg border border-neutral-200 p-5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Transport Fees</p>
+                <span className="text-sm">🚗</span>
+              </div>
+              <p className="text-2xl font-bold text-neutral-900">${stats.transportCommissionMTD.toFixed(2)}</p>
+              <p className="text-xs text-neutral-500 mt-1">12% commission · MTD</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div>
+          <h2 className="text-xl font-bold text-neutral-900 mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {quickActions.map((action) => (
+              <Link
+                key={action.href}
+                href={action.href}
+                className="bg-white rounded-lg shadow-sm p-6 border border-neutral-200 hover:shadow-md transition-shadow group"
+              >
+                <div className="flex items-start space-x-4">
+                  <div className={`p-3 bg-gradient-to-br ${action.color} rounded-lg group-hover:scale-110 transition-transform`}>
+                    <action.icon className="text-white text-2xl" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-neutral-900 mb-1">{action.title}</h3>
+                    <p className="text-neutral-600 text-sm">{action.description}</p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}

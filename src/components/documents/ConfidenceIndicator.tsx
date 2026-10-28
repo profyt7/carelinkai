@@ -1,0 +1,132 @@
+'use client';
+
+import React from 'react';
+
+interface ConfidenceIndicatorProps {
+  confidence: number | null | undefined;
+  showLabel?: boolean;
+  size?: 'sm' | 'md' | 'lg';
+  variant?: 'bar' | 'gauge' | 'badge';
+}
+
+export default function ConfidenceIndicator({
+  confidence,
+  showLabel = true,
+  size = 'md',
+  variant = 'bar',
+}: ConfidenceIndicatorProps) {
+  // Handle null/undefined confidence
+  if (confidence === null || confidence === undefined) {
+    return (
+      <span className="text-xs text-neutral-400 italic">
+        No confidence score
+      </span>
+    );
+  }
+
+  // Ensure confidence is a number between 0-100
+  const score = Math.max(0, Math.min(100, confidence));
+  const getColor = () => {
+    if (score >= 80) return { bg: 'bg-success-500', text: 'text-success-700', border: 'border-success-500' };
+    if (score >= 60) return { bg: 'bg-warning-500', text: 'text-warning-700', border: 'border-warning-500' };
+    return { bg: 'bg-error-500', text: 'text-error-700', border: 'border-error-500' };
+  };
+
+  const getLabel = () => {
+    if (score >= 80) return 'High Confidence';
+    if (score >= 60) return 'Medium Confidence';
+    return 'Low Confidence';
+  };
+
+  const colors = getColor();
+  const sizeClasses = {
+    sm: { height: 'h-1.5', text: 'text-xs', width: 'w-20' },
+    md: { height: 'h-2', text: 'text-sm', width: 'w-32' },
+    lg: { height: 'h-3', text: 'text-base', width: 'w-48' },
+  };
+
+  if (variant === 'badge') {
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full ${sizeClasses[size].text} font-medium border ${colors.border} ${colors.text} bg-opacity-10`}
+        title={`AI Confidence: ${score.toFixed(1)}%`}
+      >
+        <span className={`w-2 h-2 rounded-full ${colors.bg}`}></span>
+        <span className="font-semibold">{score.toFixed(0)}%</span>
+      </span>
+    );
+  }
+
+  if (variant === 'gauge') {
+    // Circular gauge
+    const radius = size === 'sm' ? 20 : size === 'md' ? 30 : 40;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (score / 100) * circumference;
+    const svgSize = radius * 2 + 10;
+
+    return (
+      <div className="inline-flex flex-col items-center gap-1">
+        <svg width={svgSize} height={svgSize} className="transform -rotate-90">
+          <circle
+            cx={svgSize / 2}
+            cy={svgSize / 2}
+            r={radius}
+            stroke="currentColor"
+            strokeWidth="4"
+            fill="none"
+            className="text-neutral-200"
+          />
+          <circle
+            cx={svgSize / 2}
+            cy={svgSize / 2}
+            r={radius}
+            stroke="currentColor"
+            strokeWidth="4"
+            fill="none"
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+            className={colors.text.replace('text-', 'text-')}
+            strokeLinecap="round"
+          />
+          <text
+            x={svgSize / 2}
+            y={svgSize / 2}
+            textAnchor="middle"
+            dy="0.3em"
+            className={`${sizeClasses[size].text} font-bold transform rotate-90`}
+            fill="currentColor"
+          >
+            {score.toFixed(0)}%
+          </text>
+        </svg>
+        {showLabel && (
+          <span className={`${sizeClasses[size].text} ${colors.text} font-medium`}>
+            {getLabel()}
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  // Default: bar variant
+  return (
+    <div className="flex flex-col gap-1">
+      {showLabel && (
+        <div className="flex items-center justify-between">
+          <span className={`${sizeClasses[size].text} font-medium ${colors.text}`}>
+            {getLabel()}
+          </span>
+          <span className={`${sizeClasses[size].text} font-bold ${colors.text}`}>
+            {score.toFixed(1)}%
+          </span>
+        </div>
+      )}
+      <div className={`${sizeClasses[size].width} ${sizeClasses[size].height} bg-neutral-200 rounded-full overflow-hidden`}>
+        <div
+          className={`${sizeClasses[size].height} ${colors.bg} rounded-full transition-all duration-500 ease-out`}
+          style={{ width: `${score}%` }}
+        ></div>
+      </div>
+    </div>
+  );
+}

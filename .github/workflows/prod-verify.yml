@@ -1,0 +1,333 @@
+name: Prod Verify
+
+# On-demand, read-only production verification run from a GitHub runner.
+# Used to gate the one-at-a-time sprint merges (10/10): optionally waits for a
+# specific commit to be live (via /api/version), then checks the homepage, the
+# health endpoints, the public SEO routes and the 404 behaviour. Never writes
+# anything; fails loudly with ::error annotations.
+
+on:
+  workflow_dispatch:
+    inputs:
+      base:
+        description: 'Base URL to verify'
+        required: false
+        default: 'https://getcarelinkai.com'
+      expect_sha:
+        description: 'Wait until /api/version commitSha starts with this (empty = do not wait)'
+        required: false
+        default: ''
+      wait_minutes:
+        description: 'Max minutes to wait for expect_sha'
+        required: false
+        default: '20'
+      check_public_routes:
+        description: '/cleveland/* → 200 indexable, /zzz-nope + /.env → 404 (post-#714)'
+        type: boolean
+        required: false
+        default: true
+      check_ping:
+        description: '/api/ping → 200 (post-#715)'
+        type: boolean
+        required: false
+        default: false
+      check_v1020:
+        description: '10/20 batch: footer sha on /cleveland/assisted-living (OL-159, dumps headers on mismatch), ≥ expect_listing_cards cards, a suburb page, a listing page, /llms.txt + listing JSON-LD expose availabilityVerifiedAt, /concierge server HTML + both lanes in a browser'
+        type: boolean
+        required: false
+        default: false
+      check_post_405:
+        description: 'POST / → 405 with Allow header (post-#759 / OL-161)'
+        type: boolean
+        required: false
+        default: false
+      expect_listing_cards:
+        description: 'Expected listing-card count on /cleveland/assisted-living (empty = skip)'
+        required: false
+        default: ''
+      check_concierge:
+        description: '/concierge → 200 with the screener; one /homes/<id> listing page → 200 (W5 merge gate)'
+        type: boolean
+        required: false
+        default: false
+      footer_pages:
+        description: 'Space-separated paths: each → 200 and its footer sha = expect_sha (empty = skip)'
+        required: false
+        default: ''
+      sitemap_paths:
+        description: 'Space-separated paths that must be listed in /sitemap.xml (empty = skip)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prod-verify
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify production
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Verify
+        shell: bash
+        env:
+          BASE: ${{ inputs.base }}
+          EXPECT_SHA: ${{ inputs.expect_sha }}
+          WAIT_MINUTES: ${{ inputs.wait_minutes }}
+          CHECK_PUBLIC: ${{ inputs.check_public_routes }}
+          CHECK_PING: ${{ inputs.check_ping }}
+          CHECK_1020: ${{ inputs.check_v1020 }}
+          CHECK_405: ${{ inputs.check_post_405 }}
+          EXPECT_CARDS: ${{ inputs.expect_listing_cards }}
+          CHECK_CONCIERGE: ${{ inputs.check_concierge }}
+          FOOTER_PAGES: ${{ inputs.footer_pages }}
+          SITEMAP_PATHS: ${{ inputs.sitemap_paths }}
+        run: |
+          # GitHub's default shell is `bash -e -o pipefail`; this script collects
+          # failures itself, so turn errexit/pipefail OFF (a grep with no match
+          # must not abort the run).
+          set +e +o pipefail
+          set -u
+          FAIL=0
+          fail() { echo "::error::$1"; echo "- ❌ $1" >> "$GITHUB_STEP_SUMMARY"; FAIL=1; }
+          pass() { echo "OK: $1"; echo "- ✅ $1" >> "$GITHUB_STEP_SUMMARY"; }
+
+          # fetch PATH -> sets CODE, LOC (redirect target), ROBOTS (x-robots-tag), BODY file
+          fetch() {
+            local method="$1" path="$2"
+            : > headers.txt; : > body.txt
+            CODE=$(curl -s -m 40 -X "$method" -o body.txt -D headers.txt -w '%{http_code}' \
+                     -A 'CareLinkAI-ProdVerify/1.0 (+github-actions)' "$BASE$path" || echo 000)
+            LOC=$( { grep -i '^location:' headers.txt || true; } | head -n1 | sed -E 's/^[Ll]ocation:[[:space:]]*//; s/\r$//')
+            ROBOTS=$( { grep -i '^x-robots-tag:' headers.txt || true; } | head -n1 | sed -E 's/^[Xx]-[Rr]obots-[Tt]ag:[[:space:]]*//; s/\r$//')
+          }
+
+          echo "## Prod verify — $BASE" >> "$GITHUB_STEP_SUMMARY"
+
+          # ---- 0. wait for the expected commit ---------------------------------
+          if [ -n "$EXPECT_SHA" ]; then
+            deadline=$(( $(date +%s) + WAIT_MINUTES*60 ))
+            while :; do
+              fetch GET /api/version
+              live=$( { grep -o '"commitSha":"[0-9a-f]*"' body.txt || true; } | cut -d'"' -f4)
+              echo "$(date -u +%H:%M:%S) /api/version HTTP $CODE commitSha=${live:-?}"
+              case "${live:-}" in
+                "$EXPECT_SHA"*) pass "live commit ${live} matches expected ${EXPECT_SHA}"; break ;;
+              esac
+              if [ "$(date +%s)" -ge "$deadline" ]; then
+                fail "expected commit $EXPECT_SHA not live after $WAIT_MINUTES min (live=${live:-?})"
+                break
+              fi
+              sleep 30
+            done
+          fi
+
+          # ---- 1. homepage + health ---------------------------------------------
+          fetch GET /
+          [ "$CODE" = "200" ] && pass "GET / → 200" || fail "GET / → $CODE (loc=$LOC)"
+
+          fetch GET /api/health
+          hok=$( { grep -o '"ok":[a-z]*' body.txt || true; } | cut -d: -f2)
+          hdb=$( { grep -o '"db":"[a-z]*"' body.txt || true; } | cut -d'"' -f4)
+          if [ "$CODE" = "200" ] && [ "$hok" = "true" ] && [ "$hdb" = "ok" ]; then
+            pass "GET /api/health → 200 ok=true db=ok"
+          else
+            fail "GET /api/health → $CODE ok=$hok db=$hdb body=$(head -c 300 body.txt)"
+          fi
+
+          fetch GET /api/version
+          echo "/api/version: $(head -c 400 body.txt)"
+          echo "- ℹ️ /api/version: \`$(head -c 300 body.txt)\`" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$CHECK_PING" = "true" ]; then
+            fetch GET /api/ping
+            [ "$CODE" = "200" ] && pass "GET /api/ping → 200 ($(head -c 120 body.txt))" || fail "GET /api/ping → $CODE"
+            fetch HEAD /api/ping
+            [ "$CODE" = "200" ] && pass "HEAD /api/ping → 200" || fail "HEAD /api/ping → $CODE"
+          fi
+
+          # ---- 2. public SEO routes + 404s --------------------------------------
+          if [ "$CHECK_PUBLIC" = "true" ]; then
+            for p in /cleveland /cleveland/assisted-living /cleveland/memory-care /cleveland/independent-living /cleveland/nursing-homes; do
+              fetch GET "$p"
+              problems=""
+              [ "$CODE" = "200" ] || problems="$problems status=$CODE"
+              [ -z "$LOC" ] || problems="$problems redirect=$LOC"
+              echo "$ROBOTS" | grep -qi noindex && problems="$problems x-robots-tag=$ROBOTS"
+              grep -qiE '<meta[^>]+name="robots"[^>]+content="[^"]*noindex' body.txt && problems="$problems meta-noindex"
+              [ -z "$problems" ] && pass "GET $p → 200, no redirect, indexable" || fail "GET $p →$problems"
+            done
+            for p in /zzz-nope /.env; do
+              fetch GET "$p"
+              [ "$CODE" = "404" ] && pass "GET $p → 404" || fail "GET $p → $CODE (loc=$LOC)"
+            done
+            fetch GET /operator
+            case "$CODE" in
+              302|307) echo "$LOC" | grep -q '/auth/login' && pass "GET /operator (logged-out) → $CODE to login" || fail "GET /operator → $CODE to $LOC" ;;
+              *) fail "GET /operator (logged-out) → $CODE, expected redirect to login" ;;
+            esac
+          fi
+
+          # ---- 3. W5 merge gate: listing cards, one listing page, /concierge ----
+          if [ -n "$EXPECT_CARDS" ] || [ "$CHECK_CONCIERGE" = "true" ]; then
+            fetch GET /cleveland/assisted-living
+            cards=$(grep -o 'data-testid="listing-card"' body.txt | wc -l | tr -d ' ')
+            if [ -n "$EXPECT_CARDS" ]; then
+              if [ "$CODE" = "200" ] && [ "$cards" = "$EXPECT_CARDS" ]; then
+                pass "GET /cleveland/assisted-living → 200 with $cards listing cards"
+              else
+                fail "GET /cleveland/assisted-living → $CODE with $cards listing cards (expected $EXPECT_CARDS)"
+              fi
+            fi
+            if [ "$CHECK_CONCIERGE" = "true" ]; then
+              # First server-rendered listing link → that listing page must answer 200.
+              listing=$( { grep -oE 'href="/homes/[A-Za-z0-9_-]+"' body.txt || true; } | head -n1 | sed -E 's/^href="//; s/"$//')
+              if [ -n "$listing" ]; then
+                fetch GET "$listing"
+                [ "$CODE" = "200" ] && pass "GET $listing (listing page) → 200" || fail "GET $listing (listing page) → $CODE (loc=$LOC)"
+              else
+                fail "no /homes/<id> link found in /cleveland/assisted-living HTML"
+              fi
+              fetch GET /concierge
+              if [ "$CODE" = "200" ] && grep -q 'data-testid="concierge-screener"' body.txt; then
+                pass "GET /concierge → 200 with the payer screener"
+              else
+                fail "GET /concierge → $CODE (screener present: $(grep -c 'data-testid="concierge-screener"' body.txt))"
+              fi
+            fi
+          fi
+
+          # ---- 3. 10/20 batch checks ---------------------------------------------
+          if [ "$CHECK_1020" = "true" ]; then
+            fetch GET /cleveland/assisted-living
+            foot=$( { grep -oE 'main@[0-9a-f]{7}' body.txt || true; } | head -n1 | cut -d@ -f2)
+            cards=$(grep -o 'data-testid="listing-card"' body.txt | wc -l | tr -d ' ')
+            echo "- ℹ️ /cleveland/assisted-living footer sha: \`${foot:-?}\` · listing cards: $cards" >> "$GITHUB_STEP_SUMMARY"
+            if [ -n "$EXPECT_SHA" ]; then
+              case "${EXPECT_SHA}" in
+                "${foot:-zzzzzzz}"*) pass "footer sha on /cleveland/assisted-living = ${foot} (matches expected)" ;;
+                *)
+                  fail "footer sha on /cleveland/assisted-living is ${foot:-?}, expected ${EXPECT_SHA} (OL-159 staleness)"
+                  { echo '### /cleveland/assisted-living response headers (stale footer)'; echo '```'; cat headers.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+                  echo "--- response headers ---"; cat headers.txt
+                  ;;
+              esac
+            fi
+            [ "$cards" -ge "${EXPECT_CARDS:-12}" ] && pass "/cleveland/assisted-living shows $cards listing cards (≥ ${EXPECT_CARDS:-12})" || fail "/cleveland/assisted-living shows $cards listing cards (< ${EXPECT_CARDS:-12})"
+            # The key is emitted only for homes with a fresh, QA-approved verified date (OL-163d) — absence is a data state, not a regression.
+            grep -q 'availabilityVerifiedAt' body.txt && pass "/cleveland/assisted-living JSON-LD exposes availabilityVerifiedAt" || echo "- ℹ️ /cleveland/assisted-living JSON-LD: no home on page 1 has a verified availability date yet (key appears once a call/ping is QA-approved)" >> "$GITHUB_STEP_SUMMARY"
+            first=$( { grep -oE 'href="/homes/[A-Za-z0-9_-]+"' body.txt || true; } | head -n1 | sed -E 's/^href="//; s/"$//')
+            if [ -n "$first" ]; then
+              fetch GET "$first"
+              [ "$CODE" = "200" ] && pass "GET $first (first listing) → 200" || fail "GET $first → $CODE"
+              grep -q 'availabilityVerifiedAt' body.txt && pass "$first JSON-LD exposes availabilityVerifiedAt" || echo "- ℹ️ $first JSON-LD has no availabilityVerifiedAt (home not yet verified)" >> "$GITHUB_STEP_SUMMARY"
+            else
+              fail "no /homes/<id> link found on /cleveland/assisted-living"
+            fi
+            fetch GET /cleveland/assisted-living/westlake
+            [ "$CODE" = "200" ] && pass "GET /cleveland/assisted-living/westlake (suburb) → 200" || fail "GET /cleveland/assisted-living/westlake → $CODE (loc=$LOC)"
+            fetch GET /llms.txt
+            if [ "$CODE" = "200" ] && grep -q 'availabilityVerifiedAt' body.txt; then pass "GET /llms.txt → 200 and names availabilityVerifiedAt"; else fail "GET /llms.txt → $CODE, availabilityVerifiedAt present: $(grep -c availabilityVerifiedAt body.txt)"; fi
+            fetch GET /concierge
+            if [ "$CODE" = "200" ] && grep -q 'data-testid="concierge-screener"' body.txt && grep -qF 'making the $5,000 mistake under pressure' body.txt && grep -qF 'or you pay nothing' body.txt; then
+              pass "GET /concierge → 200 with the screener, the v2 headline and the guarantee subhead"
+            else
+              fail "GET /concierge → $CODE (screener: $(grep -c 'concierge-screener' body.txt), headline: $(grep -cF 'making the $5,000 mistake' body.txt), subhead: $(grep -cF 'or you pay nothing' body.txt))"
+            fi
+          fi
+
+          # ---- 4. POST to a page → 405 (OL-161) -----------------------------------
+          if [ "$CHECK_405" = "true" ]; then
+            fetch POST /
+            allow=$( { grep -i '^allow:' headers.txt || true; } | head -n1 | sed -E 's/^[Aa]llow:[[:space:]]*//; s/\r$//')
+            [ "$CODE" = "405" ] && pass "POST / → 405 (Allow: ${allow:-?})" || fail "POST / → $CODE, expected 405 (Allow: ${allow:-?})"
+          fi
+
+          # ---- 5. named pages: 200 + footer sha; sitemap entries ----------------
+          for p in $FOOTER_PAGES; do
+            fetch GET "$p"
+            foot=$( { grep -oE 'main@[0-9a-f]{7}' body.txt || true; } | head -n1 | cut -d@ -f2)
+            if [ "$CODE" != "200" ]; then
+              fail "GET $p → $CODE (loc=$LOC)"
+            elif [ -n "$EXPECT_SHA" ] && [ "${foot:-}" != "${EXPECT_SHA:0:7}" ]; then
+              fail "GET $p → 200 but footer sha is ${foot:-missing}, expected ${EXPECT_SHA:0:7}"
+            else
+              pass "GET $p → 200, footer @${foot:-?}"
+            fi
+          done
+          if [ -n "$SITEMAP_PATHS" ]; then
+            fetch GET /sitemap.xml
+            if [ "$CODE" != "200" ]; then
+              fail "GET /sitemap.xml → $CODE"
+            else
+              for p in $SITEMAP_PATHS; do
+                grep -qF "${p}</loc>" body.txt && pass "sitemap.xml lists $p" || fail "sitemap.xml does not list $p"
+              done
+            fi
+          fi
+
+          if [ "$FAIL" -ne 0 ]; then
+            echo "::error::Production verification FAILED"
+            exit 1
+          fi
+          echo "All production checks passed."
+
+      - name: /concierge renders both lanes with the guarantee text (browser)
+        if: ${{ inputs.check_v1020 }}
+        shell: bash
+        env:
+          BASE: ${{ inputs.base }}
+        run: |
+          set -e
+          mkdir -p pw && cd pw
+          npm init -y >/dev/null
+          npm i playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null 2>&1
+          cat > check.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          const BASE = process.env.BASE;
+          const GUARANTEE = 'No verified shortlist within 2 business days → full refund.';
+          const out = [];
+          let fail = false;
+          const pass = (m) => out.push(`- ✅ ${m}`);
+          const bad = (m) => { out.push(`- ❌ ${m}`); fail = true; console.error('::error::' + m); };
+          const browser = await chromium.launch();
+          const page = await browser.newPage({ userAgent: 'CareLinkAI-ProdVerify/1.0 (+github-actions)' });
+          async function answer(label) {
+            await page.goto(BASE + '/concierge', { waitUntil: 'domcontentloaded' });
+            const screener = page.getByTestId('concierge-screener');
+            await screener.waitFor({ state: 'visible', timeout: 30000 });
+            await page.waitForFunction(() => document.querySelector('[data-testid="concierge-screener"]')?.getAttribute('data-hydrated') === 'true', null, { timeout: 30000 });
+            await screener.getByLabel(label).check();
+            await screener.getByRole('button', { name: 'Continue' }).click();
+          }
+          try {
+            await answer(/Medicaid/);
+            await page.getByTestId('concierge-free-lane').waitFor({ state: 'visible', timeout: 30000 });
+            const text = await page.getByTestId('concierge-page').innerText();
+            if (!(await page.getByTestId('concierge-offer').count()) && !text.includes('399')) pass('Medicaid → free lane renders, no offer, no $399');
+            else bad('Medicaid lane shows the offer or a price');
+            await answer(/Private funds/);
+            await page.getByTestId('concierge-offer').waitFor({ state: 'visible', timeout: 30000 });
+            const g = await page.getByTestId('concierge-guarantee').innerText();
+            if (g.includes(GUARANTEE)) pass('Private funds → offer lane renders with the guarantee text'); else bad(`guarantee text missing: "${g}"`);
+            const incl = await page.getByTestId('concierge-inclusions').locator('li').count();
+            incl === 9 ? pass('offer lists the nine v2 deliverables') : bad(`offer lists ${incl} deliverables, expected 9`);
+            await answer(/Not sure yet/);
+            await page.getByTestId('concierge-both').waitFor({ state: 'visible', timeout: 30000 });
+            pass('Not sure → both lanes render (free help first, offer second)');
+          } catch (e) {
+            bad(`browser check threw: ${e.message}`);
+          } finally {
+            await browser.close();
+          }
+          const fs = await import('node:fs');
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, out.join('\n') + '\n');
+          console.log(out.join('\n'));
+          if (fail) process.exit(1);
+          EOF
+          node check.mjs

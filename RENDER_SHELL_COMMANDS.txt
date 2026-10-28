@@ -1,0 +1,24 @@
+# CareLinkAI - Migration Fix Commands for Render Shell
+# Copy and paste these commands ONE AT A TIME into Render Shell
+
+# ================================================================
+# Command 1: Mark failed migration as rolled back
+# ================================================================
+npx prisma migrate resolve --rolled-back 20251218162945_update_homes_to_active
+
+# ================================================================
+# Command 2: Fix invalid status values
+# ================================================================
+npx prisma db execute --stdin <<< "UPDATE \"AssistedLivingHome\" SET status = 'ACTIVE' WHERE status = '' OR status IS NULL;"
+
+# ================================================================
+# Command 3: Deploy pending migrations
+# ================================================================
+npx prisma migrate deploy
+
+# ================================================================
+# Command 4: Verify status (should show "No pending migrations")
+# ================================================================
+npx prisma migrate status
+
+# ✅ Done! All commands should succeed.

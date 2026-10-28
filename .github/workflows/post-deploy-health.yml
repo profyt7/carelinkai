@@ -1,0 +1,50 @@
+name: Post-deploy Health Check
+
+# Lean production health monitor: pings the live /api/health endpoint on a
+# schedule and on demand. Fails loudly (GitHub emails the repo owner on a
+# workflow failure) if the app or its database is unhealthy. Replaces the
+# over-built post-deploy-synthetics workflows retired in PR #528.
+#
+# Note: GitHub may auto-disable scheduled workflows after ~60 days of repo
+# inactivity; re-enable from the Actions tab if that happens. For
+# production-grade uptime monitoring post-launch, a dedicated service such as
+# UptimeRobot is the better long-term tool.
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: post-deploy-health
+  cancel-in-progress: true
+
+jobs:
+  health:
+    name: Ping /api/health
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check production health endpoint
+        shell: bash
+        run: |
+          set -o pipefail
+          URL="https://carelinkai.onrender.com/api/health"
+          for i in 1 2 3; do
+            resp=$(curl -s -m 20 -w '\n%{http_code}' "$URL" || printf '\n000')
+            code=$(printf '%s' "$resp" | tail -n1)
+            json=$(printf '%s' "$resp" | sed '$d')
+            echo "Attempt $i | HTTP $code | $json"
+            ok=$(printf '%s' "$json" | grep -o '"ok":[a-z]*' | cut -d: -f2 || true)
+            db=$(printf '%s' "$json" | grep -o '"db":"[a-z]*"' | cut -d'"' -f4 || true)
+            if [ "$code" = "200" ] && [ "$ok" = "true" ] && [ "$db" = "ok" ]; then
+              echo "Healthy"
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "::error::Production /api/health check failed after 3 attempts"
+          exit 1

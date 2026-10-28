@@ -1,0 +1,35 @@
+name: Availability Ping (weekly one-tap)
+
+# ⚠️ DOUBLE-SAFE / OFF BY DEFAULT (sprint W4-1). The weekly one-tap availability
+# ping can only send when BOTH are true:
+#   1. this workflow has a `schedule` trigger (currently commented out), AND
+#   2. PING_ENABLED is truthy in Render (the endpoint hard-gates on it and returns
+#      { disabled: true } otherwise).
+# Email transport only (Resend). SMS is a stub behind SMS_PING_ENABLED — no
+# provider is wired (TCPA review pending). Only opted-in contacts of CLAIMED
+# listings (or opt-ins captured by a human on a call) are ever pinged; demo and
+# unclaimed listings never are. To go live: uncomment the schedule, PR to main,
+# then set PING_ENABLED=1 in Render.
+on:
+  # schedule:
+  #   - cron: '0 14 * * 1'   # Mondays ~14:00 UTC (~9-10am ET)
+  workflow_dispatch:
+
+jobs:
+  availability-ping:
+    name: Weekly one-tap availability ping
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call availability-ping cron endpoint
+        run: |
+          response=$(curl -s -w "\n%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://carelinkai.onrender.com/api/cron/availability-ping)
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n-1)
+          echo "HTTP Status: $http_code"
+          echo "Response: $body"
+          if [ "$http_code" -ne 200 ]; then
+            echo "::error::availability-ping cron failed with status $http_code"
+            exit 1
+          fi

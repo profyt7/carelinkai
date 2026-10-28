@@ -1,0 +1,58 @@
+# gitleaks configuration for the CI secret scan (.github/workflows/secret-scan.yml).
+#
+# Starts from gitleaks' default rule set, plus rules for the credential shapes
+# the defaults missed in the 2026-10-27 history scan (OL-213): Postgres URLs
+# with a password, Cloudinary api_secret / cloudinary:// URLs, and Twilio auth
+# tokens. The allowlists are deliberately narrow: anything that looks like a
+# real key — in a template, doc or source file — fails the build. Add to them
+# only with a comment saying why the match is not a credential.
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "postgres-url-with-password"
+description = "PostgreSQL connection URL with an inline password"
+regex = '''postgres(?:ql)?://[^:\s/"'`@]+:([^@\s"'`$<>{}]{6,})@[A-Za-z0-9.\-]+'''
+secretGroup = 1
+keywords = ["postgres://", "postgresql://"]
+
+[[rules]]
+id = "cloudinary-url"
+description = "Cloudinary URL with API secret"
+regex = '''cloudinary://\d+:([A-Za-z0-9_\-]{10,})@'''
+secretGroup = 1
+keywords = ["cloudinary://"]
+
+[[rules]]
+id = "cloudinary-api-secret"
+description = "Cloudinary API secret assignment"
+regex = '''(?i)(?:api_secret|CLOUDINARY_API_SECRET)\s*[:=]\s*["']?([A-Za-z0-9_\-]{20,40})["']?'''
+secretGroup = 1
+keywords = ["api_secret"]
+
+[[rules]]
+id = "twilio-auth-token"
+description = "Twilio auth token assignment"
+regex = '''(?i)TWILIO_AUTH_TOKEN\s*[:=]\s*["']?([0-9a-f]{32})'''
+secretGroup = 1
+keywords = ["twilio_auth_token"]
+
+[allowlist]
+description = "Known non-secrets matched by the rules"
+# gitleaks 8.24 applies only this single global allowlist ([[allowlists]]
+# blocks are ignored). Regexes match against the whole source line, so a
+# placeholder, a hostname or the surrounding prose identifies a match as harmless.
+regexTarget = "line"
+regexes = [
+  # Documentation placeholders, e.g. `-H "Authorization: Bearer YOUR_CRON_SECRET"`.
+  '''YOUR_[A-Z0-9_]+''',
+  # Google Docs image URLs carry a public `key=` query param — not a credential.
+  '''lh\d+-rt\.googleusercontent\.com/''',
+  # Tailwind utility classes quoted in prose ("design tokens … `bg-primary-600`").
+  '''`(bg|text|ring|shadow|border)-[a-z0-9/-]+''',
+  # Local / CI throwaway databases (docker-compose, the e2e postgres service).
+  '''postgres(?:ql)?://[^@\s]+@(localhost|127\.0\.0\.1|postgres|db)[:/]''',
+  # Template placeholders (.env.example, setup docs): empty or obviously fake values.
+  '''^\s*#?\s*[A-Z][A-Z0-9_]*\s*[=:]\s*(""|''|$|["']?(your[_-]|<|replace|change[_-]?me|placeholder|xxx))''',
+]

@@ -1,0 +1,25 @@
+🌐 Testing API Endpoints
+================================================================================
+
+1. Testing health endpoint...
+✅ Health check: PASS (HTTP 200)
+
+2. Testing inquiries endpoint (without auth)...
+✅ Inquiries endpoint: PASS (HTTP 401 - auth working)
+
+3. Testing inquiry creation...
+✅ Inquiry creation: PASS
+   Response preview: {"success":false,"error":"Validation failed","details":[{"code":"invalid_type","expected":"string","received":"undefined","path":["homeId"],"message":"Required"}]}...
+
+4. Testing homepage...
+✅ Homepage: PASS (HTTP 200)
+
+5. Testing AI response generation endpoint...
+✅ AI response endpoint: PASS (HTTP 401 - endpoint exists)
+
+6. Testing follow-up processor endpoint...
+⚠️  Follow-up processor: Check needed (HTTP 404)
+
+================================================================================
+
+🎯 API Endpoint Tests Complete

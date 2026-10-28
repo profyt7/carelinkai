@@ -1,0 +1,32 @@
+name: Availability SMS Poll
+
+# ⚠️ DOUBLE-SAFE / OFF BY DEFAULT (OL-110). The weekly availability SMS poll can
+# only send when BOTH are true:
+#   1. this workflow has a `schedule` trigger (currently commented out), AND
+#   2. AVAILABILITY_SMS_ENABLED is truthy in Render (the endpoint hard-gates on it).
+# TCPA-sensitive (texts facility contacts) — do NOT enable until attorney sign-off
+# (Haran) + consent capture is in place. To go live: uncomment the schedule below,
+# PR to main, then set AVAILABILITY_SMS_ENABLED=1 in Render.
+on:
+  # schedule:
+  #   - cron: '0 15 * * 1'   # Mondays ~15:00 UTC (~10-11am ET)
+  workflow_dispatch:
+
+jobs:
+  availability-sms:
+    name: Weekly availability SMS poll
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call availability-SMS cron endpoint
+        run: |
+          response=$(curl -s -w "\n%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://carelinkai.onrender.com/api/cron/availability-sms)
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n-1)
+          echo "HTTP Status: $http_code"
+          echo "Response: $body"
+          if [ "$http_code" -ne 200 ]; then
+            echo "::error::availability-sms cron failed with status $http_code"
+            exit 1
+          fi

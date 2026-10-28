@@ -1,0 +1,985 @@
+/**
+ * AI-Powered Search API for CareLinkAI
+ * 
+ * This endpoint provides intelligent search capabilities for assisted living homes,
+ * including natural language processing, semantic matching, and personalized scoring.
+ * 
+ * Route: GET /api/search
+ * 
+ * Query Parameters:
+ * - q: Natural language search query (e.g., "memory care near San Francisco")
+ * - location: City, state, or zip code
+ * - careLevel: Care level(s) required (comma-separated)
+ * - priceMin: Minimum monthly budget
+ * - priceMax: Maximum monthly budget
+ * - gender: Gender preference (ALL, MALE, FEMALE)
+ * - availability: Whether home must have current availability (true/false)
+ * - amenities: Required amenities (comma-separated)
+ * - page: Page number for pagination
+ * - limit: Number of results per page
+ * - radius: Search radius in miles (requires lat/lng params – future)
+ * - sortBy: Sort order (relevance, price_low, price_high, distance, rating)
+ * - verified: Only show verified homes (future)
+ */
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+import { NextRequest, NextResponse } from 'next/server';
+import { CareLevel } from '@prisma/client';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
+import { formatCurrency } from '@/lib/utils';
+import { calculateAIMatchScore, calculateAIMatchBreakdown } from '@/lib/ai-matching';
+import { isUnclaimedHome } from '@/lib/claim-engine/inquiry-claim-notification';
+import { prisma } from '@/lib/prisma';
+import { placeholderImageFor } from '@/lib/placeholder-images';
+import { availabilityView } from '@/lib/availability/availability';
+import { pricingView } from '@/lib/pricing/pricing';
+import { compareSearchRank, isFeaturedActive } from '@/lib/directory/featured-rank';
+
+// Constants
+const DEFAULT_PAGE_SIZE = 10;
+const MAX_PAGE_SIZE = 50;
+
+/**
+ * City coordinates lookup for homes without geo data
+ * Used to provide approximate map markers when addresses lack lat/lng
+ */
+const CITY_COORDINATES: Record<string, { lat: number; lng: number }> = {
+  // California
+  'san francisco, ca': { lat: 37.7749, lng: -122.4194 },
+  'los angeles, ca': { lat: 34.0522, lng: -118.2437 },
+  'san diego, ca': { lat: 32.7157, lng: -117.1611 },
+  'san jose, ca': { lat: 37.3382, lng: -121.8863 },
+  'oakland, ca': { lat: 37.8044, lng: -122.2712 },
+  'sacramento, ca': { lat: 38.5816, lng: -121.4944 },
+  'fresno, ca': { lat: 36.7378, lng: -119.7871 },
+  'palo alto, ca': { lat: 37.4419, lng: -122.1430 },
+  // Other states
+  'seattle, wa': { lat: 47.6062, lng: -122.3321 },
+  'portland, or': { lat: 45.5051, lng: -122.6750 },
+  'phoenix, az': { lat: 33.4484, lng: -112.0740 },
+  'denver, co': { lat: 39.7392, lng: -104.9903 },
+  'austin, tx': { lat: 30.2672, lng: -97.7431 },
+  'dallas, tx': { lat: 32.7767, lng: -96.7970 },
+  'miami, fl': { lat: 25.7617, lng: -80.1918 },
+  'new york, ny': { lat: 40.7128, lng: -74.0060 },
+  'chicago, il': { lat: 41.8781, lng: -87.6298 },
+  'boston, ma': { lat: 42.3601, lng: -71.0589 },
+  // State-level fallbacks
+  'ca': { lat: 36.7783, lng: -119.4179 },
+  'wa': { lat: 47.7511, lng: -120.7401 },
+  'or': { lat: 43.8041, lng: -120.5542 },
+  'az': { lat: 34.0489, lng: -111.0937 },
+  'tx': { lat: 31.9686, lng: -99.9018 },
+  'fl': { lat: 27.6648, lng: -81.5158 },
+  'ny': { lat: 40.7128, lng: -74.0060 },
+};
+
+/**
+ * Get approximate coordinates for an address without lat/lng
+ * Uses city lookup first, then state fallback
+ */
+function getApproximateCoordinates(city: string | null, state: string | null): { lat: number; lng: number } | null {
+  if (!city && !state) return null;
+  
+  // Try city + state first
+  if (city && state) {
+    const key = `${city.toLowerCase()}, ${state.toLowerCase()}`;
+    if (CITY_COORDINATES[key]) {
+      // Add small random offset to prevent markers from stacking exactly
+      const offset = () => (Math.random() - 0.5) * 0.02; // ~1-2km offset
+      return {
+        lat: CITY_COORDINATES[key].lat + offset(),
+        lng: CITY_COORDINATES[key].lng + offset()
+      };
+    }
+  }
+  
+  // Try state fallback
+  if (state) {
+    const stateKey = state.toLowerCase();
+    if (CITY_COORDINATES[stateKey]) {
+      const offset = () => (Math.random() - 0.5) * 0.5; // Larger offset for state-level
+      return {
+        lat: CITY_COORDINATES[stateKey].lat + offset(),
+        lng: CITY_COORDINATES[stateKey].lng + offset()
+      };
+    }
+  }
+
+  // Final fallback: the directory is Greater-Cleveland-only, so an unlisted OH city (or a
+  // home with no state) defaults to a Cleveland-metro point — NOT the state centroid /
+  // central Ohio — so any future coord-less home stays local instead of drifting away.
+  // (All current homes have real geocoded coords; this only guards future gaps.)
+  if (!state || state.toLowerCase() === 'oh' || state.toLowerCase() === 'ohio') {
+    const offset = () => (Math.random() - 0.5) * 0.1; // ~5km jitter within the metro
+    return { lat: 41.4993 + offset(), lng: -81.6944 + offset() }; // downtown Cleveland
+  }
+
+  return null;
+}
+
+/**
+ * AI-based text similarity score between two strings
+ * 
+ * @param text1 First text to compare
+ * @param text2 Second text to compare
+ * @returns Similarity score (0-100)
+ */
+function calculateTextSimilarity(text1: string, text2: string): number {
+  if (!text1 || !text2) return 0;
+  
+  // Convert to lowercase for case-insensitive comparison
+  const a = text1.toLowerCase();
+  const b = text2.toLowerCase();
+  
+  // Extract key terms (simple implementation - would use NLP in production)
+  const termsA = a.split(/\s+/).filter(term => term.length > 2);
+  const termsB = b.split(/\s+/).filter(term => term.length > 2);
+  
+  // Count matching terms
+  let matchCount = 0;
+  for (const termA of termsA) {
+    if (termsB.some(termB => termB.includes(termA) || termA.includes(termB))) {
+      matchCount++;
+    }
+  }
+  
+  // Calculate similarity score (0-100)
+  const maxTerms = Math.max(termsA.length, 1);
+  return Math.min(Math.round((matchCount / maxTerms) * 100), 100);
+}
+
+/**
+ * Calculate distance between two geographical points
+ * 
+ * @param lat1 Latitude of first point
+ * @param lon1 Longitude of first point
+ * @param lat2 Latitude of second point
+ * @param lon2 Longitude of second point
+ * @returns Distance in miles
+ */
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return 999999; // Large number if coordinates missing
+  
+  // Convert to radians
+  const toRad = (value: number) => (value * Math.PI) / 180;
+  const rlat1 = toRad(lat1);
+  const rlon1 = toRad(lon1);
+  const rlat2 = toRad(lat2);
+  const rlon2 = toRad(lon2);
+  
+  // Haversine formula
+  const dlon = rlon2 - rlon1;
+  const dlat = rlat2 - rlat1;
+  const a = Math.sin(dlat/2)**2 + Math.cos(rlat1) * Math.cos(rlat2) * Math.sin(dlon/2)**2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  
+  // Earth radius in miles
+  const R = 3956;
+  return R * c;
+}
+
+/**
+ * Extract location information from a natural language query
+ * 
+ * @param query Natural language search query
+ * @returns Location information if found
+ */
+function extractLocationFromQuery(query: string): string | null {
+  if (!query) return null;
+  
+  // Common location patterns
+  const locationPatterns = [
+    /near\s+([a-zA-Z\s]+(?:,\s*[A-Z]{2})?)/i,
+    /in\s+([a-zA-Z\s]+(?:,\s*[A-Z]{2})?)/i,
+    /around\s+([a-zA-Z\s]+(?:,\s*[A-Z]{2})?)/i,
+    /([a-zA-Z\s]+(?:,\s*[A-Z]{2}))\s+area/i,
+  ];
+  
+  // Try each pattern
+  for (const pattern of locationPatterns) {
+    const match = query.match(pattern);
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Extract care level information from a natural language query
+ * 
+ * @param query Natural language search query
+ * @returns Array of care levels found
+ */
+function extractCareLevelsFromQuery(query: string): CareLevel[] {
+  if (!query) return [];
+  
+  const q = query.toLowerCase();
+  const careLevels: CareLevel[] = [];
+  
+  // Map common phrases to care levels
+  const careMapping = {
+    'memory care': CareLevel.MEMORY_CARE,
+    'alzheimer': CareLevel.MEMORY_CARE,
+    'dementia': CareLevel.MEMORY_CARE,
+    'assisted': CareLevel.ASSISTED,
+    'assisted living': CareLevel.ASSISTED,
+    'help with': CareLevel.ASSISTED,
+    'independent': CareLevel.INDEPENDENT,
+    'independent living': CareLevel.INDEPENDENT,
+    'nursing': CareLevel.SKILLED_NURSING,
+    'skilled nursing': CareLevel.SKILLED_NURSING,
+    'medical care': CareLevel.SKILLED_NURSING,
+  };
+  
+  // Check for each care level keyword
+  for (const [keyword, level] of Object.entries(careMapping)) {
+    if (q.includes(keyword) && !careLevels.includes(level)) {
+      careLevels.push(level);
+    }
+  }
+  
+  return careLevels;
+}
+
+/**
+ * Calculate AI match score for a home based on search criteria
+ * 
+ * @param home Assisted living home data
+ * @param params Search parameters
+ * @returns Match score (0-100)
+ */
+function calculateMatchScore(home: any, params: any): number {
+  let totalScore = 0;
+  let factorsConsidered = 0;
+  
+  // 1. Care Level Match (highest weight)
+  if (params.careLevels && params.careLevels.length > 0) {
+    factorsConsidered++;
+    const careLevelMatch = params.careLevels.some((level: CareLevel) => 
+      home.careLevel.includes(level)
+    );
+    totalScore += careLevelMatch ? 35 : 0;
+  }
+  
+  // 2. Price Range Match
+  if (params.priceMin || params.priceMax) {
+    factorsConsidered++;
+    let priceScore = 0;
+    
+    // Best-available price (OL-111): explicit starting price / range wins over the
+    // legacy priceMin/priceMax so budget matching reflects the freshest source.
+    const homeMinPrice = Number(home.startingPriceMonthly ?? home.priceRangeLow ?? home.priceMin) || 0;
+    const homeMaxPrice = Number(home.priceRangeHigh ?? home.priceMax ?? home.startingPriceMonthly) || 999999;
+    
+    // If user specified a price range
+    if (params.priceMin && params.priceMax) {
+      const userMin = Number(params.priceMin);
+      const userMax = Number(params.priceMax);
+      
+      // Perfect match: home price range is within user's range
+      if (homeMinPrice >= userMin && homeMaxPrice <= userMax) {
+        priceScore = 20;
+      } 
+      // Partial match: ranges overlap
+      else if (
+        (homeMinPrice <= userMax && homeMinPrice >= userMin) || 
+        (homeMaxPrice >= userMin && homeMaxPrice <= userMax)
+      ) {
+        priceScore = 10;
+      }
+      // Small overlap or close to range
+      else if (Math.abs(homeMinPrice - userMax) < 500 || Math.abs(homeMaxPrice - userMin) < 500) {
+        priceScore = 5;
+      }
+    } 
+    // If user only specified minimum price
+    else if (params.priceMin) {
+      const userMin = Number(params.priceMin);
+      if (homeMinPrice >= userMin * 0.9) { // Within 10% of minimum
+        priceScore = 15;
+      } else if (homeMinPrice >= userMin * 0.8) { // Within 20% of minimum
+        priceScore = 10;
+      }
+    } 
+    // If user only specified maximum price
+    else if (params.priceMax) {
+      const userMax = Number(params.priceMax);
+      if (homeMaxPrice <= userMax) { // Under budget
+        priceScore = 20;
+      } else if (homeMaxPrice <= userMax * 1.1) { // Within 10% over budget
+        priceScore = 10;
+      } else if (homeMaxPrice <= userMax * 1.2) { // Within 20% over budget
+        priceScore = 5;
+      }
+    }
+    
+    totalScore += priceScore;
+  }
+  
+  // 3. Location Proximity (if coordinates available)
+  if (params.latitude && params.longitude && home.address?.latitude && home.address?.longitude) {
+    factorsConsidered++;
+    const distance = calculateDistance(
+      params.latitude, 
+      params.longitude, 
+      home.address.latitude, 
+      home.address.longitude
+    );
+    
+    // Score based on distance (closer is better)
+    let locationScore = 0;
+    if (distance < 5) locationScore = 20; // Within 5 miles
+    else if (distance < 10) locationScore = 15; // Within 10 miles
+    else if (distance < 20) locationScore = 10; // Within 20 miles
+    else if (distance < 30) locationScore = 5; // Within 30 miles
+    
+    totalScore += locationScore;
+  }
+  
+  // 4. Availability Match
+  if (params.availability === true) {
+    factorsConsidered++;
+    const hasAvailability = home.capacity > home.currentOccupancy;
+    totalScore += hasAvailability ? 15 : 0;
+  }
+  
+  // 5. Amenities Match
+  if (params.amenities && params.amenities.length > 0) {
+    factorsConsidered++;
+    let amenityMatches = 0;
+    
+    for (const amenity of params.amenities) {
+      if (home.amenities.some((a: string) => 
+        a.toLowerCase().includes(amenity.toLowerCase()) || 
+        amenity.toLowerCase().includes(a.toLowerCase())
+      )) {
+        amenityMatches++;
+      }
+    }
+    
+    const amenityScore = Math.min(Math.round((amenityMatches / params.amenities.length) * 15), 15);
+    totalScore += amenityScore;
+  }
+  
+  // 6. Gender Restriction Match
+  if (params.gender && params.gender !== 'ALL') {
+    factorsConsidered++;
+    const genderMatch = 
+      home.genderRestriction === params.gender || 
+      home.genderRestriction === null || 
+      home.genderRestriction === 'ALL';
+    
+    totalScore += genderMatch ? 10 : 0;
+  }
+  
+  // 7. Natural Language Query Match
+  if (params.query) {
+    factorsConsidered++;
+    
+    // Calculate text similarity between query and home description
+    const descriptionSimilarity = calculateTextSimilarity(
+      params.query,
+      `${home.name} ${home.description} ${home.amenities.join(' ')}`
+    );
+    
+    // Weight this less than explicit filters but still significant
+    const querySimilarityScore = Math.round(descriptionSimilarity * 0.1);
+    totalScore += querySimilarityScore;
+  }
+  
+  // Ensure we have at least one factor to consider
+  if (factorsConsidered === 0) {
+    return 50; // Default score if no criteria specified
+  }
+  
+  // Calculate final score (0-100)
+  const maxPossibleScore = factorsConsidered * 20; // Approximate max points possible
+  return Math.min(Math.round((totalScore / maxPossibleScore) * 100), 100);
+}
+
+/**
+ * Remove placeholder or disallowed image URLs
+ * Currently filters out any URL that points to example.com
+ *
+ * @param url raw image URL from database
+ * @returns sanitized URL or null if placeholder
+ */
+function sanitizeImageUrl(url: string | null): string | null {
+  if (!url) return null;
+
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    // Add any placeholder / fake domains to this list
+    const blockedHosts = ['example.com'];
+    if (blockedHosts.includes(host)) {
+      return null;
+    }
+    return url;
+  } catch {
+    // Invalid URL format – treat as missing image
+    return null;
+  }
+}
+
+/**
+ * Development-only: generate an array of mock homes so that UI
+ * continues to work when the database is unavailable or empty.
+ */
+export function generateMockHomes(count: number = 12) {
+  const careLevels: CareLevel[][] = [
+    [CareLevel.ASSISTED],
+    [CareLevel.MEMORY_CARE],
+    [CareLevel.INDEPENDENT],
+    [CareLevel.SKILLED_NURSING],
+    [CareLevel.ASSISTED, CareLevel.MEMORY_CARE],
+  ];
+  const amenitiesSamples = [
+    ['WiFi', 'Garden', 'Meals Included'],
+    ['Pet-friendly', 'Physical Therapy'],
+    ['24/7 Care', 'Transportation'],
+    ['Pool', 'Gym'],
+  ];
+  const states = ['CA', 'WA', 'TX', 'FL', 'NY'];
+  // Mock city names for deterministic seeding
+  const cities = ['San Francisco', 'Seattle', 'Austin', 'Miami', 'Albany'];
+
+  /* ------------------------------------------------------------------
+
+  /** simple currency formatter */
+  const fmt = (v: number) => formatCurrency(v);
+
+  return Array.from({ length: count }).map((_, i) => {
+    const cl = careLevels[i % careLevels.length];
+    const minPrice = 3500 + i * 50;
+    const maxPrice = minPrice + 1000;
+    return {
+      id: `mock-home-${i}`,
+      name: `Mock Home ${i + 1}`,
+      description: `A lovely community number ${i + 1} with excellent services.`,
+      tagline: null,
+      phone: null,
+      address: {
+        street: `${100 + i} Main St`,
+        street2: null,
+        city: cities[i % cities.length],
+        state: states[i % states.length],
+        zipCode: `9${400 + i}`,
+        coordinates: null,
+      },
+      careLevel: cl,
+      priceRange: {
+        min: minPrice,
+        max: maxPrice,
+        formattedMin: fmt(minPrice),
+        formattedMax: fmt(maxPrice),
+      },
+      capacity: 20 + (i % 10),
+      // capacity math; never render as availability — see OL-200
+      availability: 5 + (i % 4),
+      availabilityFreshness: availabilityView({ availabilityCount: null, availabilityVerifiedAt: null, availabilitySource: null }),
+      pricing: pricingView({ startingPriceMonthly: null, priceRangeLow: null, priceRangeHigh: null, priceSource: null, priceUpdatedAt: null }),
+      gender: 'ALL',
+      amenities: amenitiesSamples[i % amenitiesSamples.length],
+      // Deterministic placeholder so each mock home gets a stable image
+      imageUrl: placeholderImageFor(`mock-home-${i}`),
+      operator: null,
+      aiMatchScore: 60 + (i * 3) % 35, // 60-95
+      aiMatchFactors: undefined,
+      aiMatchWeights: undefined,
+      isFavorited: false,
+      isUnclaimed: false,
+      isFeatured: false,
+      googleRating: null,
+      googleRatingCount: null,
+      googlePlaceId: null,
+      pricePending: false,
+    };
+  });
+}
+
+/**
+ * GET handler for search API
+ */
+export async function GET(request: NextRequest) {
+  try {
+    // Get current user session (optional - for personalized results)
+    const session = await getServerSession(authOptions);
+    
+    // Parse query parameters
+    const { searchParams } = new URL(request.url);
+    
+    // Natural language query
+    const query = searchParams.get('q') || '';
+    
+    // Extract location from query if not explicitly provided
+    let location = searchParams.get('location') || extractLocationFromQuery(query) || '';
+    
+    // Extract care levels from query if not explicitly provided
+    let explicitCareLevels = searchParams.getAll('careLevel') as CareLevel[];
+    let queryCareLevels = extractCareLevelsFromQuery(query);
+    let careLevels = explicitCareLevels.length > 0 ? explicitCareLevels : queryCareLevels;
+    
+    // Other filters
+    const priceMin = searchParams.get('priceMin') || '';
+    const priceMax = searchParams.get('priceMax') || '';
+    const gender = searchParams.get('gender') || 'ALL';
+    const amenities = searchParams.get('amenities')?.split(',').filter(Boolean) || [];
+    
+    // availability can now be a number meaning minimum open beds
+    const availabilityParam = searchParams.get('availability');
+    const availability =
+      availabilityParam === null
+        ? undefined
+        : availabilityParam === 'true' || availabilityParam === 'false'
+        ? availabilityParam === 'true'
+        : parseInt(availabilityParam, 10); // number of beds
+    
+    // Pagination
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1') || 1);
+    const limit = Math.min(
+      Math.max(1, parseInt(searchParams.get('limit') || String(DEFAULT_PAGE_SIZE)) || DEFAULT_PAGE_SIZE),
+      MAX_PAGE_SIZE
+    );
+    const offset = (page - 1) * limit;
+    // Map view: return ALL matching homes (lightweight markers), unpaginated, so the map
+    // plots the full result set instead of just the current page. Capped for safety.
+    const markersOnly = searchParams.get('markers') === '1';
+    // OL-197: the list path also loads every match (same cap), ranks the whole set,
+    // then slices the page — paging a DB query with no ORDER BY repeated/skipped homes.
+    const SEARCH_FETCH_MAX = 1000;
+
+    // New Phase-1 query params
+    const radius = searchParams.get('radius')
+      ? parseInt(searchParams.get('radius') as string, 10)
+      : undefined;
+    const sortBy = (searchParams.get('sortBy') ||
+      'relevance') as
+      | 'relevance'
+      | 'price_low'
+      | 'price_high'
+      | 'distance'
+      | 'rating';
+    const verifiedOnly = searchParams.get('verified') === 'true';
+    // "Accepts Medicaid waiver" (sprint W5-2): ACCEPTING_NEW only — never the
+    // softer statuses, so the filter means what the label says.
+    const medicaidWaiverOnly = searchParams.get('medicaidWaiver') === 'true';
+
+    // Build database query
+    const whereClause: any = {
+      status: 'ACTIVE', // Only active homes
+      // OL-112: demo/tutorial fixtures never surface in the public directory —
+      // structural guard on top of the DRAFT-status convention (the markers
+      // path shares this whereClause, so the map view is covered too).
+      isDemo: false,
+    };
+    
+    // Filter by care level if specified
+    if (careLevels.length > 0) {
+      whereClause.careLevel = {
+        hasSome: careLevels
+      };
+    }
+    
+    // Filter by price range if specified
+    if (priceMin) {
+      whereClause.priceMin = {
+        gte: parseFloat(priceMin)
+      };
+    }
+    
+    if (priceMax) {
+      whereClause.priceMax = {
+        lte: parseFloat(priceMax)
+      };
+    }
+    
+    // Filter by gender restriction if specified (use AND logic)
+    if (gender !== 'ALL') {
+      whereClause.AND = [
+        ...(whereClause.AND || []),
+        {
+          OR: [
+            { genderRestriction: gender },
+            { genderRestriction: null },
+            { genderRestriction: 'ALL' }
+          ]
+        }
+      ];
+    }
+    
+    // Note: availability filtering is done post-query since Prisma doesn't 
+    // support field-to-field comparisons (capacity vs currentOccupancy)
+
+    if (medicaidWaiverOnly) {
+      whereClause.medicaidWaiverStatus = 'ACCEPTING_NEW';
+    }
+
+    // Placeholder for verified filter (requires additional schema support)
+    if (verifiedOnly) {
+      // For now, require at least one ACTIVE license
+      whereClause.licenses = {
+        some: {
+          status: {
+            equals: 'ACTIVE'
+          }
+        }
+      };
+    }
+    
+    // Location search - use AND logic with OR for city/state/zip
+    if (location) {
+      whereClause.AND = [
+        ...(whereClause.AND || []),
+        {
+          OR: [
+            {
+              address: {
+                city: {
+                  contains: location,
+                  mode: 'insensitive'
+                }
+              }
+            },
+            {
+              address: {
+                state: {
+                  contains: location,
+                  mode: 'insensitive'
+                }
+              }
+            },
+            {
+              address: {
+                zipCode: {
+                  contains: location,
+                  mode: 'insensitive'
+                }
+              }
+            }
+          ]
+        }
+      ];
+    }
+    
+    // Execute database query with graceful fallback
+    let homes: any[] = [];
+    let totalCount = 0;
+    try {
+      [homes, totalCount] = await Promise.all([
+        prisma.assistedLivingHome.findMany({
+          where: whereClause,
+          include: {
+            address: true,
+            operator: {
+              include: {
+                user: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                    email: true
+                  }
+                }
+              }
+            },
+            photos: {
+              where: { isPrimary: true },
+              take: 1
+            }
+          },
+          // Deterministic base order (also the final tie-break below): newest update first, id breaks ties.
+          orderBy: [{ updatedAt: 'desc' }, { id: 'asc' }],
+          take: SEARCH_FETCH_MAX
+        }),
+        prisma.assistedLivingHome.count({
+          where: whereClause
+        })
+      ]);
+    } catch (dbErr) {
+      console.error('DB query failed, falling back to mocks:', dbErr);
+      homes = [];
+      totalCount = 0;
+    }
+    if (totalCount > SEARCH_FETCH_MAX) {
+      console.warn(`[search] ${totalCount} matches exceed SEARCH_FETCH_MAX=${SEARCH_FETCH_MAX}; results are capped`);
+    }
+
+    // Map view: return lightweight markers for ALL matching homes (no pagination, no AI
+    // scoring / favorites / image work) so the map can plot the full result set.
+    if (markersOnly) {
+      const markers = homes.map((home: any) => {
+        const dbCoords = home.address?.latitude && home.address?.longitude
+          ? { lat: home.address.latitude, lng: home.address.longitude }
+          : null;
+        const coordinates = dbCoords
+          || (home.address ? getApproximateCoordinates(home.address.city, home.address.state) : null);
+        return {
+          id: home.id,
+          name: home.name,
+          careLevel: home.careLevel,
+          priceRange: {
+            min: home.priceMin ? Number(home.priceMin) : null,
+            max: home.priceMax ? Number(home.priceMax) : null,
+            formattedMin: home.priceMin ? formatCurrency(Number(home.priceMin)) : null,
+          },
+          coordinates,
+          address: home.address ? {
+            street: home.address.street,
+            city: home.address.city,
+            state: home.address.state,
+            coordinates,
+          } : null,
+        };
+      });
+      return NextResponse.json({ markers, total: totalCount });
+    }
+
+    // --- favourites ----
+    let favoriteHomeIds: Set<string> = new Set();
+    if (session && session.user) {
+      const favUser = await prisma.user.findUnique({
+        where: { email: session.user.email as string },
+        include: { family: { include: { favorites: true } } }
+      });
+      if (favUser?.family) {
+        favoriteHomeIds = new Set(
+          favUser.family.favorites.map((f) => f.homeId)
+        );
+      }
+    }
+    
+    // Parse resident profile for AI personalization (optional)
+    let residentProfile: any | null = null;
+    const residentProfileParam = searchParams.get('residentProfile');
+    if (residentProfileParam) {
+      try {
+        residentProfile = JSON.parse(residentProfileParam);
+      } catch {
+        residentProfile = null;
+      }
+    }
+
+    // Process and score results
+    const searchCriteria = {
+      query,
+      location,
+      careLevels,
+      priceMin: priceMin ? parseFloat(priceMin) : null,
+      priceMax: priceMax ? parseFloat(priceMax) : null,
+      gender,
+      availability,
+      amenities,
+      // If we had user location coordinates:
+      // latitude: userLatitude,
+      // longitude: userLongitude
+    };
+    
+    // Calculate match scores and format results with reliable image fallback
+    const results = await Promise.all(homes.map(async (home, i) => {
+      // 1. AI Match Score
+      let aiMatchScore = 0;
+      let aiMatchFactors: any | undefined = undefined;
+      let aiMatchWeights: any | undefined = undefined;
+      if (residentProfile) {
+        try {
+          const breakdown = await calculateAIMatchBreakdown(home, residentProfile);
+          aiMatchScore = breakdown.score;
+          aiMatchFactors = breakdown.factors;
+          aiMatchWeights = breakdown.weights;
+        } catch {
+          aiMatchScore = calculateMatchScore(home, searchCriteria);
+        }
+      } else {
+        aiMatchScore = calculateMatchScore(home, searchCriteria);
+      }
+
+      // 2. Image handling – prefer primary DB photo, else a deterministic
+      // placeholder keyed off the home's id (stable per home, varied across the grid).
+      const primary = sanitizeImageUrl(home.photos?.[0]?.url ?? null);
+      const fallback = placeholderImageFor(home.id);
+      const imageUrl = primary ?? fallback;
+
+      // 3. Build response object - use fallback coordinates if address lacks lat/lng
+      const dbCoords = home.address?.latitude && home.address?.longitude 
+        ? { lat: home.address.latitude, lng: home.address.longitude }
+        : null;
+      const fallbackCoords = !dbCoords && home.address
+        ? getApproximateCoordinates(home.address.city, home.address.state)
+        : null;
+      const coordinates = dbCoords || fallbackCoords;
+      const unclaimed = isUnclaimedHome(home.operator?.user?.email);
+
+      return {
+        id: home.id,
+        name: home.name,
+        description: home.description,
+        tagline: home.tagline,
+        // Live-ish verified availability (OL-110) — honest freshness for the card + badge.
+        availabilityFreshness: availabilityView(home),
+        // Honest source-labeled pricing (OL-111) — "starting around $X · operator-provided",
+        // always paired with "Contact for exact quote" in the UI. (Family-avg is computed
+        // on the detail page to avoid an N+1 here.)
+        pricing: pricingView(home),
+        // Direct phone gated to CLAIMED listings (OL-083 lead-capture): unclaimed
+        // directory homes keep the inquiry / claim-nudge flow primary, so the
+        // facility's line isn't surfaced or scrapable until an operator claims.
+        phone: unclaimed ? null : home.phone,
+        address: home.address ? {
+          street: home.address.street,
+          street2: home.address.street2,
+          city: home.address.city,
+          state: home.address.state,
+          zipCode: home.address.zipCode,
+          coordinates
+        } : null,
+        careLevel: home.careLevel,
+        priceRange: {
+          min: home.priceMin ? Number(home.priceMin) : null,
+          max: home.priceMax ? Number(home.priceMax) : null,
+          formattedMin: home.priceMin ? formatCurrency(Number(home.priceMin)) : null,
+          formattedMax: home.priceMax ? formatCurrency(Number(home.priceMax)) : null,
+        },
+        // VA-collected approximate price (pending operator confirmation) → card shows "~".
+        pricePending: (home.preFilledFields as Record<string, unknown> | null)?.priceRange === 'VA_UNVERIFIED',
+        capacity: home.capacity,
+        // capacity math; never render as availability — see OL-200
+        availability: home.capacity - home.currentOccupancy,
+        gender: home.genderRestriction || 'ALL',
+        amenities: home.amenities,
+        imageUrl,
+        operator: home.operator ? {
+          name: `${home.operator.user.firstName} ${home.operator.user.lastName}`,
+          email: home.operator.user.email
+        } : null,
+        // A listing still owned by the directory sentinel operator is "unclaimed"
+        // — surfaced in results so the seeded directory shows, badged so families
+        // know no operator manages it yet.
+        isUnclaimed: unclaimed,
+        // OL-191: active featured window → "Featured" badge + same-band tie-break below.
+        isFeatured: isFeaturedActive(home),
+        // Google aggregate rating (trust badge) — rating + count + place id only.
+        googleRating: home.googleRating ?? null,
+        googleRatingCount: home.googleRatingCount ?? null,
+        googlePlaceId: home.googlePlaceId ?? null,
+        aiMatchScore,
+        aiMatchFactors,
+        aiMatchWeights,
+        isFavorited: favoriteHomeIds.has(home.id)
+      };
+    }));
+    
+    // OL-197: every sort ends in the same total order — updatedAt desc, then id — so a
+    // home has exactly one position and pages never repeat or skip it.
+    const updatedAtMs = new Map<string, number>(
+      homes.map((h: any) => [h.id, h.updatedAt ? new Date(h.updatedAt).getTime() : 0]),
+    );
+    const tieBreak = (a: { id: string }, b: { id: string }) =>
+      (updatedAtMs.get(b.id) ?? 0) - (updatedAtMs.get(a.id) ?? 0) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+
+    // Phase-1 enhanced sorting
+    switch (sortBy) {
+      case 'price_low':
+        results.sort(
+          (a, b) =>
+            (a.priceRange.min ?? 0) - (b.priceRange.min ?? 0) || tieBreak(a, b)
+        );
+        break;
+      case 'price_high':
+        results.sort(
+          (a, b) =>
+            (b.priceRange.max ?? 0) - (a.priceRange.max ?? 0) || tieBreak(a, b)
+        );
+        break;
+      // distance & rating require data not yet calculated – fallthrough
+      default: {
+        // relevance – AI match score, with a boost for recently-VERIFIED availability
+        // (OL-110): keeping availability current earns priority placement, so updating
+        // becomes a reward. A fresh verification is worth a small, bounded nudge.
+        const FRESH_AVAILABILITY_BOOST = 8;
+        const TRANSPARENT_PRICING_BOOST = 6; // OL-111: transparency earns priority placement
+        const score = (r: { aiMatchScore: number; availabilityFreshness?: { fresh?: boolean }; pricing?: { transparent?: boolean } }) =>
+          r.aiMatchScore +
+          (r.availabilityFreshness?.fresh ? FRESH_AVAILABILITY_BOOST : 0) +
+          (r.pricing?.transparent ? TRANSPARENT_PRICING_BOOST : 0);
+        // OL-191: featured only breaks ties within a score band — never lifts a home over a higher band.
+        results.sort((a, b) =>
+          compareSearchRank({ rankScore: score(a), featured: a.isFeatured }, { rankScore: score(b), featured: b.isFeatured }) ||
+          tieBreak(a, b),
+        );
+      }
+    }
+
+    // Post-filter for availability (since Prisma doesn't support field-to-field comparisons).
+    // It runs over the whole ranked set, so the count is exact and pages stay contiguous.
+    let filteredResults = results;
+    
+    // Boolean availability filter (has any available spots)
+    if (availability === true) {
+      filteredResults = results.filter((r) => r.availability > 0);
+    }
+    
+    // Numeric availability filter (minimum beds required)
+    if (
+      typeof availability === 'number' &&
+      !Number.isNaN(availability) &&
+      availability > 0
+    ) {
+      filteredResults = results.filter(
+        (r) => r.availability >= availability
+      );
+    }
+
+    // Total = every ranked match (capped at SEARCH_FETCH_MAX); the page is a slice of that one order.
+    let totalResultsCount = filteredResults.length;
+    let pageResults: any[] = filteredResults.slice(offset, offset + limit);
+    
+    /* ------------------------------------------------------------------
+       Dev-mode fallback when no DB results
+    -------------------------------------------------------------------*/
+    if (results.length === 0 && process.env['NODE_ENV'] !== 'production') {
+      const mockHomes = generateMockHomes(limit);
+      pageResults = mockHomes;
+      totalResultsCount = mockHomes.length;
+    }
+
+    // Return response
+    return NextResponse.json({
+      success: true,
+      query: {
+        text: query,
+        location,
+        careLevels: careLevels.length > 0 ? careLevels : null,
+        priceRange: priceMin || priceMax ? { min: priceMin || null, max: priceMax || null } : null,
+        gender,
+        availability,
+        amenities: amenities.length > 0 ? amenities : null
+      },
+      pagination: {
+        page,
+        limit,
+        totalResults: totalResultsCount,
+        totalPages: Math.ceil(totalResultsCount / limit)
+      },
+      results: pageResults
+    }, { status: 200 });
+    
+  } catch (error) {
+    console.error('Search API error:', error);
+
+    return NextResponse.json({
+      success: false,
+      error: 'An error occurred while processing your search',
+      // Safely expose message in development while satisfying TS about unknown errors
+      details:
+        process.env['NODE_ENV'] === 'development'
+          ? ((error as any)?.message ?? String(error))
+          : undefined
+    }, { status: 500 });
+  }
+  // Note: Using singleton prisma client from @/lib/prisma - no disconnect needed
+}

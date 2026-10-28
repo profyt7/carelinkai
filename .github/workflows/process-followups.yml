@@ -1,0 +1,43 @@
+name: Process Follow-ups
+
+on:
+  # Run every 6 hours
+  schedule:
+    - cron: '0 */6 * * *'  # At minute 0 past every 6th hour
+  
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  process-followups:
+    name: Process Due Follow-ups
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Call Follow-up Processing Endpoint
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            https://carelinkai.onrender.com/api/follow-ups/process)
+          
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n-1)
+          
+          echo "HTTP Status: $http_code"
+          echo "Response: $body"
+          
+          if [ "$http_code" -ne 200 ]; then
+            echo "Error: Follow-up processing failed with status $http_code"
+            exit 1
+          fi
+          
+          echo "Follow-ups processed successfully"
+      
+      - name: Notify on Failure
+        if: failure()
+        run: |
+          echo "::error::Follow-up processing failed. Please check the logs."

@@ -1,0 +1,96 @@
+/**
+ * OL-162 — checkout preflight: booleans only, never values; checkout refuses
+ * to enable on any mismatch; admin-only API.
+ */
+
+import { jest } from '@jest/globals';
+
+const requireRole = jest.fn();
+jest.mock('@/lib/auth-utils', () => ({ requireRole: (...a: unknown[]) => requireRole(...a) }));
+
+import { checkoutPreflight, stripeKeyMode } from '@/lib/concierge/preflight';
+import { isCheckoutEnabled } from '@/lib/concierge/offer';
+import { GET } from '@/app/api/admin/checkout-preflight/route';
+
+// Fake Stripe-shaped values assembled at runtime so no key-looking literal sits
+// in the source (the CI secret scan flags `STRIPE_SECRET_KEY: 'sk_live_…'` lines).
+const fake = (prefix: string, mode?: string) => `${prefix}_${mode ? `${mode}_` : ''}unitfixture0`;
+const LIVE_KEY = fake('sk', 'live');
+const TEST_KEY = fake('sk', 'test');
+const PRICE_ID = fake('price');
+const WEBHOOK_SECRET = fake('whsec');
+const LIVE = { STRIPE_SECRET_KEY: LIVE_KEY, STRIPE_PRICE_FAMILY_CONCIERGE: PRICE_ID, STRIPE_WEBHOOK_SECRET: WEBHOOK_SECRET, ADMIN_NOTIFY_EMAIL: 'chris@getcarelinkai.com', NODE_ENV: 'production' };
+const TEST = { ...LIVE, STRIPE_SECRET_KEY: TEST_KEY, NODE_ENV: 'test' };
+const SECRETS = [LIVE_KEY, TEST_KEY, PRICE_ID, WEBHOOK_SECRET];
+
+describe('stripeKeyMode', () => {
+  it('classifies live / test / missing / unknown', () => {
+    expect(stripeKeyMode('sk_live_x')).toBe('live');
+    expect(stripeKeyMode('rk_live_x')).toBe('live');
+    expect(stripeKeyMode('sk_test_x')).toBe('test');
+    expect(stripeKeyMode('')).toBe('missing');
+    expect(stripeKeyMode(undefined)).toBe('missing');
+    expect(stripeKeyMode('pk_live_x')).toBe('unknown');
+  });
+});
+
+describe('checkoutPreflight', () => {
+  it('all green in production with a live key → ready; enabled only with the flag', () => {
+    const off = checkoutPreflight(LIVE);
+    expect(off).toMatchObject({ stripeKeyMode: 'live', expectedKeyMode: 'live', keyModeMatches: true, priceIdSet: true, webhookSecretSet: true, adminNotifyEmailSet: true, ready: true, flagRequested: false, checkoutEnabled: false, problems: [] });
+    expect(checkoutPreflight({ ...LIVE, CONCIERGE_CHECKOUT_ENABLED: '1' }).checkoutEnabled).toBe(true);
+    expect(checkoutPreflight({ ...TEST, CONCIERGE_CHECKOUT_ENABLED: '1' })).toMatchObject({ expectedKeyMode: 'test', keyModeMatches: true, checkoutEnabled: true });
+  });
+  it('refuses to enable on any mismatch and names the env var (never the value)', () => {
+    const cases: Array<[Record<string, string>, RegExp]> = [
+      [{ ...LIVE, STRIPE_SECRET_KEY: TEST_KEY }, /STRIPE_SECRET_KEY is a test key; live expected/],
+      [{ ...TEST, STRIPE_SECRET_KEY: LIVE_KEY }, /STRIPE_SECRET_KEY is a live key; test expected/],
+      [{ ...LIVE, STRIPE_SECRET_KEY: '' }, /STRIPE_SECRET_KEY not set/],
+      [{ ...LIVE, STRIPE_SECRET_KEY: 'pk_live_nope' }, /not a Stripe secret key/],
+      [{ ...LIVE, STRIPE_PRICE_FAMILY_CONCIERGE: '' }, /STRIPE_PRICE_FAMILY_CONCIERGE not set/],
+      [{ ...LIVE, STRIPE_PRICE_FAMILY_CONCIERGE: fake('prod') }, /STRIPE_PRICE_FAMILY_CONCIERGE not set/],
+      [{ ...LIVE, STRIPE_WEBHOOK_SECRET: 'nope' }, /STRIPE_WEBHOOK_SECRET not set/],
+      [{ ...LIVE, ADMIN_NOTIFY_EMAIL: 'not-an-email' }, /ADMIN_NOTIFY_EMAIL not set/],
+    ];
+    for (const [env, re] of cases) {
+      const p = checkoutPreflight({ ...env, CONCIERGE_CHECKOUT_ENABLED: '1' });
+      expect({ env: re.source, ready: p.ready, enabled: p.checkoutEnabled }).toEqual({ env: re.source, ready: false, enabled: false });
+      expect(p.problems.join(' | ')).toMatch(re);
+      const dump = JSON.stringify(p);
+      for (const s of SECRETS) expect(dump).not.toContain(s);
+      expect(dump).not.toContain('chris@getcarelinkai.com');
+    }
+    expect(isCheckoutEnabled({ ...LIVE, STRIPE_SECRET_KEY: TEST_KEY, CONCIERGE_CHECKOUT_ENABLED: '1' })).toBe(false);
+  });
+});
+
+describe('GET /api/admin/checkout-preflight', () => {
+  const saved = { ...process.env };
+  afterEach(() => { process.env = { ...saved }; });
+  it('403 for non-admins', async () => {
+    requireRole.mockRejectedValueOnce(new Error('nope'));
+    expect((await GET()).status).toBe(403);
+  });
+  it('admin → booleans + mode only; no value in the body', async () => {
+    requireRole.mockResolvedValue({ id: 'admin', role: 'ADMIN' });
+    Object.assign(process.env, { ...TEST, NODE_ENV: process.env['NODE_ENV'] ?? 'test', CONCIERGE_CHECKOUT_ENABLED: '' });
+    const res = await GET();
+    expect(res.status).toBe(200);
+    expect(res.headers.get('cache-control')).toBe('no-store');
+    const text = await res.text();
+    const j = JSON.parse(text);
+    expect(j).toMatchObject({ stripeKeyMode: 'test', priceIdSet: true, webhookSecretSet: true, adminNotifyEmailSet: true, flagRequested: false, checkoutEnabled: false });
+    expect(typeof j.ready).toBe('boolean');
+    for (const s of [...SECRETS, 'chris@getcarelinkai.com']) expect(text).not.toContain(s);
+  });
+  it('OL-186: lists every paid-feature switch with its env name and on/off state', async () => {
+    requireRole.mockResolvedValue({ id: 'admin', role: 'ADMIN' });
+    process.env['CAREGIVER_PRO_ENABLED'] = 'yes';
+    delete process.env['CARE_WALLET_ENABLED'];
+    const j = await (await GET()).json();
+    expect(j.paidFeatures).toHaveLength(9);
+    expect(j.paidFeatures).toContainEqual(expect.objectContaining({ key: 'CAREGIVER_PRO', env: 'CAREGIVER_PRO_ENABLED', enabled: true }));
+    expect(j.paidFeatures).toContainEqual(expect.objectContaining({ key: 'CARE_WALLET', env: 'CARE_WALLET_ENABLED', enabled: false }));
+    expect(JSON.stringify(j.paidFeatures)).not.toContain('"yes"');
+  });
+});

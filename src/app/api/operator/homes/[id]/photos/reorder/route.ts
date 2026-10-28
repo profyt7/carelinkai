@@ -1,0 +1,46 @@
+
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
+﻿import { NextResponse } from 'next/server';
+import { requireOperatorOrAdmin } from '@/lib/rbac';
+import { UserRole } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
+import { captureError } from '@/lib/sentry';
+
+
+export async function POST(req: Request, { params }: { params: { id: string } }) {
+  try {
+    const { session, error } = await requireOperatorOrAdmin();
+    if (error) return error;
+    const user = await prisma.user.findUnique({ where: { email: session!.user!.email! } });
+    if (!user || (user.role !== UserRole.OPERATOR && user.role !== UserRole.ADMIN)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    const home = await prisma.assistedLivingHome.findUnique({ where: { id: params.id } });
+    if (!home) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (user.role !== UserRole.ADMIN) {
+      const op = await prisma.operator.findUnique({ where: { userId: user.id } });
+      if (!op || op.id !== home.operatorId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const { order } = await req.json().catch(() => ({}));
+    if (!Array.isArray(order) || order.some((id: any) => typeof id !== 'string')) {
+      return NextResponse.json({ error: 'Invalid order' }, { status: 400 });
+    }
+
+    // Apply sortOrder in given sequence
+    for (let i = 0; i < order.length; i++) {
+      const id = order[i];
+      await prisma.homePhoto.updateMany({ where: { id, homeId: home.id }, data: { sortOrder: i } });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (e) {
+    captureError(e instanceof Error ? e : new Error(String(e)), {
+      tags: { route: 'operator:homes:{id}:photos:reorder' },
+    });
+    console.error('Reorder home photos failed', e);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  }
+}

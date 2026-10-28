@@ -1,0 +1,481 @@
+import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
+import { prisma } from "@/lib/prisma";
+import { getMockCaregiverDetail } from "@/lib/mock/marketplace";
+import { isMockModeEnabledFromCookies } from "@/lib/mockMode";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import Link from "next/link";
+import { FiMapPin, FiDollarSign, FiClock, FiCheckCircle, FiCalendar } from "react-icons/fi";
+import RequestShiftForm from "@/components/marketplace/RequestShiftForm";
+import CaregiverReviewForm from "@/components/marketplace/CaregiverReviewForm";
+import CaregiverReviewsList from "@/components/marketplace/CaregiverReviewsList";
+import RequestCareButton from "@/components/marketplace/RequestCareButton";
+import DirectHireButton from "@/components/marketplace/DirectHireButton";
+import BackgroundCheckOrderPanel from "@/components/marketplace/BackgroundCheckOrderPanel";
+import BackgroundCheckBadge from "@/components/caregiver/BackgroundCheckBadge";
+import { getCloudinaryAvatar, isCloudinaryUrl } from "@/lib/cloudinaryUrl";
+
+export const dynamic = "force-dynamic";
+
+async function getCaregiverById(id: string) {
+  try {
+    const caregiver = await prisma.caregiver.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profileImageUrl: true,
+            addresses: {
+              take: 1,
+              orderBy: {
+                createdAt: 'desc'
+              }
+            }
+          }
+        },
+        credentials: {
+          where: {
+            isVerified: true,
+            expirationDate: {
+              gte: new Date() // Only show non-expired credentials
+            }
+          },
+          orderBy: {
+            expirationDate: 'desc'
+          }
+        }
+      }
+    });
+
+    if (!caregiver) {
+      return null;
+    }
+
+    // Get reviews and ratings
+    const reviewStats = await prisma.caregiverReview.aggregate({
+      where: { caregiverId: id },
+      _avg: { rating: true },
+      _count: { _all: true }
+    });
+    
+    // Get availability slots for the next 7 days
+    const today = new Date();
+    const nextWeek = new Date(today);
+    nextWeek.setDate(today.getDate() + 7);
+    
+    const availabilitySlots = await prisma.availabilitySlot.findMany({
+      where: {
+        userId: caregiver.userId,
+        startTime: {
+          gte: today,
+          lte: nextWeek
+        },
+        isAvailable: true
+      },
+      orderBy: {
+        startTime: 'asc'
+      }
+    });
+
+    // Resolve profile image URL
+    let photoUrl = null;
+    if (caregiver.user.profileImageUrl) {
+      if (typeof caregiver.user.profileImageUrl === 'string') {
+        photoUrl = caregiver.user.profileImageUrl as string;
+      } else {
+        const p: any = caregiver.user.profileImageUrl as any;
+        if (p?.medium) photoUrl = p.medium as string;
+        else if (p?.thumbnail) photoUrl = p.thumbnail as string;
+        else if (p?.large) photoUrl = p.large as string;
+      }
+    }
+
+    // Get location from address if available
+    const address = caregiver.user.addresses && caregiver.user.addresses.length > 0
+      ? caregiver.user.addresses[0]
+      : null;
+
+    // Generate badges
+    const badges: string[] = [];
+    if (caregiver.backgroundCheckStatus === 'CLEAR') {
+      badges.push('Background Check Clear');
+    }
+    if (caregiver.yearsExperience && caregiver.yearsExperience >= 5) {
+      badges.push('Experienced');
+    }
+    if (reviewStats._count._all >= 5 && reviewStats._avg.rating && reviewStats._avg.rating >= 4.5) {
+      badges.push('Top Rated');
+    }
+
+    return {
+      id: caregiver.id,
+      userId: caregiver.userId,
+      name: `${caregiver.user.firstName} ${caregiver.user.lastName}`,
+      city: address?.city || null,
+      state: address?.state || null,
+      hourlyRate: caregiver.hourlyRate ? parseFloat(caregiver.hourlyRate.toString()) : null,
+      yearsExperience: caregiver.yearsExperience,
+      specialties: caregiver.specialties || [],
+      bio: caregiver.bio || null,
+      backgroundCheckStatus: caregiver.backgroundCheckStatus,
+      photoUrl,
+      ratingAverage: reviewStats._avg.rating ? Number(reviewStats._avg.rating.toFixed(1)) : 0,
+      reviewCount: reviewStats._count._all,
+      badges,
+      credentials: caregiver.credentials.map(cred => ({
+        id: cred.id,
+        type: cred.type,
+        issueDate: cred.issueDate.toISOString(),
+        expirationDate: cred.expirationDate.toISOString(),
+        isVerified: cred.isVerified,
+      })),
+      availabilitySlots: availabilitySlots.map(slot => ({
+        id: slot.id,
+        startTime: slot.startTime.toISOString(),
+        endTime: slot.endTime.toISOString(),
+      })),
+    };
+  } catch (error) {
+    console.error("Error fetching caregiver:", error);
+    return null;
+  }
+}
+
+export default async function CaregiverDetailPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const session = await getServerSession(authOptions);
+  const isOperator = session?.user?.role === 'OPERATOR' || session?.user?.role === 'ADMIN';
+
+  // Fetch operator plan if applicable
+  let operatorPlan: string | null = null;
+  if (isOperator && session?.user?.id) {
+    const op = await prisma.operator.findFirst({
+      where: { userId: session.user.id },
+      select: { subscriptionPlan: true },
+    });
+    operatorPlan = op?.subscriptionPlan ?? null;
+  }
+
+  // Check mock mode - support both general mock mode and marketplace-specific mock mode
+  const cookieStore = await cookies();
+  const generalMockMode = isMockModeEnabledFromCookies(cookieStore);
+  
+  // Check marketplace-specific mock mode (defaults to true since we don't have real caregivers yet)
+  const marketplaceCookieValue = cookieStore.get('carelink_marketplace_mock')?.value?.toLowerCase() || '';
+  const marketplaceMockEnv = (process.env['SHOW_MARKETPLACE_MOCKS'] ?? '').toLowerCase();
+  const marketplaceEnvDisabled = ['0', 'false', 'no', 'off'].includes(marketplaceMockEnv);
+  
+  // Marketplace mock mode defaults to TRUE unless explicitly disabled
+  let showMarketplace = true;
+  if (['0', 'false', 'no', 'off'].includes(marketplaceCookieValue)) {
+    showMarketplace = false;
+  } else if (marketplaceEnvDisabled && !['1', 'true', 'yes', 'on'].includes(marketplaceCookieValue)) {
+    showMarketplace = false;
+  }
+  
+  // Check if this is a mock caregiver ID (starts with cg_)
+  const isMockCaregiverId = params.id?.startsWith('cg_');
+  
+  let caregiver;
+  
+  if ((generalMockMode || showMarketplace) && isMockCaregiverId) {
+    // Use mock data for testing/demo
+    caregiver = getMockCaregiverDetail(params.id);
+  } else {
+    // Use real database data
+    caregiver = await getCaregiverById(params.id);
+  }
+
+  if (!caregiver) {
+    notFound();
+  }
+
+  // Format location
+  const location = [caregiver.city, caregiver.state]
+    .filter(Boolean)
+    .join(", ");
+
+  // Rating helpers
+  const ratingAvg = caregiver.ratingAverage || 0;
+  const reviewCount = caregiver.reviewCount || 0;
+  const filledStars = Math.round(ratingAvg); // 0-5
+  const renderStars = () =>
+    Array.from({ length: 5 }).map((_, idx) => (
+      <span
+        key={idx}
+        className={
+          idx < filledStars ? "text-warning-400" : "text-neutral-300"
+        }
+        aria-hidden="true"
+      >
+        ★
+      </span>
+    ));
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+      {/* Back Button */}
+      <div className="mb-4">
+        <Link
+          href="/marketplace?tab=caregivers"
+          className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-500 font-medium transition-colors"
+        >
+          <span aria-hidden="true">←</span>
+          <span>Back to Caregivers</span>
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* Main content — col-span-2 */}
+        <div className="lg:col-span-2 space-y-6">
+
+          {/* Header card */}
+          <div className="bg-white rounded-lg shadow border border-neutral-200 p-6">
+            <div className="flex items-start gap-6">
+              <div className="h-24 w-24 rounded-full overflow-hidden bg-neutral-100 flex-shrink-0">
+                {caregiver.photoUrl ? (
+                  <img
+                    src={isCloudinaryUrl(caregiver.photoUrl) ? getCloudinaryAvatar(caregiver.photoUrl) : caregiver.photoUrl}
+                    alt={caregiver.name}
+                    loading="lazy"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center text-neutral-400 text-4xl">
+                    {caregiver.name.charAt(0)}
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl font-bold text-neutral-900 mb-1">{caregiver.name}</h1>
+                {location && (
+                  <div className="flex items-center text-neutral-500 mb-2">
+                    <FiMapPin className="mr-1 flex-shrink-0" size={14} />
+                    <span className="text-sm">{location}</span>
+                  </div>
+                )}
+                <div className="flex items-center mb-3">
+                  <span className="mr-2 flex">{renderStars()}</span>
+                  <span className="text-neutral-600 text-sm">{ratingAvg.toFixed(1)} ({reviewCount} reviews)</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <BackgroundCheckBadge status={caregiver.backgroundCheckStatus as any} size="sm" />
+                  {caregiver.badges
+                    .filter((b) => b !== "Background Check Clear")
+                    .map((badge, index) => (
+                      <span
+                        key={index}
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          badge === "Top Rated" ? "bg-warning-100 text-warning-800" : "bg-primary-100 text-primary-800"
+                        }`}
+                      >
+                        {badge === "Experienced" && <FiClock className="mr-1" size={12} />}
+                        {badge}
+                      </span>
+                    ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Rate + Experience */}
+            {(caregiver.hourlyRate || caregiver.yearsExperience) && (
+              <div className="mt-5 pt-5 border-t border-neutral-100 grid grid-cols-2 gap-4">
+                {caregiver.hourlyRate && (
+                  <div className="flex items-center gap-2">
+                    <FiDollarSign className="text-neutral-400" size={18} />
+                    <div>
+                      <p className="text-xs text-neutral-500">Hourly Rate</p>
+                      <p className="font-semibold text-neutral-900">${caregiver.hourlyRate.toFixed(2)}/hr</p>
+                    </div>
+                  </div>
+                )}
+                {caregiver.yearsExperience && (
+                  <div className="flex items-center gap-2">
+                    <FiClock className="text-neutral-400" size={18} />
+                    <div>
+                      <p className="text-xs text-neutral-500">Experience</p>
+                      <p className="font-semibold text-neutral-900">
+                        {caregiver.yearsExperience} {caregiver.yearsExperience === 1 ? 'Year' : 'Years'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* About + Specialties + Credentials card */}
+          <div className="bg-white rounded-lg shadow border border-neutral-200 p-6 space-y-6">
+            {caregiver.bio && (
+              <div>
+                <h2 className="text-lg font-semibold text-neutral-900 mb-2">About</h2>
+                <p className="text-neutral-700 leading-relaxed">{caregiver.bio}</p>
+              </div>
+            )}
+            {caregiver.specialties.length > 0 && (
+              <div>
+                <h2 className="text-lg font-semibold text-neutral-900 mb-2">Specialties</h2>
+                <div className="flex flex-wrap gap-2">
+                  {caregiver.specialties.map((specialty: string, index: number) => (
+                    <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                      {specialty.replace(/-/g, ' ')}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {caregiver.credentials && caregiver.credentials.length > 0 && (
+              <div>
+                <h2 className="text-lg font-semibold text-neutral-900 mb-3">Credentials &amp; Certifications</h2>
+                <div className="space-y-3">
+                  {caregiver.credentials.map((credential: any) => (
+                    <div key={credential.id} className="flex items-start justify-between p-3 bg-neutral-50 rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <FiCheckCircle className="text-success-500 mt-0.5 flex-shrink-0" size={16} />
+                        <div>
+                          <p className="font-medium text-neutral-900 text-sm">{credential.type}</p>
+                          <p className="text-xs text-neutral-500">Expires: {new Date(credential.expirationDate).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                      {credential.isVerified && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-success-100 text-success-800">Verified</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Availability card */}
+          {caregiver.availabilitySlots && caregiver.availabilitySlots.length > 0 && (
+            <div className="bg-white rounded-lg shadow border border-neutral-200 p-6">
+              <h2 className="text-lg font-semibold text-neutral-900 mb-3">Availability (Next 7 Days)</h2>
+              <div className="space-y-2">
+                {caregiver.availabilitySlots.map((slot: any) => {
+                  const startDate = new Date(slot.startTime);
+                  const endDate = new Date(slot.endTime);
+                  return (
+                    <div key={slot.id} className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg border border-neutral-200">
+                      <div className="flex items-center gap-3">
+                        <FiCalendar className="text-primary-600 flex-shrink-0" size={16} />
+                        <div>
+                          <p className="font-medium text-neutral-900 text-sm">
+                            {startDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                          </p>
+                          <p className="text-xs text-neutral-500">
+                            {startDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} – {endDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success-100 text-success-800">Available</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-neutral-500 mt-3">Contact the caregiver to request additional availability.</p>
+            </div>
+          )}
+
+          {/* Per-diem shift booking card */}
+          <div className="bg-white rounded-lg shadow border border-neutral-200 p-6">
+            <h2 className="text-lg font-semibold text-neutral-900 mb-4">Book a per-diem shift</h2>
+            <RequestShiftForm caregiverUserId={caregiver.userId} caregiverId={caregiver.id} />
+          </div>
+
+          {/* Reviews card */}
+          <div className="bg-white rounded-lg shadow border border-neutral-200 p-6">
+            <h2 className="text-lg font-semibold text-neutral-900 mb-4">Reviews</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <CaregiverReviewsList caregiverId={caregiver.id} />
+              <CaregiverReviewForm caregiverId={caregiver.id} />
+            </div>
+          </div>
+
+        </div>
+
+        {/* Sidebar — col-span-1 */}
+        <div className="lg:col-span-1">
+          <div className="sticky top-6 space-y-4">
+
+            {/* CTA card */}
+            <div className="bg-white rounded-lg shadow border border-neutral-200 p-5">
+              {isOperator ? (
+                <>
+                  <h3 className="text-base font-semibold text-neutral-900 mb-1">
+                    Ready to hire {caregiver.name.split(' ')[0]}?
+                  </h3>
+                  <p className="text-sm text-neutral-500 mb-3">
+                    Add them to your team — they&apos;ll be notified immediately.
+                  </p>
+                  {operatorPlan && ['PROFESSIONAL', 'GROWTH', 'AGENCY'].includes(operatorPlan) ? (
+                    <p className="text-xs text-success-700 font-medium mb-3">
+                      ✓ Marketplace hire included in your {operatorPlan} plan
+                    </p>
+                  ) : (
+                    <p className="text-xs text-amber-700 font-medium mb-3">
+                      $99 marketplace access fee applies on Starter
+                    </p>
+                  )}
+                  <DirectHireButton
+                    caregiverId={caregiver.id}
+                    caregiverName={caregiver.name}
+                    operatorPlan={operatorPlan}
+                    isMock={caregiver.id.startsWith('cg_')}
+                  />
+                  <Link
+                    href={`/messages?userId=${caregiver.userId}`}
+                    className="mt-2 flex w-full items-center justify-center gap-2 rounded-md border border-neutral-300 bg-neutral-50 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100 transition-colors"
+                  >
+                    Message
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-base font-semibold text-neutral-900 mb-1">
+                    Interested in {caregiver.name.split(' ')[0]}?
+                  </h3>
+                  <p className="text-sm text-neutral-500 mb-3">
+                    Submit a care inquiry to connect and discuss your needs.
+                  </p>
+                  <RequestCareButton
+                    targetType="AIDE"
+                    targetId={caregiver.id}
+                    targetName={caregiver.name}
+                    className="w-full flex items-center justify-center gap-2 bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 px-4 rounded-md transition-colors text-sm"
+                  />
+                  <Link
+                    href={`/messages?userId=${caregiver.userId}`}
+                    className="mt-2 flex w-full items-center justify-center gap-2 rounded-md border border-neutral-300 bg-neutral-50 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100 transition-colors"
+                  >
+                    Message
+                  </Link>
+                </>
+              )}
+            </div>
+
+            {/* Background check panel */}
+            {!caregiver.id.startsWith("cg_") && (
+              <BackgroundCheckOrderPanel
+                caregiverId={caregiver.id}
+                caregiverFirstName={caregiver.name.split(" ")[0]}
+                existingStatus={caregiver.backgroundCheckStatus}
+                defaultExpanded={true}
+              />
+            )}
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}

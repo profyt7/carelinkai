@@ -1,0 +1,52 @@
+services:
+  - type: web
+    name: carelinkai
+    runtime: node
+    region: oregon
+    plan: starter
+    buildCommand: bash render-build-verbose.sh
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: "20.11.0"
+      - key: NODE_ENV
+        value: production
+    healthCheckPath: /
+
+# Render Cron Jobs (Requires Standard Plan or Higher)
+# Uncomment and configure when upgrading from Starter plan
+# 
+# - type: cron
+#   name: process-followups
+#   runtime: node
+#   region: oregon
+#   plan: starter
+#   schedule: "0 */6 * * *"  # Every 6 hours
+#   buildCommand: npm install
+#   startCommand: |
+#     curl -X POST \
+#       -H "Authorization: Bearer $CRON_SECRET" \
+#       https://carelinkai.onrender.com/api/follow-ups/process
+#   envVars:
+#     - key: NODE_ENV
+#       value: production
+#     - key: CRON_SECRET
+#       sync: false  # Pull from environment variables
+#
+# Per-facility claim drip — advance due touches once daily (email-only).
+# NOTE: the ACTIVE (free) scheduler is the GitHub Actions workflow
+# .github/workflows/claim-drip.yml (Render cron needs Standard plan). This block
+# is the paid Render-cron equivalent for if/when the app leaves Starter.
+# - type: cron
+#   name: claim-drip
+#   runtime: node
+#   region: oregon
+#   plan: starter
+#   schedule: "0 14 * * *"  # 14:00 UTC daily (~9-10am ET)
+#   buildCommand: npm install
+#   startCommand: |
+#     curl -sS -H "Authorization: Bearer $CRON_SECRET" \
+#       https://getcarelinkai.com/api/cron/claim-drip
+#   envVars:
+#     - key: CRON_SECRET
+#       sync: false

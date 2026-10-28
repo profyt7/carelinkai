@@ -1,0 +1,374 @@
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { withAuth } from 'next-auth/middleware';
+import { middlewareRateLimitFor, rateLimitExceeded } from '@/lib/edge-rate-limit';
+import { isKnownAppPath, isPublicPage } from '@/lib/routing/public-routes';
+import { isPageMethodAllowed, methodNotAllowedHeaders } from '@/lib/routing/page-methods';
+
+/* ============================================================================
+ * CRITICAL FIX FOR IMAGE OPTIMIZATION 400 ERRORS
+ * ============================================================================
+ * 
+ * ROOT CAUSE: next-auth's withAuth wrapper was processing ALL requests,
+ * including /_next/image, BEFORE our path exclusion checks could run.
+ * 
+ * SOLUTION: Check paths at the EARLIEST possible point, BEFORE withAuth,
+ * and return immediately for Next.js internal routes.
+ * 
+ * This ensures /_next/image and other Next.js routes never touch the
+ * authentication system at all.
+ * ========================================================================== */
+
+// Define paths that should NEVER require authentication
+const PUBLIC_PATHS = [
+  '/_next/',           // All Next.js internal routes (includes /_next/image, /_next/static, etc.)
+  '/api/',             // API routes handle their own auth
+  '/static/',          // Static assets
+  '/public/',          // Public folder
+  '/images/',          // Image folder
+  '/uploads/',         // Upload folder
+  '/favicon.ico',      // Favicon
+  '/sw.js',            // Service worker
+  '/manifest.json',    // PWA manifest
+  '/offline.html',     // PWA offline page
+  '/robots.txt',       // Crawler directives — MUST be publicly readable by search engines
+  '/sitemap.xml',      // Sitemap — MUST be publicly readable by search engines
+  '/llms.txt',         // Plain-text overview for AI agents (W3 item 6) — public, never auth
+  '/founder-intro.mp4',        // Self-hosted founder intro video (linked from DP emails)
+  '/founder-intro-poster.jpg', // Poster frame for the above
+  '/monitoring',       // Sentry browser tunnel (next.config.js tunnelRoute) — POSTed from logged-out pages too
+];
+
+/**
+ * Check if a path should bypass all authentication
+ */
+function shouldBypassAuth(pathname: string): boolean {
+  // Search-engine crawler files must never redirect to login. Cover split
+  // sitemaps (/sitemap-0.xml, /sitemap/0.xml) too.
+  if (pathname === '/robots.txt' || /^\/sitemap.*\.xml$/.test(pathname)) return true;
+  return PUBLIC_PATHS.some(path => {
+    if (path.endsWith('/')) {
+      return pathname.startsWith(path);
+    }
+    return pathname === path;
+  });
+}
+
+/**
+ * Main middleware export - wrapped with our custom path checking logic
+ */
+export default function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+
+  /* ------------------------------------------------------------------
+   * RATE LIMITING (consolidated from the former root middleware.ts, which
+   * never executed — Next.js runs only this src/middleware.ts).
+   *
+   * Applies to /api/webhooks + /api/password (added to the matcher below).
+   * /api/auth keeps its stronger, Redis-capable limiter at its own route
+   * handler (Node runtime). Bypassed in CI/e2e/dev via ALLOW_DEV_ENDPOINTS.
+   * Edge-safe (no Node APIs). Returns BEFORE any auth processing.
+   * ---------------------------------------------------------------- */
+  const rlLimit = middlewareRateLimitFor(pathname);
+  if (rlLimit !== null) {
+    if (process.env['ALLOW_DEV_ENDPOINTS'] !== '1') {
+      const ip = (req.headers.get('x-forwarded-for') || 'unknown').split(',')[0].trim();
+      if (rateLimitExceeded(`${pathname}:${ip}`, rlLimit)) {
+        return new NextResponse(JSON.stringify({ error: 'Too Many Requests' }), {
+          status: 429,
+          headers: { 'content-type': 'application/json', 'retry-after': '60' },
+        });
+      }
+    }
+    const res = NextResponse.next();
+    const reqId =
+      req.headers.get('x-request-id') ||
+      (globalThis as any).crypto?.randomUUID?.() ||
+      Math.random().toString(36).slice(2);
+    if (reqId) res.headers.set('x-request-id', reqId);
+    return res;
+  }
+
+  /* ------------------------------------------------------------------
+   * OL-161: a POST / PUT / DELETE … to a PAGE route is not a page request.
+   * Answer a clean 405 (Allow: GET, HEAD, OPTIONS) instead of letting Next
+   * render its error page (Sentry logged those as "POST /_error"). Route
+   * handlers (/api/*, /monitoring) and server actions pass through.
+   * ---------------------------------------------------------------- */
+  if (!isPageMethodAllowed(req.method, pathname, req.headers)) {
+    return new NextResponse(JSON.stringify({ error: 'Method Not Allowed' }), { status: 405, headers: methodNotAllowedHeaders() });
+  }
+
+  /* ------------------------------------------------------------------
+   * FIRST LINE OF DEFENSE: Bypass auth entirely for public paths
+   * This runs BEFORE withAuth can process the request
+   * ---------------------------------------------------------------- */
+  if (shouldBypassAuth(pathname)) {
+    const res = NextResponse.next();
+    return applySecurityHeaders(req, res);
+  }
+
+  /* ------------------------------------------------------------------
+   * UNKNOWN PATHS → 404, never the login page.
+   * withAuth redirects every non-public path without a session to
+   * /auth/login, so /zzz-nope, /.env, /wp-admin … all used to answer 307.
+   * If the first segment is not a real src/app route there is no page to
+   * protect: rewrite to Next's internal not-found route (404 status).
+   * Fail-closed: a stale KNOWN_APP_SEGMENTS list 404s a new route rather
+   * than exposing it (see __tests__/public-routes.unit.test.ts).
+   * ---------------------------------------------------------------- */
+  if (!isKnownAppPath(pathname)) {
+    const notFound = req.nextUrl.clone();
+    notFound.pathname = '/_not-found';
+    notFound.search = '';
+    const res = NextResponse.rewrite(notFound, { status: 404 });
+    return applySecurityHeaders(req, res);
+  }
+
+  /* ------------------------------------------------------------------
+   * SECOND LINE OF DEFENSE: Apply withAuth for protected paths
+   * Only paths that need authentication reach this point
+   * ---------------------------------------------------------------- */
+  return (withAuth as any)(
+    function middleware(req: any) {
+      try {
+        const { pathname } = req.nextUrl;
+
+        // Double-check for safety (should never reach here for public paths)
+        if (shouldBypassAuth(pathname)) {
+          const res = NextResponse.next();
+          return applySecurityHeaders(req, res);
+        }
+
+        const urlObj = req.nextUrl;
+        const qsMock = urlObj?.searchParams?.get?.('mock')?.toString().trim().toLowerCase() || '';
+        const qsOn = ['1','true','yes','on'].includes(qsMock);
+        const qsOff = ['0','false','no','off'].includes(qsMock);
+
+        // Runtime mock toggle: cookie takes precedence, then SHOW_SITE_MOCKS env only
+        // NOTE: NEXT_PUBLIC_SHOW_MOCK_DASHBOARD is intentionally ignored to prevent accidental enablement
+        const cookieRaw = req.cookies?.get?.('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
+        const cookieOn = ['1', 'true', 'yes', 'on'].includes(cookieRaw);
+        const cookieOff = ['0', 'false', 'no', 'off'].includes(cookieRaw);
+        const rawMock = (process.env['SHOW_SITE_MOCKS'] || '')
+          .toString()
+          .trim()
+          .toLowerCase();
+        const envOn = ['1', 'true', 'yes', 'on'].includes(rawMock);
+        // Cookie explicitly off overrides everything
+        let showMocks = cookieOff ? false : (cookieOn || envOn || qsOn);
+
+        // If query string explicitly toggles mock, set cookie and strip the param
+        if (qsOn || qsOff) {
+          try {
+            const clean = new URL(req.url);
+            clean.searchParams.delete('mock');
+            const redirectRes = NextResponse.redirect(clean);
+            try {
+              redirectRes.cookies.set('carelink_mock_mode', qsOn ? '1' : '0', {
+                httpOnly: true,
+                sameSite: 'lax',
+                secure: process.env['NODE_ENV'] === 'production',
+                path: '/',
+                maxAge: qsOn ? 60 * 60 * 24 * 7 : 0,
+              });
+            } catch {}
+            return applySecurityHeaders(req, redirectRes);
+          } catch {}
+          const res = NextResponse.next();
+          try {
+            res.cookies.set('carelink_mock_mode', qsOn ? '1' : '0', {
+              httpOnly: true,
+              sameSite: 'lax',
+              secure: process.env['NODE_ENV'] === 'production',
+              path: '/',
+              maxAge: qsOn ? 60 * 60 * 24 * 7 : 0,
+            });
+          } catch {}
+          return applySecurityHeaders(req, res);
+        }
+
+        // Allow unauthenticated access during E2E runs (never in production)
+        if (process.env['NODE_ENV'] !== 'production' && process.env['NEXT_PUBLIC_E2E_AUTH_BYPASS'] === '1') {
+          const res = NextResponse.next();
+          try { res.cookies.set('e2e-bypass', '1', { path: '/' }); } catch {}
+          return applySecurityHeaders(req, res);
+        }
+        if (process.env['NODE_ENV'] !== 'production' && req.headers.get('x-e2e-bypass') === '1') {
+          const res = NextResponse.next();
+          try { res.cookies.set('e2e-bypass', '1', { path: '/' }); } catch {}
+          return applySecurityHeaders(req, res);
+        }
+
+        // Always-public paths — single source of truth: src/lib/routing/public-routes.ts
+        const mockPublicPrefixes = ['/marketplace'];
+
+        if (isPublicPage(pathname) || (showMocks && mockPublicPrefixes.some(p => pathname === p || pathname.startsWith(p + '/')))) {
+          const res = NextResponse.next();
+          return applySecurityHeaders(req, res);
+        }
+
+        const res = NextResponse.next();
+        return applySecurityHeaders(req, res);
+      } catch (err) {
+        console.error('Middleware error:', err);
+        const res = NextResponse.next();
+        return applySecurityHeaders(req, res);
+      }
+    },
+    {
+      // Explicitly wire the secret and cookie name to match auth.ts, so the Edge Runtime
+      // getToken call looks for the same cookie regardless of NEXTAUTH_URL configuration.
+      secret: process.env['NEXTAUTH_SECRET'],
+      cookies: {
+        sessionToken: {
+          name: (process.env.NODE_ENV === 'production' && process.env['ALLOW_INSECURE_AUTH_COOKIE'] !== '1')
+            ? '__Secure-next-auth.session-token'
+            : 'next-auth.session-token',
+        },
+      },
+      callbacks: {
+        authorized({ req, token }: { req: any; token: any }) {
+          try {
+            const pathname = req?.nextUrl?.pathname || '';
+
+            // Triple-check for public paths (defense in depth)
+            if (shouldBypassAuth(pathname)) {
+              return true;
+            }
+
+            // Always-public paths — no auth required regardless of mock mode
+            // (single source of truth: src/lib/routing/public-routes.ts)
+            if (isPublicPage(pathname)) {
+              return true;
+            }
+
+            // Allow public access to marketplace routes when mock mode is enabled
+            const cookieRaw = req?.cookies?.get?.('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
+            const cookieOn = ['1', 'true', 'yes', 'on'].includes(cookieRaw);
+            const cookieOff = ['0', 'false', 'no', 'off'].includes(cookieRaw);
+            const qsMock = req?.nextUrl?.searchParams?.get?.('mock')?.toString().trim().toLowerCase() || '';
+            const qsOn = ['1','true','yes','on'].includes(qsMock);
+            const rawMock = (process.env['SHOW_SITE_MOCKS'] || '')
+              .toString()
+              .trim()
+              .toLowerCase();
+            const envOn = ['1', 'true', 'yes', 'on'].includes(rawMock);
+            const showMocks = cookieOff ? false : (cookieOn || envOn || qsOn);
+            if (showMocks) {
+              if (pathname.startsWith('/marketplace')) {
+                return true;
+              }
+            }
+
+            // E2E bypass
+            if (process.env['NODE_ENV'] !== 'production' && process.env['NEXT_PUBLIC_E2E_AUTH_BYPASS'] === '1') return true;
+            const headerVal = req?.headers?.get?.('x-e2e-bypass');
+            if (process.env['NODE_ENV'] !== 'production' && headerVal === '1') return true;
+          } catch (err) {
+            console.error('authorized callback error:', err);
+          }
+          return !!token;
+        },
+      },
+      pages: {
+        signIn: '/auth/login',
+      },
+    }
+  )(req);
+}
+
+// Specify which routes this middleware should run on
+export const config = {
+  /* ---------------------------------------------------------------
+   * CRITICAL: Use a matcher that explicitly excludes Next.js routes
+   * This is the FIRST line of defense to prevent the middleware from
+   * even running on /_next/ paths.
+   * 
+   * We exclude:
+   * - /_next/ (all Next.js internal routes)
+   * - /api/ (API routes handle their own auth)
+   * - /static/, /public/, /images/, /uploads/ (static assets)
+   * - /auth/ (authentication pages)
+   * - PWA assets (sw.js, manifest.json, offline.html)
+   * - Common files (favicon.ico)
+   * ------------------------------------------------------------- */
+  matcher: [
+    /*
+     * Match all request paths except:
+     * 1. /_next/ (Next.js internals)
+     * 2. /api/ (API routes)
+     * 3. /static/, /public/, /images/, /uploads/ (static files)
+     * 4. /auth/ (auth pages)
+     * 5. Common assets (favicon, manifest, etc.)
+     */
+    '/((?!_next/|api/|static/|public/|images/|uploads/|favicon\\.ico|robots\\.txt|sitemap.*\\.xml|llms\\.txt|auth/|sw\\.js|manifest\\.json|offline\\.html|founder-intro\\.mp4|founder-intro-poster\\.jpg).*)',
+    // Rate-limited API surfaces (handled by the rate-limit branch above, not auth).
+    // /api/auth is deliberately NOT here — it is rate-limited at its own route handler.
+    '/api/webhooks/:path*',
+    '/api/password/:path*',
+  ],
+};
+
+/**
+ * Apply security headers (CSP, HSTS, etc.)
+ */
+function applySecurityHeaders(req: any, res: NextResponse) {
+  const isProd = process.env['NODE_ENV'] === 'production';
+  const enableCsp = process.env['NEXT_PUBLIC_ENABLE_CSP'] === '1';
+
+  // Strict-Transport-Security (HSTS) - only in production
+  if (isProd) {
+    res.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+  }
+
+  // Common security headers
+  res.headers.set('X-Content-Type-Options', 'nosniff');
+  res.headers.set('X-Frame-Options', 'DENY');
+  // OL-178: cross-origin requests carry the origin only (never a path or query —
+  // claim / one-tap tokens stay private). `no-referrer` made OpenStreetMap block
+  // every tile, and MapTiler's key restriction checks the origin.
+  res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.headers.set(
+    'Permissions-Policy',
+    [
+      "geolocation=(self)",
+      "camera=()",
+      "microphone=()",
+      "payment=(self)",
+      "fullscreen=(self)",
+      "accelerometer=()",
+      "autoplay=(self)",
+      "clipboard-read=(self)",
+      "clipboard-write=(self)",
+    ].join(', ')
+  );
+
+  // Content-Security-Policy (only enable in production to avoid dev tooling issues)
+  const cspParts = [
+    "default-src 'self'",
+    isProd ? "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com" : "style-src 'self' 'unsafe-inline'",
+    isProd ? "script-src 'self' 'unsafe-inline' https://js.stripe.com" : "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data: https: https://fonts.gstatic.com",
+    isProd ? "connect-src 'self' https: https://js.stripe.com https://api.stripe.com" : "connect-src 'self' ws: wss: http: https:",
+    "media-src 'self'",
+    "frame-ancestors 'none'",
+    "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
+    "worker-src 'self' blob:",
+    "base-uri 'self'",
+    "form-action 'self'"
+  ];
+
+  // Do not set CSP for Next.js assets routes
+  try {
+    const url = new URL(req.url);
+    const path = url.pathname;
+    const skipCsp = path.startsWith('/_next') || path.startsWith('/api');
+    if (isProd && enableCsp && !skipCsp) {
+      res.headers.set('Content-Security-Policy', cspParts.join('; '));
+    }
+  } catch {}
+
+  return res;
+}

@@ -1,0 +1,708 @@
+/**
+ * User Profile Management API for CareLinkAI
+ * 
+ * This API handles user profile operations:
+ * - GET: Retrieve user profile with role-specific data
+ * - PATCH: Update user profile information
+ * 
+ * Features:
+ * - Role-specific profile fields
+ * - Input validation
+ * - Security checks (authentication, authorization)
+ * - Audit logging for profile changes
+ * - Handles all user roles: FAMILY, OPERATOR, CAREGIVER, ADMIN, AFFILIATE
+ */
+
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
+import { NextRequest, NextResponse } from "next/server";
+import { UserRole, AuditAction, CategoryType } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { z } from "zod";
+import { getSmsConsentState, recordAccountSmsConsent } from "@/lib/consent/sms-consent-server";
+import { SMS_CONSENT_FORMS } from "@/lib/consent/sms-consent";
+
+
+// Base user profile schema (common fields)
+const baseProfileSchema = z.object({
+  firstName: z.string().min(2, "First name must be at least 2 characters").optional(),
+  lastName: z.string().min(2, "Last name must be at least 2 characters").optional(),
+  phone: z.string().optional().nullable(),
+  timezone: z.string().optional(),
+  notificationPrefs: z.record(z.any()).optional(),
+});
+
+// Family role specific schema
+const familyProfileSchema = baseProfileSchema.extend({
+  emergencyContact: z.string().optional().nullable(),
+  emergencyPhone: z.string().optional().nullable(),
+});
+
+// Operator role specific schema
+const operatorProfileSchema = baseProfileSchema.extend({
+  companyName: z.string().min(2, "Company name must be at least 2 characters").optional(),
+  taxId: z.string().optional().nullable(),
+  businessLicense: z.string().optional().nullable(),
+});
+
+// Caregiver role specific schema
+const caregiverProfileSchema = baseProfileSchema.extend({
+  bio: z.string().optional().nullable(),
+  yearsExperience: z.number().int().min(0).optional().nullable(),
+  hourlyRate: z.number().min(0).optional().nullable(),
+  availability: z.record(z.any()).optional(),
+  // new editable marketplace facets (validated as string arrays; values further filtered against DB categories)
+  specialties: z.array(z.string()).max(50).optional(),
+  settings: z.array(z.string()).max(20).optional(),
+  careTypes: z.array(z.string()).max(20).optional(),
+  // marketplace visibility toggle
+  isVisibleInMarketplace: z.boolean().optional(),
+});
+
+// Affiliate role specific schema
+const affiliateProfileSchema = baseProfileSchema.extend({
+  organization: z.string().optional().nullable(),
+  commissionRate: z.number().min(0).max(100).optional().nullable(),
+  paymentDetails: z.record(z.any()).optional(),
+});
+
+// Provider role specific schema
+const providerProfileSchema = baseProfileSchema.extend({
+  businessName: z.string().min(2, "Business name must be at least 2 characters").optional(),
+  contactName: z.string().min(2, "Contact name must be at least 2 characters").optional(),
+  contactEmail: z.string().email("Invalid email address").optional(),
+  contactPhone: z.string().optional().nullable(),
+  bio: z.string().optional().nullable(),
+  website: z.string().url("Invalid website URL").optional().nullable(),
+  insuranceInfo: z.string().optional().nullable(),
+  licenseNumber: z.string().optional().nullable(),
+  yearsInBusiness: z.number().int().min(0).optional().nullable(),
+  serviceTypes: z.array(z.string()).max(50).optional(),
+  coverageArea: z.record(z.any()).optional(),
+  isActive: z.boolean().optional(),
+  // Transport fields
+  rideTypes: z.array(z.string()).optional(),
+  wheelchairAccessible: z.boolean().optional(),
+  acceptsMedicaid: z.boolean().optional(),
+  serviceRadius: z.number().int().min(1).max(500).optional().nullable(),
+  allowsRecurring: z.boolean().optional(),
+  // Instant booking / pricing
+  rateBaseFare: z.number().min(0).optional().nullable(),
+  ratePerMile: z.number().min(0).optional().nullable(),
+  rateWaitPerHour: z.number().min(0).optional().nullable(),
+  instantBook: z.boolean().optional(),
+  vehicleCapacity: z.number().int().min(1).max(20).optional(),
+});
+
+/**
+ * GET handler to retrieve user profile
+ */
+export async function GET(request: NextRequest) {
+  try {
+    // Verify user is authenticated via session
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, message: "Authentication required" },
+        { status: 401 }
+      );
+    }
+    
+    // Get user ID from session
+    const userId = session.user.id;
+    
+    // Get user from database with basic profile info
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        status: true,
+        profileImageUrl: true,
+        timezone: true,
+        notificationPrefs: true,
+        emailVerified: true,
+        twoFactorEnabled: true,
+        createdAt: true,
+        updatedAt: true,
+        lastLoginAt: true,
+      }
+    });
+    
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: "User not found" },
+        { status: 404 }
+      );
+    }
+    
+    // Get role-specific profile data based on user role
+    let roleSpecificData = null;
+    
+    switch (user.role) {
+      case UserRole.FAMILY:
+        roleSpecificData = await prisma.family.findUnique({
+          where: { userId },
+          select: {
+            id: true,
+            emergencyContact: true,
+            emergencyPhone: true,
+            residents: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                status: true,
+              }
+            }
+          }
+        });
+        break;
+        
+      case UserRole.OPERATOR:
+        roleSpecificData = await prisma.operator.findUnique({
+          where: { userId },
+          select: {
+            id: true,
+            companyName: true,
+            taxId: true,
+            businessLicense: true,
+            homes: {
+              select: {
+                id: true,
+                name: true,
+                status: true,
+                currentOccupancy: true,
+                capacity: true,
+              }
+            }
+          }
+        });
+        break;
+        
+      case UserRole.CAREGIVER:
+        roleSpecificData = await prisma.caregiver.findUnique({
+          where: { userId },
+          select: {
+            id: true,
+            bio: true,
+            yearsExperience: true,
+            hourlyRate: true,
+            availability: true,
+            specialties: true,
+            settings: true,
+            careTypes: true,
+            isVisibleInMarketplace: true,
+            credentials: {
+              select: {
+                id: true,
+                type: true,
+                issueDate: true,
+                expirationDate: true,
+                isVerified: true,
+              }
+            }
+          }
+        });
+        break;
+        
+      case UserRole.AFFILIATE:
+        roleSpecificData = await prisma.affiliate.findUnique({
+          where: { userId },
+          select: {
+            id: true,
+            affiliateCode: true,
+            organization: true,
+            commissionRate: true,
+            paymentDetails: true,
+            referrals: {
+              select: {
+                id: true,
+                status: true,
+                conversionDate: true,
+                commissionAmount: true,
+                commissionPaid: true,
+              }
+            }
+          }
+        });
+        break;
+        
+      case UserRole.PROVIDER:
+        roleSpecificData = await prisma.provider.findUnique({
+          where: { userId },
+          select: {
+            id: true,
+            businessName: true,
+            contactName: true,
+            contactEmail: true,
+            contactPhone: true,
+            bio: true,
+            website: true,
+            insuranceInfo: true,
+            licenseNumber: true,
+            yearsInBusiness: true,
+            isVerified: true,
+            isActive: true,
+            serviceTypes: true,
+            coverageArea: true,
+            rideTypes: true,
+            wheelchairAccessible: true,
+            acceptsMedicaid: true,
+            serviceRadius: true,
+            allowsRecurring: true,
+            rateBaseFare: true,
+            ratePerMile: true,
+            rateWaitPerHour: true,
+            instantBook: true,
+            vehicleCapacity: true,
+            credentials: {
+              select: {
+                id: true,
+                type: true,
+                status: true,
+                expiresAt: true,
+                verifiedAt: true,
+              }
+            }
+          }
+        });
+        break;
+        
+      case UserRole.ADMIN:
+        // Admin role doesn't have specific profile data
+        roleSpecificData = { isAdmin: true };
+        break;
+        
+      default:
+        roleSpecificData = {};
+    }
+    
+    // Get addresses associated with the user
+    const addresses = await prisma.address.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        street: true,
+        street2: true,
+        city: true,
+        state: true,
+        zipCode: true,
+        country: true,
+        latitude: true,
+        longitude: true,
+      }
+    });
+    
+    // Create audit log entry for profile view
+    await prisma.auditLog.create({
+      data: {
+        action: AuditAction.READ,
+        resourceType: "USER_PROFILE",
+        resourceId: userId,
+        description: "User viewed their profile",
+        ipAddress: request.headers.get("x-forwarded-for") || 
+                  // @ts-ignore - `ip` exists only in Node runtime requests
+                  (request as any).ip || 
+                  "unknown",
+        userId: userId,
+        actionedBy: userId
+      }
+    });
+    
+    // Return combined profile data.
+    // Also expose roleSpecificData under a named key (e.g. "provider", "caregiver", "family")
+    // so billing pages can access data.provider?.listingStatus etc. directly.
+    const roleKey = user.role.toLowerCase();
+    // OL-184: settings checkboxes mirror the saved SMS opt-in.
+    const sms = await getSmsConsentState(userId).catch(() => ({ given: false, at: null }));
+    return NextResponse.json({
+      success: true,
+      smsConsent: { given: sms.given, at: sms.at },
+      [roleKey]: roleSpecificData,
+      data: {
+        user,
+        roleSpecificData,
+        addresses,
+        role: user.role
+      }
+    });
+    
+  } catch (error: any) {
+    console.error("Profile retrieval error:", error);
+    
+    return NextResponse.json(
+      { 
+        success: false, 
+        message: "Failed to retrieve profile", 
+        error: process.env.NODE_ENV === "development" ? error.message : undefined 
+      }, 
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * PATCH handler to update user profile
+ */
+export async function PATCH(request: NextRequest) {
+  try {
+    // Verify user is authenticated via session
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, message: "Authentication required" },
+        { status: 401 }
+      );
+    }
+    
+    // Get user ID from session
+    const userId = session.user.id;
+    
+    // Get user to determine role
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true }
+    });
+    
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: "User not found" },
+        { status: 404 }
+      );
+    }
+    
+    // Parse request body
+    const body = await request.json();
+    
+    // Validate input based on user role
+    let validationResult;
+    switch (user.role) {
+      case UserRole.FAMILY:
+        validationResult = familyProfileSchema.safeParse(body);
+        break;
+      case UserRole.OPERATOR:
+        validationResult = operatorProfileSchema.safeParse(body);
+        break;
+      case UserRole.CAREGIVER:
+        validationResult = caregiverProfileSchema.safeParse(body);
+        break;
+      case UserRole.AFFILIATE:
+        validationResult = affiliateProfileSchema.safeParse(body);
+        break;
+      case UserRole.PROVIDER:
+        validationResult = providerProfileSchema.safeParse(body);
+        break;
+      default:
+        validationResult = baseProfileSchema.safeParse(body);
+    }
+    
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: "Invalid input data", 
+          errors: validationResult.error.flatten().fieldErrors 
+        }, 
+        { status: 400 }
+      );
+    }
+    
+    const validatedData = validationResult.data;
+    
+    // Extract base user data and role-specific data
+    const { 
+      firstName, 
+      lastName, 
+      phone, 
+      timezone, 
+      notificationPrefs,
+      ...roleSpecificFields 
+    } = validatedData;
+    
+    // Prepare base user update data
+    const baseUserUpdate: any = {};
+    if (firstName !== undefined) baseUserUpdate.firstName = firstName;
+    if (lastName !== undefined) baseUserUpdate.lastName = lastName;
+    if (phone !== undefined) baseUserUpdate.phone = phone;
+    if (timezone !== undefined) baseUserUpdate.timezone = timezone;
+    if (notificationPrefs !== undefined) baseUserUpdate.notificationPrefs = notificationPrefs;
+    
+    // Update user record with base fields
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: baseUserUpdate,
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        timezone: true,
+        updatedAt: true
+      }
+    });
+    
+    // OL-184: SMS opt-in from the profile / provider settings checkbox. Read
+    // from the raw body (the zod schemas strip unknown keys). The provider
+    // settings page (smsConsentSource "provider") opts in the listing contact
+    // phone; every other form the account phone.
+    const rawBody = (body ?? {}) as Record<string, unknown>;
+    if (rawBody.smsConsent !== undefined) {
+      const isProvider = user.role === UserRole.PROVIDER && rawBody.smsConsentSource === 'provider';
+      let smsPhone: string | null | undefined = phone;
+      if (isProvider) {
+        smsPhone =
+          typeof rawBody.contactPhone === 'string' || rawBody.contactPhone === null
+            ? (rawBody.contactPhone as string | null)
+            : (await prisma.provider.findUnique({ where: { userId }, select: { contactPhone: true } }).catch(() => null))
+                ?.contactPhone ?? null;
+      }
+      await recordAccountSmsConsent({
+        consent: rawBody.smsConsent,
+        sourceForm: isProvider ? SMS_CONSENT_FORMS.PROVIDER_SETTINGS : SMS_CONSENT_FORMS.PROFILE_SETTINGS,
+        userId,
+        phone: smsPhone,
+        req: request,
+      });
+    }
+
+    // Update role-specific data if any fields provided
+    let roleSpecificUpdate = null;
+    
+    // Cast roleSpecificFields to any for flexible property access
+    const rs: any = roleSpecificFields;
+
+    if (Object.keys(roleSpecificFields).length > 0) {
+      switch (user.role) {
+        case UserRole.FAMILY:
+          if ('emergencyContact' in roleSpecificFields || 'emergencyPhone' in roleSpecificFields) {
+            roleSpecificUpdate = await prisma.family.update({
+              where: { userId },
+              data: {
+                emergencyContact: rs.emergencyContact,
+                emergencyPhone: rs.emergencyPhone
+              }
+            });
+          }
+          break;
+          
+        case UserRole.OPERATOR:
+          if ('companyName' in roleSpecificFields || 'taxId' in roleSpecificFields || 'businessLicense' in roleSpecificFields) {
+            roleSpecificUpdate = await prisma.operator.update({
+              where: { userId },
+              data: {
+                companyName: rs.companyName,
+                taxId: rs.taxId,
+                businessLicense: rs.businessLicense
+              }
+            });
+          }
+          break;
+          
+        case UserRole.CAREGIVER:
+          if (
+            'bio' in roleSpecificFields ||
+            'yearsExperience' in roleSpecificFields ||
+            'hourlyRate' in roleSpecificFields ||
+            'availability' in roleSpecificFields ||
+            'specialties' in roleSpecificFields ||
+            'settings' in roleSpecificFields ||
+            'careTypes' in roleSpecificFields ||
+            'isVisibleInMarketplace' in roleSpecificFields
+          ) {
+            // Fetch allowed category slugs for validation/sanitization
+            const [specialtyCats, settingCats, careTypeCats] = await Promise.all([
+              prisma.marketplaceCategory.findMany({ where: { type: CategoryType.SPECIALTY, isActive: true }, select: { slug: true } }),
+              prisma.marketplaceCategory.findMany({ where: { type: CategoryType.SETTING, isActive: true }, select: { slug: true } }),
+              prisma.marketplaceCategory.findMany({ where: { type: CategoryType.CARE_TYPE, isActive: true }, select: { slug: true } }),
+            ]);
+            const allowedSpecialties = new Set(specialtyCats.map((c) => c.slug));
+            const allowedSettings = new Set(settingCats.map((c) => c.slug));
+            const allowedCareTypes = new Set(careTypeCats.map((c) => c.slug));
+
+            const cleanSpecialties: string[] | undefined = Array.isArray(rs.specialties)
+              ? Array.from(new Set((rs.specialties as string[]).map((s) => String(s).trim().toLowerCase()))).filter((s) => allowedSpecialties.has(s))
+              : undefined;
+            const cleanSettings: string[] | undefined = Array.isArray(rs.settings)
+              ? Array.from(new Set((rs.settings as string[]).map((s) => String(s).trim().toLowerCase()))).filter((s) => allowedSettings.has(s))
+              : undefined;
+            const cleanCareTypes: string[] | undefined = Array.isArray(rs.careTypes)
+              ? Array.from(new Set((rs.careTypes as string[]).map((s) => String(s).trim().toLowerCase()))).filter((s) => allowedCareTypes.has(s))
+              : undefined;
+
+            roleSpecificUpdate = await prisma.caregiver.update({
+              where: { userId },
+              data: {
+                bio: rs.bio,
+                yearsExperience: rs.yearsExperience,
+                hourlyRate: rs.hourlyRate,
+                availability: rs.availability,
+                ...(cleanSpecialties !== undefined ? { specialties: cleanSpecialties } : {}),
+                ...(cleanSettings !== undefined ? { settings: cleanSettings } : {}),
+                ...(cleanCareTypes !== undefined ? { careTypes: cleanCareTypes } : {}),
+                ...(rs.isVisibleInMarketplace !== undefined ? { isVisibleInMarketplace: !!rs.isVisibleInMarketplace } : {}),
+              }
+            });
+          }
+          break;
+          
+        case UserRole.AFFILIATE:
+          if ('organization' in roleSpecificFields || 'commissionRate' in roleSpecificFields || 
+              'paymentDetails' in roleSpecificFields) {
+            roleSpecificUpdate = await prisma.affiliate.update({
+              where: { userId },
+              data: {
+                organization: rs.organization,
+                commissionRate: rs.commissionRate,
+                paymentDetails: rs.paymentDetails
+              }
+            });
+          }
+          break;
+          
+        case UserRole.PROVIDER:
+          if (
+            'businessName' in roleSpecificFields ||
+            'contactName' in roleSpecificFields ||
+            'contactEmail' in roleSpecificFields ||
+            'contactPhone' in roleSpecificFields ||
+            'bio' in roleSpecificFields ||
+            'website' in roleSpecificFields ||
+            'insuranceInfo' in roleSpecificFields ||
+            'licenseNumber' in roleSpecificFields ||
+            'yearsInBusiness' in roleSpecificFields ||
+            'serviceTypes' in roleSpecificFields ||
+            'coverageArea' in roleSpecificFields ||
+            'isActive' in roleSpecificFields
+          ) {
+            // Prepare update data
+            const updateData: any = {};
+            if (rs.businessName !== undefined) updateData.businessName = rs.businessName;
+            if (rs.contactName !== undefined) updateData.contactName = rs.contactName;
+            if (rs.contactEmail !== undefined) updateData.contactEmail = rs.contactEmail;
+            if (rs.contactPhone !== undefined) updateData.contactPhone = rs.contactPhone;
+            if (rs.bio !== undefined) updateData.bio = rs.bio;
+            if (rs.website !== undefined) updateData.website = rs.website;
+            if (rs.insuranceInfo !== undefined) updateData.insuranceInfo = rs.insuranceInfo;
+            if (rs.licenseNumber !== undefined) updateData.licenseNumber = rs.licenseNumber;
+            if (rs.yearsInBusiness !== undefined) updateData.yearsInBusiness = rs.yearsInBusiness;
+            if (rs.serviceTypes !== undefined) updateData.serviceTypes = rs.serviceTypes;
+            if (rs.coverageArea !== undefined) updateData.coverageArea = rs.coverageArea;
+            if (rs.isActive !== undefined) updateData.isActive = rs.isActive;
+            if (rs.rideTypes !== undefined) updateData.rideTypes = rs.rideTypes;
+            if (rs.wheelchairAccessible !== undefined) updateData.wheelchairAccessible = rs.wheelchairAccessible;
+            if (rs.acceptsMedicaid !== undefined) updateData.acceptsMedicaid = rs.acceptsMedicaid;
+            if (rs.serviceRadius !== undefined) updateData.serviceRadius = rs.serviceRadius;
+            if (rs.allowsRecurring !== undefined) updateData.allowsRecurring = rs.allowsRecurring;
+            if (rs.rateBaseFare !== undefined) updateData.rateBaseFare = rs.rateBaseFare;
+            if (rs.ratePerMile !== undefined) updateData.ratePerMile = rs.ratePerMile;
+            if (rs.rateWaitPerHour !== undefined) updateData.rateWaitPerHour = rs.rateWaitPerHour;
+            if (rs.instantBook !== undefined) updateData.instantBook = rs.instantBook;
+            if (rs.vehicleCapacity !== undefined) updateData.vehicleCapacity = rs.vehicleCapacity;
+
+            roleSpecificUpdate = await prisma.provider.update({
+              where: { userId },
+              data: updateData
+            });
+          }
+          break;
+      }
+    }
+    
+    // Handle address updates if provided
+    let addressUpdate = null;
+    if (body.address) {
+      // Check if user already has an address
+      const existingAddress = await prisma.address.findFirst({
+        where: { userId }
+      });
+      
+      if (existingAddress) {
+        // Update existing address
+        addressUpdate = await prisma.address.update({
+          where: { id: existingAddress.id },
+          data: {
+            street: body.address.street,
+            street2: body.address.street2,
+            city: body.address.city,
+            state: body.address.state,
+            zipCode: body.address.zipCode,
+            country: body.address.country || "USA",
+            latitude: body.address.latitude,
+            longitude: body.address.longitude
+          }
+        });
+      } else {
+        // Create new address
+        addressUpdate = await prisma.address.create({
+          data: {
+            userId,
+            street: body.address.street,
+            street2: body.address.street2,
+            city: body.address.city,
+            state: body.address.state,
+            zipCode: body.address.zipCode,
+            country: body.address.country || "USA",
+            latitude: body.address.latitude,
+            longitude: body.address.longitude
+          }
+        });
+      }
+    }
+    
+    // Get client IP for audit logging
+    const clientIp = request.headers.get("x-forwarded-for") || 
+                    // @ts-ignore - `ip` exists only in Node runtime requests
+                    (request as any).ip || 
+                    "unknown";
+    
+    // Create audit log entry for profile update
+    await prisma.auditLog.create({
+      data: {
+        action: AuditAction.UPDATE,
+        resourceType: "USER_PROFILE",
+        resourceId: userId,
+        description: "User updated their profile",
+        ipAddress: clientIp,
+        metadata: {
+          updatedFields: Object.keys({...baseUserUpdate, ...roleSpecificFields, ...(body.address ? {address: true} : {})})
+        },
+        userId: userId,
+        actionedBy: userId
+      }
+    });
+    
+    // Return success response with updated data
+    return NextResponse.json({
+      success: true,
+      message: "Profile updated successfully",
+      data: {
+        user: updatedUser,
+        roleSpecificUpdate,
+        addressUpdate
+      }
+    });
+    
+  } catch (error: any) {
+    console.error("Profile update error:", error);
+    
+    return NextResponse.json(
+      { 
+        success: false, 
+        message: "Failed to update profile", 
+        error: process.env.NODE_ENV === "development" ? error.message : undefined 
+      }, 
+      { status: 500 }
+    );
+  }
+}

@@ -1,0 +1,134 @@
+﻿import { NextRequest, NextResponse } from "next/server";
+import { UserRole } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import { requireOperatorOrAdmin, requireAnyRole } from "@/lib/rbac";
+import { captureError } from '@/lib/sentry';
+import { recordEvent } from '@/lib/events/record-event';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+
+export async function GET() {
+  const { session, error } = await requireOperatorOrAdmin();
+  if (error) return error;
+
+  const user = await prisma.user.findUnique({ where: { email: session!.user!.email! } });
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  let where: any = {};
+  if (user.role === UserRole.OPERATOR) {
+    const op = await prisma.operator.findUnique({ where: { userId: user.id } });
+    if (!op) return NextResponse.json({ error: 'Operator profile missing' }, { status: 400 });
+    where = { operatorId: op.id };
+  }
+
+  const homes = await prisma.assistedLivingHome.findMany({ where, include: { address: true }, orderBy: { createdAt: 'desc' } });
+  return NextResponse.json({ homes });
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    // Allow both OPERATOR and ADMIN roles to create homes
+    const { session, error } = await requireOperatorOrAdmin();
+    if (error) return error;
+
+    const user = await prisma.user.findUnique({ where: { email: session!.user!.email! } });
+    if (!user || (user.role !== UserRole.OPERATOR && user.role !== UserRole.ADMIN)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const { name, description, careLevel, capacity, priceMin, priceMax, address, amenities, genderRestriction, operatorId: bodyOperatorId } = body || {};
+
+    // Validate required fields and surface specific errors
+    const fieldErrors: Record<string, string> = {};
+    if (!name) fieldErrors.name = 'Home name is required';
+    if (!description) fieldErrors.description = 'Description is required';
+    if (!Array.isArray(careLevel) || careLevel.length === 0) fieldErrors.careLevel = 'At least one care type is required';
+    if (!capacity) fieldErrors.capacity = 'Capacity is required';
+    if (!address?.street) fieldErrors['address.street'] = 'Street address is required';
+    if (!address?.city) fieldErrors['address.city'] = 'City is required';
+    if (!address?.state) fieldErrors['address.state'] = 'State is required';
+    if (!address?.zipCode) fieldErrors['address.zipCode'] = 'ZIP code is required';
+
+    if (Object.keys(fieldErrors).length > 0) {
+      return NextResponse.json({ error: 'Invalid payload', fields: fieldErrors }, { status: 400 });
+    }
+
+    // Determine operatorId based on user role
+    let operatorId: string;
+    if (user.role === UserRole.ADMIN) {
+      // Admin can specify operatorId in body, or we find/create a default
+      if (bodyOperatorId) {
+        operatorId = bodyOperatorId;
+      } else {
+        // Find the first operator or create admin as pseudo-operator
+        const firstOperator = await prisma.operator.findFirst();
+        if (firstOperator) {
+          operatorId = firstOperator.id;
+        } else {
+          // Create an operator profile for admin if none exists
+          const adminOperator = await prisma.operator.create({
+            data: {
+              userId: user.id,
+              companyName: 'Admin Created Homes',
+            }
+          });
+          operatorId = adminOperator.id;
+        }
+      }
+    } else {
+      // Regular OPERATOR - use their operator profile
+      const operator = await prisma.operator.findUnique({ where: { userId: user.id } });
+      if (!operator) return NextResponse.json({ error: 'Operator profile missing' }, { status: 400 });
+      operatorId = operator.id;
+    }
+
+    const home = await prisma.$transaction(async (tx) => {
+      const created = await tx.assistedLivingHome.create({
+        data: {
+          operatorId,
+          name,
+          description,
+          status: 'ACTIVE',
+          careLevel,
+          capacity: Number(capacity),
+          currentOccupancy: 0,
+          priceMin: priceMin ? Number(priceMin) : null,
+          priceMax: priceMax ? Number(priceMax) : null,
+          amenities: Array.isArray(amenities) ? amenities : [],
+          genderRestriction: genderRestriction || null,
+          address: {
+            create: {
+              street: address.street,
+              street2: address.street2 || null,
+              city: address.city,
+              state: address.state,
+              zipCode: address.zipCode,
+            },
+          },
+        },
+      });
+      // OL-173 / OL-176: fields entered here are operator-provided — record them so
+      // the public listing can show them (seeded homes have no such row).
+      const source = user.role === UserRole.ADMIN ? 'ADMIN' : 'OPERATOR';
+      for (const field of ['capacity', 'amenities', 'description', 'genderRestriction'] as const) {
+        if (created[field] == null) continue;
+        await recordEvent(tx, {
+          entityType: 'OPERATOR_PROFILE', entityId: created.id, eventType: 'field.changed', field,
+          oldValue: null, newValue: { [field]: created[field] },
+          source, actor: { userId: user.id, role: user.role },
+        });
+      }
+      return created;
+    });
+    return NextResponse.json({ home }, { status: 201 });
+  } catch (e) {
+    captureError(e instanceof Error ? e : new Error(String(e)), {
+      tags: { route: 'operator:homes' },
+    });
+    console.error('Create home failed', e);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  }
+}
