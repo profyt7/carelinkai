@@ -58,7 +58,9 @@ jobs:
 
   e2e-residents:
     needs: changes
-    if: ${{ needs.changes.outputs.code == 'true' && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}
+    # Gate the steps, not the job (OL-207 follow-up): a job skipped by a job-level
+    # `if` never expands its matrix, so the required "(1)"/"(2)" shard checks would
+    # never report on a docs-only PR and branch protection would block it forever.
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -81,6 +83,7 @@ jobs:
           --health-retries 5
 
     env:
+      RUN_E2E: ${{ needs.changes.outputs.code == 'true' && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}
       # App runtime
       NODE_OPTIONS: --max-old-space-size=4096
       NEXTAUTH_URL: http://localhost:3000
@@ -109,18 +112,22 @@ jobs:
 
     steps:
       - name: Checkout
+        if: env.RUN_E2E == 'true'
         uses: actions/checkout@v4
 
       - name: Setup Node
+        if: env.RUN_E2E == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies (including dev)
+        if: env.RUN_E2E == 'true'
         run: npm ci --include=dev
 
       - name: Get Playwright version
+        if: env.RUN_E2E == 'true'
         id: pw-version
         shell: bash
         run: |
@@ -128,6 +135,7 @@ jobs:
           echo "version=$v" >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright browsers
+        if: env.RUN_E2E == 'true'
         id: pw-cache
         uses: actions/cache@v4
         with:
@@ -135,6 +143,7 @@ jobs:
           key: playwright-browsers-${{ runner.os }}-${{ steps.pw-version.outputs.version }}
 
       - name: Cache Next.js build cache
+        if: env.RUN_E2E == 'true'
         uses: actions/cache@v4
         with:
           path: .next/cache
@@ -146,9 +155,11 @@ jobs:
             next-cache-${{ runner.os }}-
 
       - name: Prepare database schema
+        if: env.RUN_E2E == 'true'
         run: npx prisma migrate deploy
 
       - name: Build app
+        if: env.RUN_E2E == 'true'
         run: npm run build
 
       # OL-195: every e2e config runs Chromium only, and the runner image already
@@ -156,6 +167,7 @@ jobs:
       # So no apt: the Ubuntu mirrors stall from these runners. The browser comes
       # from Playwright's CDN and is cached above; on a hit this is a no-op.
       - name: Install Playwright browsers
+        if: env.RUN_E2E == 'true'
         timeout-minutes: 5
         run: |
           for attempt in 1 2; do
@@ -166,6 +178,7 @@ jobs:
           exit 1
 
       - name: Run Playwright (Residents core) (shard ${{ matrix.shard }}/2)
+        if: env.RUN_E2E == 'true'
         env:
           # Run production server for stability; still enable dev endpoints and use CI DB/secret
           PLAYWRIGHT_WEB_SERVER_CMD: >-
@@ -205,7 +218,7 @@ jobs:
             --workers=1 --shard=${{ matrix.shard }}/2 --reporter=line,blob --retries=1 --trace on --timeout=60000
 
       - name: Upload Playwright test artifacts (Residents shard ${{ matrix.shard }}) (always)
-        if: always()
+        if: always() && env.RUN_E2E == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: playwright-test-results-residents-shard-${{ matrix.shard }}
@@ -217,7 +230,9 @@ jobs:
 
   e2e-family:
     needs: changes
-    if: ${{ needs.changes.outputs.code == 'true' && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}
+    # Gate the steps, not the job (OL-207 follow-up): a job skipped by a job-level
+    # `if` never expands its matrix, so the required "(1)"/"(2)" shard checks would
+    # never report on a docs-only PR and branch protection would block it forever.
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -240,6 +255,7 @@ jobs:
           --health-retries 5
 
     env:
+      RUN_E2E: ${{ needs.changes.outputs.code == 'true' && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}
       # App runtime
       NODE_OPTIONS: --max-old-space-size=4096
       NEXTAUTH_URL: http://localhost:3000
@@ -268,18 +284,22 @@ jobs:
 
     steps:
       - name: Checkout
+        if: env.RUN_E2E == 'true'
         uses: actions/checkout@v4
 
       - name: Setup Node
+        if: env.RUN_E2E == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies (including dev)
+        if: env.RUN_E2E == 'true'
         run: npm ci --include=dev
 
       - name: Get Playwright version
+        if: env.RUN_E2E == 'true'
         id: pw-version
         shell: bash
         run: |
@@ -287,6 +307,7 @@ jobs:
           echo "version=$v" >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright browsers
+        if: env.RUN_E2E == 'true'
         id: pw-cache
         uses: actions/cache@v4
         with:
@@ -294,6 +315,7 @@ jobs:
           key: playwright-browsers-${{ runner.os }}-${{ steps.pw-version.outputs.version }}
 
       - name: Cache Next.js build cache
+        if: env.RUN_E2E == 'true'
         uses: actions/cache@v4
         with:
           path: .next/cache
@@ -305,9 +327,11 @@ jobs:
             next-cache-${{ runner.os }}-
 
       - name: Prepare database schema
+        if: env.RUN_E2E == 'true'
         run: npx prisma migrate deploy
 
       - name: Build app
+        if: env.RUN_E2E == 'true'
         run: npm run build
 
       # OL-195: every e2e config runs Chromium only, and the runner image already
@@ -315,6 +339,7 @@ jobs:
       # So no apt: the Ubuntu mirrors stall from these runners. The browser comes
       # from Playwright's CDN and is cached above; on a hit this is a no-op.
       - name: Install Playwright browsers
+        if: env.RUN_E2E == 'true'
         timeout-minutes: 5
         run: |
           for attempt in 1 2; do
@@ -325,6 +350,7 @@ jobs:
           exit 1
 
       - name: Run Playwright (Family) (shard ${{ matrix.shard }}/2)
+        if: env.RUN_E2E == 'true'
         env:
           # Use production server for stability; enable dev endpoints in CI
           PLAYWRIGHT_WEB_SERVER_CMD: >-
@@ -343,7 +369,7 @@ jobs:
           npx playwright test --config=playwright.e2e.config.ts e2e/family-*.spec.ts --reporter=line,blob --retries=1 --trace retain-on-failure --shard=${{ matrix.shard }}/2 --timeout=60000
 
       - name: Upload Playwright test artifacts (Family shard ${{ matrix.shard }}) (always)
-        if: always()
+        if: always() && env.RUN_E2E == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: playwright-test-results-family-shard-${{ matrix.shard }}
@@ -899,7 +925,8 @@ jobs:
   e2e-merge-reports:
     name: Merge Playwright reports
     runs-on: ubuntu-latest
-    needs: [e2e-residents, e2e-family]
+    needs: [changes, e2e-residents, e2e-family]
+    if: ${{ needs.changes.outputs.code == 'true' && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
