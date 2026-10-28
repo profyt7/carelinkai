@@ -185,7 +185,7 @@ export default function OnboardingModal() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-[#3978FC] to-[#7253B7] px-8 py-6 relative">
+            <div className="bg-gradient-to-r from-primary-500 to-secondary-500 px-8 py-6 relative">
               <button
                 onClick={handleClose}
                 className="absolute top-4 right-4 text-white hover:text-neutral-200 transition-colors"
@@ -218,9 +218,9 @@ export default function OnboardingModal() {
                     key={index}
                     className={`h-2 rounded-full transition-all ${
                       index === currentStep
-                        ? 'w-8 bg-[#3978FC]'
+                        ? 'w-8 bg-primary-500'
                         : index < currentStep
-                        ? 'w-2 bg-[#7253B7]'
+                        ? 'w-2 bg-secondary-500'
                         : 'w-2 bg-neutral-300'
                     }`}
                   />
@@ -248,7 +248,7 @@ export default function OnboardingModal() {
                 )}
                 <button
                   onClick={handleNext}
-                  className="bg-gradient-to-r from-[#3978FC] to-[#7253B7] text-white px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center space-x-2"
+                  className="bg-gradient-to-r from-primary-500 to-secondary-500 text-white px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center space-x-2"
                 >
                   <span>{currentStep === steps.length - 1 ? 'Get Started' : 'Next'}</span>
                   {currentStep === steps.length - 1 ? <FiCheck /> : <FiArrowRight />}

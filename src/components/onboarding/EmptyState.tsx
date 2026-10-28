@@ -33,14 +33,14 @@ export default function EmptyState({
           {actionLink ? (
             <Link
               href={actionLink}
-              className="bg-gradient-to-r from-[#3978FC] to-[#7253B7] text-white px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity"
+              className="bg-gradient-to-r from-primary-500 to-secondary-500 text-white px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity"
             >
               {actionLabel}
             </Link>
           ) : (
             <button
               onClick={onAction}
-              className="bg-gradient-to-r from-[#3978FC] to-[#7253B7] text-white px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity"
+              className="bg-gradient-to-r from-primary-500 to-secondary-500 text-white px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity"
             >
               {actionLabel}
             </button>

@@ -18,12 +18,12 @@ export default function TermsOfServicePage() {
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link 
             href="/" 
-            className="flex items-center text-slate-600 hover:text-[#3978FC] transition-colors"
+            className="flex items-center text-slate-600 hover:text-primary-500 transition-colors"
           >
             <FiArrowLeft className="mr-2" />
             Back to Home
           </Link>
-          <div className="flex items-center text-[#3978FC]">
+          <div className="flex items-center text-primary-500">
             <FiShield className="mr-2" />
             <span className="text-sm font-medium">Legal Document</span>
           </div>
@@ -35,8 +35,8 @@ export default function TermsOfServicePage() {
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 md:p-12">
           {/* Title */}
           <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-[#3978FC]/10 rounded-full mb-4">
-              <FiFileText className="w-8 h-8 text-[#3978FC]" />
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-500/10 rounded-full mb-4">
+              <FiFileText className="w-8 h-8 text-primary-500" />
             </div>
             <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">
               Terms of Service
@@ -50,7 +50,7 @@ export default function TermsOfServicePage() {
           <div className="prose prose-slate max-w-none">
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#3978FC] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">1</span>
+                <span className="w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">1</span>
                 Acceptance of Terms
               </h2>
               <p className="text-slate-600 leading-relaxed">
@@ -63,7 +63,7 @@ export default function TermsOfServicePage() {
 
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#3978FC] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">2</span>
+                <span className="w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">2</span>
                 Description of Service
               </h2>
               <p className="text-slate-600 leading-relaxed mb-4">
@@ -82,7 +82,7 @@ export default function TermsOfServicePage() {
 
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#3978FC] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">3</span>
+                <span className="w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">3</span>
                 User Accounts
               </h2>
               <p className="text-slate-600 leading-relaxed mb-4">
@@ -104,7 +104,7 @@ export default function TermsOfServicePage() {
 
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#3978FC] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">4</span>
+                <span className="w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">4</span>
                 Use of Service
               </h2>
               <p className="text-slate-600 leading-relaxed mb-4">
@@ -125,7 +125,7 @@ export default function TermsOfServicePage() {
 
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#3978FC] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">5</span>
+                <span className="w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">5</span>
                 Healthcare Disclaimer
               </h2>
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
@@ -145,12 +145,12 @@ export default function TermsOfServicePage() {
 
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#3978FC] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">6</span>
+                <span className="w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">6</span>
                 Privacy
               </h2>
               <p className="text-slate-600 leading-relaxed">
                 Your privacy is important to us. Our collection, use, and protection of your personal information 
-                is governed by our <Link href="/privacy" className="text-[#3978FC] hover:underline">Privacy Policy</Link>, 
+                is governed by our <Link href="/privacy" className="text-primary-500 hover:underline">Privacy Policy</Link>, 
                 which is incorporated into these Terms by reference. By using the Service, you consent to the 
                 collection and use of information as described in our Privacy Policy.
               </p>
@@ -158,7 +158,7 @@ export default function TermsOfServicePage() {
 
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#3978FC] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">7</span>
+                <span className="w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">7</span>
                 Intellectual Property
               </h2>
               <p className="text-slate-600 leading-relaxed">
@@ -171,7 +171,7 @@ export default function TermsOfServicePage() {
 
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#3978FC] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">8</span>
+                <span className="w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">8</span>
                 Third-Party Services
               </h2>
               <p className="text-slate-600 leading-relaxed">
@@ -183,7 +183,7 @@ export default function TermsOfServicePage() {
 
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#3978FC] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">9</span>
+                <span className="w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">9</span>
                 Disclaimers
               </h2>
               <p className="text-slate-600 leading-relaxed mb-4">
@@ -201,7 +201,7 @@ export default function TermsOfServicePage() {
 
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#3978FC] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">10</span>
+                <span className="w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">10</span>
                 Limitation of Liability
               </h2>
               <p className="text-slate-600 leading-relaxed">
@@ -215,7 +215,7 @@ export default function TermsOfServicePage() {
 
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#3978FC] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">11</span>
+                <span className="w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">11</span>
                 Indemnification
               </h2>
               <p className="text-slate-600 leading-relaxed">
@@ -228,7 +228,7 @@ export default function TermsOfServicePage() {
 
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#3978FC] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">12</span>
+                <span className="w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">12</span>
                 Termination
               </h2>
               <p className="text-slate-600 leading-relaxed">
@@ -242,7 +242,7 @@ export default function TermsOfServicePage() {
 
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#3978FC] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">13</span>
+                <span className="w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">13</span>
                 Governing Law
               </h2>
               <p className="text-slate-600 leading-relaxed">
@@ -255,7 +255,7 @@ export default function TermsOfServicePage() {
 
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#3978FC] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">14</span>
+                <span className="w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">14</span>
                 Changes to Terms
               </h2>
               <p className="text-slate-600 leading-relaxed">
@@ -269,7 +269,7 @@ export default function TermsOfServicePage() {
 
             <section className="mb-10" id="family-concierge" data-testid="terms-family-concierge">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#3978FC] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">15</span>
+                <span className="w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">15</span>
                 Family Concierge
               </h2>
               <p className="text-slate-600 leading-relaxed mb-4">
@@ -299,11 +299,11 @@ export default function TermsOfServicePage() {
               </ul>
             </section>
 
-            <SmsProgramSection number={16} accent="#3978FC" />
+            <SmsProgramSection number={16} accent="var(--color-primary-500)" />
 
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#3978FC] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">17</span>
+                <span className="w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">17</span>
                 Contact Us
               </h2>
               <p className="text-slate-600 leading-relaxed mb-4">
@@ -325,13 +325,13 @@ export default function TermsOfServicePage() {
           <div className="flex justify-center gap-4">
             <Link 
               href="/privacy" 
-              className="px-6 py-2 bg-white border border-slate-200 rounded-lg text-slate-700 hover:border-[#3978FC] hover:text-[#3978FC] transition-colors"
+              className="px-6 py-2 bg-white border border-slate-200 rounded-lg text-slate-700 hover:border-primary-500 hover:text-primary-500 transition-colors"
             >
               Privacy Policy
             </Link>
             <Link 
               href="/contact" 
-              className="px-6 py-2 bg-white border border-slate-200 rounded-lg text-slate-700 hover:border-[#3978FC] hover:text-[#3978FC] transition-colors"
+              className="px-6 py-2 bg-white border border-slate-200 rounded-lg text-slate-700 hover:border-primary-500 hover:text-primary-500 transition-colors"
             >
               Contact Us
             </Link>

@@ -52,8 +52,8 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-primary-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-[#3978FC]/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-[#7253B7]/10 rounded-full blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-500/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-secondary-500/10 rounded-full blur-3xl" />
       </div>
 
       <div className="relative w-full max-w-md">
@@ -78,8 +78,8 @@ export default function ForgotPasswordPage() {
             <>
               {/* Header */}
               <div className="text-center mb-8">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-[#3978FC]/10 rounded-full mb-4">
-                  <FiMail className="w-8 h-8 text-[#3978FC]" />
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-500/10 rounded-full mb-4">
+                  <FiMail className="w-8 h-8 text-primary-500" />
                 </div>
                 <h1 className="text-2xl font-bold text-slate-900 mb-2">
                   Forgot Password?
@@ -112,7 +112,7 @@ export default function ForgotPasswordPage() {
                       type="email"
                       autoComplete="email"
                       placeholder="you@example.com"
-                      className={`block w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#3978FC] focus:border-transparent transition-colors ${
+                      className={`block w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors ${
                         errors.email
                           ? "border-error-300 bg-error-50"
                           : "border-slate-300 bg-white"
@@ -134,7 +134,7 @@ export default function ForgotPasswordPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3 px-4 bg-gradient-to-r from-[#3978FC] to-[#7253B7] text-white font-semibold rounded-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[#3978FC] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center"
+                  className="w-full py-3 px-4 bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-semibold rounded-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center"
                 >
                   {isLoading ? (
                     <>
@@ -170,7 +170,7 @@ export default function ForgotPasswordPage() {
               <div className="mt-6 text-center">
                 <Link
                   href="/auth/login"
-                  className="inline-flex items-center text-sm text-[#3978FC] hover:text-[#7253B7] font-medium transition-colors"
+                  className="inline-flex items-center text-sm text-primary-500 hover:text-secondary-500 font-medium transition-colors"
                 >
                   <FiArrowLeft className="mr-2" />
                   Back to Login
@@ -201,7 +201,7 @@ export default function ForgotPasswordPage() {
                 </button>
                 <Link
                   href="/auth/login"
-                  className="block w-full py-3 px-4 bg-gradient-to-r from-[#3978FC] to-[#7253B7] text-white font-semibold rounded-lg hover:opacity-90 transition-all text-center"
+                  className="block w-full py-3 px-4 bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-semibold rounded-lg hover:opacity-90 transition-all text-center"
                 >
                   Back to Login
                 </Link>
@@ -213,7 +213,7 @@ export default function ForgotPasswordPage() {
         {/* Footer */}
         <p className="mt-8 text-center text-sm text-slate-500">
           Need help?{" "}
-          <Link href="/contact" className="text-[#3978FC] hover:underline font-medium">
+          <Link href="/contact" className="text-primary-500 hover:underline font-medium">
             Contact Support
           </Link>
         </p>
