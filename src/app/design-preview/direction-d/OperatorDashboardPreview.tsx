@@ -76,7 +76,7 @@ export default function OperatorDashboardPreview({ mode }: { mode: Mode }) {
       viewport={mode}
       embedded
       navLabel="Operator navigation (preview)"
-      workspaceClassName="bg-white"
+      workspaceClassName="bg-surface-raised"
     >
       <div className={`${pad} space-y-6 py-6`}>
         <div className="flex flex-wrap items-end justify-between gap-3">
@@ -103,7 +103,7 @@ export default function OperatorDashboardPreview({ mode }: { mode: Mode }) {
         <div className={mode === 'desktop' ? 'grid grid-cols-5 gap-6' : 'space-y-6'}>
           <NeedsAttentionList items={ATTENTION} headingLevel={5} className={mode === 'desktop' ? 'col-span-3' : ''} />
 
-          <section aria-labelledby="d-op-pipeline" className={`rounded-xl border border-neutral-200 bg-white p-5 ${mode === 'desktop' ? 'col-span-2' : ''}`}>
+          <section aria-labelledby="d-op-pipeline" className={`rounded-xl border border-line bg-surface-raised p-5 ${mode === 'desktop' ? 'col-span-2' : ''}`}>
             <h5 id="d-op-pipeline" className="text-base font-semibold text-neutral-900">Inquiry pipeline</h5>
             <p className="text-sm text-neutral-600">Last 30 days · {total} inquiries</p>
             {/* One hue (primary-200 → 700); status colours stay reserved for status. */}
@@ -130,8 +130,8 @@ export default function OperatorDashboardPreview({ mode }: { mode: Mode }) {
           </section>
         </div>
 
-        <section aria-labelledby="d-op-recent" className="rounded-xl border border-neutral-200 bg-white">
-          <div className="flex items-center justify-between border-b border-neutral-200 px-5 py-4">
+        <section aria-labelledby="d-op-recent" className="rounded-xl border border-line bg-surface-raised">
+          <div className="flex items-center justify-between border-b border-line px-5 py-4">
             <h5 id="d-op-recent" className="text-base font-semibold text-neutral-900">Recent inquiries</h5>
             <a href="#" onClick={(e) => e.preventDefault()} className="rounded-sm text-sm font-medium text-primary-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
               View all

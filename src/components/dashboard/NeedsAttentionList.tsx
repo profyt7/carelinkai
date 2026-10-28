@@ -25,7 +25,7 @@ const TONE: Record<NeedsAttentionItem['tone'], { icon: string; label: string }> 
 };
 
 const ACTION =
-  'inline-flex flex-shrink-0 items-center rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-800 hover:bg-neutral-50 active:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 motion-safe:transition-colors';
+  'inline-flex flex-shrink-0 items-center rounded-lg border border-neutral-300 bg-surface-raised px-3 py-1.5 text-sm font-medium text-neutral-800 hover:bg-neutral-50 active:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 motion-safe:transition-colors';
 
 export default function NeedsAttentionList({
   items,
@@ -41,8 +41,8 @@ export default function NeedsAttentionList({
 }) {
   const Heading = `h${headingLevel}` as 'h2';
   return (
-    <section className={`rounded-xl border border-neutral-200 bg-white ${className}`} aria-labelledby="needs-attention-title">
-      <Heading id="needs-attention-title" className="border-b border-neutral-200 px-5 py-4 text-base font-semibold text-neutral-900">
+    <section className={`rounded-xl border border-line bg-surface-raised ${className}`} aria-labelledby="needs-attention-title">
+      <Heading id="needs-attention-title" className="border-b border-line px-5 py-4 text-base font-semibold text-neutral-900">
         {title}
       </Heading>
       {items.length === 0 ? (

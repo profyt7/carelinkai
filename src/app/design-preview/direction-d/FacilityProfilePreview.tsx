@@ -45,7 +45,7 @@ function StickyInquiryBar({ hidden, safeArea }: { hidden: boolean; safeArea: boo
       aria-hidden={hidden || undefined}
       // React 19 (Next's app router) takes inert as a boolean.
       {...(hidden ? ({ inert: true } as Record<string, unknown>) : {})}
-      className={`sticky bottom-0 z-20 border-t border-neutral-200 bg-white/95 px-4 pt-3 shadow-dropdown backdrop-blur motion-safe:transition-all motion-safe:duration-200 ${
+      className={`sticky bottom-0 z-20 border-t border-line bg-white/95 px-4 pt-3 shadow-dropdown backdrop-blur motion-safe:transition-all motion-safe:duration-200 ${
         safeArea ? 'safe-bottom' : ''
       } ${hidden ? 'pointer-events-none translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`}
       style={{ paddingBottom: safeArea ? 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' : '0.75rem' }}
@@ -78,7 +78,7 @@ export default function FacilityProfilePreview({ mode, home, viewer = 'guest' }:
   const city = [home.address?.city, home.address?.state].filter(Boolean).join(', ');
 
   const inquiryPanel = (
-    <section aria-labelledby="d-profile-cta" className="rounded-xl border border-neutral-200 bg-white p-5 shadow-card">
+    <section aria-labelledby="d-profile-cta" className="rounded-xl border border-line bg-surface-raised p-5 shadow-card">
       <h5 id="d-profile-cta" className="text-base font-semibold text-neutral-900">Interested in this community?</h5>
       <div className="mt-3 space-y-2">
         <AvailabilityBadge availability={availability} />
@@ -138,7 +138,7 @@ export default function FacilityProfilePreview({ mode, home, viewer = 'guest' }:
             { k: 'Pricing', v: <PriceLine pricing={home.pricing} /> },
             { k: 'State inspection', v: <span className="text-sm font-semibold text-neutral-900">{INSPECTION.date} · {INSPECTION.citations} citations</span> },
           ].map((s) => (
-            <div key={s.k} className="rounded-xl border border-neutral-200 bg-white p-4">
+            <div key={s.k} className="rounded-xl border border-line bg-surface-raised p-4">
               <dt className="text-xs font-medium uppercase tracking-wide text-neutral-600">{s.k}</dt>
               <dd className="mt-2">{s.v}</dd>
             </div>
@@ -147,7 +147,7 @@ export default function FacilityProfilePreview({ mode, home, viewer = 'guest' }:
       </div>
 
       {/* Section nav inside the sticky bar */}
-      <nav aria-label="Profile sections" className="sticky top-0 z-10 border-y border-neutral-200 bg-white">
+      <nav aria-label="Profile sections" className="sticky top-0 z-10 border-y border-line bg-surface-raised">
         <ul className={`flex gap-1 overflow-x-auto ${pad}`}>
           {SECTIONS.map((s, i) => (
             <li key={s.id} className="flex-shrink-0">
@@ -169,12 +169,12 @@ export default function FacilityProfilePreview({ mode, home, viewer = 'guest' }:
         <div className={`space-y-8 ${desktop ? 'col-span-2' : ''}`}>
           {!desktop && <div ref={panelRef}>{inquiryPanel}</div>}
 
-          <section id={sid('about')} aria-labelledby={`${sid('about')}-h`} className="rounded-xl border border-neutral-200 bg-white p-6">
+          <section id={sid('about')} aria-labelledby={`${sid('about')}-h`} className="rounded-xl border border-line bg-surface-raised p-6">
             <h5 id={`${sid('about')}-h`} className="text-lg font-semibold text-neutral-900">About</h5>
             <p className="mt-2 text-sm leading-relaxed text-neutral-700">{ABOUT}</p>
           </section>
 
-          <section id={sid('amenities')} aria-labelledby={`${sid('amenities')}-h`} className="rounded-xl border border-neutral-200 bg-white p-6">
+          <section id={sid('amenities')} aria-labelledby={`${sid('amenities')}-h`} className="rounded-xl border border-line bg-surface-raised p-6">
             <h5 id={`${sid('amenities')}-h`} className="text-lg font-semibold text-neutral-900">Amenities</h5>
             <p className="mt-1 text-xs text-neutral-600">As reported by the community.</p>
             <ul className={`mt-3 grid gap-2 ${mobile ? 'grid-cols-1' : 'grid-cols-2'}`}>
@@ -186,7 +186,7 @@ export default function FacilityProfilePreview({ mode, home, viewer = 'guest' }:
             </ul>
           </section>
 
-          <section id={sid('pricing')} aria-labelledby={`${sid('pricing')}-h`} className="rounded-xl border border-neutral-200 bg-white p-6">
+          <section id={sid('pricing')} aria-labelledby={`${sid('pricing')}-h`} className="rounded-xl border border-line bg-surface-raised p-6">
             <h5 id={`${sid('pricing')}-h`} className="flex items-center gap-2 text-lg font-semibold text-neutral-900">
               <FiDollarSign className="h-5 w-5 text-neutral-600" aria-hidden="true" /> Pricing
             </h5>
@@ -194,7 +194,7 @@ export default function FacilityProfilePreview({ mode, home, viewer = 'guest' }:
             <p className="mt-1 text-sm text-neutral-600">Prices vary by care level and apartment. Ask the community for an exact quote.</p>
           </section>
 
-          <section id={sid('location')} aria-labelledby={`${sid('location')}-h`} className="rounded-xl border border-neutral-200 bg-white p-6">
+          <section id={sid('location')} aria-labelledby={`${sid('location')}-h`} className="rounded-xl border border-line bg-surface-raised p-6">
             <h5 id={`${sid('location')}-h`} className="text-lg font-semibold text-neutral-900">Location</h5>
             <p className="mt-1 text-sm text-neutral-700">{city}</p>
             <div className="mt-3 flex h-48 flex-col items-center justify-center rounded-lg border border-dashed border-neutral-300 bg-neutral-50">
@@ -203,13 +203,13 @@ export default function FacilityProfilePreview({ mode, home, viewer = 'guest' }:
             </div>
           </section>
 
-          <section id={sid('reviews')} aria-labelledby={`${sid('reviews')}-h`} className="rounded-xl border border-neutral-200 bg-white p-6">
+          <section id={sid('reviews')} aria-labelledby={`${sid('reviews')}-h`} className="rounded-xl border border-line bg-surface-raised p-6">
             <h5 id={`${sid('reviews')}-h`} className="text-lg font-semibold text-neutral-900">Reviews</h5>
             <GoogleRatingBadge rating={home.googleRating} count={home.googleRatingCount} className="mt-2" />
             <p className="mt-2 text-sm text-neutral-600">Rating and count from Google. CareLinkAI doesn’t republish review text.</p>
           </section>
 
-          <section id={sid('inspections')} aria-labelledby={`${sid('inspections')}-h`} className="rounded-xl border border-neutral-200 bg-white p-6">
+          <section id={sid('inspections')} aria-labelledby={`${sid('inspections')}-h`} className="rounded-xl border border-line bg-surface-raised p-6">
             <h5 id={`${sid('inspections')}-h`} className="flex items-center gap-2 text-lg font-semibold text-neutral-900">
               <FiClipboard className="h-5 w-5 text-neutral-600" aria-hidden="true" /> State inspections
             </h5>
@@ -224,7 +224,7 @@ export default function FacilityProfilePreview({ mode, home, viewer = 'guest' }:
       </div>
 
       {/* Claim message demoted to a quiet footer strip for families */}
-      <div className={`border-t border-neutral-200 bg-white ${pad} py-4`}>
+      <div className={`border-t border-line bg-surface-raised ${pad} py-4`}>
         <p className="text-sm text-neutral-600">
           Operate this community?{' '}
           <a href="#" onClick={(e) => e.preventDefault()} className={LINK}>Claim this listing</a> to add photos and keep availability current.

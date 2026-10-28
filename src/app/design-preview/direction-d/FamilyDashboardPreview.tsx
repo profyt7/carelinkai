@@ -25,7 +25,7 @@ export const FAMILY_NAV: SidebarNavItem[] = [
 function HelpCard({ compact = false }: { compact?: boolean }) {
   return (
     <div className="rounded-xl border border-primary-100 bg-primary-50 p-4">
-      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-primary-700 shadow-card" aria-hidden="true">
+      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-raised text-primary-700 shadow-card" aria-hidden="true">
         <FiHeadphones className="h-5 w-5" />
       </span>
       <p className="mt-3 text-sm font-semibold text-neutral-900">Need help? Talk to the care team</p>
@@ -65,7 +65,7 @@ export default function FamilyDashboardPreview({ mode, cards }: { mode: Mode; ca
             { label: 'Inquiries sent', value: '2', icon: <FiSend /> },
             { label: 'Next tour · Maple Grove', value: 'Thu, Oct 30, 2 PM', icon: <FiCalendar /> },
           ].map((t) => (
-            <div key={t.label} className="flex items-center gap-3 rounded-xl border border-neutral-200 bg-white p-4">
+            <div key={t.label} className="flex items-center gap-3 rounded-xl border border-line bg-surface-raised p-4">
               <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-700" aria-hidden="true">{t.icon}</span>
               <div className="min-w-0">
                 <p className="text-xs font-medium text-neutral-600">{t.label}</p>
@@ -97,7 +97,7 @@ export default function FamilyDashboardPreview({ mode, cards }: { mode: Mode; ca
           </ul>
         </section>
 
-        <section aria-labelledby="d-fam-map" className="rounded-xl border border-neutral-200 bg-white p-5">
+        <section aria-labelledby="d-fam-map" className="rounded-xl border border-line bg-surface-raised p-5">
           <h5 id="d-fam-map" className="text-base font-semibold text-neutral-900">Your saved homes on the map</h5>
           <div className={`mt-3 flex flex-col items-center justify-center rounded-lg border border-dashed border-neutral-300 bg-neutral-50 text-center ${mobile ? 'h-48' : 'h-64'}`}>
             <FiMap className="h-8 w-8 text-neutral-500" aria-hidden="true" />
