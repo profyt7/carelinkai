@@ -18,15 +18,17 @@ services:
   # wiped their env vars). Every cron gets DATABASE_URL from carelinkai-db and
   # CRON_SECRET from the carelinkai-shared group. Every other name is sync: false:
   # Render prompts for a value and never overwrites one already set. No values here.
-  # VERIFY before merging: name, schedule and start command must match each
-  # service's current Render settings (see the PR body).
+  # Names, schedules, region, plan and auto-deploy match Render as found 2026-10-28.
+  # Commands are the fixed ones: the job calls the deployed app's endpoint (the old
+  # `npm run build` + `npm run start` ran migrations and booted a second web server).
   # ---------------------------------------------------------------------------
   - type: cron
-    name: reminders-processor
+    name: carelinkai Reminders Processor
     runtime: node
     region: oregon
     plan: starter
-    schedule: "*/15 * * * *"
+    schedule: "0 * * * *"
+    autoDeploy: false
     buildCommand: echo no-build-needed
     startCommand: node scripts/run-cron.js
     envVars:
@@ -75,11 +77,12 @@ services:
         sync: false
 
   - type: cron
-    name: oncall-wave-dispatch
+    name: carelinkai On-Call Wave Dispatch
     runtime: node
     region: oregon
     plan: starter
     schedule: "*/10 * * * *"
+    autoDeploy: false
     buildCommand: echo no-build-needed
     startCommand: 'curl -fsS -X POST -H "x-cron-secret: $CRON_SECRET" https://getcarelinkai.com/api/cron/oncall-waves'
     envVars:
@@ -102,11 +105,12 @@ services:
         sync: false
 
   - type: cron
-    name: credential-expiry-check
+    name: carelinkai Credential Expiry Check
     runtime: node
     region: oregon
     plan: starter
     schedule: "0 6 * * *"
+    autoDeploy: false
     buildCommand: echo no-build-needed
     startCommand: 'curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://getcarelinkai.com/api/cron/credential-expiry'
     envVars:
@@ -125,11 +129,12 @@ services:
         sync: false
 
   - type: cron
-    name: ride-reminders
+    name: carelinkai ride-reminders
     runtime: node
     region: oregon
     plan: starter
-    schedule: "0 * * * *"
+    schedule: "0 8 * * *"
+    autoDeploy: false
     buildCommand: echo no-build-needed
     startCommand: 'curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://getcarelinkai.com/api/cron/ride-reminders'
     envVars:
@@ -148,11 +153,12 @@ services:
         sync: false
 
   - type: cron
-    name: monthly-reset-cron
+    name: carelinkai Monthly Reset Cron
     runtime: node
     region: oregon
     plan: starter
     schedule: "0 0 1 * *"
+    autoDeploy: false
     buildCommand: echo no-build-needed
     startCommand: 'curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://getcarelinkai.com/api/cron/reset-application-counts'
     envVars:
@@ -165,11 +171,12 @@ services:
         sync: false
 
   - type: cron
-    name: tour-reminder
+    name: carelinkai Tour Reminder
     runtime: node
     region: oregon
     plan: starter
-    schedule: "0 * * * *"
+    schedule: "0 9 * * *"
+    autoDeploy: false
     buildCommand: echo no-build-needed
     startCommand: 'curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://getcarelinkai.com/api/cron/tour-reminders'
     envVars:
@@ -190,11 +197,12 @@ services:
         sync: false
 
   - type: cron
-    name: recurring-rides
+    name: carelinkai Recurring rides
     runtime: node
     region: oregon
     plan: starter
     schedule: "0 7 * * *"
+    autoDeploy: false
     buildCommand: echo no-build-needed
     startCommand: 'curl -fsS -H "x-cron-secret: $CRON_SECRET" https://getcarelinkai.com/api/cron/recurring-rides'
     envVars:
