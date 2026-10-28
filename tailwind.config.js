@@ -113,6 +113,19 @@ module.exports = {
           900: "#0f172a", // Very dark
           950: "#05101c", // Sidebar (Direction B)
         },
+        // OL-207 semantic tokens → CSS variables in globals.css (aliases of the scales above).
+        // Names chosen not to collide with any class already in src (no text-muted /
+        // border-border / ring-ring / bg-surface* existed). No `/opacity` modifiers on these.
+        surface: {
+          DEFAULT: "var(--surface)",
+          raised: "var(--surface-raised)",
+          sidebar: "var(--surface-sidebar)",
+          ivory: { DEFAULT: "var(--surface-ivory)", deep: "var(--surface-ivory-deep)" },
+        },
+        ink: { DEFAULT: "var(--text)", muted: "var(--text-muted)" },
+        line: { DEFAULT: "var(--border)" },
+        "focus-ring": "var(--ring)",
+        brand: { DEFAULT: "var(--brand)", secondary: "var(--brand-secondary)" },
       },
       fontFamily: {
         // CareLinkAI Branding: Inter everywhere, DM Serif Display for emotional moments

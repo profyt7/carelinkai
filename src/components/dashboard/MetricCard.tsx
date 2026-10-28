@@ -16,24 +16,29 @@ interface MetricCardProps {
   trendValue?: number;
   href?: string;
   color?: CardColor;
+  /** OL-207: alert card (e.g. Critical Incidents) — error-500 top accent instead of the one brand tone. */
+  alert?: boolean;
   className?: string;
   // legacy prop — ignored, color controls styling now
   iconColor?: string;
 }
 
-const colorMap: Record<CardColor, { border: string; icon: string }> = {
-  blue:   { border: 'border-t-primary-500',   icon: 'bg-primary-50 text-primary-600'      },
-  green:  { border: 'border-t-success-500',   icon: 'bg-success-50 text-success-600'      },
-  purple: { border: 'border-t-secondary-500', icon: 'bg-secondary-100 text-secondary-600' },
-  amber:  { border: 'border-t-warning-500',   icon: 'bg-warning-50 text-warning-600'      },
-  red:    { border: 'border-t-error-500',     icon: 'bg-error-50 text-error-600'          },
-  gray:   { border: 'border-t-neutral-400',   icon: 'bg-neutral-100 text-neutral-500'     },
+// `color` tints the icon tile only. OL-207 (Direction D): the top accent is one brand tone;
+// an alert card opts into error-500 — no per-card rainbow.
+const colorMap: Record<CardColor, { icon: string }> = {
+  blue:   { icon: 'bg-primary-50 text-primary-600'      },
+  green:  { icon: 'bg-success-50 text-success-600'      },
+  purple: { icon: 'bg-secondary-100 text-secondary-600' },
+  amber:  { icon: 'bg-warning-50 text-warning-600'      },
+  red:    { icon: 'bg-error-50 text-error-600'          },
+  gray:   { icon: 'bg-neutral-100 text-neutral-500'     },
 };
 
+// OL-205: AA (≥ 4.5:1 on white) — same tones as StatCard's opt-in delta slot.
 const trendColors = {
-  up:      'text-success-600',
-  down:    'text-error-600',
-  neutral: 'text-neutral-400',
+  up:      'text-success-700',
+  down:    'text-error-700',
+  neutral: 'text-neutral-600',
 };
 
 export function MetricCard({
@@ -45,9 +50,11 @@ export function MetricCard({
   trendValue,
   href,
   color = 'blue',
+  alert = false,
   className = '',
 }: MetricCardProps) {
-  const { border, icon: iconCls } = colorMap[color];
+  const { icon: iconCls } = colorMap[color];
+  const border = alert ? 'border-t-error-500' : 'border-t-primary-500';
   const TrendIcon = trend === 'up' ? FiTrendingUp : trend === 'down' ? FiTrendingDown : FiMinus;
 
   const content = (
@@ -80,7 +87,7 @@ export function MetricCard({
       </div>
 
       {subtitle && (
-        <p className="text-xs text-neutral-400 mt-1 truncate">{subtitle}</p>
+        <p className="text-xs text-neutral-600 mt-1 truncate">{subtitle}</p>
       )}
     </div>
   );

@@ -17,10 +17,10 @@ interface AnimatedButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles = {
   primary:
-    'bg-gradient-to-r from-[#3978FC] to-[#7253B7] text-white hover:opacity-90 shadow-md hover:shadow-lg',
-  secondary: 'bg-[#3978FC] text-white hover:bg-[#3167d4] shadow-sm hover:shadow-md',
+    'bg-gradient-to-r from-primary-500 to-secondary-500 text-white hover:opacity-90 shadow-md hover:shadow-lg',
+  secondary: 'bg-primary-500 text-white hover:bg-[#3167d4] shadow-sm hover:shadow-md',
   outline:
-    'border-2 border-neutral-300 bg-white text-neutral-900 hover:border-[#3978FC] hover:bg-neutral-50',
+    'border-2 border-neutral-300 bg-white text-neutral-900 hover:border-primary-500 hover:bg-neutral-50',
   ghost: 'bg-transparent text-neutral-700 hover:bg-neutral-100',
   danger: 'bg-error-600 text-white hover:bg-error-700 shadow-sm hover:shadow-md',
 };
@@ -52,7 +52,7 @@ export default function AnimatedButton({
 
   const baseStyles = cn(
     'inline-flex items-center justify-center font-semibold rounded-lg',
-    'transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#3978FC]',
+    'transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500',
     'disabled:opacity-50 disabled:cursor-not-allowed',
     variantStyles[variant],
     sizeStyles[size],

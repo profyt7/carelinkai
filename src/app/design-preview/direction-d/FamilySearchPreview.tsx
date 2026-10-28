@@ -34,7 +34,7 @@ export default function FamilySearchPreview({ mode, cards }: { mode: Mode; cards
         <form
           role="search"
           onSubmit={(e) => e.preventDefault()}
-          className={`mt-6 flex max-w-2xl gap-2 rounded-xl border border-neutral-200 bg-white p-2 shadow-card ${mobile ? 'flex-col' : 'items-center'}`}
+          className={`mt-6 flex max-w-2xl gap-2 rounded-xl border border-line bg-surface-raised p-2 shadow-card ${mobile ? 'flex-col' : 'items-center'}`}
         >
           <label className="flex flex-1 items-center gap-2 px-2">
             <FiSearch className="h-4 w-4 flex-shrink-0 text-neutral-500" aria-hidden="true" />
@@ -56,7 +56,7 @@ export default function FamilySearchPreview({ mode, cards }: { mode: Mode; cards
               key={c}
               type="button"
               aria-haspopup="dialog"
-              className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-neutral-300 bg-white px-3.5 py-1.5 text-sm font-medium text-neutral-800 hover:border-neutral-400 hover:bg-neutral-50 active:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 motion-safe:transition-colors"
+              className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-neutral-300 bg-surface-raised px-3.5 py-1.5 text-sm font-medium text-neutral-800 hover:border-neutral-400 hover:bg-neutral-50 active:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 motion-safe:transition-colors"
             >
               {i === CHIPS.length - 1 && <FiSliders className="h-3.5 w-3.5" aria-hidden="true" />}
               {c}
@@ -78,7 +78,7 @@ export default function FamilySearchPreview({ mode, cards }: { mode: Mode; cards
                   <option>Recently verified</option>
                 </select>
               </label>
-              <div className="inline-flex rounded-lg border border-neutral-300 bg-white p-0.5" role="group" aria-label="Result layout">
+              <div className="inline-flex rounded-lg border border-neutral-300 bg-surface-raised p-0.5" role="group" aria-label="Result layout">
                 <button type="button" aria-pressed="true" aria-label="Grid" className="rounded-md bg-neutral-900 p-1.5 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
                   <FiGrid className="h-4 w-4" aria-hidden="true" />
                 </button>

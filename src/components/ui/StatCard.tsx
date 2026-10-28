@@ -23,14 +23,16 @@ interface StatCardProps {
   className?: string;
 }
 
-const colorMap: Record<NonNullable<StatCardProps['color']>, { icon: string; border: string }> = {
-  blue:   { icon: 'bg-primary-50 text-primary-600',      border: 'border-t-primary-500'   },
-  green:  { icon: 'bg-success-50 text-success-600',      border: 'border-t-success-500'   },
-  yellow: { icon: 'bg-warning-50 text-warning-600',      border: 'border-t-warning-500'   },
-  orange: { icon: 'bg-warning-100 text-warning-700',     border: 'border-t-warning-600'   },
-  red:    { icon: 'bg-error-50 text-error-600',          border: 'border-t-error-500'     },
-  purple: { icon: 'bg-secondary-100 text-secondary-600', border: 'border-t-secondary-500' },
-  gray:   { icon: 'bg-neutral-100 text-neutral-500',     border: 'border-t-neutral-400'   },
+// `color` tints the icon tile only. OL-207 (Direction D): the top accent is one brand tone;
+// an `alert` card opts into error-500 — no per-card rainbow.
+const colorMap: Record<NonNullable<StatCardProps['color']>, { icon: string }> = {
+  blue:   { icon: 'bg-primary-50 text-primary-600'      },
+  green:  { icon: 'bg-success-50 text-success-600'      },
+  yellow: { icon: 'bg-warning-50 text-warning-600'      },
+  orange: { icon: 'bg-warning-100 text-warning-700'     },
+  red:    { icon: 'bg-error-50 text-error-600'          },
+  purple: { icon: 'bg-secondary-100 text-secondary-600' },
+  gray:   { icon: 'bg-neutral-100 text-neutral-500'     },
 };
 
 export function StatCard({
@@ -52,18 +54,19 @@ export function StatCard({
     ? FiTrendingDown
     : FiMinus;
 
+  // OL-205: AA (≥ 4.5:1 on white) — the same tones as the opt-in delta slot below.
   const trendColor = trend?.direction === 'up'
-    ? 'text-success-600'
+    ? 'text-success-700'
     : trend?.direction === 'down'
-    ? 'text-error-600'
-    : 'text-neutral-400';
+    ? 'text-error-700'
+    : 'text-neutral-600';
 
   return (
     <div
       className={`
         bg-white rounded-xl border border-neutral-200 border-t-4 p-5
         transition-shadow duration-200 hover:shadow-md
-        ${alert ? 'border-t-warning-500' : colors.border}
+        ${alert ? 'border-t-error-500' : 'border-t-primary-500'}
         ${className}
       `}
     >
@@ -88,11 +91,11 @@ export function StatCard({
           <span className={`inline-flex items-center gap-0.5 text-xs font-semibold flex-shrink-0 ${trendColor}`}>
             <TrendIcon size={11} />
             {Math.abs(trend.value)}%
-            {trend.label && <span className="text-neutral-400 font-normal ml-0.5">{trend.label}</span>}
+            {trend.label && <span className="text-neutral-600 font-normal ml-0.5">{trend.label}</span>}
           </span>
         )}
         {!trend && subtitle && (
-          <span className="text-xs text-neutral-400 flex-shrink-0">{subtitle}</span>
+          <span className="text-xs text-neutral-600 flex-shrink-0">{subtitle}</span>
         )}
       </div>
       {delta && (

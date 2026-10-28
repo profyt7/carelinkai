@@ -60,7 +60,7 @@ export default function CookieConsent() {
     <div className="fixed inset-x-0 bottom-0 z-50 pb-4 px-4 sm:px-6 lg:px-8 animate-slide-up">
       <div className="max-w-6xl mx-auto bg-white rounded-lg shadow-xl border border-neutral-200 overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-[#3978FC] to-[#7253B7] px-6 py-4 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-primary-500 to-secondary-500 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <FiShield className="text-white text-2xl" />
             <h3 className="text-white font-semibold text-lg">Cookie Preferences</h3>
@@ -108,7 +108,7 @@ export default function CookieConsent() {
                   type="checkbox"
                   checked={preferences.analytics}
                   onChange={(e) => setPreferences({ ...preferences, analytics: e.target.checked })}
-                  className="mt-1 rounded border-neutral-300 text-[#3978FC] focus:ring-[#3978FC]"
+                  className="mt-1 rounded border-neutral-300 text-primary-500 focus:ring-primary-500"
                 />
                 <div className="flex-1">
                   <h4 className="font-medium text-neutral-800">Analytics Cookies</h4>
@@ -124,7 +124,7 @@ export default function CookieConsent() {
                   type="checkbox"
                   checked={preferences.marketing}
                   onChange={(e) => setPreferences({ ...preferences, marketing: e.target.checked })}
-                  className="mt-1 rounded border-neutral-300 text-[#3978FC] focus:ring-[#3978FC]"
+                  className="mt-1 rounded border-neutral-300 text-primary-500 focus:ring-primary-500"
                 />
                 <div className="flex-1">
                   <h4 className="font-medium text-neutral-800">Marketing Cookies</h4>
@@ -140,7 +140,7 @@ export default function CookieConsent() {
           <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={acceptAll}
-              className="flex-1 bg-gradient-to-r from-[#3978FC] to-[#7253B7] text-white px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity"
+              className="flex-1 bg-gradient-to-r from-primary-500 to-secondary-500 text-white px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity"
             >
               Accept All
             </button>
@@ -152,7 +152,7 @@ export default function CookieConsent() {
             </button>
             <button
               onClick={() => setShowDetails(!showDetails)}
-              className="flex-1 border-2 border-neutral-300 text-neutral-700 px-6 py-3 rounded-lg font-medium hover:border-[#3978FC] hover:text-[#3978FC] transition-colors"
+              className="flex-1 border-2 border-neutral-300 text-neutral-700 px-6 py-3 rounded-lg font-medium hover:border-primary-500 hover:text-primary-500 transition-colors"
             >
               {showDetails ? 'Save Preferences' : 'Customize'}
             </button>
@@ -161,7 +161,7 @@ export default function CookieConsent() {
           {showDetails && (
             <button
               onClick={saveCustom}
-              className="w-full mt-3 bg-[#3978FC] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#3167d4] transition-colors"
+              className="w-full mt-3 bg-primary-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-[#3167d4] transition-colors"
             >
               Save Custom Preferences
             </button>

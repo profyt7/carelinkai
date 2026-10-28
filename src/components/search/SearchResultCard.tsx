@@ -87,7 +87,7 @@ export default function SearchResultCard({
     <article
       data-testid="search-result-card"
       data-home-id={home.id}
-      className={`group flex overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-card motion-safe:transition-shadow hover:shadow-card-hover ${
+      className={`group flex overflow-hidden rounded-xl border border-line bg-surface-raised shadow-card motion-safe:transition-shadow hover:shadow-card-hover ${
         list ? 'flex-row' : 'flex-col'
       } ${className}`}
     >
@@ -143,7 +143,7 @@ export default function SearchResultCard({
             aria-pressed={saved}
             aria-label={saved ? `Remove ${home.name} from saved homes` : `Save ${home.name}`}
             className={`${CONTROL} h-9 w-9 border ${
-              saved ? 'border-error-200 bg-error-50 text-error-600' : 'border-neutral-300 bg-white text-neutral-600 hover:bg-neutral-50 hover:text-neutral-800 active:bg-neutral-100'
+              saved ? 'border-error-200 bg-error-50 text-error-600' : 'border-neutral-300 bg-surface-raised text-neutral-600 hover:bg-neutral-50 hover:text-neutral-800 active:bg-neutral-100'
             }`}
           >
             <FiHeart className={`h-4 w-4 ${saved ? 'fill-current' : ''}`} aria-hidden="true" />
@@ -153,7 +153,7 @@ export default function SearchResultCard({
             onClick={() => onCompare?.(home.id)}
             aria-pressed={comparing}
             className={`${CONTROL} h-9 border px-3 ${
-              comparing ? 'border-primary-600 bg-primary-50 text-primary-700' : 'border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50 active:bg-neutral-100'
+              comparing ? 'border-primary-600 bg-primary-50 text-primary-700' : 'border-neutral-300 bg-surface-raised text-neutral-700 hover:bg-neutral-50 active:bg-neutral-100'
             }`}
           >
             {comparing ? 'Comparing' : 'Compare'}

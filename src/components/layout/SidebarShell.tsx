@@ -84,7 +84,7 @@ type Props = {
 
 const TONE = {
   navy: {
-    aside: 'bg-neutral-950 text-neutral-300',
+    aside: 'bg-surface-sidebar text-neutral-300',
     border: 'border-white/10',
     item: 'text-neutral-300 hover:bg-white/10 hover:text-white',
     active: 'bg-primary-600 text-white',
@@ -93,11 +93,11 @@ const TONE = {
     brandText: 'text-white',
     muted: 'text-neutral-300',
     badge: 'bg-white/15 text-white',
-    flyout: 'border-white/10 bg-neutral-950 text-neutral-300',
+    flyout: 'border-white/10 bg-surface-sidebar text-neutral-300',
   },
   light: {
-    aside: 'bg-white text-neutral-700',
-    border: 'border-neutral-200',
+    aside: 'bg-surface-raised text-neutral-700',
+    border: 'border-line',
     item: 'text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900',
     active: 'bg-primary-50 text-primary-700',
     groupActive: 'text-primary-700',
@@ -105,7 +105,7 @@ const TONE = {
     brandText: 'text-neutral-900',
     muted: 'text-neutral-600',
     badge: 'bg-primary-100 text-primary-800',
-    flyout: 'border-neutral-200 bg-white text-neutral-700',
+    flyout: 'border-line bg-surface-raised text-neutral-700',
   },
 } as const;
 
@@ -141,7 +141,7 @@ export default function SidebarShell({
   embedded = false,
   navLabel = 'Main navigation',
   className = '',
-  workspaceClassName = 'bg-white',
+  workspaceClassName = 'bg-surface-raised',
   linkAs: LinkAs = 'a',
   drawerOpen: drawerOpenProp,
   onDrawerOpenChange,
@@ -423,7 +423,7 @@ export default function SidebarShell({
       <div className={`flex min-w-0 flex-1 flex-col ${workspaceClassName}`}>
         {/* Mobile top bar */}
         {mobileTopBar && (
-          <div className={`${mobileOnly} h-14 flex-shrink-0 items-center justify-between border-b px-4 ${tone === 'navy' ? 'border-white/10 bg-neutral-950' : 'border-neutral-200 bg-white'}`}>
+          <div className={`${mobileOnly} h-14 flex-shrink-0 items-center justify-between border-b px-4 ${tone === 'navy' ? 'border-white/10 bg-surface-sidebar' : 'border-line bg-surface-raised'}`}>
             <BrandMark textClass={t.brandText} rail={false} />
             <button
               type="button"
@@ -441,7 +441,7 @@ export default function SidebarShell({
 
         {/* Mobile bottom tab bar: 4 + More */}
         <nav
-          className={`${mobileOnly} h-16 flex-shrink-0 items-stretch justify-around border-t border-neutral-200 bg-white pb-[env(safe-area-inset-bottom,0px)] ${mobileTabBarClassName}`}
+          className={`${mobileOnly} h-16 flex-shrink-0 items-stretch justify-around border-t border-line bg-surface-raised pb-[env(safe-area-inset-bottom,0px)] ${mobileTabBarClassName}`}
           aria-label={`${navLabel} (mobile)`}
           {...((drawerOpen && !drawerBackdrop ? { inert: true } : {}) as object)}
         >

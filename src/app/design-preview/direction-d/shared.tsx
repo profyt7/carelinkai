@@ -4,8 +4,8 @@ import { useState, type ReactNode } from 'react';
 import { FiMenu, FiPhone } from 'react-icons/fi';
 
 /** Direction A's ivory — page background + hero tint ONLY, never a card surface. */
-export const IVORY_PAGE = 'bg-[#FDFAF6]';
-export const IVORY_HERO = 'bg-gradient-to-b from-[#F5F0E8] to-[#FDFAF6]';
+export const IVORY_PAGE = 'bg-surface-ivory';
+export const IVORY_HERO = 'bg-gradient-to-b from-surface-ivory-deep to-surface-ivory';
 
 export type Mode = 'desktop' | 'tablet' | 'mobile';
 export type Viewer = 'guest' | 'family';
@@ -16,7 +16,7 @@ const MODE_LABEL: Record<Mode, string> = { desktop: 'Desktop 1280', tablet: 'Tab
 export const BTN_PRIMARY =
   'inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 active:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 motion-safe:transition-colors';
 export const BTN_SECONDARY =
-  'inline-flex items-center justify-center gap-2 rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-800 hover:bg-neutral-50 active:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 motion-safe:transition-colors';
+  'inline-flex items-center justify-center gap-2 rounded-lg border border-neutral-300 bg-surface-raised px-4 py-2 text-sm font-semibold text-neutral-800 hover:bg-neutral-50 active:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 motion-safe:transition-colors';
 export const LINK =
   'rounded-sm font-medium text-primary-700 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500';
 
@@ -55,7 +55,7 @@ export function PreviewFrame({
         </div>
         <div className="flex flex-wrap gap-2">
         {viewerToggle && (
-          <div className="inline-flex rounded-lg border border-neutral-300 bg-white p-0.5" role="group" aria-label={`${title} viewer`}>
+          <div className="inline-flex rounded-lg border border-neutral-300 bg-surface-raised p-0.5" role="group" aria-label={`${title} viewer`}>
             {(['guest', 'family'] as Viewer[]).map((v) => (
               <button
                 key={v}
@@ -72,7 +72,7 @@ export function PreviewFrame({
             ))}
           </div>
         )}
-        <div className="inline-flex rounded-lg border border-neutral-300 bg-white p-0.5" role="group" aria-label={`${title} preview width`}>
+        <div className="inline-flex rounded-lg border border-neutral-300 bg-surface-raised p-0.5" role="group" aria-label={`${title} preview width`}>
           {(Object.keys(WIDTH) as Mode[]).map((m) => (
             <button
               key={m}
@@ -90,9 +90,9 @@ export function PreviewFrame({
         </div>
         </div>
       </div>
-      <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-neutral-100 p-3">
+      <div className="overflow-x-auto rounded-xl border border-line bg-neutral-100 p-3">
         <div
-          className={`mx-auto rounded-lg bg-white shadow-card ${height ? 'overflow-y-auto overflow-x-hidden' : 'overflow-hidden'}`}
+          className={`mx-auto rounded-lg bg-surface-raised shadow-card ${height ? 'overflow-y-auto overflow-x-hidden' : 'overflow-hidden'}`}
           style={{ width: WIDTH[mode], height }}
           data-testid={`d-frame-${id}`}
           data-frame-mode={mode}
@@ -114,7 +114,7 @@ export function StateCaption({ children }: { children: ReactNode }) {
 export function PublicTopNav({ mode, label }: { mode: Mode; label: string }) {
   const mobile = mode === 'mobile';
   return (
-    <header className="border-b border-neutral-200 bg-white">
+    <header className="border-b border-line bg-surface-raised">
       <div className="flex h-16 items-center justify-between px-6">
         <span className="flex items-center gap-2.5">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-600 text-sm font-bold text-white" aria-hidden="true">C</span>

@@ -31,7 +31,8 @@ export default function GoogleRatingBadge({ rating, count, placeId, compact = fa
       <span className={`inline-flex items-center gap-1 text-xs text-neutral-600 ${className}`}>
         {stars}
         <span className="text-neutral-500">({count})</span>
-        <span className="text-neutral-400">· Google</span>
+        {/* OL-205: attribution stays (Maps ToS) at AA contrast — neutral-600 on white, 12px. */}
+        <span className="text-neutral-600">· Google</span>
       </span>
     );
   }

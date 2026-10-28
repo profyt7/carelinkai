@@ -32,7 +32,7 @@ const AnimatedInput = forwardRef<HTMLInputElement, AnimatedInputProps>(
         ? 'border-error-500 focus:ring-error-200 focus:border-error-500'
         : success
         ? 'border-success-500 focus:ring-success-200 focus:border-success-500'
-        : 'border-neutral-300 focus:ring-[#3978FC]/20 focus:border-[#3978FC]',
+        : 'border-neutral-300 focus:ring-primary-500/20 focus:border-primary-500',
       leftIcon && 'pl-10',
       className
     );

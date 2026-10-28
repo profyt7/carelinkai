@@ -106,7 +106,7 @@ function ResetPasswordForm() {
   if (tokenChecking) {
     return (
       <div className="text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3978FC] mx-auto mb-4"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
         <p className="text-slate-500">Verifying reset link...</p>
       </div>
     );
@@ -125,7 +125,7 @@ function ResetPasswordForm() {
         </p>
         <Link
           href="/auth/forgot-password"
-          className="inline-block w-full py-3 px-4 bg-gradient-to-r from-[#3978FC] to-[#7253B7] text-white font-semibold rounded-lg hover:opacity-90 transition-all text-center"
+          className="inline-block w-full py-3 px-4 bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-semibold rounded-lg hover:opacity-90 transition-all text-center"
         >
           Request New Reset Link
         </Link>
@@ -146,7 +146,7 @@ function ResetPasswordForm() {
         </p>
         <Link
           href="/auth/login"
-          className="block w-full py-3 px-4 bg-gradient-to-r from-[#3978FC] to-[#7253B7] text-white font-semibold rounded-lg hover:opacity-90 transition-all text-center"
+          className="block w-full py-3 px-4 bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-semibold rounded-lg hover:opacity-90 transition-all text-center"
         >
           Sign In
         </Link>
@@ -158,8 +158,8 @@ function ResetPasswordForm() {
     <>
       {/* Header */}
       <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-[#7253B7]/10 rounded-full mb-4">
-          <FiLock className="w-8 h-8 text-[#7253B7]" />
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-secondary-500/10 rounded-full mb-4">
+          <FiLock className="w-8 h-8 text-secondary-500" />
         </div>
         <h1 className="text-2xl font-bold text-slate-900 mb-2">Reset Your Password</h1>
         <p className="text-slate-500">Enter your new password below.</p>
@@ -189,7 +189,7 @@ function ResetPasswordForm() {
               type={showPassword ? "text" : "password"}
               autoComplete="new-password"
               placeholder="••••••••"
-              className={`block w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-[#3978FC] focus:border-transparent transition-colors ${
+              className={`block w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors ${
                 errors.password ? "border-error-300 bg-error-50" : "border-slate-300 bg-white"
               }`}
               {...register("password", {
@@ -255,7 +255,7 @@ function ResetPasswordForm() {
               type={showConfirmPassword ? "text" : "password"}
               autoComplete="new-password"
               placeholder="••••••••"
-              className={`block w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-[#3978FC] focus:border-transparent transition-colors ${
+              className={`block w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors ${
                 errors.confirmPassword ? "border-error-300 bg-error-50" : "border-slate-300 bg-white"
               }`}
               {...register("confirmPassword", {
@@ -283,7 +283,7 @@ function ResetPasswordForm() {
         <button
           type="submit"
           disabled={isLoading || !allRequirementsMet}
-          className="w-full py-3 px-4 bg-gradient-to-r from-[#3978FC] to-[#7253B7] text-white font-semibold rounded-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[#3978FC] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center"
+          className="w-full py-3 px-4 bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-semibold rounded-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center"
         >
           {isLoading ? (
             <>
@@ -319,7 +319,7 @@ function ResetPasswordForm() {
       <div className="mt-6 text-center">
         <Link
           href="/auth/login"
-          className="inline-flex items-center text-sm text-[#3978FC] hover:text-[#7253B7] font-medium transition-colors"
+          className="inline-flex items-center text-sm text-primary-500 hover:text-secondary-500 font-medium transition-colors"
         >
           <FiArrowLeft className="mr-2" />
           Back to Login
@@ -334,8 +334,8 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-primary-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-[#3978FC]/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-[#7253B7]/10 rounded-full blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-500/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-secondary-500/10 rounded-full blur-3xl" />
       </div>
 
       <div className="relative w-full max-w-md">
@@ -359,7 +359,7 @@ export default function ResetPasswordPage() {
           <Suspense
             fallback={
               <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3978FC] mx-auto mb-4"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
                 <p className="text-slate-500">Loading...</p>
               </div>
             }
@@ -371,7 +371,7 @@ export default function ResetPasswordPage() {
         {/* Footer */}
         <p className="mt-8 text-center text-sm text-slate-500">
           Need help?{" "}
-          <Link href="/contact" className="text-[#3978FC] hover:underline font-medium">
+          <Link href="/contact" className="text-primary-500 hover:underline font-medium">
             Contact Support
           </Link>
         </p>

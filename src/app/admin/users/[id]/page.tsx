@@ -180,7 +180,7 @@ export default function AdminUserDetailPage() {
     return (
       <div className="min-h-screen bg-neutral-50">
         <div className="max-w-3xl mx-auto px-4 py-8">
-          <Link href="/admin/users" className="text-[#3978FC] hover:text-[#3167d4] flex items-center gap-2 mb-4">
+          <Link href="/admin/users" className="text-primary-500 hover:text-[#3167d4] flex items-center gap-2 mb-4">
             <FiArrowLeft /> Back to Users
           </Link>
           <div className="bg-error-50 text-error-700 p-4 rounded-lg">
@@ -195,7 +195,7 @@ export default function AdminUserDetailPage() {
     <div className="min-h-screen bg-neutral-50">
       <header className="bg-white border-b border-neutral-200">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <Link href="/admin/users" className="text-sm text-[#3978FC] hover:text-[#3167d4] mb-2 inline-flex items-center gap-1">
+          <Link href="/admin/users" className="text-sm text-primary-500 hover:text-[#3167d4] mb-2 inline-flex items-center gap-1">
             <FiArrowLeft /> Back to Users
           </Link>
           <h1 className="text-2xl font-bold text-neutral-900">Edit User</h1>
@@ -214,7 +214,7 @@ export default function AdminUserDetailPage() {
                 type="text"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-[#3978FC] focus:border-transparent"
+                className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
 
@@ -226,7 +226,7 @@ export default function AdminUserDetailPage() {
                 type="text"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-[#3978FC] focus:border-transparent"
+                className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
 
@@ -237,7 +237,7 @@ export default function AdminUserDetailPage() {
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-[#3978FC] focus:border-transparent"
+                className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="FAMILY">Family</option>
                 <option value="OPERATOR">Operator</option>
@@ -254,7 +254,7 @@ export default function AdminUserDetailPage() {
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-[#3978FC] focus:border-transparent"
+                className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="ACTIVE">Active</option>
                 <option value="SUSPENDED">Suspended</option>
@@ -284,7 +284,7 @@ export default function AdminUserDetailPage() {
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="bg-[#3978FC] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#3167d4] transition-colors flex items-center gap-2 disabled:opacity-50"
+              className="bg-primary-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-[#3167d4] transition-colors flex items-center gap-2 disabled:opacity-50"
             >
               <FiSave />
               {saving ? 'Saving...' : 'Save Changes'}

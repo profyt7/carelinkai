@@ -146,7 +146,7 @@ export default function BugReportsPage() {
             </div>
             <Link
               href="/admin"
-              className="text-[#3978FC] hover:text-[#3167d4] font-medium transition-colors"
+              className="text-primary-500 hover:text-[#3167d4] font-medium transition-colors"
             >
               ← Back to Admin
             </Link>

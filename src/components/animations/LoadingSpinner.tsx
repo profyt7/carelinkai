@@ -15,7 +15,7 @@ const sizeStyles = {
 };
 
 const colorStyles = {
-  primary: 'border-[#3978FC] border-t-transparent',
+  primary: 'border-primary-500 border-t-transparent',
   white: 'border-white border-t-transparent',
   neutral: 'border-neutral-400 border-t-transparent',
 };

@@ -201,6 +201,7 @@ export function OperatorDashboardContent() {
             trend={metrics.criticalIncidents.trend}
             trendValue={metrics.criticalIncidents.trendValue}
             color="red"
+            alert
           />
         )}
         {metrics?.overdueAssessments && (

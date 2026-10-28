@@ -122,7 +122,7 @@ export default async function AdminDashboard({
               </Link>
               <Link
                 href="/"
-                className="text-[#3978FC] hover:text-[#3167d4] font-medium transition-colors"
+                className="text-primary-500 hover:text-[#3167d4] font-medium transition-colors"
               >
                 ← Back to App
               </Link>

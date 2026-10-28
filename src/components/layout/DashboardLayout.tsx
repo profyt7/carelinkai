@@ -534,7 +534,11 @@ export default function DashboardLayout({
                     <FiUser size={16} className="text-neutral-600" />
                   </div>
                 )}
-                <div className="hidden md:block text-left">
+                {/* OL-209: at ≥ lg the sidebar footer shows name + role, so the header keeps only
+                    avatar + chevron (the menu still opens). md–lg (icon rail, footer text is
+                    sr-only) and < md keep the header block. */}
+                <FiChevronDown size={16} aria-hidden="true" className={`hidden lg:block text-neutral-500 transition-transform duration-200 ${userMenuOpen ? 'rotate-180' : ''}`} />
+                <div className="hidden md:block lg:hidden text-left">
                   <div className="flex items-center">
                     <span className="text-sm font-medium">{fullName}</span>
                     <FiChevronDown size={16} className={`ml-1 text-neutral-500 transition-transform duration-200 ${userMenuOpen ? 'rotate-180' : ''}`} />

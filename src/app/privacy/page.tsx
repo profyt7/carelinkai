@@ -17,12 +17,12 @@ export default function PrivacyPolicyPage() {
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link 
             href="/" 
-            className="flex items-center text-slate-600 hover:text-[#3978FC] transition-colors"
+            className="flex items-center text-slate-600 hover:text-primary-500 transition-colors"
           >
             <FiArrowLeft className="mr-2" />
             Back to Home
           </Link>
-          <div className="flex items-center text-[#3978FC]">
+          <div className="flex items-center text-primary-500">
             <FiLock className="mr-2" />
             <span className="text-sm font-medium">Privacy Document</span>
           </div>
@@ -34,8 +34,8 @@ export default function PrivacyPolicyPage() {
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 md:p-12">
           {/* Title */}
           <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-[#7253B7]/10 rounded-full mb-4">
-              <FiShield className="w-8 h-8 text-[#7253B7]" />
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-secondary-500/10 rounded-full mb-4">
+              <FiShield className="w-8 h-8 text-secondary-500" />
             </div>
             <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">
               Privacy Policy
@@ -57,7 +57,7 @@ export default function PrivacyPolicyPage() {
           <div className="prose prose-slate max-w-none">
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#7253B7] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">1</span>
+                <span className="w-8 h-8 bg-secondary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">1</span>
                 Introduction
               </h2>
               <p className="text-slate-600 leading-relaxed">
@@ -70,7 +70,7 @@ export default function PrivacyPolicyPage() {
 
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#7253B7] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">2</span>
+                <span className="w-8 h-8 bg-secondary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">2</span>
                 Information We Collect
               </h2>
               <p className="text-slate-600 leading-relaxed mb-4">
@@ -106,7 +106,7 @@ export default function PrivacyPolicyPage() {
 
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#7253B7] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">3</span>
+                <span className="w-8 h-8 bg-secondary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">3</span>
                 How We Use Your Information
               </h2>
               <p className="text-slate-600 leading-relaxed mb-4">
@@ -126,7 +126,7 @@ export default function PrivacyPolicyPage() {
 
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#7253B7] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">4</span>
+                <span className="w-8 h-8 bg-secondary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">4</span>
                 Information Sharing
               </h2>
               <p className="text-slate-600 leading-relaxed mb-4">
@@ -149,7 +149,7 @@ export default function PrivacyPolicyPage() {
 
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#7253B7] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">5</span>
+                <span className="w-8 h-8 bg-secondary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">5</span>
                 Data Security
               </h2>
               <p className="text-slate-600 leading-relaxed mb-4">
@@ -167,7 +167,7 @@ export default function PrivacyPolicyPage() {
 
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#7253B7] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">6</span>
+                <span className="w-8 h-8 bg-secondary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">6</span>
                 Your Rights & Choices
               </h2>
               <p className="text-slate-600 leading-relaxed mb-4">
@@ -194,13 +194,13 @@ export default function PrivacyPolicyPage() {
               </div>
 
               <p className="text-slate-600 leading-relaxed mt-4">
-                To exercise these rights, contact us at <a href="mailto:privacy@getcarelinkai.com" className="text-[#7253B7] hover:underline">privacy@getcarelinkai.com</a>.
+                To exercise these rights, contact us at <a href="mailto:privacy@getcarelinkai.com" className="text-secondary-500 hover:underline">privacy@getcarelinkai.com</a>.
               </p>
             </section>
 
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#7253B7] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">7</span>
+                <span className="w-8 h-8 bg-secondary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">7</span>
                 Cookies & Tracking Technologies
               </h2>
               <p className="text-slate-600 leading-relaxed mb-4">
@@ -219,7 +219,7 @@ export default function PrivacyPolicyPage() {
 
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#7253B7] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">8</span>
+                <span className="w-8 h-8 bg-secondary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">8</span>
                 Third-Party Services
               </h2>
               <p className="text-slate-600 leading-relaxed">
@@ -232,7 +232,7 @@ export default function PrivacyPolicyPage() {
 
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#7253B7] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">9</span>
+                <span className="w-8 h-8 bg-secondary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">9</span>
                 Children&apos;s Privacy
               </h2>
               <p className="text-slate-600 leading-relaxed">
@@ -244,7 +244,7 @@ export default function PrivacyPolicyPage() {
 
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#7253B7] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">10</span>
+                <span className="w-8 h-8 bg-secondary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">10</span>
                 Data Retention
               </h2>
               <p className="text-slate-600 leading-relaxed">
@@ -257,7 +257,7 @@ export default function PrivacyPolicyPage() {
 
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#7253B7] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">11</span>
+                <span className="w-8 h-8 bg-secondary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">11</span>
                 International Data Transfers
               </h2>
               <p className="text-slate-600 leading-relaxed">
@@ -270,7 +270,7 @@ export default function PrivacyPolicyPage() {
 
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#7253B7] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">12</span>
+                <span className="w-8 h-8 bg-secondary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">12</span>
                 California Privacy Rights (CCPA)
               </h2>
               <p className="text-slate-600 leading-relaxed mb-4">
@@ -287,11 +287,11 @@ export default function PrivacyPolicyPage() {
               </p>
             </section>
 
-            <SmsProgramSection number={13} accent="#7253B7" />
+            <SmsProgramSection number={13} accent="var(--color-secondary-500)" />
 
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#7253B7] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">14</span>
+                <span className="w-8 h-8 bg-secondary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">14</span>
                 Changes to This Policy
               </h2>
               <p className="text-slate-600 leading-relaxed">
@@ -304,7 +304,7 @@ export default function PrivacyPolicyPage() {
 
             <section className="mb-10">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 bg-[#7253B7] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">15</span>
+                <span className="w-8 h-8 bg-secondary-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">15</span>
                 Contact Us
               </h2>
               <p className="text-slate-600 leading-relaxed mb-4">
@@ -319,7 +319,7 @@ export default function PrivacyPolicyPage() {
               </div>
               <p className="text-slate-600 leading-relaxed mt-4">
                 For HIPAA-related inquiries, please contact our HIPAA Compliance Officer at 
-                <a href={COMPANY_MAILTO} className="text-[#7253B7] hover:underline ml-1">{COMPANY_EMAIL}</a>.
+                <a href={COMPANY_MAILTO} className="text-secondary-500 hover:underline ml-1">{COMPANY_EMAIL}</a>.
               </p>
             </section>
           </div>
@@ -331,13 +331,13 @@ export default function PrivacyPolicyPage() {
           <div className="flex justify-center gap-4">
             <Link 
               href="/terms" 
-              className="px-6 py-2 bg-white border border-slate-200 rounded-lg text-slate-700 hover:border-[#7253B7] hover:text-[#7253B7] transition-colors"
+              className="px-6 py-2 bg-white border border-slate-200 rounded-lg text-slate-700 hover:border-secondary-500 hover:text-secondary-500 transition-colors"
             >
               Terms of Service
             </Link>
             <Link 
               href="/contact" 
-              className="px-6 py-2 bg-white border border-slate-200 rounded-lg text-slate-700 hover:border-[#7253B7] hover:text-[#7253B7] transition-colors"
+              className="px-6 py-2 bg-white border border-slate-200 rounded-lg text-slate-700 hover:border-secondary-500 hover:text-secondary-500 transition-colors"
             >
               Contact Us
             </Link>

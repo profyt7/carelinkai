@@ -16,7 +16,7 @@ import { PreviewFrame } from './shared';
 export default function DirectionD({ data }: { data?: DirectionDData }) {
   if (!data) return null;
   return (
-    <div className="space-y-12 rounded-2xl border border-neutral-200 bg-white p-6" data-testid="direction-d">
+    <div className="space-y-12 rounded-2xl border border-line bg-surface-raised p-6" data-testid="direction-d">
       <div className="rounded-xl bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
         <strong className="font-semibold text-neutral-900">Fixture data.</strong> Every card shows a real data state the rollout must handle, captioned
         underneath. At least half of each grid is the no-photo / no-price case. Availability and price come from the same server helpers the app uses.
