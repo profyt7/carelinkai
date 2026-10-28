@@ -59,7 +59,7 @@ export default function CareConcierge() {
       {/* Floating button */}
       <button
         onClick={() => setOpen(true)}
-        className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 bg-primary-600 text-white rounded-full shadow-lg hover:bg-primary-700 transition-all ${open ? 'hidden' : ''}`}
+        className={`fixed bottom-[calc(var(--bottom-stack-offset,0px)+1.5rem)] right-6 z-50 flex items-center gap-2 px-4 py-3 bg-primary-600 text-white rounded-full shadow-lg hover:bg-primary-700 transition-all ${open ? 'hidden' : ''}`}
         aria-label="Ask a Care Advisor"
       >
         <FiMessageCircle size={20} />
@@ -68,7 +68,7 @@ export default function CareConcierge() {
 
       {/* Chat panel */}
       {open && (
-        <div className="fixed bottom-6 right-6 z-50 w-96 max-w-[calc(100vw-1.5rem)] flex flex-col bg-white rounded-2xl shadow-2xl border border-neutral-200 overflow-hidden" style={{ height: '520px' }}>
+        <div className="fixed bottom-[calc(var(--bottom-stack-offset,0px)+1.5rem)] right-6 z-50 w-96 max-w-[calc(100vw-1.5rem)] max-h-[calc(100dvh-var(--bottom-stack-offset,0px)-3rem)] flex flex-col bg-white rounded-2xl shadow-2xl border border-neutral-200 overflow-hidden" style={{ height: '520px' }}>
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-primary-600 text-white flex-shrink-0">
             <div className="flex items-center gap-2">

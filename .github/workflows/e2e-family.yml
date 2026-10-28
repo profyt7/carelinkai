@@ -792,7 +792,7 @@ jobs:
           # cohort, suburb pages, structured data, availability ping …). New specs
           # dropped in that folder run here without editing this line.
           # role-navigation.spec.ts (OL-206): per-role sidebar / bottom bar for all 8 roles.
-          npx playwright test --config=playwright.e2e.config.ts e2e/public-routes.spec.ts e2e/search-demo-filter.spec.ts e2e/search-availability-labels.spec.ts e2e/design-preview-direction-d.spec.ts e2e/role-navigation.spec.ts e2e/public/directory/ --workers=1 --reporter=line
+          npx playwright test --config=playwright.e2e.config.ts e2e/public-routes.spec.ts e2e/search-demo-filter.spec.ts e2e/search-availability-labels.spec.ts e2e/search-cards.spec.ts e2e/design-preview-direction-d.spec.ts e2e/role-navigation.spec.ts e2e/public/directory/ --workers=1 --reporter=line
 
       - name: Upload Playwright test artifacts (Public directory) (always)
         if: always()

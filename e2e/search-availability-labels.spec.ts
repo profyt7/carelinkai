@@ -39,8 +39,8 @@ const TODAY = new Date().toLocaleDateString('en-US', { month: 'short', day: 'num
 
 const ids: Record<string, string> = {};
 
-/** A search card is the /homes/<id> link that wraps the image, badge and details. */
-const card = (page: Page, id: string) => page.locator(`a[href="/homes/${id}"]`).first();
+/** A search card (OL-216: SearchResultCard — its links no longer wrap the badge). */
+const card = (page: Page, id: string) => page.locator(`[data-testid="search-result-card"][data-home-id="${id}"]`);
 
 async function assertCards(page: Page) {
   for (const name of [UNCLAIMED, FULL]) {
@@ -107,8 +107,8 @@ test.describe('@critical search cards show only verified availability (OL-200)',
     await assertCards(page);
 
     await page.getByRole('button', { name: 'List', exact: true }).filter({ visible: true }).first().click();
-    // List view lays the image beside the details (md:flex-row); wait for it to replace the grid.
-    await expect(page.locator('div.space-y-4 a[href^="/homes/"]').first()).toBeVisible({ timeout: 30000 });
+    // List view renders the same card as variant="list"; wait for it to replace the grid.
+    await expect(page.locator('[data-testid="search-result-card"][data-variant="list"]').first()).toBeVisible({ timeout: 30000 });
     await assertCards(page);
   });
 

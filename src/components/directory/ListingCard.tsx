@@ -21,22 +21,28 @@ export default function ListingCard({ listing, priority = false }: { listing: Pu
       data-home-id={l.id}
       className={`flex flex-col overflow-hidden ${CARD}`}
     >
-      <Link href={l.href} className="block">
-        {/* eslint-disable-next-line @next/next/no-img-element -- plain <img> keeps the card static HTML; images are Cloudinary/placeholder URLs */}
-        <img
-          src={l.photoUrl}
-          alt={l.photoIsPlaceholder ? `Representative photo for ${l.name}` : l.name}
-          loading={priority ? 'eager' : 'lazy'}
-          className="h-44 w-full object-cover"
-        />
-      </Link>
-      <div className="flex flex-1 flex-col p-5">
-        <div className="flex flex-wrap items-center gap-2">
-          {l.featured && <FeaturedBadge />}
-          <AvailabilityBadge availability={l.availability} />
-          <GoogleRatingBadge rating={l.rating} count={l.ratingCount} compact />
+      {/* OL-216: same layout as the /search SearchResultCard — availability over the photo. */}
+      <div className="relative">
+        <Link href={l.href} className="block">
+          {/* eslint-disable-next-line @next/next/no-img-element -- plain <img> keeps the card static HTML; images are Cloudinary/placeholder URLs */}
+          <img
+            src={l.photoUrl}
+            alt={l.photoIsPlaceholder ? `Representative photo for ${l.name}` : l.name}
+            loading={priority ? 'eager' : 'lazy'}
+            className="h-44 w-full object-cover"
+          />
+        </Link>
+        <div className="absolute left-3 top-3">
+          <AvailabilityBadge availability={l.availability} tone="overlay" />
         </div>
-        <h3 className="mt-3 text-lg font-bold text-neutral-900">
+      </div>
+      <div className="flex flex-1 flex-col p-5">
+        {l.featured && (
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <FeaturedBadge />
+          </div>
+        )}
+        <h3 className="text-lg font-bold text-neutral-900">
           <Link href={l.href} className="hover:text-primary-700">
             {l.name}
           </Link>
@@ -48,8 +54,15 @@ export default function ListingCard({ listing, priority = false }: { listing: Pu
           </p>
         )}
         {l.careLevelLabels.length > 0 && (
-          <p className="mt-2 text-sm text-neutral-700">{l.careLevelLabels.join(' · ')}</p>
+          <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Care types">
+            {l.careLevelLabels.map((c) => (
+              <li key={c} className="rounded-lg bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-700">
+                {c}
+              </li>
+            ))}
+          </ul>
         )}
+        <GoogleRatingBadge rating={l.rating} count={l.ratingCount} className="mt-2" />
         <p className="mt-2 text-sm font-medium text-neutral-800">{l.pricing.display}</p>
         {l.medicaidWaiver.line && (
           <p className="mt-2 text-xs text-neutral-700" data-testid="listing-waiver-line" data-waiver-status={l.medicaidWaiver.status}>

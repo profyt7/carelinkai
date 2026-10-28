@@ -417,6 +417,7 @@ export default function DashboardLayout({
         mobileTopBar={false}
         drawerBackdrop={false}
         mobileTabBarClassName="mobile-tab-bar safe-bottom"
+        reserveBottomStack
         mainLandmark={false}
         workspaceClassName="bg-neutral-50"
       >
