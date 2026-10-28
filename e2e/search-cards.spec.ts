@@ -123,7 +123,8 @@ test.describe('@critical OL-216 search result cards', () => {
       page.on('request', (r) => { if (r.url().includes('/api/favorites') && r.method() !== 'GET') calls.push(r.method()); });
       const save = card(page, ids[0]).getByTestId('card-save');
       await save.click();
-      await expect(page.getByText('Create a free account to save homes.')).toBeVisible();
+      // Two toasters are mounted app-wide (layout + providers); assert the visible prompt.
+      await expect(page.getByText('Create a free account to save homes.').filter({ visible: true }).first()).toBeVisible();
       await expect(save).toHaveAttribute('aria-pressed', 'false');
       expect(calls).toEqual([]);
     });
