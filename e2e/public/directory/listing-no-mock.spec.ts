@@ -43,8 +43,13 @@ test.describe('@critical listing page never renders mock data', () => {
     await expect(body).not.toContainText('123 Maple Street');
   });
 
-  test('the sticky bar sits below the site header mid-scroll', async ({ page }) => {
-    for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 }]) {
+  test('the sticky bar sits below the site header mid-scroll (≥ lg; below lg it scrolls with the page — OL-217 §7)', async ({ page }) => {
+    // Below lg the site header and the listing CTA bar are the only sticky regions, so the bar is static there.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`/homes/${homeId}`, { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('heading', { level: 1, name: HOME_NAME })).toBeVisible({ timeout: 60_000 });
+    expect(await page.getByTestId('listing-sticky-bar').evaluate((el) => getComputedStyle(el).position)).toBe('static');
+    for (const viewport of [{ width: 1280, height: 800 }]) {
       await page.setViewportSize(viewport);
       await page.goto(`/homes/${homeId}`, { waitUntil: 'domcontentloaded' });
       await expect(page.getByRole('heading', { level: 1, name: HOME_NAME })).toBeVisible({ timeout: 60_000 });

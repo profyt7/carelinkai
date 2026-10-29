@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -176,7 +176,12 @@ export default function HomeDetailPage() {
   // The one inquiry panel (right rail ≥ lg, inline at the top of the content < lg).
   const bookingRef = useRef<HTMLDivElement>(null);
   const galleryRef = useRef<HTMLDivElement>(null);
-  const ctaRef = useRef<HTMLDivElement>(null);
+  // Signed-in visitors get the app shell once the session resolves, which remounts the page subtree;
+  // track the panel / bar elements as state so the observers below re-attach to the live nodes.
+  const [panelEl, setPanelEl] = useState<HTMLDivElement | null>(null);
+  const [ctaEl, setCtaEl] = useState<HTMLDivElement | null>(null);
+  const panelRefCb = useCallback((el: HTMLDivElement | null) => { bookingRef.current = el; setPanelEl(el); }, []);
+  const ctaRef = useMemo(() => ({ current: ctaEl }), [ctaEl]);
   const role = (sessionData?.user as { role?: string } | undefined)?.role;
   const isStaff = role === "OPERATOR" || role === "STAFF" || role === "ADMIN";
   const signedIn = authStatus === "authenticated";
@@ -209,29 +214,28 @@ export default function HomeDetailPage() {
   }, []);
   const [panelInView, setPanelInView] = useState(true);
   useEffect(() => {
-    const el = bookingRef.current;
-    if (!compact || !el || typeof IntersectionObserver === "undefined") { setPanelInView(true); return; }
-    const io = new IntersectionObserver(([entry]) => setPanelInView(entry.isIntersecting), { threshold: 0 });
-    io.observe(el);
+    if (!compact || !panelEl || typeof IntersectionObserver === "undefined") { setPanelInView(true); return; }
+    // "Out of view" = scrolled past (above the viewport); before the reader reaches the panel there is no bar.
+    const io = new IntersectionObserver(([entry]) => setPanelInView(entry.isIntersecting || entry.boundingClientRect.top > 0), { threshold: 0 });
+    io.observe(panelEl);
     return () => io.disconnect();
-  }, [compact, realHome]);
+  }, [compact, panelEl]);
   const showCta = compact && !panelInView;
   // The bar is the last thing in the page flow; a guest who scrolls on into the site footer leaves it behind.
   const [ctaOnScreen, setCtaOnScreen] = useState(false);
   useEffect(() => {
-    const el = ctaRef.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
+    if (!ctaEl || typeof IntersectionObserver === "undefined") return;
     const io = new IntersectionObserver(([entry]) => setCtaOnScreen(entry.isIntersecting), { threshold: 0.5 });
-    io.observe(el);
+    io.observe(ctaEl);
     return () => io.disconnect();
-  }, [realHome]);
+  }, [ctaEl]);
   // OL-208: floating widgets clear the bar (on top of the tab bar when signed in).
   useBottomStackOffset(ctaRef, "listing-cta-bar", showCta && ctaOnScreen);
 
   // Section nav: mark the section in the reading band as current (aria-current="location").
   const [activeSection, setActiveSection] = useState(SECTIONS[0].id);
   useEffect(() => {
-    if (!realHome || typeof IntersectionObserver === "undefined") return;
+    if (!panelEl || typeof IntersectionObserver === "undefined") return;
     const els = SECTIONS.map((s) => document.getElementById(s.id)).filter((el): el is HTMLElement => !!el);
     const io = new IntersectionObserver(
       (entries) => {
@@ -242,7 +246,7 @@ export default function HomeDetailPage() {
     );
     els.forEach((el) => io.observe(el));
     return () => io.disconnect();
-  }, [realHome]);
+  }, [panelEl]);
   
   // Fetch data
   useEffect(() => {
@@ -680,7 +684,7 @@ export default function HomeDetailPage() {
 
   // ONE inquiry panel: right rail ≥ lg, inline at the top of the content < lg — a single instance either way.
   const inquiryPanel = (
-    <div ref={bookingRef} role="region" aria-label={`Contact ${realHome.name}`} data-testid="listing-inquiry-panel" className="scroll-mt-[calc(var(--site-header-h,0px)+1rem)] rounded-xl border border-line bg-surface-raised p-5 shadow-card">
+    <div ref={panelRefCb} role="region" aria-label={`Contact ${realHome.name}`} data-testid="listing-inquiry-panel" className="scroll-mt-[calc(var(--site-header-h,0px)+1rem)] rounded-xl border border-line bg-surface-raised p-5 shadow-card">
                   {bookingStep === 0 && (
                     <>
                       <h2 className="text-lg font-semibold text-neutral-900">Interested in {realHome.name}?</h2>
@@ -915,7 +919,7 @@ export default function HomeDetailPage() {
                   <PhotoGallery photos={photos} />
                 </div>
                 {photos.length > 1 && (
-                  <div className="relative hidden overflow-hidden rounded-lg md:block">
+                  <div className="relative hidden self-start overflow-hidden rounded-lg md:block">
                     {/* eslint-disable-next-line @next/next/no-img-element -- second tile only; PhotoGallery owns the optimised hero */}
                     <img src={photos[1].url} alt={`${realHome.name}, photo 2 of ${photos.length}`} className="h-96 w-full object-cover" />
                     <button type="button" onClick={openAllPhotos} className={`${BTN_SECONDARY} absolute bottom-3 right-3 py-1.5`}>
@@ -1352,7 +1356,7 @@ export default function HomeDetailPage() {
             height is the bottom padding; signed in, the page scrolls inside the shell above the tab bar. Hidden + inert
             while the inline panel is on screen. */}
         <div
-          ref={ctaRef}
+          ref={setCtaEl}
           data-testid="listing-cta-bar"
           data-hidden={!showCta}
           aria-hidden={!showCta || undefined}
