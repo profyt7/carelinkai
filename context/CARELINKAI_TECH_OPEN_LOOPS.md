@@ -740,6 +740,7 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
   3. Propose a retention period per type. For example, 90 days for failed logins, and a longer, documented period for PHI-access and export events. (HIPAA's 6-year rule, 45 CFR 164.316(b)(2), covers required documentation, not automatically every log row.)
   4. Record the decision before any purge is built. A purge would then run per type from an existing cron (e.g. the daily `/api/cron/credential-expiry`), with a test pinning its scope.
 - **Never purge the whole table.**
+- **Deferred:** `getRecentActivity()`, `getAllDashboardData()` and `getDashboardData()` in `src/lib/dashboard-data.ts` form an apparently unused chain that reads audit records (with user emails). Left unchanged and deferred to a future maintenance batch; before removing, check dynamic imports, scripts and tests for callers.
 - **Path:** `prisma/schema.prisma` (`AuditLog`), `src/lib/auth.ts`, `src/lib/audit.ts`, `src/app/api/admin/audit-logs/**`, `src/app/api/cron/credential-expiry/route.ts`, `src/lib/dashboard-data.ts`
 
 ### OL-222: PhotoGallery's slide counter overlaps the photo caption
