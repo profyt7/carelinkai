@@ -2389,6 +2389,37 @@
 
 <!-- Add new sessions above this line, newest first -->
 
+### 2026-10-29 — OL-217 pre-merge review fixes, merge, prod-verify
+- **Objective:** answer the pre-merge review on PR #8 (end-of-page and keyboard evidence, capacity gate, Availability box); fix the mobile floating-widget overlap it found; merge on approval; prod-verify; log the follow-ups.
+- **Work completed:**
+  - Review evidence was posted inline on #8.
+  - The Care Advisor bubble covered "Claim this listing" at max scroll (FAMILY) and at the end of the listing (guest).
+  - The capacity line is gated by `listingFacts`: an OPERATOR / ADMIN / VA_CALL capacity event. There's no separate unclaimed check; the logic is unchanged from main.
+  - The Availability box under About is pinned by protected `listing-page.spec.ts:108`, so it stays.
+  - Fix `e074eba2`:
+    - end-of-listing clearance measured from `[data-floating-widget]` boxes;
+    - the widget lift follows the CTA bar (replaces the 50% IntersectionObserver);
+    - the widgets are hidden while the form or its confirmation is on screen on a phone.
+  - New pointer checks in `listing-profile.spec.ts`.
+  - Squash-merged #8 as `9294a7d8`.
+  - Logged OL-223, OL-224 and OL-225 (OL-222 landed with #8).
+- **Files changed:**
+  - In #8: `src/app/homes/[id]/page.tsx`, `src/hooks/useBottomStackOffset.ts`, `src/components/{CareConcierge.tsx,bug-report/BugReportButton.tsx}`, `src/app/globals.css`, `e2e/public/directory/listing-profile.spec.ts`.
+  - This PR: context files only.
+- **Commands run:**
+  - local standalone builds (fixture DB with a fixed clock, and a fresh migrated e2e DB)
+  - review/retake screenshot scripts (scratchpad)
+  - `tsc`, `eslint`, `jest`
+  - Playwright with `--retries=0`
+  - prod-verify workflow dispatch
+- **Tests/build status:**
+  - Local on `e074eba2`: `listing-profile` 4/4, then 12/12 with `--repeat-each=3`; directory group 104/104; jest 149/149 suites; tsc and eslint clean.
+  - CI on `e074eba2`: all required checks green.
+  - Prod-verify run 40808771299 (all passed): `/api/version` = `9294a7d8` (live 02:57:06 UTC, about 8 min after the merge), `/` 200, `/api/health` 200 ok=true db=ok, `/search` 200 with footer @9294a7d, `/cleveland/assisted-living/beachwood` 200 with footer @9294a7d, `/homes/cmql0xbos0006r7jcitqgqhds` 200 with footer @9294a7d, `/homes/cmql0xbp9000gr7jcpmm4c9ps` (first listing on `/cleveland/assisted-living`) 200, `/concierge` 200 with the screener, `/cleveland` and its four care-type hubs 200 and indexable, `/zzz-nope` and `/.env` 404, `/operator` (logged out) → 307 to login. Claim status of the two listings is not recorded by prod-verify, and the prod host isn't reachable from the agent sandbox, so claimed vs unclaimed wasn't confirmed on production.
+- **Deployment impact:** `/homes/[id]` presentation (Direction D profile) is live. No schema, env, API, route, metadata or JSON-LD change.
+- **New risks/blockers:** claimed vs unclaimed couldn't be told apart on production from this sandbox. The prod host is outside the allowed network, and prod-verify doesn't record claim status.
+- **Recommended next step:** Chris picks the next batch. Candidates: OL-223 (one "all photos" button) and OL-224 (compact thin-listing states), both small follow-ups on the same page.
+
 ### 2026-10-29 — OL-217 facility profile (/homes/[id]) on the Direction D standard — PR open
 - **Objective:** restructure `/homes/[id]` to the Direction D facility profile: header, key-stat tiles, section nav, ONE inquiry pathway with a mobile CTA bar, the sections in order, and the claim CTA demoted. Metadata, JSON-LD, URL, handlers, frozen components and test ids stay unchanged. Screenshots before and after, axe, new e2e. No merge.
 - **Work completed:**
