@@ -2415,7 +2415,7 @@
 - **Tests/build status:**
   - Local on `e074eba2`: `listing-profile` 4/4, then 12/12 with `--repeat-each=3`; directory group 104/104; jest 149/149 suites; tsc and eslint clean.
   - CI on `e074eba2`: all required checks green.
-  - Prod-verify run 40808771299: in progress at the time of writing.
+  - Prod-verify run 40808771299 (all passed): `/api/version` = `9294a7d8` (live 02:57:06 UTC, about 8 min after the merge), `/` 200, `/api/health` 200 ok=true db=ok, `/search` 200 with footer @9294a7d, `/cleveland/assisted-living/beachwood` 200 with footer @9294a7d, `/homes/cmql0xbos0006r7jcitqgqhds` 200 with footer @9294a7d, `/homes/cmql0xbp9000gr7jcpmm4c9ps` (first listing on `/cleveland/assisted-living`) 200, `/concierge` 200 with the screener, `/cleveland` and its four care-type hubs 200 and indexable, `/zzz-nope` and `/.env` 404, `/operator` (logged out) → 307 to login. Claim status of the two listings is not recorded by prod-verify, and the prod host isn't reachable from the agent sandbox, so claimed vs unclaimed wasn't confirmed on production.
 - **Deployment impact:** `/homes/[id]` presentation (Direction D profile) is live. No schema, env, API, route, metadata or JSON-LD change.
 - **New risks/blockers:** claimed vs unclaimed couldn't be told apart on production from this sandbox. The prod host is outside the allowed network, and prod-verify doesn't record claim status.
 - **Recommended next step:** Chris picks the next batch. Candidates: OL-223 (one "all photos" button) and OL-224 (compact thin-listing states), both small follow-ups on the same page.
