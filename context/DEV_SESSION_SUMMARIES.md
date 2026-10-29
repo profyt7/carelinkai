@@ -2582,3 +2582,19 @@
   - #10 is live once Render deploys `8e67e7d2`.
 - **New risks/blockers:** `AuditLog` metadata still stores email + IP (DB audit trail; decide separately).
 - **Recommended next step:** Chris reviews and merges the OL-231 PR; sets the GA MP secret when ready.
+
+### 2026-10-29 — OL-231 merged and prod-verified; OL-232 logged
+- **Objective:** merge PR #12 (OL-231) once CI was confirmed on its head; verify auth on production; log OL-232. No GA4 activation, no new batch.
+- **Work completed:**
+  - PR #12 head `82766fe7` unchanged; all 8 required checks green; squash-merged `66d9ba11`.
+  - prod-verify run 40898055942 (dispatched from branch `chore/prod-verify-auth-check`, which adds a read-only `check_auth` step; not merged):
+    - `66d9ba11` live; `/` 200; health ok; ping 200; public routes OK;
+    - tracker check: 0 on all four pages;
+    - `/auth/login`, `/auth/register`, `/auth/forgot-password` → 200;
+    - `/api/auth/providers` → 200 (credentials); `/api/auth/csrf` → 200 (token present);
+    - unknown-email credentials POST → 401 + `/api/auth/error?error=Invalid email or password`.
+  - OL-232 logged: AuditLog is ADMIN-only (all live readers checked); retention proposal and HIPAA caveat recorded.
+- **Files changed:** context files only (this PR).
+- **Deployment impact:** none (context only).
+- **New risks/blockers:** a table-wide 90-day AuditLog purge would conflict with HIPAA 6-year documentation retention for PHI-access rows. The proposal scopes it to failed-login rows.
+- **Recommended next step:** Chris merges this context PR, and decides whether to merge `chore/prod-verify-auth-check` (keeps the auth checks in prod-verify) or delete it.
