@@ -13,6 +13,7 @@ import AppleProvider from "next-auth/providers/apple";
 import { prisma } from "@/lib/prisma";
 import type { UserRole, UserStatus } from "@prisma/client";
 import { compare } from "bcryptjs";
+import { errorSummary } from '@/lib/log-safe';
 
 
 // Constants for security settings
@@ -72,13 +73,13 @@ export const authOptions: NextAuthOptions = {
 
           // User not found
           if (!user) {
-            console.log("User not found:", email);
+            console.log('User not found');
             throw new Error("Invalid email or password");
           }
 
           // Check if account is suspended
           if (user.status === "SUSPENDED") {
-            console.log("Account suspended:", email);
+            console.log('Account suspended');
             throw new Error("Your account has been suspended. Please contact support.");
           }
 
@@ -88,7 +89,7 @@ export const authOptions: NextAuthOptions = {
           }
           const passwordValid = await compare(credentials.password, user.passwordHash);
           if (!passwordValid) {
-            console.log("Invalid password for:", email);
+            console.log('Invalid password');
             throw new Error("Invalid email or password");
           }
 
@@ -98,7 +99,7 @@ export const authOptions: NextAuthOptions = {
             data: { lastLoginAt: new Date() },
           });
 
-          console.log("Login successful for:", email);
+          console.log('Login successful');
           
           // Return user object without sensitive data
           return {
@@ -112,7 +113,7 @@ export const authOptions: NextAuthOptions = {
             status: user.status,
           } as any;
         } catch (error) {
-          console.error("Auth error:", error);
+          console.error("Auth error:", errorSummary(error));
           throw new Error(error instanceof Error ? error.message : "Authentication failed");
         }
       },
@@ -143,12 +144,6 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       /* ---------- DEBUG ---------- */
       if (process.env["NODE_ENV"] === "development") {
-        console.log(
-          "[auth] JWT callback – phase:",
-          user ? "initial-signin" : "refresh",
-          "\n current token.profileImageUrl:",
-          token.profileImageUrl
-        );
       }
       // 1) Initial sign-in: copy data from `user` object.
       if (user) {
@@ -184,20 +179,11 @@ export const authOptions: NextAuthOptions = {
             token.firstName = freshUser.firstName;
             token.lastName = freshUser.lastName;
             token.email = freshUser.email;
-
-            if (process.env["NODE_ENV"] === "development") {
-              console.log("[auth] JWT callback – refreshed from DB:", {
-                id: token.id,
-                profileImageUrl: token.profileImageUrl,
-              });
-            }
           }
         }
       } catch (err) {
-        // Log in dev mode but never throw – falling back to existing token data.
-        if (process.env["NODE_ENV"] === "development") {
-          console.warn("JWT callback refresh failed:", err);
-        }
+        // Never throw – fall back to the existing token data. Log the error class only.
+        console.warn("JWT callback refresh failed:", errorSummary(err));
       }
 
       return token;
@@ -206,10 +192,6 @@ export const authOptions: NextAuthOptions = {
     // Session callback to pass data to client
     async session({ session, token }) {
       if (process.env["NODE_ENV"] === "development") {
-        console.log("[auth] Session callback – incoming token:", {
-          id: token.id,
-          profileImageUrl: token.profileImageUrl,
-        });
       }
       if (token) {
         session.user.id = token.id as string;
@@ -225,10 +207,6 @@ export const authOptions: NextAuthOptions = {
       }
       
       if (process.env["NODE_ENV"] === "development") {
-        console.log("[auth] Session callback – outgoing session.user:", {
-          id: session.user.id,
-          profileImageUrl: session.user.profileImageUrl,
-        });
       }
       return session;
     },

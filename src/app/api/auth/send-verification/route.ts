@@ -26,6 +26,7 @@ import { authOptions } from "@/lib/auth";
 import { randomBytes } from "crypto";
 import { z } from "zod";
 import { captureError } from '@/lib/sentry';
+import { errorSummary } from '@/lib/log-safe';
 
 
 // Constants
@@ -67,22 +68,7 @@ async function sendVerificationEmail(email: string, token: string, isResend: boo
     
     // In a real implementation, this would use an email service like SendGrid, AWS SES, etc.
     // For now, we'll log the email content
-    console.log(`
-      [Email Service] Sending verification email to: ${email}
-      Subject: ${isResend ? 'Resend: ' : ''}Verify your CareLinkAI account
-      Body: 
-        Hello,
-        
-        Please verify your email address by clicking the link below:
-        [verification link — not logged (OL-194)]
-        
-        This link will expire in ${TOKEN_EXPIRY_HOURS} hours (${expiryTime.toLocaleString()}).
-        
-        If you did not create a CareLinkAI account, please ignore this email.
-        
-        Thank you,
-        The CareLinkAI Team
-    `);
+    console.log('[Email Service] Sending verification email');
     
     // In production, replace with actual email sending:
     /*
@@ -118,7 +104,7 @@ async function sendVerificationEmail(email: string, token: string, isResend: boo
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: 'auth:send-verification' },
     });
-    console.error("Failed to send verification email:", error);
+    console.error("Failed to send verification email:", errorSummary(error));
     return false;
   }
 }
@@ -230,7 +216,7 @@ export async function POST(request: NextRequest) {
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: 'auth:send-verification' },
     });
-    console.error("Send verification email error:", error);
+    console.error("Send verification email error:", errorSummary(error));
     
     // Generic error response
     return NextResponse.json(
@@ -294,7 +280,7 @@ export async function GET(request: NextRequest) {
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: 'auth:send-verification' },
     });
-    console.error("Check verification status error:", error);
+    console.error("Check verification status error:", errorSummary(error));
     
     // Generic error response
     return NextResponse.json(

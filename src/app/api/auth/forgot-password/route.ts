@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import { sendPasswordResetEmail } from "@/lib/email";
 import { captureError } from '@/lib/sentry';
+import { errorSummary } from '@/lib/log-safe';
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
     // Always return success to prevent email enumeration attacks
     // But only send email if user exists
     if (!user) {
-      console.log(`[FORGOT PASSWORD] No user found for email: ${normalizedEmail}`);
+      console.log('[FORGOT PASSWORD] No user found');
       return NextResponse.json({
         message: "If an account exists with this email, you will receive a password reset link.",
       });
@@ -56,12 +57,12 @@ export async function POST(request: NextRequest) {
     // Send password reset email
     try {
       await sendPasswordResetEmail(user.email, user.firstName || 'there', resetToken);
-      console.log(`[FORGOT PASSWORD] Reset email sent to: ${normalizedEmail}`);
+      console.log('[FORGOT PASSWORD] Reset email sent');
     } catch (emailError) {
       captureError(emailError instanceof Error ? emailError : new Error(String(emailError)), {
         tags: { route: 'auth:forgot-password' },
       });
-      console.error("[FORGOT PASSWORD] Failed to send reset email:", emailError);
+      console.error("[FORGOT PASSWORD] Failed to send reset email:", errorSummary(emailError));
       // Don't expose email sending failure to user
     }
 
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: 'auth:forgot-password' },
     });
-    console.error("[FORGOT PASSWORD] Error:", error);
+    console.error("[FORGOT PASSWORD] Error:", errorSummary(error));
     return NextResponse.json(
       { message: "An error occurred. Please try again." },
       { status: 500 }

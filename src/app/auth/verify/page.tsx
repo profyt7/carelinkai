@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { FiAlertCircle, FiCheckCircle, FiLoader, FiMail } from "react-icons/fi";
+import { errorSummary } from '@/lib/log-safe';
 
 export default function VerifyEmailPage() {
   const router = useRouter();
@@ -51,7 +52,7 @@ export default function VerifyEmailPage() {
     } catch (error) {
       setVerificationStatus("error");
       setMessage("An error occurred during verification. Please try again.");
-      console.error("Verification error:", error);
+      console.error("Verification error:", errorSummary(error));
     } finally {
       setIsVerifying(false);
     }
@@ -106,7 +107,7 @@ export default function VerifyEmailPage() {
     } catch (error) {
       setResendStatus("error");
       setMessage("An error occurred. Please try again.");
-      console.error("Resend verification error:", error);
+      console.error("Resend verification error:", errorSummary(error));
     } finally {
       setIsResending(false);
     }

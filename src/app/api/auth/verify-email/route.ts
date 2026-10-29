@@ -19,6 +19,7 @@ import { AuditAction, UserStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { captureError } from '@/lib/sentry';
+import { errorSummary } from '@/lib/log-safe';
 
 
 // Constants
@@ -262,7 +263,7 @@ export async function GET(request: NextRequest) {
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: 'auth:verify-email' },
     });
-    console.error("Verify email token error:", error);
+    console.error("Verify email token error:", errorSummary(error));
     
     // Generic error response
     return NextResponse.json(
@@ -461,7 +462,7 @@ export async function POST(request: NextRequest) {
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: 'auth:verify-email' },
     });
-    console.error("Verify email token error:", error);
+    console.error("Verify email token error:", errorSummary(error));
     
     // Generic error response
     return NextResponse.json(

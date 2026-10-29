@@ -25,7 +25,7 @@ import { captureError } from '@/lib/sentry';
 import { recordSmsConsent } from '@/lib/consent/sms-consent-server';
 import { SMS_CONSENT_FORMS } from '@/lib/consent/sms-consent';
 import { verifyClaimToken } from '@/lib/claim-token';
-import { redactSecrets } from '@/lib/redact';
+import { errorSummary } from '@/lib/log-safe';
 
 
 // Constants
@@ -62,7 +62,6 @@ const registrationSchema = z.object({
  * Create a verification token and store it in the database
  */
 async function createVerificationToken(userId: string): Promise<string> {
-  console.log(`[createVerificationToken] Generating token for userId=${userId}`);
   const token = randomBytes(32).toString('hex');
   const expires = new Date();
   expires.setHours(expires.getHours() + TOKEN_EXPIRY_HOURS);
@@ -77,10 +76,6 @@ async function createVerificationToken(userId: string): Promise<string> {
     },
   });
 
-  console.log(
-    `[createVerificationToken] Token persisted for userId=${userId} ` +
-    `expires=${expires.toISOString()}`
-  );
   return token;
 }
 
@@ -90,7 +85,6 @@ async function createVerificationToken(userId: string): Promise<string> {
  */
 async function sendVerificationEmailToUser(userId: string): Promise<boolean> {
   try {
-    console.log(`[sendVerificationEmail] Attempting to send email for userId=${userId}`);
 
     // Get user information (shared singleton — see src/lib/prisma.ts)
     const user = await prisma.user.findUnique({
@@ -107,9 +101,6 @@ async function sendVerificationEmailToUser(userId: string): Promise<boolean> {
       return false;
     }
     
-    console.log(
-      `[sendVerificationEmail] Sending to user.email=${user.email} with token`
-    );
 
     // Call Resend email utility
     const emailSent = await sendVerificationEmail(
@@ -129,7 +120,7 @@ async function sendVerificationEmailToUser(userId: string): Promise<boolean> {
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: 'auth:register' },
     });
-    console.error('[sendVerificationEmail] Exception:', error);
+    console.error('[sendVerificationEmail] Exception:', errorSummary(error));
     return false;
   }
 }
@@ -138,24 +129,17 @@ async function sendVerificationEmailToUser(userId: string): Promise<boolean> {
  * POST handler for user registration
  */
 export async function POST(request: NextRequest) {
-  console.log("=".repeat(60));
-  console.log("[REGISTER API] Request received at:", new Date().toISOString());
-  console.log("[REGISTER API] Request method:", request.method);
-  console.log("[REGISTER API] Request URL:", request.url);
   
   let rawBody: any;
   try {
     // Parse and validate request body
     rawBody = await request.json();
-    console.log("[REGISTER API] Raw request body keys:", Object.keys(rawBody));
-    // OL-194: redactSecrets drops password AND claimToken (a signed claim link).
-    console.log("[REGISTER API] Raw body (sanitized):", JSON.stringify(redactSecrets(rawBody), null, 2));
-    
+
     // Validate input against schema
     console.log("[REGISTER API] Starting validation...");
     const validationResult = registrationSchema.safeParse(rawBody);
     if (!validationResult.success) {
-      console.log("[REGISTER API] Validation FAILED:", JSON.stringify(validationResult.error.flatten().fieldErrors));
+      console.log('[REGISTER API] Validation FAILED');
       return NextResponse.json(
         { 
           success: false, 
@@ -185,15 +169,13 @@ export async function POST(request: NextRequest) {
     
     // Normalize email to lowercase
     const normalizedEmail = email.toLowerCase();
-    console.log("[REGISTER API] Normalized email:", normalizedEmail);
-    console.log("[REGISTER API] Role:", role);
     
     // Check if user already exists
     console.log("[REGISTER API] Checking for existing user...");
     const existingUser = await prisma.user.findUnique({
       where: { email: normalizedEmail }
     });
-    console.log("[REGISTER API] Existing user check complete:", existingUser ? "USER EXISTS" : "NO EXISTING USER");
+    console.log('[REGISTER API] Existing user check complete');
     
     if (existingUser) {
       console.log("[REGISTER API] REJECTING: Email already in use");
@@ -226,21 +208,18 @@ export async function POST(request: NextRequest) {
       
       // Only add preferredContactMethod if provided (handles case where field might not exist in DB)
       if (preferredContactMethod) {
-        console.log("[REGISTER API] Adding preferredContactMethod:", preferredContactMethod);
         userData.preferredContactMethod = preferredContactMethod;
       }
       
-      console.log("[REGISTER API] Creating user with data:", JSON.stringify(redactSecrets(userData)));
       
       // Create base user record
       console.log("[REGISTER API] Calling tx.user.create...");
       const user = await tx.user.create({
         data: userData
       });
-      console.log("[REGISTER API] User created successfully, id:", user.id);
+      console.log('[REGISTER API] User created');
       
       // Create role-specific profile based on selected role
-      console.log("[REGISTER API] Creating role-specific profile for role:", role);
       switch (role) {
         case "FAMILY":
           console.log("[REGISTER API] Creating FAMILY profile...");
@@ -261,7 +240,6 @@ export async function POST(request: NextRequest) {
           
           // Only add optional fields if they have values
           if (relationshipToRecipient) {
-            console.log("[REGISTER API] Adding relationshipToRecipient:", relationshipToRecipient);
             familyData.relationshipToRecipient = relationshipToRecipient;
           }
           if (carePreferences) {
@@ -272,7 +250,6 @@ export async function POST(request: NextRequest) {
             familyData.referredByCode = referredByCode.toUpperCase();
           }
 
-          console.log("[REGISTER API] Family data:", JSON.stringify(familyData));
           console.log("[REGISTER API] Calling tx.family.create...");
           await tx.family.create({ data: familyData });
           console.log("[REGISTER API] Family profile created successfully");
@@ -381,7 +358,7 @@ export async function POST(request: NextRequest) {
           break;
 
         default:
-          console.log("[REGISTER API] ERROR: Invalid role:", role);
+          console.log('[REGISTER API] ERROR: Invalid role');
           throw new Error("Invalid role selected");
       }
       
@@ -411,7 +388,7 @@ export async function POST(request: NextRequest) {
       console.log("[REGISTER API] Transaction completed successfully, returning user");
       return user;
     });
-    console.log("[REGISTER API] Transaction committed, user id:", result.id);
+    console.log('[REGISTER API] Transaction committed');
 
     // OL-184: SMS opt-in from the registration checkbox (raw body — the zod
     // schema strips unknown keys). A row only when checked and a phone given.
@@ -432,29 +409,19 @@ export async function POST(request: NextRequest) {
      * ---------------------------------------------------------------- */
     // Keep DB connection open for email verification; do not fail registration
     try {
-      console.log(
-        `[registration] Starting e-mail verification workflow for userId=${result.id}`
-      );
+      console.log('[registration] Starting e-mail verification workflow');
 
-      console.log(
-        `[registration] → Calling createVerificationToken(${result.id})`
-      );
       await createVerificationToken(result.id);
-      console.log(
-        `[registration] ✓ Token generated, calling sendVerificationEmailToUser(${result.id})`
-      );
 
       await sendVerificationEmailToUser(result.id);
 
-      console.log(
-        `[registration] ✓ Verification e-mail queued successfully for userId=${result.id}`
-      );
+      console.log('[registration] ✓ Verification e-mail queued successfully');
     } catch (emailErr) {
       captureError(emailErr instanceof Error ? emailErr : new Error(String(emailErr)), {
         tags: { route: 'auth:register' },
       });
       // Log but do not abort user creation
-      console.error("[registration] Email verification step failed:", emailErr);
+      console.error("[registration] Email verification step failed:", errorSummary(emailErr));
     }
 
     // Provider onboarding welcome email (fire-and-forget)
@@ -481,7 +448,7 @@ export async function POST(request: NextRequest) {
           <p style="color:#9ca3af;font-size:12px;margin-top:32px">CareLinkAI · Cleveland, OH</p>
         </div>`,
       }).catch((err: unknown) => {
-        console.error("[registration] Provider welcome email failed:", err);
+        console.error("[registration] Provider welcome email failed:", errorSummary(err));
       });
     }
     
@@ -505,19 +472,8 @@ export async function POST(request: NextRequest) {
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: 'auth:register' },
     });
-    console.error("=".repeat(60));
-    console.error("[REGISTER API] ❌ REGISTRATION ERROR CAUGHT");
-    console.error("[REGISTER API] Error type:", typeof error);
-    console.error("[REGISTER API] Error name:", error?.name);
-    console.error("[REGISTER API] Error code:", error?.code);
-    console.error("[REGISTER API] Error message:", error?.message);
-    console.error("[REGISTER API] Error meta:", JSON.stringify(error?.meta));
-    console.error("[REGISTER API] Full error object:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
-    if (error?.stack) {
-      console.error("[REGISTER API] Stack trace:");
-      console.error(error.stack);
-    }
-    console.error("=".repeat(60));
+    // OL-231: class/code only — Prisma errors can echo the submitted email.
+    console.error("[REGISTER API] ❌ REGISTRATION ERROR:", errorSummary(error));
     
     // Handle specific Prisma errors
     if (error.code === "P2002") {

@@ -8,7 +8,12 @@
  * Prisma validation errors and Zod errors can echo the submitted values. Route handlers
  * must log errorSummary(err) from src/lib/log-safe.ts instead.
  *
- * Used by __tests__/pii-log-guard.unit.test.ts. CLI: node scripts/pii-log-scan.cjs
+ * OL-231, stricter rule for auth / signup code (AUTH_SCOPE): a log call there may print only
+ * fixed text — string / number / boolean literals and errorSummary(err) — i.e. an outcome code.
+ * No email, user id, name, IP, token, URL or any other runtime value.
+ *
+ * Used by __tests__/pii-log-guard.unit.test.ts and __tests__/auth-log-guard.unit.test.ts.
+ * CLI: node scripts/pii-log-scan.cjs
  */
 const fs = require('fs');
 const path = require('path');
@@ -147,10 +152,60 @@ function scanAll(root = process.cwd()) {
   return filesInScope(root).flatMap((f) => scanSource(path.relative(root, f), fs.readFileSync(f, 'utf8')));
 }
 
-module.exports = { SCOPE, USER_FIELDS, CONTAINERS, scanSource, filesInScope, scanAll };
+/** Auth / signup code: logs may carry only fixed outcome text (OL-231). */
+const AUTH_SCOPE = [
+  'src/lib/auth.ts',
+  'src/lib/auth-db-simple.ts',
+  'src/lib/auth-utils.ts',
+  'src/app/api/auth',
+  'src/app/auth',
+];
+
+function literalOnly(node) {
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node) || ts.isNumericLiteral(node)) return true;
+  if (node.kind === ts.SyntaxKind.TrueKeyword || node.kind === ts.SyntaxKind.FalseKeyword || node.kind === ts.SyntaxKind.NullKeyword) return true;
+  if (ts.isCallExpression(node) && node.expression.getText() === 'errorSummary') return true;
+  if (ts.isParenthesizedExpression(node)) return literalOnly(node.expression);
+  return false;
+}
+
+/** Log calls whose arguments are anything but fixed text / errorSummary(). */
+function scanStrictSource(file, text, range) {
+  const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  const hits = [];
+  const walk = (n) => {
+    if (ts.isCallExpression(n) && LOG_CALLEE.test(n.expression.getText()) && (!range || (n.getStart() >= range[0] && n.getEnd() <= range[1]))) {
+      const bad = n.arguments.filter((a) => !literalOnly(a)).map((a) => a.getText().slice(0, 60));
+      if (bad.length) {
+        const { line } = sf.getLineAndCharacterOfPosition(n.getStart());
+        hits.push({ file, line: line + 1, start: n.getStart(), end: n.getEnd(), reasons: bad, text: n.getText().slice(0, 160) });
+      }
+    }
+    ts.forEachChild(n, walk);
+  };
+  walk(sf);
+  return hits;
+}
+
+function authFiles(root = process.cwd()) {
+  const out = [];
+  const walk = (p) => {
+    if (!fs.existsSync(p)) return;
+    if (fs.statSync(p).isFile()) { if (/\.(tsx?|jsx?)$/.test(p) && !/\.test\./.test(p)) out.push(p); return; }
+    for (const e of fs.readdirSync(p, { withFileTypes: true })) if (e.name !== '__tests__') walk(path.join(p, e.name));
+  };
+  AUTH_SCOPE.forEach((d) => walk(path.join(root, d)));
+  return out;
+}
+
+function scanAuth(root = process.cwd()) {
+  return authFiles(root).flatMap((f) => scanStrictSource(path.relative(root, f), fs.readFileSync(f, 'utf8')));
+}
+
+module.exports = { SCOPE, AUTH_SCOPE, USER_FIELDS, CONTAINERS, scanSource, scanStrictSource, filesInScope, authFiles, scanAll, scanAuth };
 
 if (require.main === module) {
-  const hits = scanAll();
+  const hits = [...scanAll(), ...scanAuth()];
   for (const h of hits) console.log(`${h.file}:${h.line}  [${h.reasons.join(', ')}]  ${h.text.replace(/\s+/g, ' ')}`);
   console.log(`${hits.length} unsafe log call(s)`);
   process.exitCode = hits.length ? 1 : 0;

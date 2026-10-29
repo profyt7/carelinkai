@@ -28,6 +28,7 @@ import { z } from "zod";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { captureError } from '@/lib/sentry';
+import { errorSummary } from '@/lib/log-safe';
 
 
 // Constants
@@ -136,7 +137,7 @@ export async function GET(request: NextRequest) {
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: 'auth:setup-2fa' },
     });
-    console.error("2FA setup error:", error);
+    console.error("2FA setup error:", errorSummary(error));
     
     // Generic error response
     return NextResponse.json(
@@ -285,7 +286,7 @@ export async function POST(request: NextRequest) {
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: 'auth:setup-2fa' },
     });
-    console.error("2FA setup verification error:", error);
+    console.error("2FA setup verification error:", errorSummary(error));
     
     // Generic error response
     return NextResponse.json(

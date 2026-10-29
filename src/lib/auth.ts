@@ -18,6 +18,7 @@ import { prisma } from "@/lib/prisma";
 import type { UserStatus, UserRole } from "@prisma/client";
 import { compare } from "bcryptjs";
 import { authenticator } from "otplib";
+import { errorSummary } from '@/lib/log-safe';
 
 // Assumption: Use shared Prisma client singleton to avoid connection bloat
 
@@ -73,7 +74,6 @@ export const authOptions: NextAuthOptions = {
       },
       
       async authorize(credentials, req) {
-        try { console.log('[auth] authorize called for', credentials?.email); } catch {}
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Email and password are required");
         }
@@ -102,11 +102,8 @@ export const authOptions: NextAuthOptions = {
         
         // User not found
         if (!user) {
-          try { console.warn('[auth] user not found for', email); } catch {}
-          console.warn("[auth] Failed login attempt for non-existent user", { 
-            email, 
-            ip: req.headers?.["x-forwarded-for"] || "unknown" 
-          });
+          // OL-231: outcome only — never the email, IP or user id.
+          console.warn('[auth] login failed: user not found');
           
           throw new Error("Invalid email or password");
         }
@@ -139,11 +136,10 @@ export const authOptions: NextAuthOptions = {
         
         // Verify password
         if (!user.passwordHash) {
-          try { console.warn('[auth] user has no passwordHash', email); } catch {}
+          try { console.warn('[auth] user has no passwordHash'); } catch {}
           throw new Error("Invalid email or password");
         }
         const passwordValid = await compare(credentials.password, user.passwordHash);
-        try { console.log('[auth] passwordValid=', passwordValid, 'for', email); } catch {}
         
         if (!passwordValid) {
           // Log failed login attempt due to invalid password
@@ -212,7 +208,7 @@ export const authOptions: NextAuthOptions = {
               }
             });
             
-            try { console.warn('[auth] invalid 2fa code for', email); } catch {}
+            try { console.warn('[auth] invalid 2fa code'); } catch {}
             throw new Error("Invalid two-factor code");
           }
           
@@ -268,7 +264,7 @@ export const authOptions: NextAuthOptions = {
           }
         });
         
-        try { console.log('[auth] successful credentials login for', email); } catch {}
+        try { console.log('[auth] successful credentials login'); } catch {}
         // Return user object (excluding sensitive data)
         return {
           id: user.id,
@@ -326,7 +322,7 @@ export const authOptions: NextAuthOptions = {
           }
         } catch (e) {
           // Ignore errors - don't break the session
-          console.error('[auth] Error fetching profile image:', e);
+          console.error('[auth] Error fetching profile image:', errorSummary(e));
         }
       }
       

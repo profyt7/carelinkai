@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { AuditAction, UserStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { captureError } from '@/lib/sentry';
+import { errorSummary } from '@/lib/log-safe';
 
 
 /**
@@ -97,7 +98,7 @@ export async function POST(request: NextRequest) {
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: 'auth:verify' },
     });
-    console.error("Email verification error:", error);
+    console.error("Email verification error:", errorSummary(error));
     
     // Generic error response
     return NextResponse.json(
