@@ -2,7 +2,7 @@
  * OL-189 — CareLinkAI Plus (the $19/mo family subscription) is retired.
  * Families are free; the isPlus / plusStatus columns stay as dead data.
  *   - no subscribe / portal route, no FAMILY_PLUS switch, no Stripe price env;
- *   - /settings/family/billing redirects to /settings;
+ *   - /settings/family/billing redirects to /settings/family;
  *   - no nav / settings / dashboard upsell;
  *   - a leftover family subscription event is acknowledged (200) and never
  *     written to the family row.
@@ -82,9 +82,9 @@ describe('product surface', () => {
     expect(exists('src/app/api/family/billing/portal/route.ts')).toBe(false);
   });
 
-  it('/settings/family/billing redirects to /settings', () => {
-    expect(() => FamilyBillingPage()).toThrow('REDIRECT /settings');
-    expect(redirect).toHaveBeenCalledWith('/settings');
+  it('/settings/family/billing redirects to /settings/family', () => {
+    expect(() => FamilyBillingPage()).toThrow('REDIRECT /settings/family');
+    expect(redirect).toHaveBeenCalledWith('/settings/family');
   });
 
   it('no FAMILY_PLUS switch (preflight lists the registry, so it drops off there too)', () => {

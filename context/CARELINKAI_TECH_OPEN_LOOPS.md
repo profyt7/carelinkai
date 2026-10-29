@@ -7,6 +7,15 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
 
 ## 🔴 SHIP NOW (this week)
 
+### OL-237: Pre-launch leftovers (10/29)
+- **Status:** 🟡 PR open, branch `fix/prelaunch-leftovers`.
+- **What:**
+  - `marketplace/caregivers/[id]` shows "$99 marketplace access fee applies on Starter" only when `MARKETPLACE_HIRE_FEE_ENABLED` is on (it showed regardless).
+  - The listing map (`SimpleMap`) is its own stacking context (`isolate`), so Leaflet's attribution and controls (z-index 1000) no longer paint over the sticky site header at 390.
+  - `/settings/family/billing` now redirects to `/settings/family` (was `/settings`). The Family Plus webhook handlers, `Family.isPlus` and comments are unchanged.
+- **Already on main:** inbound call alerts for all four caller types (#18, OL-233). Nothing redone here.
+- **Path:** `src/app/marketplace/caregivers/[id]/page.tsx`, `src/components/search/SimpleMap.tsx`, `src/app/settings/family/billing/page.tsx`, `__tests__/prelaunch-leftovers.unit.test.ts`, `__tests__/retire-family-plus.unit.test.ts`, `e2e/public/directory/listing-map-tiles.spec.ts`
+
 ### OL-233: Inbound front-desk alerts — email for every caller type (extends OL-167b)
 - **Status:** PR open, branch `fix/inbound-alerts-all-lanes` (squash-merge on green).
 - **What:** every inbound call emails `ADMIN_NOTIFY_EMAIL` via Resend. Planner SMS + email and family/other email are unchanged. FACILITY calls now email too: "Facility callback: {name}, {facility}, {phone}" + openings / starting price / Medicaid. A matched home links to `/admin/call-qa#obs-{id}` (the QA observation is still written); an unmatched number links to `/admin/inbound-leads`. Subjects start with `[Planner]` / `[Family]` / `[Other]` / `[Facility]`. No reason or transcript text in any alert. SMS stays planner-only (A2P campaign pending).

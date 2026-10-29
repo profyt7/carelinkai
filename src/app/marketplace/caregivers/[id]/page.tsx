@@ -15,6 +15,7 @@ import DirectHireButton from "@/components/marketplace/DirectHireButton";
 import BackgroundCheckOrderPanel from "@/components/marketplace/BackgroundCheckOrderPanel";
 import BackgroundCheckBadge from "@/components/caregiver/BackgroundCheckBadge";
 import { getCloudinaryAvatar, isCloudinaryUrl } from "@/lib/cloudinaryUrl";
+import { isPaidFeatureEnabled } from "@/lib/billing/paid-features";
 
 export const dynamic = "force-dynamic";
 
@@ -420,11 +421,12 @@ export default async function CaregiverDetailPage({
                     <p className="text-xs text-success-700 font-medium mb-3">
                       ✓ Marketplace hire included in your {operatorPlan} plan
                     </p>
-                  ) : (
-                    <p className="text-xs text-amber-700 font-medium mb-3">
+                  ) : isPaidFeatureEnabled('MARKETPLACE_HIRE_FEE') ? (
+                    // The Starter hire fee only exists while MARKETPLACE_HIRE_FEE_ENABLED is on (OL-186).
+                    <p className="text-xs text-amber-700 font-medium mb-3" data-testid="hire-fee-note">
                       $99 marketplace access fee applies on Starter
                     </p>
-                  )}
+                  ) : null}
                   <DirectHireButton
                     caregiverId={caregiver.id}
                     caregiverName={caregiver.name}
