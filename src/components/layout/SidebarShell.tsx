@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type ElementType, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react';
+import Image from 'next/image';
 import { useBottomStackOffset } from '@/hooks/useBottomStackOffset';
 import { FiChevronRight, FiChevronsLeft, FiChevronsRight, FiMenu, FiMoreHorizontal, FiX } from 'react-icons/fi';
 
@@ -52,6 +53,8 @@ type Props = {
   /** Ids for the 4 bottom-bar slots (default: the first four items). May name group children. */
   mobileTabIds?: string[];
   brand?: ReactNode;
+  /** Where the logo links (the role's dashboard home). Unset = logo is not a link. */
+  homeHref?: string;
   user?: { name: string; roleLabel: string; /** Badge classes for the role label (DashboardLayout's roleBadgeColors). */ roleClassName?: string };
   /** Extra sidebar content under the nav (e.g. the family "Need help?" card). */
   sidebarFooter?: ReactNode;
@@ -114,14 +117,55 @@ const TONE = {
 
 export const NAV_COLLAPSED_KEY = 'carelinkai-nav-collapsed';
 
-export function BrandMark({ textClass, rail }: { textClass: string; rail: boolean }) {
+/**
+ * The CareLinkAI logo (the homepage header's /images/logo.png artwork). On the navy sidebar the
+ * wordmark uses /images/logo-on-dark.png (same artwork, wordmark in white); the icon rail shows
+ * the heart mark alone (/images/logo-mark.png, cropped from the same file).
+ * rail: true = mark only, 'responsive' = mark below lg and full logo from lg, false = full logo.
+ */
+export function BrandMark({
+  tone,
+  rail,
+  href,
+  linkAs: LinkAs = 'a',
+}: {
+  tone: 'light' | 'navy';
+  rail: boolean | 'responsive';
+  href?: string;
+  linkAs?: ElementType;
+}) {
+  const full = (
+    <Image
+      src={tone === 'navy' ? '/images/logo-on-dark.png' : '/images/logo.png'}
+      alt="CareLinkAI"
+      width={136}
+      height={32}
+      sizes="136px"
+      priority
+      className={`h-8 w-auto flex-shrink-0 ${rail === 'responsive' ? 'hidden lg:block' : ''}`}
+    />
+  );
+  const mark = (
+    <Image
+      src="/images/logo-mark.png"
+      alt="CareLinkAI"
+      width={32}
+      height={32}
+      sizes="32px"
+      priority
+      className={`h-8 w-8 flex-shrink-0 ${rail === 'responsive' ? 'lg:hidden' : ''}`}
+    />
+  );
+  const content = rail === true ? mark : rail === 'responsive' ? <>{mark}{full}</> : full;
+  if (!href) return <span className="flex items-center">{content}</span>;
   return (
-    <div className="flex items-center gap-2.5">
-      <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary-600 text-sm font-bold text-white" aria-hidden="true">
-        C
-      </span>
-      <span className={`text-sm font-semibold tracking-tight ${textClass} ${rail ? 'sr-only' : ''}`}>CareLinkAI</span>
-    </div>
+    <LinkAs
+      href={href}
+      data-testid="app-logo"
+      className={`flex items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 ${TONE[tone].ring}`}
+    >
+      {content}
+    </LinkAs>
   );
 }
 
@@ -138,6 +182,7 @@ export default function SidebarShell({
   onToggleCollapse,
   mobileTabIds,
   brand,
+  homeHref,
   user,
   sidebarFooter,
   viewport,
@@ -397,8 +442,8 @@ export default function SidebarShell({
     <div className={`relative flex h-full min-h-0 w-full overflow-hidden ${className}`}>
       {/* Sidebar (desktop full / tablet rail) */}
       <Aside className={`${asideVisible} ${asideWidth} flex-shrink-0 flex-col border-r ${t.border} ${t.aside}`} data-tone={tone}>
-        <div className={`flex h-16 items-center border-b ${t.border} ${rail ? 'justify-center px-2' : 'px-5'}`}>
-          {brand ?? <BrandMark textClass={t.brandText} rail={rail || responsiveRail} />}
+        <div className={`flex h-16 items-center border-b ${t.border} ${rail ? 'justify-center px-2' : responsiveRail ? 'justify-center px-2 lg:justify-start lg:px-5' : 'px-5'}`}>
+          {brand ?? <BrandMark tone={tone} rail={rail ? true : responsiveRail ? 'responsive' : false} href={homeHref} linkAs={LinkAs} />}
         </div>
         <nav className="flex-1 space-y-1 overflow-y-auto px-2 py-4" aria-label={navLabel}>{renderItems()}</nav>
         {sidebarFooter && !rail && <div className="px-3 pb-3">{sidebarFooter}</div>}
@@ -430,7 +475,7 @@ export default function SidebarShell({
         {/* Mobile top bar */}
         {mobileTopBar && (
           <div className={`${mobileOnly} h-14 flex-shrink-0 items-center justify-between border-b px-4 ${tone === 'navy' ? 'border-white/10 bg-surface-sidebar' : 'border-line bg-surface-raised'}`}>
-            <BrandMark textClass={t.brandText} rail={false} />
+            <BrandMark tone={tone} rail={false} href={homeHref} linkAs={LinkAs} />
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
@@ -497,7 +542,7 @@ export default function SidebarShell({
           {drawerBackdrop && <button type="button" className="absolute inset-0 bg-neutral-900/50" aria-label="Close menu" onClick={() => setDrawerOpen(false)} />}
           <div ref={drawerRef} data-nav-drawer className={`pointer-events-auto relative flex h-full w-72 max-w-[85%] flex-col ${t.aside}`} data-tone={tone}>
             <div className={`flex h-14 items-center justify-between border-b px-4 ${t.border}`}>
-              <BrandMark textClass={t.brandText} rail={false} />
+              <BrandMark tone={tone} rail={false} href={homeHref} linkAs={LinkAs} />
               <button
                 type="button"
                 onClick={() => setDrawerOpen(false)}

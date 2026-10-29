@@ -26,7 +26,7 @@ import ImpersonationBanner from "../admin/ImpersonationBanner";
 import { usePaidFeatures } from "@/hooks/usePaidFeatures";
 // OL-206: per-role navigation on the SidebarShell
 import SidebarShell, { type SidebarNavItem } from "./SidebarShell";
-import { getActiveNavId, getMobileTabIds, getNavForRole, getToneForRole, type NavItem } from "@/config/navigation";
+import { flattenNav, getActiveNavId, getMobileTabIds, getNavForRole, getToneForRole, type NavItem } from "@/config/navigation";
 
 // Role badge colors
 const roleBadgeColors = {
@@ -347,6 +347,8 @@ export default function DashboardLayout({
   // OL-206: this role's navigation, already filtered (role, paid features, marketplace flag).
   const navOpts = { paidFeatures: isPaidFeatureOn, marketplaceEnabled };
   const navTree = getNavForRole(userRole, navOpts);
+  // The logo links to the role's dashboard home (its first nav item).
+  const homeHref = flattenNav(navTree)[0]?.href ?? '/dashboard';
   const toSidebarItem = (item: NavItem, depth = 0): SidebarNavItem => {
     const Icon = item.icon;
     return {
@@ -400,12 +402,7 @@ export default function DashboardLayout({
         activeId={getActiveNavId(navTree, pathname)}
         onSelect={handleNavSelect}
         mobileTabIds={getMobileTabIds(userRole, navOpts)}
-        brand={
-          <Link href="/dashboard" className="flex items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
-            <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary-600 text-sm font-bold text-white" aria-hidden="true">C</span>
-            <span className={`sr-only text-sm font-semibold tracking-tight lg:not-sr-only ${getToneForRole(userRole) === 'navy' ? 'text-white' : 'text-neutral-900'}`}>CareLinkAI</span>
-          </Link>
-        }
+        homeHref={homeHref}
         user={{
           name: fullName || displayName,
           roleLabel: userRole,
@@ -431,17 +428,27 @@ export default function DashboardLayout({
       >
         {/* Header */}
         <header className="bg-white border-b border-neutral-200 h-header flex items-center px-4 md:px-6">
-          {isMobile && (
-            <button 
-              onClick={toggleSidebar}
-              className="mr-4 p-2 rounded-md hover:bg-neutral-100 sidebar-toggle"
-              aria-label="Open sidebar"
-              aria-expanded={sidebarOpen}
-            >
-              <FiMenu size={24} />
-            </button>
-          )}
-          
+          {/* md:hidden (not isMobile) so the button and the logo are in the server render: no shift on load. */}
+          <button 
+            onClick={toggleSidebar}
+            className="mr-4 p-2 rounded-md hover:bg-neutral-100 sidebar-toggle md:hidden"
+            aria-label="Open sidebar"
+            aria-expanded={sidebarOpen}
+          >
+            <FiMenu size={24} />
+          </button>
+
+          {/* Logo on phones (no sidebar below md). CSS breakpoints, not isMobile, so it is in the
+              server render and nothing shifts: heart mark below sm, full logo from sm. */}
+          <Link
+            href={homeHref}
+            data-testid="app-header-logo"
+            className="mr-3 flex flex-shrink-0 items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 md:hidden"
+          >
+            <Image src="/images/logo-mark.png" alt="CareLinkAI" width={32} height={32} sizes="32px" priority className="h-8 w-8 sm:hidden" />
+            <Image src="/images/logo.png" alt="CareLinkAI" width={136} height={32} sizes="136px" priority className="hidden h-8 w-auto sm:block" />
+          </Link>
+
           <h1 className="text-lg sm:text-xl font-semibold text-neutral-800 truncate">{title}</h1>
           
           <div className="ml-auto flex items-center space-x-2 sm:space-x-4">

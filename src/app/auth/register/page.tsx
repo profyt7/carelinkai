@@ -6,6 +6,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import axios from "axios";
 import SmsConsentCheckbox, { emptySmsConsent } from "@/components/consent/SmsConsentCheckbox";
 import type { SmsConsentPayload } from "@/lib/consent/sms-consent";
@@ -404,12 +405,7 @@ export default function RegisterPage() {
         <div className="text-center mb-6">
           <Link href="/" className="inline-block">
             <div className="flex items-center justify-center mb-6">
-              <div className="h-10 w-10 rounded-md bg-primary-500 flex items-center justify-center mr-2">
-                <span className="text-white font-bold text-xl">C</span>
-              </div>
-              <span className="text-xl font-semibold text-neutral-800">
-                CareLinkAI
-              </span>
+              <Image src="/images/logo.png" alt="CareLinkAI" width={171} height={40} sizes="171px" priority className="h-10 w-auto" />
             </div>
           </Link>
           <h1 className="text-2xl font-bold text-neutral-800">
