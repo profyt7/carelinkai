@@ -115,7 +115,7 @@
       "url": "/search",
       "icons": [
         {
-          "src": "/icons/search-shortcut.png",
+          "src": "/icons/icon-96x96.png",
           "sizes": "96x96"
         }
       ]
@@ -127,7 +127,7 @@
       "url": "/dashboard/inquiries",
       "icons": [
         {
-          "src": "/icons/inquiries-shortcut.png",
+          "src": "/icons/icon-96x96.png",
           "sizes": "96x96"
         }
       ]
@@ -139,7 +139,7 @@
       "url": "/messages",
       "icons": [
         {
-          "src": "/icons/messages-shortcut.png",
+          "src": "/icons/icon-96x96.png",
           "sizes": "96x96"
         }
       ]

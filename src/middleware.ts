@@ -28,6 +28,9 @@ const PUBLIC_PATHS = [
   '/images/',          // Image folder
   '/uploads/',         // Upload folder
   '/favicon.ico',      // Favicon
+  '/favicon.png',      // PNG favicon fallback
+  '/icons/',           // Favicons, apple-touch, PWA manifest + notification icons (were 404ing via the unknown-path rule)
+  '/browserconfig.xml', // Windows tile config (points at /icons/)
   '/sw.js',            // Service worker
   '/manifest.json',    // PWA manifest
   '/offline.html',     // PWA offline page
@@ -298,11 +301,11 @@ export const config = {
      * Match all request paths except:
      * 1. /_next/ (Next.js internals)
      * 2. /api/ (API routes)
-     * 3. /static/, /public/, /images/, /uploads/ (static files)
+     * 3. /static/, /public/, /images/, /icons/, /uploads/ (static files)
      * 4. /auth/ (auth pages)
      * 5. Common assets (favicon, manifest, etc.)
      */
-    '/((?!_next/|api/|static/|public/|images/|uploads/|favicon\\.ico|robots\\.txt|sitemap.*\\.xml|llms\\.txt|auth/|sw\\.js|manifest\\.json|offline\\.html|founder-intro\\.mp4|founder-intro-poster\\.jpg).*)',
+    '/((?!_next/|api/|static/|public/|images/|icons/|uploads/|favicon\\.ico|favicon\\.png|browserconfig\\.xml|robots\\.txt|sitemap.*\\.xml|llms\\.txt|auth/|sw\\.js|manifest\\.json|offline\\.html|founder-intro\\.mp4|founder-intro-poster\\.jpg).*)',
     // Rate-limited API surfaces (handled by the rate-limit branch above, not auth).
     // /api/auth is deliberately NOT here — it is rate-limited at its own route handler.
     '/api/webhooks/:path*',
