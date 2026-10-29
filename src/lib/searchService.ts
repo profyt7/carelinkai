@@ -100,6 +100,10 @@ export interface SearchResultItem {
     sourceLabel: string;
     display: string;
     transparent: boolean;
+    /** Range bounds + family report count (already in the /api/search payload via pricingView). */
+    low?: number | null;
+    high?: number | null;
+    familyReportCount?: number;
   };
   gender: string;
   amenities: string[];

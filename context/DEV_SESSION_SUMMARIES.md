@@ -2389,6 +2389,24 @@
 
 <!-- Add new sessions above this line, newest first -->
 
+### 2026-10-29 — OL-216 search result cards on the Direction D standard (closes OL-208) — PR open
+- **Objective:** make `SearchResultCard` the only card on `/search` (grid + list); add the results helper, a card-shaped skeleton and an honest empty state; lift the floating widgets above the mobile tab bar (OL-208); align the SEO directory card. No change to search logic, filters, URL, pagination, map or `/api/search`.
+- **Work completed:**
+  - The adapter and the extended card (insights slot, save/compare events, list variant, image-error → placeholder).
+  - The page swap; skeleton; `ui/empty-state`; the `--bottom-stack-offset` hook wired into `SidebarShell` and read by CareConcierge and BugReportButton.
+  - The `ListingCard` alignment.
+  - `e2e/search-cards.spec.ts` (interactions in grid + list). The role-navigation More tap is now a pointer click. The `search-availability-labels` card selector is updated.
+  - Two unit suites.
+- **Files changed:** `src/app/search/page.tsx`, `src/components/search/{SearchResultCard.tsx,adapters.ts}`, `src/components/ui/skeleton-loader.tsx`, `src/components/directory/ListingCard.tsx`, `src/components/{CareConcierge.tsx,bug-report/BugReportButton.tsx}`, `src/components/layout/{SidebarShell,DashboardLayout}.tsx`, `src/hooks/useBottomStackOffset.ts`, `src/lib/searchService.ts` (type only), `e2e/{search-cards,role-navigation,search-availability-labels}.spec.ts`, `.github/workflows/e2e-family.yml` (new spec added to the public-directory job), `__tests__/{search-result-adapter.unit.test.ts,bottom-stack-offset.unit.test.tsx}`, context files.
+- **Commands run:** local Postgres + standalone builds of main and the branch with a fixed clock; the Playwright screenshot/axe harness (scratchpad); pngjs diff; `tsc`, `eslint`, `jest`; the e2e specs against a fresh migrated database.
+- **Tests/build status:**
+  - tsc and eslint clean; jest 149 suites, all passed.
+  - Local e2e: `search-cards` + `search-availability-labels` 19/19 with no retries. role-navigation (all 8 roles, More by pointer), design-preview-direction-d, public-routes, search-demo-filter and `public/directory/` 70 passed / 4 skipped. The one local failure (availability-ping) needs `PING_ENABLED=1`, which only the CI job sets.
+  - axe on `/search` at 1280/390: 0 new violations; color-contrast 6 → 1.
+- **Deployment impact:** UI only (search cards, helper, skeleton, empty state, widget position on phones, directory card layout). No schema, env, API or route change.
+- **New risks/blockers:** none. In this sandbox Cloudinary images don't load, so the screenshots show placeholders for photo-less homes in both runs. Beachwood uses a local photo so the real-photo path is visible.
+- **Recommended next step:** Chris reviews the screenshots and interactions, then merges. Then OL-217 (`/homes/[id]` restructure + CTA bar registered with `useBottomStackOffset`).
+
 ### 2026-10-28 — OL-207 semantic tokens + reviewed hex cleanup (closes OL-205, OL-209) — PR open
 - **Objective:** additive semantic tokens; a reviewed (not global) hex → token/class conversion with a per-literal table; OL-205 contrast on StatCard/MetricCard + GoogleRatingBadge; OL-209 header/sidebar user-block duplication. Pixel diff before/after. No merge.
 - **Work completed:** tokens + Tailwind mapping (collision names checked: surface, content, ink, fg, muted, line, border, ring, focus, brand, text — none in use). SidebarShell + Direction D surfaces/borders moved to tokens (design-preview pixel-identical). `HEX_CONVERSION_TABLE.md` (797 literals: 134 CONVERT / 663 KEEP), with one conversion commit per group: layout, admin, misc. Dashboard/search/homes/operator had no exact-match chrome hex, so they got no commits. OL-205 changes to MetricCard/StatCard/GoogleRatingBadge; OL-209 header change at ≥ lg. Earlier the same day: the move to a fresh public repo (see OL-213 update).

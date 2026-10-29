@@ -8,10 +8,10 @@ export function BugReportButton() {
 
   return (
     <>
-      {/* Floating Bug Report Button - Positioned on bottom-right above chatbot */}
+      {/* Floating Bug Report Button — above the Care Advisor bubble; both clear any bottom bar via --bottom-stack-offset (OL-208) */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-20 right-4 z-50 flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 md:right-6 md:bottom-24"
+        className="fixed bottom-[calc(var(--bottom-stack-offset,0px)+5rem)] right-4 z-50 flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 md:right-6 md:bottom-[calc(var(--bottom-stack-offset,0px)+6rem)]"
         title="Report a bug"
       >
         <svg

@@ -178,11 +178,18 @@ for (const c of CASES) {
     expect(await bar.locator('a[href]').evaluateAll((as) => as.map((a) => a.getAttribute('href')))).toEqual(expectedTabs);
     await expect(bar.getByRole('button', { name: 'More navigation' })).toBeVisible();
 
-    // More opens the drawer with the same groups expanded.
-    // Keyboard, not a click: the family "Ask a Care Advisor" bubble sits over the
-    // bottom-right tab (pre-existing, same on main).
-    await bar.getByRole('button', { name: 'More navigation' }).focus();
-    await page.keyboard.press('Enter');
+    // More opens the drawer with the same groups expanded. A real pointer click
+    // (OL-208): the floating widgets sit above the tab bar via --bottom-stack-offset,
+    // so nothing intercepts the tap — Playwright fails the click if anything does.
+    const more = bar.getByRole('button', { name: 'More navigation' });
+    await expect
+      .poll(() => more.evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+        return !!hit && (hit === el || el.contains(hit));
+      }))
+      .toBe(true);
+    await more.click();
     const drawer = page.locator('[data-nav-drawer]');
     await expect(drawer).toBeVisible();
     await expect(drawer).toHaveAttribute('data-tone', c.tone);

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type ElementType, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react';
+import { useBottomStackOffset } from '@/hooks/useBottomStackOffset';
 import { FiChevronRight, FiChevronsLeft, FiChevronsRight, FiMenu, FiMoreHorizontal, FiX } from 'react-icons/fi';
 
 /**
@@ -75,6 +76,8 @@ type Props = {
   drawerBackdrop?: boolean;
   /** Extra classes for the bottom tab bar (e.g. the app's "mobile-tab-bar safe-bottom"). */
   mobileTabBarClassName?: string;
+  /** OL-208: publish the tab bar's height as `--bottom-stack-offset` on <body> so floating widgets clear it. App shell only (not previews). */
+  reserveBottomStack?: boolean;
   /** Wrap children in the shell's scrolling <main>. Off when the host renders its own header + <main>. */
   mainLandmark?: boolean;
   /** localStorage key for collapsed groups; null = don't persist. */
@@ -148,6 +151,7 @@ export default function SidebarShell({
   mobileTopBar = true,
   drawerBackdrop = true,
   mobileTabBarClassName = '',
+  reserveBottomStack = false,
   collapseStorageKey = NAV_COLLAPSED_KEY,
   mainLandmark = true,
   children,
@@ -160,6 +164,8 @@ export default function SidebarShell({
     onDrawerOpenChange?.(open);
   };
   const drawerRef = useRef<HTMLDivElement>(null);
+  const tabBarRef = useRef<HTMLElement>(null);
+  useBottomStackOffset(tabBarRef, 'mobile-tab-bar', reserveBottomStack);
   const hasGroups = items.some((i) => i.children?.length);
 
   // Collapsed groups (sidebar: persisted; drawer: session-only, starts expanded).
@@ -441,6 +447,7 @@ export default function SidebarShell({
 
         {/* Mobile bottom tab bar: 4 + More */}
         <nav
+          ref={tabBarRef}
           className={`${mobileOnly} h-16 flex-shrink-0 items-stretch justify-around border-t border-line bg-surface-raised pb-[env(safe-area-inset-bottom,0px)] ${mobileTabBarClassName}`}
           aria-label={`${navLabel} (mobile)`}
           {...((drawerOpen && !drawerBackdrop ? { inert: true } : {}) as object)}

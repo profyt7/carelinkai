@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
-import Link from "next/link";
 import { 
   FiSearch, 
   FiMapPin, 
@@ -17,9 +16,7 @@ import {
   FiCalendar,
   FiChevronDown,
   FiChevronUp,
-  FiHeart,
   FiInfo,
-  FiHome,
   FiAward,
   FiMessageCircle
 } from "react-icons/fi";
@@ -35,9 +32,6 @@ import {
 } from "@/lib/searchService";
 import { MOCK_HOMES } from "@/lib/mock/homes";
 import { formatCurrency } from "@/lib/utils";
-import GoogleRatingBadge from "@/components/homes/GoogleRatingBadge";
-import FeaturedBadge from "@/components/homes/FeaturedBadge";
-import AvailabilityBadge, { UNVERIFIED_AVAILABILITY } from "@/components/availability/AvailabilityBadge";
 import {
   getFavorites,
   toggleFavorite,
@@ -46,18 +40,16 @@ import BrowseShell from "@/components/layout/BrowseShell";
 import SearchFilters from "@/components/search/SearchFilters";
 import HomeCompareModal from "@/components/family/HomeCompareModal";
 import dynamic from "next/dynamic";
-import { getCloudinaryThumbnail, isCloudinaryUrl } from "@/lib/cloudinaryUrl";
 import { HomeCardSkeleton } from "@/components/ui/skeleton-loader";
+import EmptyState from "@/components/ui/empty-state";
+import SearchResultCard from "@/components/search/SearchResultCard";
+import { toSearchResultHome } from "@/components/search/adapters";
 
 // Dynamically import the map (Leaflet) to avoid SSR issues
 const SimpleMap = dynamic(
   () => import("@/components/search/SimpleMap"),
   { ssr: false }
 );
-
-// Fallback image for any thumbnail load errors (Cloudinary)
-const FALLBACK_IMG =
-  "https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830428/carelinkai/homes/home-1.jpg";
 
 // Care level options for filtering
 const CARE_LEVELS = [
@@ -648,7 +640,47 @@ function SearchPageContent() {
       .map(([key, score]) => ({ key, label: AI_FACTOR_LABELS[key] || key, score: Math.round(score as number), weight: w[key], suggestion: suggest(key, score as number) }))
       .sort((a,b) => b.score - a.score);
   };
-  
+
+  // AI-match block for a card: only with real personalization (aiMatchFactors present) —
+  // anon / no-preference sessions would otherwise show a meaningless constant score.
+  const renderInsights = (home: SearchResultItem) =>
+    home.aiMatchFactors ? (
+      <div className="flex flex-wrap items-center gap-1.5" data-testid="card-insights">
+        <span className="inline-flex items-center rounded-full bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-700">
+          <FiAward className="mr-1" aria-hidden="true" />
+          {home.aiMatchScore}% match
+        </span>
+        {Object.entries(home.aiMatchFactors)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 3)
+          .map(([k, v]) => (
+            <span key={k} data-testid="card-insight-chip" className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-700">
+              {AI_FACTOR_LABELS[k] || k}: {Math.round(v)}
+            </span>
+          ))}
+        <button
+          type="button"
+          onClick={() => openExplain(home)}
+          className="rounded-md px-1.5 py-0.5 text-xs font-medium text-primary-700 underline hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+        >
+          Explain
+        </button>
+      </div>
+    ) : null;
+
+  const renderCard = (home: SearchResultItem, variant: "grid" | "list") => (
+    <SearchResultCard
+      key={home.id}
+      variant={variant}
+      home={toSearchResultHome(home)}
+      saved={favoriteIds.has(home.id)}
+      comparing={compareIds.has(home.id)}
+      onSave={(id, e) => handleToggleFavorite(id, e)}
+      onCompare={(id, e) => toggleCompare(id, e)}
+      insights={renderInsights(home)}
+    />
+  );
+
   return (
     <BrowseShell title="Search Homes" showSearch={false}>
       <div className="p-4 md:p-6">
@@ -933,17 +965,24 @@ function SearchPageContent() {
             )}
             {/* Results summary */}
             <div className="mb-4 flex items-center justify-between">
-              <p className="text-sm text-neutral-600">
-                {isLoading ? (
-                  "Searching..."
-                ) : searchResponse ? (
-                  <>
-                    Found <span className="font-medium">{searchResponse.pagination.totalResults}</span> homes
-                  </>
-                ) : (
-                  "Enter search criteria"
+              <div>
+                <p className="text-sm text-neutral-600">
+                  {isLoading ? (
+                    "Searching..."
+                  ) : searchResponse ? (
+                    <>
+                      Found <span className="font-medium">{searchResponse.pagination.totalResults}</span> homes
+                    </>
+                  ) : (
+                    "Enter search criteria"
+                  )}
+                </p>
+                {!isLoading && searchResults.length > 0 && (
+                  <p className="mt-1 text-xs text-neutral-600" data-testid="search-results-helper">
+                    Availability and prices show their source and date, or say “contact to confirm”.
+                  </p>
                 )}
-              </p>
+              </div>
               
               {/* Mobile view toggle */}
               <div className="flex rounded-md border border-neutral-200 bg-white md:hidden">
@@ -982,28 +1021,21 @@ function SearchPageContent() {
               </div>
             </div>
             
-            {/* Loading state — skeleton cards matching the grid layout */}
-            {isLoading && <HomeCardSkeleton count={6} />}
-            
+            {/* Loading state — skeleton cards with the result card's footprint */}
+            {isLoading && <HomeCardSkeleton count={6} variant={viewType === "list" ? "list" : "grid"} />}
+
             {/* No results state */}
             {!isLoading && searchResults.length === 0 && (
-              <div className="flex h-64 flex-col items-center justify-center rounded-lg border border-neutral-200 bg-white p-8 text-center">
-                <div className="mb-4 rounded-full bg-neutral-100 p-4">
-                  <FiSearch className="h-8 w-8 text-neutral-400" />
-                </div>
-                <h3 className="mb-2 text-lg font-medium text-neutral-800">No homes found</h3>
-                <p className="mb-4 text-neutral-600">
-                  Try adjusting your filters or search for a different location.
-                </p>
-                <button
-                  onClick={resetFilters}
-                  className="rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600"
-                >
-                  Reset Filters
-                </button>
+              <div className="rounded-xl border border-line bg-surface-raised" data-testid="search-empty-state">
+                <EmptyState
+                  icon={FiSearch}
+                  title="No homes match these filters"
+                  description="Try removing a filter or searching a different city."
+                  action={{ label: "Clear filters", onClick: resetFilters }}
+                />
               </div>
             )}
-            
+
             {/* Compare bar */}
             {compareIds.size > 0 && (
               <div className="mb-4 flex items-center justify-between rounded-lg border border-primary-200 bg-primary-50 px-4 py-3">
@@ -1029,160 +1061,10 @@ function SearchPageContent() {
               </div>
             )}
 
-            {/* Grid view */}
+            {/* Grid view — SearchResultCard (OL-216): 1-up < md, 2-up md, 3-up ≥ lg */}
             {!isLoading && viewType === "grid" && searchResults.length > 0 && (
-              <div>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {searchResults.map((home) => (
-                    <div
-                      key={home.id}
-                      className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm transition-all duration-200 hover:shadow-card-hover hover:-translate-y-0.5"
-                    >
-                      <Link href={`/homes/${home.id}`} className="block">
-                        <div className="relative h-48 w-full">
-                          {home.imageUrl ? (
-                            <div className="h-full w-full">
-                              <img
-                                src={isCloudinaryUrl(home.imageUrl) ? getCloudinaryThumbnail(home.imageUrl) : home.imageUrl}
-                                alt={home.name}
-                                loading="lazy"
-                                className="h-full w-full object-cover"
-                                onError={(e) => {
-                                  const t = e.currentTarget as HTMLImageElement;
-                                  if (t.src !== FALLBACK_IMG) t.src = FALLBACK_IMG;
-                                }}
-                              />
-                            </div>
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center bg-neutral-200">
-                              <FiHome className="h-12 w-12 text-neutral-400" />
-                            </div>
-                          )}
-                          
-                          {/* Top-left badges, stacked so they never overlap. The "% Match" badge
-                              renders ONLY with real personalization (aiMatchFactors present); anon /
-                              no-preference sessions would otherwise show a meaningless constant 50%,
-                              so they get a clean single "Unclaimed" badge instead. */}
-                          <div className="absolute left-2 top-2 flex flex-col items-start gap-1">
-                            {home.aiMatchFactors && (
-                              <div className="rounded-full bg-gradient-to-r from-primary-500 to-primary-600 px-2 py-1 text-xs font-medium text-white shadow-md">
-                                <div className="flex items-center">
-                                  <FiAward className="mr-1" />
-                                  {home.aiMatchScore}% Match
-                                </div>
-                              </div>
-                            )}
-                            {home.isUnclaimed && (
-                              <div className="rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800 shadow-md border border-amber-200">
-                                Unclaimed
-                              </div>
-                            )}
-                            {home.isFeatured && <FeaturedBadge />}
-                          </div>
-                          {/* Why this match - top factors (grid card) */}
-                          {home.aiMatchFactors && (
-                            <div className="absolute left-2 bottom-2 flex flex-wrap gap-1">
-                              {Object.entries(home.aiMatchFactors)
-                                .sort((a,b) => b[1]-a[1])
-                                .slice(0,3)
-                                .map(([k,v]) => (
-                                  <span key={k} className="rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-medium text-neutral-700 shadow">
-                                    {AI_FACTOR_LABELS[k] || k}: {Math.round(v)}
-                                  </span>
-                                ))}
-                            </div>
-                          )}
-                          
-                          {/* Availability badge (OL-200): only a verified fact or "Contact to confirm
-                              availability" — never capacity − occupancy. */}
-                          <div className="absolute right-2 top-2">
-                            <AvailabilityBadge availability={home.availabilityFreshness ?? UNVERIFIED_AVAILABILITY} tone="overlay" />
-                          </div>
-                        </div>
-                        
-                        <div className="flex flex-col p-4">
-                          <h3 className="mb-1 text-lg font-medium text-neutral-800">{home.name}</h3>
-                          <p className="mb-1 text-sm text-neutral-600">
-                            {home.address?.city}, {home.address?.state}
-                          </p>
-                          {home.googleRating != null && (
-                            <p className="mb-1">
-                              <GoogleRatingBadge rating={home.googleRating} count={home.googleRatingCount} compact />
-                            </p>
-                          )}
-                          {!home.isUnclaimed && home.tagline && (
-                            <p className="mb-2 line-clamp-1 text-xs italic text-neutral-500">{home.tagline}</p>
-                          )}
-
-                          {/* Care levels */}
-                          <div className="mb-3 flex flex-wrap gap-1">
-                            {home.careLevel.map((level) => (
-                              <span
-                                key={`${home.id}-${level}`}
-                                className="rounded-full bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-700"
-                              >
-                                {getCareLevelName(level)}
-                              </span>
-                            ))}
-                          </div>
-                          
-                          <div className="mt-auto flex items-center justify-between">
-                            <span className="text-sm font-semibold text-neutral-900" title={home.pricing?.hasPrice ? `${home.pricing.display} — contact for exact quote` : (home.pricePending ? 'Approximate — pending operator confirmation' : undefined)}>
-                              {home.pricing?.hasPrice ? (
-                                <>
-                                  {home.pricing.amount ? `$${home.pricing.amount.toLocaleString()}` : home.priceRange.formattedMin}
-                                  <span className="text-xs font-normal text-neutral-500">/mo</span>
-                                  {home.pricing.transparent && (
-                                    <span className="ml-1.5 align-middle rounded bg-success-50 px-1.5 py-0.5 text-[10px] font-medium text-success-700">Transparent</span>
-                                  )}
-                                </>
-                              ) : (
-                                <>{home.pricePending && home.priceRange.formattedMin ? '~' : ''}{home.priceRange.formattedMin}<span className="text-xs font-normal text-neutral-500">/mo+</span></>
-                              )}
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                aria-label={favoriteIds.has(home.id) ? "Unfavorite" : "Favorite"}
-                                onClick={(e) => handleToggleFavorite(home.id, e)}
-                                className="group"
-                              >
-                                <FiHeart
-                                  className={`h-4 w-4 ${
-                                    favoriteIds.has(home.id)
-                                      ? "text-primary-500 fill-current"
-                                      : "text-neutral-400 group-hover:text-primary-500"
-                                  }`}
-                                />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(e) => toggleCompare(home.id, e)}
-                                title={compareIds.has(home.id) ? "Remove from compare" : compareIds.size >= 3 ? "Max 3 homes" : "Add to compare"}
-                                className={`rounded-md border px-3 py-1.5 text-xs font-medium ${
-                                  compareIds.has(home.id)
-                                    ? "border-primary-500 bg-primary-50 text-primary-700"
-                                    : "border-neutral-300 text-neutral-600 hover:bg-neutral-50"
-                                }`}
-                              >
-                                {compareIds.has(home.id) ? "✓ Compare" : "Compare"}
-                              </button>
-                              <button
-                                type="button"
-                                className="rounded-md bg-primary-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-600"
-                              >
-                                View Listing
-                              </button>
-                              {home.aiMatchFactors && (
-                                <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openExplain(home); }} className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs text-neutral-700 hover:bg-neutral-50">Explain</button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
-                    </div>
-                  ))}
-                </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" data-testid="search-results-grid">
+                {searchResults.map((home) => renderCard(home, "grid"))}
               </div>
             )}
             
@@ -1197,190 +1079,10 @@ function SearchPageContent() {
               </div>
             )}
             
-            {/* List view */}
+            {/* List view — the same card, horizontal at ≥ md */}
             {!isLoading && viewType === "list" && searchResults.length > 0 && (
-              <div className="space-y-4">
-                {searchResults.map((home) => (
-                  <div
-                    key={home.id}
-                    className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm transition-shadow hover:shadow-md"
-                  >
-                    <Link href={`/homes/${home.id}`} className="block">
-                      <div className="flex flex-col md:flex-row">
-                        {/* Image section */}
-                        <div className="relative h-48 w-full md:h-auto md:w-1/3">
-                          {home.imageUrl ? (
-                            <div className="h-full w-full">
-                              <img
-                                src={isCloudinaryUrl(home.imageUrl) ? getCloudinaryThumbnail(home.imageUrl) : home.imageUrl}
-                                alt={home.name}
-                                loading="lazy"
-                                className="h-full w-full object-cover"
-                                onError={(e) => {
-                                  const t = e.currentTarget as HTMLImageElement;
-                                  if (t.src !== FALLBACK_IMG) t.src = FALLBACK_IMG;
-                                }}
-                              />
-                            </div>
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center bg-neutral-200">
-                              <FiHome className="h-12 w-12 text-neutral-400" />
-                            </div>
-                          )}
-                          
-                          {/* Top-left badges, stacked so they never overlap. The "% Match" badge
-                              renders ONLY with real personalization (aiMatchFactors present); anon /
-                              no-preference sessions would otherwise show a meaningless constant 50%,
-                              so they get a clean single "Unclaimed" badge instead. */}
-                          <div className="absolute left-2 top-2 flex flex-col items-start gap-1">
-                            {home.aiMatchFactors && (
-                              <div className="rounded-full bg-gradient-to-r from-primary-500 to-primary-600 px-2 py-1 text-xs font-medium text-white shadow-md">
-                                <div className="flex items-center">
-                                  <FiAward className="mr-1" />
-                                  {home.aiMatchScore}% Match
-                                </div>
-                              </div>
-                            )}
-                            {home.isUnclaimed && (
-                              <div className="rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800 shadow-md border border-amber-200">
-                                Unclaimed
-                              </div>
-                            )}
-                            {home.isFeatured && <FeaturedBadge />}
-                          </div>
-                          {/* Why this match - top factors (list card) */}
-                          {home.aiMatchFactors && (
-                            <div className="absolute left-2 bottom-2 flex flex-wrap gap-1">
-                              {Object.entries(home.aiMatchFactors)
-                                .sort((a,b) => b[1]-a[1])
-                                .slice(0,3)
-                                .map(([k,v]) => (
-                                  <span key={k} className="rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-medium text-neutral-700 shadow">
-                                    {AI_FACTOR_LABELS[k] || k}: {Math.round(v)}
-                                  </span>
-                                ))}
-                            </div>
-                          )}
-                          
-                          {/* Availability badge (OL-200): only a verified fact or "Contact to confirm
-                              availability" — never capacity − occupancy. */}
-                          <div className="absolute right-2 top-2">
-                            <AvailabilityBadge availability={home.availabilityFreshness ?? UNVERIFIED_AVAILABILITY} tone="overlay" />
-                          </div>
-                        </div>
-                        
-                        {/* Content section */}
-                        <div className="flex flex-1 flex-col p-4">
-                          <div className="mb-2 flex items-start justify-between">
-                            <div>
-                              <h3 className="text-lg font-medium text-neutral-800">{home.name}</h3>
-                              <p className="text-sm text-neutral-600">
-                                {home.address ?
-                                  `${home.address.street}, ${home.address.city}, ${home.address.state} ${home.address.zipCode}` :
-                                  "Address not available"}
-                              </p>
-                              {home.googleRating != null && (
-                                <p className="mt-1">
-                                  <GoogleRatingBadge rating={home.googleRating} count={home.googleRatingCount} compact />
-                                </p>
-                              )}
-                            </div>
-                          </div>
-
-                          {!home.isUnclaimed && home.tagline && (
-                            <p className="mb-2 line-clamp-1 text-sm italic text-neutral-500">{home.tagline}</p>
-                          )}
-
-                          <p className="mb-3 line-clamp-2 text-sm text-neutral-600">{home.description}</p>
-                          
-                          {/* Care levels */}
-                          <div className="mb-3 flex flex-wrap gap-2">
-                            {home.careLevel.map((level) => (
-                              <span
-                                key={`${home.id}-${level}`}
-                                className="rounded-full bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-700"
-                              >
-                                {getCareLevelName(level)}
-                              </span>
-                            ))}
-                          </div>
-                          
-                          {/* Amenities */}
-                          <div className="mb-3 flex flex-wrap gap-2">
-                            {home.amenities.slice(0, 3).map((amenity) => (
-                              <span
-                                key={`${home.id}-${amenity}`}
-                                className="rounded-full bg-neutral-100 px-2 py-1 text-xs text-neutral-600"
-                              >
-                                {amenity}
-                              </span>
-                            ))}
-                            {home.amenities.length > 3 && (
-                              <span className="rounded-full bg-neutral-100 px-2 py-1 text-xs text-neutral-600">
-                                +{home.amenities.length - 3} more
-                              </span>
-                            )}
-                          </div>
-                          
-                          {/* Price + actions */}
-                          <div className="mt-auto flex items-center justify-between">
-                            <div>
-                              {home.priceRange.formattedMin ? (
-                                <span title={home.pricePending ? 'Approximate — pending operator confirmation' : undefined}>
-                                  <span className="text-lg font-semibold text-neutral-800">
-                                    {home.pricePending ? '~' : ''}{home.priceRange.formattedMin}
-                                  </span>
-                                  <span className="text-sm text-neutral-500">
-                                    {home.priceRange.formattedMax ? ` - ${home.priceRange.formattedMax}/mo` : "/mo"}
-                                  </span>
-                                </span>
-                              ) : (
-                                <span className="text-sm font-medium text-neutral-500">Price on request</span>
-                              )}
-                            </div>
-
-                            <div className="flex items-center space-x-2">
-                              <button
-                                type="button"
-                                aria-label={favoriteIds.has(home.id) ? "Unfavorite" : "Favorite"}
-                                onClick={(e) => handleToggleFavorite(home.id, e)}
-                                className="rounded-full p-2 transition-colors hover:bg-neutral-100"
-                              >
-                                <FiHeart
-                                  className={`h-5 w-5 ${
-                                    favoriteIds.has(home.id)
-                                      ? "text-primary-500 fill-current"
-                                      : "text-neutral-400 hover:text-primary-500"
-                                  }`}
-                                />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(e) => toggleCompare(home.id, e)}
-                                title={compareIds.has(home.id) ? "Remove from compare" : compareIds.size >= 3 ? "Max 3 homes" : "Add to compare"}
-                                className={`rounded-md border px-3 py-2 text-sm font-medium ${
-                                  compareIds.has(home.id)
-                                    ? "border-primary-500 bg-primary-50 text-primary-700"
-                                    : "border-neutral-300 text-neutral-600 hover:bg-neutral-50"
-                                }`}
-                              >
-                                {compareIds.has(home.id) ? "✓ Compare" : "Compare"}
-                              </button>
-                              <button className="rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600">
-                                View Listing
-                              </button>
-                              {home.aiMatchFactors && (
-                                <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openExplain(home); }} className="rounded-md border border-neutral-300 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50">
-                                  Explain
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  </div>
-                ))}
+              <div className="space-y-4" data-testid="search-results-list">
+                {searchResults.map((home) => renderCard(home, "list"))}
               </div>
             )}
             
