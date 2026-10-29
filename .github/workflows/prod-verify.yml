@@ -70,7 +70,7 @@ on:
         description: 'OL-231: /auth/login, /auth/register, /auth/forgot-password → 200; GET /api/auth/providers + /api/auth/csrf answer normally; a credentials sign-in POST with an unknown (reserved .invalid) email gets the normal failure, not a 5xx. Read-only.'
         type: boolean
         required: false
-        default: false
+        default: true
       check_trackers:
         description: 'OL-228/229: /, /search?q=test, one /homes/<id> and /concierge load zero scripts or requests from facebook.net, clarity.ms, googletagmanager.com, google-analytics.com (analytics consent granted; /api/analytics/track blocked so nothing is written); /admin/analytics/funnel answers without a server error'
         type: boolean
