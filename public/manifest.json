@@ -1,13 +1,13 @@
 {
-  "name": "CareLink AI - Senior Care Management Platform",
-  "short_name": "CareLink AI",
-  "description": "Simplify senior care decisions with CareLink AI. Search and compare care homes, manage inquiries, and collaborate with family members.",
+  "name": "CareLinkAI - Senior Care Management Platform",
+  "short_name": "CareLinkAI",
+  "description": "Simplify senior care decisions with CareLinkAI. Search and compare care homes, manage inquiries, and collaborate with family members.",
   "start_url": "/dashboard",
   "id": "/dashboard",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "theme_color": "#0099e6",
+  "theme_color": "#3978FC",
   "background_color": "#f8fafc",
   "icons": [
     {

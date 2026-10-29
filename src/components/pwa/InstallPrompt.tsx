@@ -187,7 +187,7 @@ export default function InstallPrompt({
               </div>
               
               <p className="text-neutral-600 mb-6 text-center">
-                Follow these steps to install CareLink AI on your iOS device:
+                Follow these steps to install CareLinkAI on your iOS device:
               </p>
               
               <div className="space-y-6 mb-6">
@@ -300,7 +300,7 @@ export default function InstallPrompt({
               
               <div className="p-6">
                 <h2 className="text-xl font-semibold text-neutral-800 mb-2">
-                  Install CareLink AI
+                  Install CareLinkAI
                 </h2>
                 
                 <p className="text-neutral-600 mb-4">
@@ -366,7 +366,7 @@ export default function InstallPrompt({
               </div>
               
               <div className="flex-1">
-                <h3 className="font-semibold text-neutral-800 mb-1">Install CareLink AI</h3>
+                <h3 className="font-semibold text-neutral-800 mb-1">Install CareLinkAI</h3>
                 <p className="text-sm text-neutral-600 mb-3">
                   Add to home screen for the best experience
                 </p>
@@ -420,7 +420,7 @@ export default function InstallPrompt({
             </div>
             
             <div className="flex-1">
-              <h3 className="font-medium text-neutral-800 text-sm">Install CareLink AI</h3>
+              <h3 className="font-medium text-neutral-800 text-sm">Install CareLinkAI</h3>
               <p className="text-xs text-neutral-600">
                 Get offline access and app-like experience
               </p>
@@ -476,7 +476,7 @@ export default function InstallPrompt({
               </div>
               
               <div className="flex-1 mr-4">
-                <h3 className="font-medium text-neutral-800">Install CareLink AI</h3>
+                <h3 className="font-medium text-neutral-800">Install CareLinkAI</h3>
                 <p className="text-sm text-neutral-500">
                   {isIOSDevice 
                     ? "Add to your home screen for the best experience" 

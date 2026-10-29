@@ -20,7 +20,7 @@ export default function PWASettingsPage() {
           Progressive Web App Settings
         </h1>
         <p className="text-neutral-600">
-          Manage your CareLink AI app installation, notifications, and offline access
+          Manage your CareLinkAI app installation, notifications, and offline access
         </p>
       </div>
 
@@ -31,7 +31,7 @@ export default function PWASettingsPage() {
             <FiInfo className="h-5 w-5 text-primary-500 mr-3 flex-shrink-0" />
             <div>
               <h3 className="text-sm font-medium text-primary-800">
-                Install CareLink AI as an app
+                Install CareLinkAI as an app
               </h3>
               <p className="mt-1 text-sm text-primary-700">
                 Get a better experience with offline access, push notifications, and faster loading times.
@@ -107,7 +107,7 @@ export default function PWASettingsPage() {
                         Update available
                       </h3>
                       <p className="mt-1 text-sm text-primary-700">
-                        A new version of CareLink AI is available.
+                        A new version of CareLinkAI is available.
                       </p>
                       <button
                         onClick={updateApp}
@@ -135,7 +135,7 @@ export default function PWASettingsPage() {
               <div className="col-span-2 bg-neutral-50 border border-neutral-200 rounded-md p-4">
                 <h3 className="text-md font-medium text-neutral-800 mb-2">About Notifications</h3>
                 <p className="text-sm text-neutral-600 mb-3">
-                  CareLink AI uses push notifications to keep you updated about:
+                  CareLinkAI uses push notifications to keep you updated about:
                 </p>
                 <ul className="list-disc list-inside text-sm text-neutral-600 space-y-1 ml-2">
                   <li>New inquiries and responses</li>
@@ -160,7 +160,7 @@ export default function PWASettingsPage() {
                 offering a fast, reliable, and engaging experience.
               </p>
               
-              <h3>Benefits of using CareLink AI as a PWA:</h3>
+              <h3>Benefits of using CareLinkAI as a PWA:</h3>
               
               <ul>
                 <li>

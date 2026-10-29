@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
         await webpush.sendNotification(
           subscription,
           JSON.stringify({
-            title: 'CareLink AI',
+            title: 'CareLinkAI',
             body: 'Push notifications are now enabled!',
             icon: '/icons/icon-192x192.png',
             badge: '/icons/badge-96x96.png',

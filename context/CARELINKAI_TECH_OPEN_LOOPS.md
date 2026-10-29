@@ -714,6 +714,16 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
   - (3) GA4 Enhanced Measurement ("page changes based on browser history", "site search") can still send full URLs. Founder setting: turn both off in the GA property, since OL-226 sends page_view itself.
 - **Path:** `src/components/analytics/AnalyticsScripts.tsx`
 
+### OL-234: Pre-launch homepage + brand consistency (PR A)
+- **Status:** 🟡 PR open, branch `fix/prelaunch-homepage` (not merged).
+- **What:**
+  - **Hero:** stock photo (faces) and a made-up "Perfect Match Found / Sunshine Valley Care / 5★" card replaced by a truthful "What we verify" panel. It covers the ODH license where matched, ODH inspection facts, and Verified availability within `AVAILABILITY_FRESH_DAYS`.
+  - **Share images:** `og-image.jpg` / `twitter-image.jpg` recomposed to the 1200×630 every page declares (logo unaltered).
+  - **Installed-app surfaces** ("CareLink AI" → "CareLinkAI"): PWA manifest name, offline page (also its "C" tile → precached heart icon), install prompts, push titles. `theme_color` → brand `#3978FC`.
+  - **Emails:** text-only by design, unchanged.
+- **Leftovers:** `public/icon-generator.html` still generates the old "C" icons (unreachable: middleware 404); `public/images/hero-bg2.jpg` is now unreferenced.
+- **Path:** `src/app/HomePageClient.tsx`, `public/images/{og,twitter}-image.jpg`, `public/{manifest.json,offline.html,sw.js}`, `src/components/pwa/*`, `__tests__/homepage-hero.unit.test.tsx`
+
 ### OL-231: Auth flows log login email addresses to Render logs
 - **Status:** ✅ MERGED 2026-10-29, PR #12 (squash) `66d9ba11`.
   - prod-verify confirmed it live: `/auth/login`, `/auth/register`, `/auth/forgot-password` → 200; `/api/auth/providers` and `/api/auth/csrf` → 200; an unknown-email credentials POST → 401 with the normal error redirect.

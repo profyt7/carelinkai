@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>You're Offline | CareLink AI</title>
+  <title>You're Offline | CareLinkAI</title>
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#0099e6">
+  <meta name="theme-color" content="#3978FC">
   <style>
     /* Base styles */
     :root {
-      --primary-color: #0099e6;
+      --primary-color: #3978FC;
       --primary-dark: #007bb8;
       --primary-light: #b3e6ff;
       --neutral-50: #f8fafc;
@@ -71,18 +71,8 @@
     .logo-icon {
       width: 40px;
       height: 40px;
-      background-color: var(--primary-color);
       border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       margin-right: 0.75rem;
-    }
-    
-    .logo-icon span {
-      color: white;
-      font-weight: bold;
-      font-size: 1.5rem;
     }
     
     .logo-text {
@@ -300,10 +290,9 @@
   <div class="container">
     <header class="header">
       <div class="logo">
-        <div class="logo-icon">
-          <span>C</span>
-        </div>
-        <span class="logo-text">CareLink AI</span>
+        <!-- Heart mark: precached by sw.js, so it shows offline. -->
+        <img class="logo-icon" src="/icons/icon-192x192.png" width="40" height="40" alt="">
+        <span class="logo-text">CareLinkAI</span>
       </div>
     </header>
     
@@ -395,7 +384,7 @@
     </section>
     
     <footer class="footer">
-      <div>CareLink AI &copy; 2025 - All rights reserved</div>
+      <div>CareLinkAI &copy; 2025 - All rights reserved</div>
       <div class="contact">
         Need help? Contact us at <a href="mailto:support@getcarelinkai.com">support@getcarelinkai.com</a>
       </div>

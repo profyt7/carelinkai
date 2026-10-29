@@ -496,7 +496,7 @@ export default function PWAManager({ children }: PWAManagerProps) {
       {/* {isInstallable && !isPWA && (
         <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t border-neutral-200 p-4 flex items-center justify-between z-50 safe-bottom">
           <div>
-            <h3 className="font-medium text-neutral-800">Install CareLink AI</h3>
+            <h3 className="font-medium text-neutral-800">Install CareLinkAI</h3>
             <p className="text-sm text-neutral-600">Add to your home screen for a better experience</p>
           </div>
           <button
