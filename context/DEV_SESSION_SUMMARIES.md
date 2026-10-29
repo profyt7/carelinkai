@@ -2389,6 +2389,31 @@
 
 <!-- Add new sessions above this line, newest first -->
 
+### 2026-10-29 — OL-226 conversion measurement — PR open
+- **Objective:** measure the search → listing → profile → inquiry/tour funnel without collecting free text or contact details. Extend the existing consent-gated analytics, add no new service or dependency, and add one small admin page. Audit the current analytics stack first.
+- **Work completed:**
+  - **Audit** (in the PR description):
+    - `/api/analytics/track` only console-logged payloads, plus IP and user id, with no consent gate and no storage.
+    - GA4's default page view sent full URLs, `?q=` included.
+    - The Meta Pixel loads on all public routes.
+    - Clarity is masked site-wide but records URLs.
+    - The listing inquiry handlers console-log contact details and care needs.
+  - **Built:**
+    - an allowlisted `track()` and a privacy guard;
+    - triggers for the seven events;
+    - the `AnalyticsEvent` table and storage route, with 90-day retention;
+    - `/admin/analytics/funnel`;
+    - Clarity masks on forms, and the Sentry console-breadcrumb drop.
+  - **Logged:** OL-226, plus OL-228…OL-230.
+- **Files changed:** see OL-226 in open loops (22 source/test files + migration + context).
+- **Commands run:** `prisma migrate deploy` on a fresh DB; `tsc`, `eslint`, `jest`; standalone build; Playwright with `--retries=0`; screenshot script against fictional seeded events.
+- **Tests/build status:**
+  - tsc and eslint clean; jest 151/151 suites (1696 passed, 10 skipped).
+  - New privacy suite: 22 tests, mutation-checked.
+  - e2e: `analytics-funnel` 4/4 (a–d); directory group 108/108; concierge group 47/47.
+- **Deployment impact:** one additive migration (`AnalyticsEvent`). With consent, the browser now posts funnel events to `/api/analytics/track` (stored, 90 days). GA page views are now sanitized and manual. No env change.
+- **New risks/blockers:** see OL-230 (PII console logs; renumbered from OL-227, which became the gallery hotfix), OL-228 (Pixel decision) and OL-229 (Clarity URLs, GTM container, GA Enhanced Measurement settings).
+- **Recommended next step:** Chris reviews the event mapping, the privacy tests and the funnel screenshots, then merges. Then OL-230 (delete the PII diagnostic logs) and the GA property settings in OL-229.
 ### 2026-10-29 — OL-227 gallery overflow hotfix (+ OL-226 review package)
 - **Objective:** fix the live /homes/[id] phone overflow (gallery wider than the viewport; iOS Safari zoomed out), uniform hero, contained thumbnail strip, non-overlapping caption / counter (closes OL-222); post the OL-226 review package on PR #10.
 - **Work completed:**
