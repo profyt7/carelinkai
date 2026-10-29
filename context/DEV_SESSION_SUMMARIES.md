@@ -2600,3 +2600,13 @@
 - **Deployment impact:** none (context only).
 - **New risks/blockers:** none new. No purge exists; OL-232 requires a per-type decision first.
 - **Recommended next step:** Chris reviews PR #14 (prod-verify `check_auth`) and decides the scope for removing the dead dashboard-data audit reader.
+
+### 2026-10-29 — OL-233 inbound alerts for every caller type
+- **Objective:** Chris gets an email for every inbound front-desk call, facility callbacks included.
+- **Work completed:** FACILITY calls now email (matched → link to the QA item; unmatched → link to inbound leads) with openings / starting price / Medicaid. Subjects start with the caller type. Planner SMS + email and family/other email unchanged. `/admin/call-qa` scrolls to `#obs-{id}`. One unit test per lane plus webhook tests; Resend and Twilio are mocked (also added to `inbound-lead.unit.test.ts`).
+- **Files changed:** `src/lib/leads/inbound-alerts.ts`, `src/lib/elevenlabs/post-call.ts`, `src/lib/leads/inbound-lead.ts`, `src/app/admin/call-qa/page.tsx`, `__tests__/inbound-alerts.unit.test.ts`, `__tests__/inbound-lead.unit.test.ts`, context files.
+- **Commands run:** `npm ci`, `npx prisma generate`, `npm run type-check`, `next lint` (changed files), `npm test -- --ci` (156 suites, 1797 passed).
+- **Tests/build status:** local green; build left to CI.
+- **Deployment impact:** no schema change, no new env vars. Uses the existing `ADMIN_NOTIFY_EMAIL` + `RESEND_API_KEY`.
+- **New risks/blockers:** none. SMS stays planner-only until the A2P campaign is approved.
+- **Recommended next step:** watch the first real facility callback email after deploy.

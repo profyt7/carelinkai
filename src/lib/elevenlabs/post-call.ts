@@ -18,7 +18,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { captureError } from '@/lib/sentry';
 import { ELEVENLABS_SIGNATURE_HEADER, parseCallResult, payloadHomeId, recordCallResult, verifyElevenLabsSignature } from '@/lib/availability/call-result';
 import { parseInboundLead, recordInboundLead, CALLER_TYPE_TO_ENUM, URGENCY_TO_ENUM } from '@/lib/leads/inbound-lead';
-import { sendInboundLeadAlerts } from '@/lib/leads/inbound-alerts';
+import { sendFacilityObservationAlert, sendInboundLeadAlerts } from '@/lib/leads/inbound-alerts';
 import { agentIds } from '@/lib/elevenlabs/agents';
 
 export { DEFAULT_FRONT_DESK_AGENT_ID, DEFAULT_LISTING_UPDATE_AGENT_ID, agentIds } from '@/lib/elevenlabs/agents';
@@ -92,8 +92,9 @@ export async function handleInboundLead(payload: unknown): Promise<NextResponse>
   try {
     const result = await recordInboundLead(parsed.value);
     if (result.status === 'invalid') return NextResponse.json({ error: result.error }, { status: 400, headers: noStore });
-    // OL-167b: alerts are fire-and-forget after the write. A failure is logged,
-    // never surfaced to the provider (the lead is already in the table).
+    // OL-167b: alerts are fire-and-forget after the write — every caller type
+    // emails (facility QA items too). A failure is logged, never surfaced to
+    // the provider (the row is already in the table).
     const v = parsed.value;
     const phone = v.callbackPhone;
     if (result.status === 'created' && result.lane === 'lead' && phone) {
@@ -108,6 +109,18 @@ export async function handleInboundLead(payload: unknown): Promise<NextResponse>
         phiFlag: v.callerType === 'facility' ? false : v.phiFlag,
         transcriptUrl: v.transcriptUrl,
         recordingUrl: v.recordingUrl,
+        receivedAt: v.receivedAt,
+        facility: v.callerType === 'facility' ? v.facility : null,
+      }).catch((e) => captureError(e instanceof Error ? e : new Error(String(e)), { tags: { route: 'webhooks/elevenlabs/inbound-lead', step: 'alerts' } }));
+    }
+    if (result.status === 'created' && result.lane === 'observation') {
+      void sendFacilityObservationAlert({
+        observationId: result.observationId,
+        homeName: result.homeName,
+        name: v.name,
+        organization: v.organization,
+        callbackPhone: phone,
+        facility: v.facility,
         receivedAt: v.receivedAt,
       }).catch((e) => captureError(e instanceof Error ? e : new Error(String(e)), { tags: { route: 'webhooks/elevenlabs/inbound-lead', step: 'alerts' } }));
     }
