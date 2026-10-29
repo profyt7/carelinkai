@@ -1,0 +1,160 @@
+{
+  "familyEnd": {
+    "bar": [
+      529,
+      596
+    ],
+    "tab": [
+      596,
+      660
+    ],
+    "advisor": [
+      461,
+      505
+    ],
+    "bug": [
+      405,
+      449
+    ],
+    "clearance": [
+      397,
+      529
+    ],
+    "offset": "131px",
+    "widgetsHidden": false,
+    "claimLink": {
+      "box": [
+        342,
+        359
+      ],
+      "inside": true,
+      "tappable": true,
+      "blockers": []
+    }
+  },
+  "guestEnd": {
+    "bar": [
+      593,
+      660
+    ],
+    "tab": null,
+    "advisor": [
+      525,
+      569
+    ],
+    "bug": [
+      469,
+      513
+    ],
+    "clearance": [
+      461,
+      593
+    ],
+    "offset": "67px",
+    "widgetsHidden": false,
+    "claimLink": {
+      "box": [
+        406,
+        423
+      ],
+      "inside": true,
+      "tappable": true,
+      "blockers": []
+    },
+    "sendInquiry": {
+      "box": [
+        606,
+        648
+      ],
+      "inside": true,
+      "tappable": true,
+      "blockers": []
+    }
+  },
+  "keyboard": {
+    "bar": [
+      296,
+      363
+    ],
+    "tab": [
+      296,
+      360
+    ],
+    "advisor": [
+      228,
+      272
+    ],
+    "bug": [
+      172,
+      216
+    ],
+    "clearance": [
+      3231,
+      3363
+    ],
+    "offset": "64px",
+    "widgetsHidden": true,
+    "focused": "message",
+    "message": {
+      "box": [
+        135,
+        225
+      ],
+      "inside": true,
+      "tappable": true,
+      "blockers": []
+    },
+    "consent": {
+      "box": [
+        249,
+        265
+      ],
+      "inside": true,
+      "tappable": true,
+      "blockers": []
+    },
+    "continue": {
+      "box": [
+        161,
+        199
+      ],
+      "inside": true,
+      "tappable": true,
+      "blockers": []
+    },
+    "stillFocused": "message"
+  },
+  "claimedContact": {
+    "bar": [
+      529,
+      596
+    ],
+    "tab": [
+      596,
+      660
+    ],
+    "advisor": [
+      461,
+      505
+    ],
+    "bug": [
+      405,
+      449
+    ],
+    "clearance": [
+      397,
+      529
+    ],
+    "offset": "131px",
+    "widgetsHidden": false,
+    "email": {
+      "box": [
+        324,
+        348
+      ],
+      "inside": true,
+      "tappable": true,
+      "blockers": []
+    }
+  }
+}
