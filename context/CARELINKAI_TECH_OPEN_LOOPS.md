@@ -8,7 +8,7 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
 ## 🔴 SHIP NOW (this week)
 
 ### OL-216: /search result cards on the Direction D standard — MERGED
-- **Status:** ✅ MERGED 2026-10-29, PR #6 (squash) `57d5e21e`; OL-208 closed with it. Prod-verify: pending (run 40791590613). Follow-ups: OL-218 (directory placeholder tile), OL-219 (/search a11y), OL-220 (Search Tips copy), OL-221 (waiver data in /api/search).
+- **Status:** ✅ MERGED 2026-10-29, PR #6 (squash) `57d5e21e`; OL-208 closed with it. Prod-verify (run 40791590613): `/api/version` = `57d5e21e` (live 00:11:52 UTC, about 8 min after the merge), `/api/health` db=ok, `/search` 200 with footer @57d5e21, `/cleveland/assisted-living/beachwood` 200 with footer @57d5e21, public routes and 404s OK, `/operator` → login. Follow-ups: OL-218 (directory placeholder tile), OL-219 (/search a11y), OL-220 (Search Tips copy), OL-221 (waiver data in /api/search).
 - **What:**
   - `SearchResultCard` is now the only result card on `/search`, in grid and list view. Grid is 3-up ≥ lg, 2-up md, 1-up < md; list is horizontal ≥ md and the grid card below md.
   - `/api/search` results reach it through `toSearchResultHome` (`src/components/search/adapters.ts`). The API payload is unchanged.
