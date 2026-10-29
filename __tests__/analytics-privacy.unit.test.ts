@@ -18,6 +18,7 @@ import {
   sanitizeEvent,
   setTransportForTests,
   track,
+  trackPageView,
 } from '@/lib/analytics/events';
 import { looksSensitive, routePattern, sanitizePath } from '@/lib/analytics/sanitize';
 
@@ -52,6 +53,16 @@ const everyString = (v: unknown): string[] =>
   typeof v === 'string' ? [v] : Array.isArray(v) ? v.flatMap(everyString) : v && typeof v === 'object' ? Object.values(v).flatMap(everyString) : [];
 
 describe('consent', () => {
+  it('page views: nothing without consent; with consent only the event name, no props', () => {
+    trackPageView();
+    consent(false);
+    trackPageView();
+    expect(sent).toHaveLength(0);
+    consent(true);
+    trackPageView();
+    expect(sent).toEqual([{ name: 'page_view', props: {}, sid: expect.any(String) }]);
+  });
+
   it('sends nothing and creates no session id without analytics consent', () => {
     track('inquiry_started', { listing_id: 'cmhome123abc', entry: 'rail' });
     consent(false);
@@ -229,8 +240,37 @@ describe('submitted / requested fire only on success', () => {
     expect(modal.slice(modal.lastIndexOf('if (data.success)', call), call)).toContain('setCurrentStep("confirmation")');
   });
 
-  it('no funnel event is sent to the Meta Pixel', () => {
-    const files = ['src/lib/analytics/events.ts', 'src/components/analytics/FunnelTracking.tsx', 'src/app/homes/[id]/page.tsx', 'src/app/search/page.tsx'];
-    for (const f of files) expect(fs.readFileSync(path.join(process.cwd(), f), 'utf8')).not.toMatch(/fbq\s*\(/);
+});
+
+// OL-228 / OL-229: the Meta Pixel and Microsoft Clarity are gone from the app, and stay gone.
+describe('no Meta Pixel or Microsoft Clarity anywhere in src/', () => {
+  const walk = (dir: string): string[] =>
+    fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) return e.name === '__tests__' ? [] : walk(p);
+      return /\.(tsx?|jsx?|mjs)$/.test(e.name) ? [p] : [];
+    });
+  const files = walk(path.join(process.cwd(), 'src'));
+  const FORBIDDEN: Array<[string, RegExp]> = [
+    ['fbq() call', /\bfbq\s*\(/],
+    ['Meta Pixel loader', /connect\.facebook\.net|fbevents\.js|facebook\.com\/tr\b/],
+    ['Pixel env var', /NEXT_PUBLIC_(FACEBOOK|FB)_PIXEL/],
+    ['Clarity loader', /clarity\.ms/],
+    ['Clarity env var', /NEXT_PUBLIC_CLARITY/],
+    ['Clarity API', /window\.clarity|\(window as any\)\.clarity|data-clarity-/],
+  ];
+
+  it('scans a real file set', () => {
+    expect(files.length).toBeGreaterThan(200);
+  });
+
+  it.each(FORBIDDEN)('no %s', (_label, re) => {
+    const hits = files.filter((f) => re.test(fs.readFileSync(f, 'utf8'))).map((f) => path.relative(process.cwd(), f));
+    expect(hits).toEqual([]);
+  });
+
+  it('.env.example documents neither tracker id', () => {
+    const env = fs.readFileSync(path.join(process.cwd(), '.env.example'), 'utf8');
+    expect(env).not.toMatch(/^NEXT_PUBLIC_(FACEBOOK_PIXEL|FB_PIXEL|CLARITY)\w*=/m);
   });
 });

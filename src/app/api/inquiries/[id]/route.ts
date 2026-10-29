@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { z } from 'zod';
 import { afterInquiryUpdated } from '@/lib/hooks/inquiry-hooks';
+import { errorSummary } from '@/lib/log-safe';
 
 // Validation schema for updating inquiries
 const updateInquirySchema = z.object({
@@ -209,7 +210,7 @@ export async function GET(
     
     return NextResponse.json({ success: true, inquiry });
   } catch (error) {
-    console.error('Error fetching inquiry:', error);
+    console.error('Error fetching inquiry:', errorSummary(error));
     return NextResponse.json(
       { 
         success: false, 
@@ -340,12 +341,12 @@ export async function PATCH(
     
     // Trigger follow-up scheduling hook (non-blocking)
     afterInquiryUpdated(params.id, oldInquiry, inquiry).catch(err => {
-      console.error('Failed to update follow-ups:', err);
+      console.error('Failed to update follow-ups:', errorSummary(err));
     });
     
     return NextResponse.json({ success: true, inquiry });
   } catch (error) {
-    console.error('Error updating inquiry:', error);
+    console.error('Error updating inquiry:', errorSummary(error));
     return NextResponse.json(
       { 
         success: false, 

@@ -23,7 +23,7 @@ import CareConcierge from "../components/CareConcierge";
 import { BugReportButton } from "../components/bug-report/BugReportButton";
 // Cookie consent banner
 import CookieConsent from "../components/analytics/CookieConsent";
-// Consent-gated analytics loader (GA4/GTM, Meta Pixel, Microsoft Clarity)
+// Consent-gated first-party analytics (GA4 forwarded server-side)
 import AnalyticsScripts from "../components/analytics/AnalyticsScripts";
 // Error boundary
 import ErrorBoundary from "../components/ErrorBoundary";
@@ -216,11 +216,8 @@ export default function RootLayout({
         />
         */}
       </head>
-      {/* data-clarity-mask masks ALL text/inputs site-wide if Microsoft Clarity
-          loads — defense-in-depth for the HIPAA posture (trackers are also
-          consent-gated via AnalyticsScripts). */}
-      <body className="min-h-screen bg-neutral-50 antialiased font-sans" data-clarity-mask="true">
-        {/* Third-party trackers (GA4/GTM, Meta Pixel, Microsoft Clarity) load
+      <body className="min-h-screen bg-neutral-50 antialiased font-sans">
+        {/* First-party analytics (forwarded to GA4 server-side) runs
             ONLY after explicit cookie consent — see AnalyticsScripts. Nothing
             fires before the user opts in (OL-078). */}
         <AnalyticsScripts />

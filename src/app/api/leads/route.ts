@@ -14,6 +14,7 @@ import { z } from "zod";
 import { createAuditLog } from "@/lib/audit";
 import { recordLeadConsent } from "@/lib/consent/lead-consent";
 import { LEAD_CONSENT_FORMS } from "@/lib/consent/lead-consent-text";
+import { errorSummary } from '@/lib/log-safe';
 
 // Validation schema
 const createLeadSchema = z.object({
@@ -210,7 +211,7 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (error: any) {
-    console.error("Error creating lead:", error);
+    console.error("Error creating lead:", errorSummary(error));
 
     // Handle specific errors
     if (error.code === "P2003") {

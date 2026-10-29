@@ -101,7 +101,7 @@ export default function ConciergeRequestForm({ payerSource }: { payerSource: Pay
     'mt-1 block w-full rounded-lg border border-neutral-300 px-3 py-2 text-neutral-900 shadow-sm focus:border-primary-500 focus:ring-primary-500';
 
   return (
-    <form onSubmit={onSubmit} data-clarity-mask="true" data-testid="concierge-request-form" data-mode={mode} data-mode-loaded={modeLoaded ? 'true' : 'false'} className="mt-6 rounded-xl border border-neutral-200 bg-neutral-50 p-5">
+    <form onSubmit={onSubmit} data-testid="concierge-request-form" data-mode={mode} data-mode-loaded={modeLoaded ? 'true' : 'false'} className="mt-6 rounded-xl border border-neutral-200 bg-neutral-50 p-5">
       <h4 className="text-lg font-bold text-neutral-900">{mode === 'checkout' ? 'Book the concierge' : mode === 'waitlist' ? 'Join the waitlist' : 'Request the concierge'}</h4>
       <p className="mt-1 text-sm text-neutral-600">Two minutes. A person reads this — no bots, no resale.</p>
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">

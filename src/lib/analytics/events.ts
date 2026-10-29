@@ -3,12 +3,14 @@
  * properties each may carry. `track()` drops any other key, screens every string
  * (./sanitize), and sends nothing without analytics consent.
  *
- * Destinations (analytics consent only): GA4 via gtag, and the first-party aggregate at
- * /api/analytics/track (anonymous per-tab session id, no cookies, no IP, no user id).
- * Funnel events are NEVER sent to the Meta Pixel.
+ * Destination (analytics consent only): the first-party endpoint /api/analytics/track
+ * (anonymous per-tab session id, no cookies, no IP, no user id). It stores funnel events for
+ * the admin funnel and forwards the same sanitized data to GA4 server-side (./ga-mp). No
+ * Google, Meta or Microsoft script runs in the browser (OL-228/229).
  */
 import { getConsent } from '@/lib/consent';
 import {
+  sanitizePath,
   intBetween,
   isBool,
   listOf,
@@ -145,16 +147,17 @@ export function anonSessionId(): string | null {
   }
 }
 
-type Transport = (name: FunnelEventName, props: Record<string, unknown>, sid: string) => void;
+export const PAGE_VIEW_EVENT = 'page_view' as const;
+type Transport = (name: FunnelEventName | typeof PAGE_VIEW_EVENT, props: Record<string, unknown>, sid: string) => void;
 
 const defaultTransport: Transport = (name, props, sid) => {
-  const w = window as unknown as { gtag?: (...args: unknown[]) => void };
-  if (typeof w.gtag === 'function') w.gtag('event', name, props);
+  // The page path is sanitized here (only `view` / `page` params survive) and again server-side.
+  const path = sanitizePath(window.location.pathname + window.location.search);
   try {
     void fetch('/api/analytics/track', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, props, sid, consent: 'analytics' }),
+      body: JSON.stringify({ name, props, sid, path, consent: 'analytics' }),
       keepalive: true,
       credentials: 'omit',
     }).catch(() => {});
@@ -181,4 +184,12 @@ export function track<K extends FunnelEventName>(name: K, props: FunnelEvents[K]
   const sid = anonSessionId();
   if (!event || !sid) return;
   transport(event.name, event.props, sid);
+}
+
+/** One page view (sanitized path only). No analytics consent → nothing happens. */
+export function trackPageView(): void {
+  if (typeof window === 'undefined' || !hasAnalyticsConsent()) return;
+  const sid = anonSessionId();
+  if (!sid) return;
+  transport(PAGE_VIEW_EVENT, {}, sid);
 }

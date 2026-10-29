@@ -3,6 +3,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { scrubPhi } from './src/lib/phi-scrubber';
+import { scrubBreadcrumb, scrubEvent } from './src/lib/sentry/scrub-event';
 import { makeBeforeSendTransaction, makeTracesSampler } from './src/lib/sentry/trace-sampling';
 
 const SENTRY_DSN = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
@@ -36,7 +37,11 @@ if (SENTRY_DSN) {
 
     // Backstop once the response is known: drop every 404 transaction (and
     // anything the sampler would have dropped had it seen the final URL).
-    beforeSendTransaction: makeBeforeSendTransaction(),
+    // OL-226/230: then strip query strings from span/request URLs.
+    beforeSendTransaction: (event) => {
+      const kept = makeBeforeSendTransaction()(event);
+      return kept ? scrubEvent(kept) : null;
+    },
 
     // Profiling disabled - nodeProfilingIntegration was causing deployment errors
     // profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
@@ -59,6 +64,8 @@ if (SENTRY_DSN) {
       if (process.env.NODE_ENV !== 'production') {
         return null;
       }
+      // OL-226/230: strip query strings, trim error text that echoes input (Prisma/Zod).
+      scrubEvent(event);
       if (event.request?.data) {
         event.request.data = scrubPhi(event.request.data);
       }
@@ -69,6 +76,8 @@ if (SENTRY_DSN) {
     },
 
     beforeBreadcrumb(breadcrumb) {
+      // OL-230: console breadcrumbs can hold any logged string — drop them; strip URL queries.
+      if (!scrubBreadcrumb(breadcrumb)) return null;
       if (breadcrumb.data) {
         breadcrumb.data = scrubPhi(breadcrumb.data) as Record<string, unknown>;
       }

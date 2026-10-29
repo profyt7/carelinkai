@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { z } from 'zod';
+import { errorSummary } from '@/lib/log-safe';
 
 // Validation schema for creating inquiry responses
 const createResponseSchema = z.object({
@@ -188,7 +189,7 @@ export async function POST(
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error creating inquiry response:', error);
+    console.error('Error creating inquiry response:', errorSummary(error));
     return NextResponse.json(
       { 
         success: false, 
@@ -253,7 +254,7 @@ export async function GET(
     
     return NextResponse.json({ success: true, responses });
   } catch (error) {
-    console.error('Error fetching inquiry responses:', error);
+    console.error('Error fetching inquiry responses:', errorSummary(error));
     return NextResponse.json(
       { 
         success: false, 

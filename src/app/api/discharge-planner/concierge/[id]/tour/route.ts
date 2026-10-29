@@ -22,6 +22,7 @@ import { sendConciergeTourNotification, sendNewLeadOperatorEmail } from '@/lib/e
 import { startClaimDripOnLead } from '@/lib/claim-engine/claim-drip';
 import { markConciergeTourRequested, homeIsUnclaimed, CuratedHome } from '@/lib/concierge/tour-coordination';
 import { captureError } from '@/lib/sentry';
+import { errorSummary } from '@/lib/log-safe';
 
 const bodySchema = z.object({ homeId: z.string().min(1) });
 
@@ -99,7 +100,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     }
     if (error?.name === 'UnauthenticatedError') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (error?.name === 'UnauthorizedError') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    console.error('[concierge/tour] error:', error);
+    console.error('[concierge/tour] error:', errorSummary(error));
     captureError(error instanceof Error ? error : new Error(String(error)), { tags: { feature: 'concierge-tour' } });
     return NextResponse.json({ error: 'Could not request the tour. Please try again.' }, { status: 500 });
   }

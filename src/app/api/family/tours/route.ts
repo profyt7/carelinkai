@@ -12,6 +12,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/permissions";
 import { captureError } from '@/lib/sentry';
+import { errorSummary } from '@/lib/log-safe';
 
 export async function GET(request: NextRequest) {
   try {
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest) {
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: 'family:tours' },
     });
-    console.error("[Family Tours API] Error:", error);
+    console.error("[Family Tours API] Error:", errorSummary(error));
     return NextResponse.json(
       { error: "Failed to fetch tours" },
       { status: 500 }

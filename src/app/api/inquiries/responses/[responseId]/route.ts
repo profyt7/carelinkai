@@ -7,6 +7,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import { errorSummary } from '@/lib/log-safe';
 
 // Validation schema for updating draft responses
 const updateDraftSchema = z.object({
@@ -116,7 +117,7 @@ export async function DELETE(
       message: 'Draft deleted successfully',
     });
   } catch (error) {
-    console.error('Error deleting draft response:', error);
+    console.error('Error deleting draft response:', errorSummary(error));
     return NextResponse.json(
       { 
         success: false, 
@@ -214,7 +215,7 @@ export async function PATCH(
       message: 'Draft updated successfully',
     });
   } catch (error) {
-    console.error('Error updating draft response:', error);
+    console.error('Error updating draft response:', errorSummary(error));
     return NextResponse.json(
       { 
         success: false, 

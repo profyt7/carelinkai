@@ -7,6 +7,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { smsService } from '@/lib/sms/sms-service';
+import { errorSummary } from '@/lib/log-safe';
 
 /**
  * Helper function to check if user has access to the response's inquiry
@@ -164,7 +165,7 @@ export async function POST(
       message: 'Response sent successfully',
     });
   } catch (error) {
-    console.error('Error sending draft response:', error);
+    console.error('Error sending draft response:', errorSummary(error));
     return NextResponse.json(
       { 
         success: false, 

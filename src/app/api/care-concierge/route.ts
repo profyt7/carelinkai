@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAnthropicClient } from '@/lib/ai/claude';
 import { prisma } from '@/lib/prisma';
 import { availabilityView } from '@/lib/availability/availability';
+import { errorSummary } from '@/lib/log-safe';
 
 const tools = [
   {
@@ -158,7 +159,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ reply });
   } catch (err) {
-    console.error('Care concierge error', err);
+    console.error('Care concierge error', errorSummary(err));
     return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 });
   }
 }

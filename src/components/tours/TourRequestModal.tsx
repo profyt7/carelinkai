@@ -240,7 +240,6 @@ export default function TourRequestModal({
       <Dialog
         as="div"
         className="relative z-50"
-        data-clarity-mask="true"
         onClose={isLoading ? () => {} : handleClose}
       >
         <Transition.Child

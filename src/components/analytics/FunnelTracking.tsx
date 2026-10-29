@@ -2,16 +2,14 @@
 
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { hasAnalyticsConsent, track, type FunnelEvents } from '@/lib/analytics/events';
-import { routePattern, sanitizePath } from '@/lib/analytics/sanitize';
-
-type Gtag = (...args: unknown[]) => void;
+import { hasAnalyticsConsent, track, trackPageView, type FunnelEvents } from '@/lib/analytics/events';
+import { routePattern } from '@/lib/analytics/sanitize';
 
 /**
  * OL-226, mounted by AnalyticsScripts only with analytics consent.
- *  - page_view: sent manually on every pathname change with a sanitized page_location /
- *    page_path (query string stripped except allowlisted params). GA's automatic page view
- *    is off (`send_page_view: false`), so /search?q=… never reaches GA.
+ *  - page_view: one per pathname change, to the first-party endpoint with a sanitized path
+ *    (query string stripped except allowlisted params); the server forwards it to GA4. No
+ *    Google script runs in the browser, so /search?q=… never reaches GA.
  *  - listing_clicked: one delegated click listener for links to /homes/<id> inside an element
  *    carrying `data-track-listing` (search, directory, AI match and favorites cards). The
  *    element's data attributes hold only allowlisted facts; track() re-validates them.
@@ -21,22 +19,7 @@ export default function FunnelTracking() {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!hasAnalyticsConsent()) return;
-    let tries = 0;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const send = () => {
-      const gtag = (window as unknown as { gtag?: Gtag }).gtag;
-      if (typeof gtag !== 'function') {
-        if (tries++ < 20) timer = setTimeout(send, 250);
-        return;
-      }
-      const page_path = sanitizePath(window.location.pathname + window.location.search);
-      const page_location = `${window.location.origin}${page_path}`;
-      gtag('set', { page_location, page_path });
-      gtag('event', 'page_view', { page_location, page_path });
-    };
-    send();
-    return () => clearTimeout(timer);
+    trackPageView();
   }, [pathname]);
 
   useEffect(() => {

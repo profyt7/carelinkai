@@ -37,7 +37,8 @@ export default function CookieConsent() {
     const allAccepted = {
       necessary: true,
       analytics: true,
-      marketing: true,
+      // OL-228: no marketing trackers exist; the field stays false for stored-value compatibility.
+      marketing: false,
     };
     savePreferences(allAccepted);
   };
@@ -113,23 +114,7 @@ export default function CookieConsent() {
                 <div className="flex-1">
                   <h4 className="font-medium text-neutral-800">Analytics Cookies</h4>
                   <p className="text-sm text-neutral-600 mt-1">
-                    Help us understand how visitors interact with our website (Google Analytics, Microsoft Clarity).
-                  </p>
-                </div>
-              </div>
-
-              {/* Marketing cookies */}
-              <div className="flex items-start space-x-3">
-                <input
-                  type="checkbox"
-                  checked={preferences.marketing}
-                  onChange={(e) => setPreferences({ ...preferences, marketing: e.target.checked })}
-                  className="mt-1 rounded border-neutral-300 text-primary-500 focus:ring-primary-500"
-                />
-                <div className="flex-1">
-                  <h4 className="font-medium text-neutral-800">Marketing Cookies</h4>
-                  <p className="text-sm text-neutral-600 mt-1">
-                    Used to track visitors across websites for advertising purposes (Facebook Pixel).
+                    Help us understand how visitors interact with our website (Google Analytics).
                   </p>
                 </div>
               </div>

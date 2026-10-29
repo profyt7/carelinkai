@@ -1,10 +1,10 @@
 /**
  * Cookie-consent state shared between the banner and the analytics loader.
  *
- * No third-party tracker (GA4/GTM, Meta Pixel, Microsoft Clarity) may load
- * until the user opts in. `AnalyticsScripts` reads this and only injects the
- * relevant <Script> tags once consent is granted; the banner writes it and
- * dispatches `CONSENT_EVENT` so loading happens immediately (no reload).
+ * No analytics (first-party, forwarded to GA4 server-side) may run
+ * until the user opts in. `AnalyticsScripts` reads this and mounts tracking only
+ * once consent is granted; the banner writes it and dispatches `CONSENT_EVENT`
+ * so tracking starts immediately (no reload).
  *
  * Client-only (uses localStorage / window). Guards for SSR.
  */
@@ -14,8 +14,8 @@ export const CONSENT_EVENT = 'carelinkai-consent-changed';
 
 export type ConsentPreferences = {
   necessary: boolean; // always true; not gated
-  analytics: boolean; // GA4 + GTM + Microsoft Clarity
-  marketing: boolean; // Meta/Facebook Pixel
+  analytics: boolean; // first-party funnel events, forwarded to GA4 server-side
+  marketing: boolean; // No marketing trackers since OL-228 (Meta Pixel removed); always false
 };
 
 export const DENY_ALL: ConsentPreferences = {
