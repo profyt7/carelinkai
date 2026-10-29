@@ -120,12 +120,13 @@ export default function VerifyEmailPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-primary-700 opacity-90"></div>
         <div className="absolute inset-0 flex flex-col justify-center items-center p-12 z-10">
           <div className="mb-8">
+            {/* Was a white SVG logo that does not exist in public/. White rendition of the header logo (as in SiteFooter). */}
             <Image 
-              src="/logo-white.svg" 
-              alt="CareLinkAI Logo" 
+              src="/images/logo.png" 
+              alt="CareLinkAI" 
               width={200} 
-              height={60}
-              className="mb-6"
+              height={47}
+              className="mb-6 h-[47px] w-auto brightness-0 invert"
             />
             <h1 className="text-4xl font-bold text-white mb-6">
               Email Verification
@@ -160,10 +161,11 @@ export default function VerifyEmailPage() {
           {/* Mobile logo */}
           <div className="flex justify-center mb-8 lg:hidden">
             <Image 
-              src="/logo.svg" 
-              alt="CareLinkAI Logo" 
+              src="/images/logo.png" 
+              alt="CareLinkAI" 
               width={180} 
-              height={50} 
+              height={42} 
+              className="h-[42px] w-auto"
             />
           </div>
 

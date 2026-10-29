@@ -181,8 +181,8 @@ export default function InstallPrompt({
               </div>
               
               <div className="flex justify-center my-4">
-                <div className="relative w-16 h-16 bg-primary-500 rounded-xl flex items-center justify-center">
-                  <span className="text-white font-bold text-2xl">C</span>
+                <div className="relative w-16 h-16 bg-white border border-neutral-200 rounded-xl flex items-center justify-center">
+                  <Image src="/images/logo-mark.png" alt="CareLinkAI" width={44} height={44} />
                 </div>
               </div>
               
@@ -283,7 +283,7 @@ export default function InstallPrompt({
               <div className="relative">
                 <div className="h-40 bg-gradient-to-r from-primary-500 to-primary-600 flex items-center justify-center">
                   <div className="relative w-20 h-20 bg-white rounded-xl shadow-lg flex items-center justify-center">
-                    <span className="text-primary-500 font-bold text-3xl">C</span>
+                    <Image src="/images/logo-mark.png" alt="CareLinkAI" width={56} height={56} />
                   </div>
                 </div>
                 
