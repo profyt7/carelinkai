@@ -66,6 +66,11 @@ on:
         description: 'OL-227: a listing name to find via /cleveland/assisted-living + suburb pages and check the same way (empty = skip)'
         required: false
         default: ''
+      check_auth:
+        description: 'OL-231: /auth/login, /auth/register, /auth/forgot-password → 200; GET /api/auth/providers + /api/auth/csrf answer normally; a credentials sign-in POST with an unknown (reserved .invalid) email gets the normal failure, not a 5xx. Read-only.'
+        type: boolean
+        required: false
+        default: true
       check_trackers:
         description: 'OL-228/229: /, /search?q=test, one /homes/<id> and /concierge load zero scripts or requests from facebook.net, clarity.ms, googletagmanager.com, google-analytics.com (analytics consent granted; /api/analytics/track blocked so nothing is written); /admin/analytics/funnel answers without a server error'
         type: boolean
@@ -482,3 +487,47 @@ jobs:
           if (fail) process.exit(1);
           EOF
           node check.mjs
+
+      - name: Auth pages and NextAuth endpoints answer normally (OL-231)
+        if: ${{ inputs.check_auth }}
+        shell: bash
+        env:
+          BASE: ${{ inputs.base }}
+        run: |
+          FAIL=0
+          UA='CareLinkAI-ProdVerify/1.0 (+github-actions)'
+          fail() { echo "::error::$1"; echo "- ❌ $1" >> "$GITHUB_STEP_SUMMARY"; FAIL=1; }
+          pass() { echo "OK: $1"; echo "- ✅ $1" >> "$GITHUB_STEP_SUMMARY"; }
+          echo "## Auth checks — $BASE" >> "$GITHUB_STEP_SUMMARY"
+          for p in /auth/login /auth/register /auth/forgot-password; do
+            code=$(curl -s -m 40 -o /dev/null -w '%{http_code}' -A "$UA" "$BASE$p" || echo 000)
+            [ "$code" = "200" ] && pass "GET $p → 200" || fail "GET $p → $code"
+          done
+          code=$(curl -s -m 40 -o providers.json -w '%{http_code}' -A "$UA" "$BASE/api/auth/providers" || echo 000)
+          if [ "$code" = "200" ] && jq -e '.credentials.id == "credentials"' providers.json >/dev/null 2>&1; then
+            pass "GET /api/auth/providers → 200, providers: $(jq -r 'keys | join(", ")' providers.json)"
+          else fail "GET /api/auth/providers → $code $(head -c 200 providers.json)"; fi
+          rm -f jar.txt
+          code=$(curl -s -m 40 -c jar.txt -b jar.txt -o csrf.json -w '%{http_code}' -A "$UA" "$BASE/api/auth/csrf" || echo 000)
+          TOKEN=$(jq -r '.csrfToken // empty' csrf.json 2>/dev/null)
+          if [ "$code" = "200" ] && [ ${#TOKEN} -ge 32 ]; then pass "GET /api/auth/csrf → 200, csrfToken present (${#TOKEN} chars, not printed)"
+          else fail "GET /api/auth/csrf → $code (token length ${#TOKEN})"; fi
+          # Unknown, reserved-TLD address: no account exists, nothing is written for an unknown user.
+          code=$(curl -s -m 40 -c jar.txt -b jar.txt -o signin.txt -D signin-h.txt -w '%{http_code}' -A "$UA" \
+            -H 'Content-Type: application/x-www-form-urlencoded' \
+            --data-urlencode "csrfToken=$TOKEN" --data-urlencode 'email=prodverify-nobody@example.invalid' \
+            --data-urlencode 'password=not-a-real-password' --data-urlencode 'json=true' \
+            --data-urlencode "callbackUrl=$BASE/dashboard" \
+            "$BASE/api/auth/callback/credentials" || echo 000)
+          loc=$( { grep -i '^location:' signin-h.txt || true; } | head -n1 | sed -E 's/^[Ll]ocation:[[:space:]]*//; s/\r$//')
+          url=$(jq -r '.url // empty' signin.txt 2>/dev/null)
+          target="${url:-$loc}"
+          if [ "${code:0:1}" = "5" ] || [ "$code" = "000" ]; then
+            fail "POST /api/auth/callback/credentials (unknown email) → $code"
+          elif echo "$target" | grep -q 'error='; then
+            pass "POST /api/auth/callback/credentials (unknown email) → $code, failure redirect: ${target#$BASE} "
+          else
+            fail "POST /api/auth/callback/credentials (unknown email) → $code without an error redirect (target: ${target:-none})"
+          fi
+          [ "$FAIL" -eq 0 ] || exit 1
+
