@@ -2593,8 +2593,10 @@
     - `/auth/login`, `/auth/register`, `/auth/forgot-password` → 200;
     - `/api/auth/providers` → 200 (credentials); `/api/auth/csrf` → 200 (token present);
     - unknown-email credentials POST → 401 + `/api/auth/error?error=Invalid email or password`.
-  - OL-232 logged: AuditLog is ADMIN-only (all live readers checked); retention proposal and HIPAA caveat recorded.
+  - OL-232 logged as a review item: AuditLog is ADMIN-only (all live readers checked); per-type retention to be decided before any purge; never purge the whole table.
+  - The dead `getRecentActivity()` reader was not removed: it has an in-file caller (`getAllDashboardData()`, itself uncalled). Scope decision pending.
+  - The auth check is PR #14 (not merged).
 - **Files changed:** context files only (this PR).
 - **Deployment impact:** none (context only).
-- **New risks/blockers:** a table-wide 90-day AuditLog purge would conflict with HIPAA 6-year documentation retention for PHI-access rows. The proposal scopes it to failed-login rows.
-- **Recommended next step:** Chris merges this context PR, and decides whether to merge `chore/prod-verify-auth-check` (keeps the auth checks in prod-verify) or delete it.
+- **New risks/blockers:** none new. No purge exists; OL-232 requires a per-type decision first.
+- **Recommended next step:** Chris reviews PR #14 (prod-verify `check_auth`) and decides the scope for removing the dead dashboard-data audit reader.
