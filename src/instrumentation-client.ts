@@ -94,6 +94,9 @@ if (SENTRY_DSN) {
     },
 
     beforeBreadcrumb(breadcrumb) {
+      // OL-226: console breadcrumbs carry raw strings scrubPhi can't see (e.g. form state the
+      // listing inquiry handler logs), so they never reach Sentry.
+      if (breadcrumb.category === 'console') return null;
       if (breadcrumb.data) {
         breadcrumb.data = scrubPhi(breadcrumb.data) as Record<string, unknown>;
       }

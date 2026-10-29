@@ -4,6 +4,7 @@ import AvailabilityBadge from '@/components/availability/AvailabilityBadge';
 import GoogleRatingBadge from '@/components/homes/GoogleRatingBadge';
 import FeaturedBadge from '@/components/homes/FeaturedBadge';
 import type { PublicListing } from '@/lib/directory/public-listings';
+import { listingTrackAttrs } from '@/lib/analytics/listing-attrs';
 import { CARD } from '@/components/site/brand';
 
 /**
@@ -12,13 +13,24 @@ import { CARD } from '@/components/site/brand';
  * logged-out `curl`) see the listing. Business facts only — see
  * src/lib/directory/public-listings.ts for what is (not) included.
  */
-export default function ListingCard({ listing, priority = false }: { listing: PublicListing; priority?: boolean }) {
+export default function ListingCard({ listing, priority = false, position }: { listing: PublicListing; priority?: boolean; position?: number }) {
   const l = listing;
   const location = [l.city, l.state].filter(Boolean).join(', ');
   return (
     <article
       data-testid="listing-card"
       data-home-id={l.id}
+      {...(position
+        ? listingTrackAttrs({
+            id: l.id,
+            position,
+            source: 'directory',
+            verified: Boolean(l.availability.fresh),
+            hasPhoto: !l.photoIsPlaceholder,
+            hasPrice: Boolean(l.pricing.hasPrice),
+            claimed: l.claimed,
+          })
+        : {})}
       className={`flex flex-col overflow-hidden ${CARD}`}
     >
       {/* OL-216: same layout as the /search SearchResultCard — availability over the photo. */}

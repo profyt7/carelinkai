@@ -46,6 +46,7 @@ import HomeImagePlaceholder from "@/components/homes/HomeImagePlaceholder";
 import PriceLine from "@/components/ui/PriceLine";
 import { setBottomStackHeight } from "@/hooks/useBottomStackOffset";
 import { listingBreadcrumb } from "@/lib/seo/listing-meta";
+import { track } from "@/lib/analytics/events";
 import HomeReviews from "@/components/homes/HomeReviews";
 import InspectionHistory from "@/components/homes/InspectionHistory";
 import ListingRelatedLinks from "@/components/directory/ListingRelatedLinks";
@@ -188,6 +189,7 @@ export default function HomeDetailPage() {
   // OL-217: latest ODH survey for the key-stat tile — the same public endpoint InspectionHistory reads.
   // No records → no tile (never a "0 inspections" claim).
   const [inspection, setInspection] = useState<{ date: string; type: string | null; citations: number; license: string | null } | null>(null);
+  const [inspectionChecked, setInspectionChecked] = useState(false);
   useEffect(() => {
     let cancelled = false;
     fetch(`/api/homes/${id}/inspections`)
@@ -198,9 +200,25 @@ export default function HomeDetailPage() {
           setInspection({ date: rec.surveyDate, type: rec.surveyType ?? null, citations: Number(rec.citationCount) || 0, license: j.data.odhLicenseNumber ?? null });
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setInspectionChecked(true); });
     return () => { cancelled = true; };
   }, [id]);
+
+  // OL-226 profile_viewed: once per listing, after the listing and its inspection lookup have loaded.
+  const profileTrackedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!realHome?.id || !inspectionChecked || profileTrackedRef.current === realHome.id) return;
+    profileTrackedRef.current = realHome.id;
+    track('profile_viewed', {
+      listing_id: realHome.id,
+      availability_state: realHome.availabilityFreshness?.fresh ? 'verified' : 'unverified',
+      has_photo: (realHome.photos || []).length > 0,
+      has_price: Boolean(realHome.pricing?.hasPrice),
+      claimed: !realHome.unclaimed,
+      has_inspection: Boolean(inspection),
+    });
+  }, [realHome, inspectionChecked, inspection]);
 
   // < lg the panel sits inline; once it scrolls out of view a sticky bottom bar carries the same two actions.
   const [compact, setCompact] = useState(false);
@@ -472,6 +490,7 @@ export default function HomeDetailPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || 'Could not request the tour');
       setConciergeTourState('done');
+      track('tour_requested', { listing_id: String(id), entry: inquiryEntryRef.current });
       toast.success('Tour requested — CareLinkAI is coordinating.');
     } catch (e: any) {
       setConciergeTourState('idle');
@@ -483,17 +502,31 @@ export default function HomeDetailPage() {
   // asks for the tour date/time (/api/inquiries with tourDate). Both reach the admin
   // inbound queue when the home is unclaimed. (The modal used to render only in the
   // removed mock branch, so this button did nothing on real listings.)
-  const onScheduleTour = () => {
+  // OL-226: which control opened the inquiry/tour flow — the right rail (≥ lg), the inline panel
+  // (< lg) or the bottom CTA bar. Carried on inquiry_started / inquiry_submitted / tour_requested.
+  const inquiryEntryRef = useRef<'rail' | 'inline' | 'cta_bar'>('rail');
+  const noteEntry = (from: 'panel' | 'cta_bar') => {
+    inquiryEntryRef.current = from === 'cta_bar' ? 'cta_bar' : compact ? 'inline' : 'rail';
+  };
+  // inquiry_started = the form's first step is shown (not on later re-opens of an open form).
+  const trackInquiryStarted = () => {
+    if (bookingStep === 0 && realHome?.id) track('inquiry_started', { listing_id: realHome.id, entry: inquiryEntryRef.current });
+  };
+  const onScheduleTour = (from: 'panel' | 'cta_bar' = 'panel') => {
+    noteEntry(from);
     if (conciergeSearchId) { void handleConciergeTour(); return; }
     if ((sessionData?.user as { role?: string } | undefined)?.role === 'FAMILY') {
       setShowTourModal(true);
       return;
     }
+    trackInquiryStarted();
     setBookingStep(1);
     bookingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
   // "Send Inquiry" from the panel or the < lg bottom bar: open step 1 of the one form and move focus into it.
-  const openInquiry = () => {
+  const openInquiry = (from: 'panel' | 'cta_bar' = 'panel') => {
+    noteEntry(from);
+    trackInquiryStarted();
     setBookingStep(1);
     bookingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     window.setTimeout(() => document.getElementById('name')?.focus({ preventScroll: true }), 50);
@@ -625,6 +658,9 @@ export default function HomeDetailPage() {
       console.log('🔴 [TOUR DIAGNOSTIC] ✅ Tour scheduled successfully!');
       console.log('🔴 [TOUR DIAGNOSTIC] Setting booking step to 3 (confirmation)...');
       setBookingStep(3);
+      // OL-226: only after a 2xx — the confirmation is now showing.
+      track('inquiry_submitted', { listing_id: String(id), entry: inquiryEntryRef.current });
+      if (tourDateIso) track('tour_requested', { listing_id: String(id), entry: inquiryEntryRef.current });
       console.log('🔴 [TOUR DIAGNOSTIC] ======================================== ✅');
     } catch (err: any) {
       console.error('🔴 [TOUR DIAGNOSTIC] ========================================');
@@ -754,7 +790,7 @@ export default function HomeDetailPage() {
 
   // ONE inquiry panel: right rail ≥ lg, inline at the top of the content < lg — a single instance either way.
   const inquiryPanel = (
-    <div ref={panelRefCb} role="region" aria-label={`Contact ${realHome.name}`} data-testid="listing-inquiry-panel" className="scroll-mt-[calc(var(--site-header-h,0px)+1rem)] rounded-xl border border-line bg-surface-raised p-5 shadow-card">
+    <div ref={panelRefCb} role="region" aria-label={`Contact ${realHome.name}`} data-testid="listing-inquiry-panel" data-clarity-mask="true" className="scroll-mt-[calc(var(--site-header-h,0px)+1rem)] rounded-xl border border-line bg-surface-raised p-5 shadow-card">
                   {bookingStep === 0 && (
                     <>
                       <h2 className="text-lg font-semibold text-neutral-900">Interested in {realHome.name}?</h2>
@@ -773,11 +809,11 @@ export default function HomeDetailPage() {
                         </div>
                       )}
                       <div className="mt-4 space-y-2">
-                        <button type="button" onClick={onScheduleTour} className={`${BTN_PRIMARY} w-full`}>
+                        <button type="button" onClick={() => onScheduleTour('panel')} className={`${BTN_PRIMARY} w-full`}>
                           <FiCalendar className="mr-2 h-4 w-4" aria-hidden="true" />
                           Schedule a Tour
                         </button>
-                        <button type="button" onClick={openInquiry} className={`${BTN_SECONDARY} w-full`}>
+                        <button type="button" onClick={() => openInquiry('panel')} className={`${BTN_SECONDARY} w-full`}>
                           <MessageSquare className="mr-2 h-4 w-4" aria-hidden="true" />
                           Send Inquiry
                         </button>
@@ -1448,8 +1484,8 @@ export default function HomeDetailPage() {
           }}
         >
           <div className="mx-auto flex max-w-xl gap-2">
-            <button type="button" onClick={onScheduleTour} className={`${BTN_PRIMARY} flex-1`}>Schedule a Tour</button>
-            <button type="button" onClick={openInquiry} className={`${BTN_SECONDARY} flex-1`}>Send Inquiry</button>
+            <button type="button" onClick={() => onScheduleTour('cta_bar')} className={`${BTN_PRIMARY} flex-1`}>Schedule a Tour</button>
+            <button type="button" onClick={() => openInquiry('cta_bar')} className={`${BTN_SECONDARY} flex-1`}>Send Inquiry</button>
           </div>
         </div>
       </div>
@@ -1460,6 +1496,7 @@ export default function HomeDetailPage() {
         homeId={realHome.id}
         homeName={realHome.name}
         homeUnclaimed={Boolean(realHome.unclaimed)}
+        onConfirmed={() => track('tour_requested', { listing_id: realHome.id, entry: inquiryEntryRef.current })}
       />
     </BrowseShell>
   );

@@ -29,6 +29,8 @@ interface TourRequestModalProps {
   /** True when the home is an unclaimed directory listing — softens the confirmation copy. */
   homeUnclaimed?: boolean;
   onSuccess?: () => void;
+  /** OL-226: called once the request succeeded and the confirmation step is showing. */
+  onConfirmed?: () => void;
 }
 
 type Step = "date-range" | "time-slots" | "notes" | "confirmation";
@@ -47,6 +49,7 @@ export default function TourRequestModal({
   homeName,
   homeUnclaimed = false,
   onSuccess,
+  onConfirmed,
 }: TourRequestModalProps) {
   const [currentStep, setCurrentStep] = useState<Step>("date-range");
   const [startDate, setStartDate] = useState("");
@@ -180,6 +183,7 @@ export default function TourRequestModal({
         setApiUnclaimed(data.unclaimed === true);
         setSuccess(true);
         setCurrentStep("confirmation");
+        onConfirmed?.();
         setTimeout(() => {
           if (onSuccess) onSuccess();
           handleClose();
@@ -236,6 +240,7 @@ export default function TourRequestModal({
       <Dialog
         as="div"
         className="relative z-50"
+        data-clarity-mask="true"
         onClose={isLoading ? () => {} : handleClose}
       >
         <Transition.Child

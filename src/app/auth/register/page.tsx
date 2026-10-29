@@ -428,7 +428,7 @@ export default function RegisterPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} data-clarity-mask="true" className="space-y-6">
           {/* ── Step 1: Email + Password ─────────────────────────────── */}
           {step === 1 && (
             <>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import { listingTrackAttrs } from '@/lib/analytics/listing-attrs';
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
@@ -329,9 +330,10 @@ export default function UnifiedFavoritesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredFavorites.map((fav: any) => (
+          {filteredFavorites.map((fav: any, i: number) => (
             <FavoriteCard
               key={fav.id}
+              position={i + 1}
               favorite={fav}
               onRemove={() => removeFavorite(fav.type, fav.itemId, fav.id)}
               isRemoving={removing === fav.id}
@@ -347,17 +349,29 @@ export default function UnifiedFavoritesPage() {
 function FavoriteCard({ 
   favorite, 
   onRemove, 
-  isRemoving 
+  isRemoving,
+  position,
 }: { 
   favorite: FavoriteHome | FavoriteCaregiver | FavoriteProvider | FavoriteListing; 
   onRemove: () => void;
   isRemoving: boolean;
+  position: number;
 }) {
   // Home card
   if (favorite.type === 'home') {
     const home = favorite.home;
     return (
-      <div className="relative group bg-white border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+      <div
+        className="relative group bg-white border rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+        {...listingTrackAttrs({
+          id: home.id,
+          position,
+          source: 'favorites',
+          verified: false,
+          hasPhoto: Boolean(home.imageUrl),
+          hasPrice: Boolean(home.priceRange?.min || home.priceRange?.max),
+        })}
+      >
         <button
           onClick={onRemove}
           disabled={isRemoving}

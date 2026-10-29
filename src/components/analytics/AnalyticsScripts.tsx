@@ -4,6 +4,7 @@ import Script from 'next/script';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { getConsent, CONSENT_EVENT, type ConsentPreferences } from '@/lib/consent';
+import FunnelTracking from './FunnelTracking';
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
@@ -68,6 +69,11 @@ export default function AnalyticsScripts() {
         />
       )}
 
+      {/* OL-226: sanitized page_view + funnel click tracking — analytics consent only. GA's
+          automatic page view is off (below) because it sends the full URL, query string
+          included (/search?q=…); FunnelTracking sends page_view with an allowlisted path. */}
+      {analytics && <FunnelTracking />}
+
       {/* Google Analytics 4 — analytics consent (all pages) */}
       {analytics && GA_ID && (
         <>
@@ -83,7 +89,7 @@ export default function AnalyticsScripts() {
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}
                 gtag('js', new Date());
-                gtag('config', '${GA_ID}', { page_path: window.location.pathname, send_page_view: true });
+                gtag('config', '${GA_ID}', { send_page_view: false, page_location: window.location.origin + window.location.pathname, page_path: window.location.pathname });
               `,
             }}
           />

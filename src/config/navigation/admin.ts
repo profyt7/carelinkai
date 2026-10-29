@@ -34,6 +34,7 @@ export const ADMIN_NAV: NavItem[] = [
       a('call-qa', 'Call QA', FiHome, '/admin/call-qa'),
       a('inbound-leads', 'Inbound Leads', Stethoscope, '/admin/inbound-leads'),
       a('analytics', 'Analytics', FiBarChart2, '/admin/analytics'),
+      a('funnel', 'Conversion Funnel', FiBarChart2, '/admin/analytics/funnel'),
       a('audit-logs', 'Audit Logs', FiFileText, '/admin/audit-logs'),
       a('phi-access', 'ePHI Access Log', FiShield, '/admin/phi-access'),
       a('exports', 'Data Exports', FiFileText, '/admin/exports'),

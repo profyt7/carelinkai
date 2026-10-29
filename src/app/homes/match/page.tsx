@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { listingTrackAttrs } from '@/lib/analytics/listing-attrs';
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { FiSearch, FiAlertTriangle, FiMapPin, FiDollarSign } from "react-icons/fi";
 
@@ -259,8 +260,12 @@ export default function ResidentMatchPage() {
 
             {items && items.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {items.map((item) => (
-                  <div key={item.id} className="bg-white border rounded-lg p-4 flex flex-col">
+                {items.map((item, i) => (
+                  <div
+                    key={item.id}
+                    className="bg-white border rounded-lg p-4 flex flex-col"
+                    {...listingTrackAttrs({ id: item.id, position: i + 1, source: 'ai_match', verified: false, hasPhoto: Boolean(item.photos?.[0]?.url), hasPrice: Boolean(item.priceMin || item.priceMax) })}
+                  >
                     <div className="flex items-start justify-between">
                       <div>
                         <h3 className="font-semibold text-neutral-900">{item.name}</h3>

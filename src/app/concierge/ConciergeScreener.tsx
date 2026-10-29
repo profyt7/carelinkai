@@ -203,6 +203,7 @@ export default function ConciergeScreener({ onRoute }: { onRoute?: (route: Conci
   return (
     <form
       onSubmit={onSubmit}
+      data-clarity-mask="true"
       data-testid="concierge-screener"
       data-hydrated={hydrated ? 'true' : 'false'}
       className="rounded-2xl border border-neutral-200 bg-white p-6 sm:p-8 shadow-sm"

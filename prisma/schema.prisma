@@ -3815,3 +3815,20 @@ model EntityEvent {
   @@index([entityType, entityId, occurredAt])
   @@index([occurredAt])
 }
+
+/// OL-226 first-party funnel aggregate. Written only by /api/analytics/track, only with
+/// analytics consent, holding ONLY the sanitized allowlisted props for a funnel event
+/// (src/lib/analytics/events.ts). anonSessionId is a random per-tab UUID — no user id,
+/// no IP, no cookies. Rows older than 90 days are purged daily (credential-expiry cron).
+/// Not an operational record: inquiries live in Inquiry.
+model AnalyticsEvent {
+  id            String   @id @default(cuid())
+  name          String
+  listingId     String?
+  anonSessionId String
+  propsJson     Json
+  createdAt     DateTime @default(now())
+
+  @@index([name, createdAt])
+  @@index([createdAt])
+}

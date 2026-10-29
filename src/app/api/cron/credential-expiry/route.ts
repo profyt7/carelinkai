@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { purgeExpiredAnalyticsEvents } from "@/lib/analytics/retention";
 
 // Credential types that are critical for NEMT operations.
 // If any of these expire the provider is auto-deactivated.
@@ -99,8 +100,12 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // OL-226: daily 90-day retention for the first-party funnel aggregate (never fails this job).
+  const analyticsEventsPurged = await purgeExpiredAnalyticsEvents(now);
+
   return NextResponse.json({
     ok: true,
+    analyticsEventsPurged,
     markedExpired: expired.count,
     providersDeactivated: deactivated,
     expiringSoonNotified: expiringSoon.length,

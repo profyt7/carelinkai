@@ -79,7 +79,7 @@ const CASES: RoleCase[] = [
 const LEGACY_ADMIN_HREFS = [
   '/admin/users', '/admin/operators', '/admin/caregivers', '/admin/homes', '/admin/inquiries', '/admin/affiliates', '/admin/discharge-planners',
   '/admin/concierge', '/admin/concierge/metrics', '/admin/checkout-preflight', '/admin/dp-leads', '/admin/availability-pings', '/admin/call-qa',
-  '/admin/inbound-leads', '/admin/analytics', '/admin/audit-logs', '/admin/phi-access', '/admin/exports', '/admin/system-health', '/admin/tools',
+  '/admin/inbound-leads', '/admin/analytics', '/admin/analytics/funnel', '/admin/audit-logs', '/admin/phi-access', '/admin/exports', '/admin/system-health', '/admin/tools',
 ];
 
 test.describe.configure({ mode: 'serial' });

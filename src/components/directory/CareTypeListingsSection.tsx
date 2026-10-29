@@ -46,7 +46,7 @@ export default function CareTypeListingsSection({
         <>
           <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" data-testid="listings-grid">
             {listings.map((l, i) => (
-              <ListingCard key={l.id} listing={l} priority={i < 3} />
+              <ListingCard key={l.id} listing={l} priority={i < 3} position={i + 1} />
             ))}
           </div>
           {total > listings.length && (
