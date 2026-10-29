@@ -1,0 +1,121 @@
+[
+  {
+    "f": "home-claimed-family-1280.png",
+    "size": "1280x3872→1280x3872",
+    "diffPx": 0,
+    "pct": 0,
+    "bands": []
+  },
+  {
+    "f": "home-claimed-family-390.png",
+    "size": "390x4853→390x4853",
+    "diffPx": 0,
+    "pct": 0,
+    "bands": []
+  },
+  {
+    "f": "home-claimed-family-390x660-footer.png",
+    "size": "390x660→390x660",
+    "diffPx": 0,
+    "pct": 0,
+    "bands": []
+  },
+  {
+    "f": "home-claimed-family-820.png",
+    "size": "820x4103→820x4103",
+    "diffPx": 0,
+    "pct": 0,
+    "bands": []
+  },
+  {
+    "f": "home-claimed-guest-1280.png",
+    "size": "1280x4081→1280x4081",
+    "diffPx": 5462,
+    "pct": 0.1046,
+    "bands": [
+      "y549-608 x18-109"
+    ]
+  },
+  {
+    "f": "home-claimed-guest-390.png",
+    "size": "390x5765→390x5765",
+    "diffPx": 287,
+    "pct": 0.0128,
+    "bands": [
+      "y428-480 x33-124"
+    ]
+  },
+  {
+    "f": "home-claimed-guest-390x660-footer.png",
+    "size": "390x660→390x660",
+    "diffPx": 0,
+    "pct": 0,
+    "bands": []
+  },
+  {
+    "f": "home-claimed-guest-820.png",
+    "size": "820x4497→820x4497",
+    "diffPx": 0,
+    "pct": 0,
+    "bands": []
+  },
+  {
+    "f": "home-unclaimed-family-1280.png",
+    "size": "1280x3836→1280x3836",
+    "diffPx": 0,
+    "pct": 0,
+    "bands": []
+  },
+  {
+    "f": "home-unclaimed-family-390.png",
+    "size": "390x4732→390x4732",
+    "diffPx": 2947,
+    "pct": 0.1597,
+    "bands": [
+      "y154-175 x31-333",
+      "y183-199 x31-177"
+    ]
+  },
+  {
+    "f": "home-unclaimed-family-390x660-footer.png",
+    "size": "390x660→390x660",
+    "diffPx": 0,
+    "pct": 0,
+    "bands": []
+  },
+  {
+    "f": "home-unclaimed-family-820.png",
+    "size": "820x4080→820x4080",
+    "diffPx": 0,
+    "pct": 0,
+    "bands": []
+  },
+  {
+    "f": "home-unclaimed-guest-1280.png",
+    "size": "1280x4036→1280x4036",
+    "diffPx": 0,
+    "pct": 0,
+    "bands": []
+  },
+  {
+    "f": "home-unclaimed-guest-390.png",
+    "size": "390x5644→390x5644",
+    "diffPx": 0,
+    "pct": 0,
+    "bands": []
+  },
+  {
+    "f": "home-unclaimed-guest-390x660-footer.png",
+    "size": "390x660→390x660",
+    "diffPx": 0,
+    "pct": 0,
+    "bands": []
+  },
+  {
+    "f": "home-unclaimed-guest-820.png",
+    "size": "820x4496→820x4496",
+    "diffPx": 0,
+    "pct": 0,
+    "bands": []
+  }
+]

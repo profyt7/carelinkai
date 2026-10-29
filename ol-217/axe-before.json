@@ -1,0 +1,218 @@
+[
+  {
+    "file": "home-claimed-guest-1280.png",
+    "status": 200,
+    "axe": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": [
+          ".text-\\[11px\\]",
+          ".bg-amber-500",
+          ".mt-4:nth-child(3) > .bg-primary-500.hover\\:bg-primary-600.py-2",
+          ".gap-6.md\\:grid-cols-2.grid-cols-1 > div:nth-child(2) > .bg-primary-500.hover\\:bg-primary-600.py-2",
+          ".mt-6 > .bg-primary-500.hover\\:bg-primary-600.py-2",
+          ".justify-center.bg-primary-500.hover\\:bg-primary-600"
+        ]
+      }
+    ],
+    "inquiryForms": 0
+  },
+  {
+    "file": "home-claimed-guest-820.png",
+    "status": 200,
+    "inquiryForms": 0
+  },
+  {
+    "file": "home-claimed-guest-390.png",
+    "status": 200,
+    "axe": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": [
+          ".text-\\[11px\\]",
+          ".bg-amber-500",
+          ".mt-4:nth-child(3) > .bg-primary-500.hover\\:bg-primary-600.py-2",
+          ".gap-6.md\\:grid-cols-2.grid-cols-1 > div:nth-child(2) > .bg-primary-500.hover\\:bg-primary-600.py-2",
+          ".mt-6 > .bg-primary-500.hover\\:bg-primary-600.py-2",
+          ".justify-center.bg-primary-500.hover\\:bg-primary-600"
+        ]
+      }
+    ],
+    "inquiryForms": 0
+  },
+  {
+    "file": "home-claimed-guest-390x660-footer.png",
+    "status": 200,
+    "ctaBar": null,
+    "tabBar": null,
+    "ctaOverlapsTab": false,
+    "claimFooter": null,
+    "advisor": {
+      "x": 177,
+      "y": 592,
+      "w": 189,
+      "h": 44
+    },
+    "bug": {
+      "x": 322,
+      "y": 536,
+      "w": 52,
+      "h": 44
+    },
+    "offset": "(unset)",
+    "inquiryForms": 0
+  },
+  {
+    "file": "home-claimed-family-1280.png",
+    "status": 200,
+    "inquiryForms": 0
+  },
+  {
+    "file": "home-claimed-family-820.png",
+    "status": 200,
+    "inquiryForms": 0
+  },
+  {
+    "file": "home-claimed-family-390.png",
+    "status": 200,
+    "inquiryForms": 0
+  },
+  {
+    "file": "home-claimed-family-390x660-footer.png",
+    "status": 200,
+    "ctaBar": null,
+    "tabBar": {
+      "x": 0,
+      "y": 596,
+      "w": 390,
+      "h": 64
+    },
+    "ctaOverlapsTab": false,
+    "claimFooter": null,
+    "advisor": {
+      "x": 177,
+      "y": 528,
+      "w": 189,
+      "h": 44
+    },
+    "bug": {
+      "x": 322,
+      "y": 472,
+      "w": 52,
+      "h": 44
+    },
+    "offset": "64px",
+    "inquiryForms": 0
+  },
+  {
+    "file": "home-unclaimed-guest-1280.png",
+    "status": 200,
+    "axe": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": [
+          ".mt-1.text-neutral-400.text-xs",
+          ".p-3.bg-white.border-neutral-200:nth-child(2) > .text-neutral-600.items-center.flex > div > .text-neutral-400",
+          ".bg-amber-500",
+          ".mt-4:nth-child(3) > .bg-primary-500.hover\\:bg-primary-600.py-2",
+          "div[data-testid=\"contact-unclaimed\"] > .bg-primary-500.hover\\:bg-primary-600.py-2",
+          ".mt-6 > .bg-primary-500.hover\\:bg-primary-600.py-2",
+          ".justify-center.bg-primary-500.hover\\:bg-primary-600"
+        ]
+      }
+    ],
+    "inquiryForms": 0
+  },
+  {
+    "file": "home-unclaimed-guest-820.png",
+    "status": 200,
+    "inquiryForms": 0
+  },
+  {
+    "file": "home-unclaimed-guest-390.png",
+    "status": 200,
+    "axe": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": [
+          ".mt-1.text-neutral-400.text-xs",
+          ".p-3.bg-white.border-neutral-200:nth-child(2) > .text-neutral-600.items-center.flex > div > .text-neutral-400",
+          ".bg-amber-500",
+          ".mt-4:nth-child(3) > .bg-primary-500.hover\\:bg-primary-600.py-2",
+          "div[data-testid=\"contact-unclaimed\"] > .bg-primary-500.hover\\:bg-primary-600.py-2",
+          ".mt-6 > .bg-primary-500.hover\\:bg-primary-600.py-2",
+          ".justify-center.bg-primary-500.hover\\:bg-primary-600"
+        ]
+      }
+    ],
+    "inquiryForms": 0
+  },
+  {
+    "file": "home-unclaimed-guest-390x660-footer.png",
+    "status": 200,
+    "ctaBar": null,
+    "tabBar": null,
+    "ctaOverlapsTab": false,
+    "claimFooter": null,
+    "advisor": {
+      "x": 177,
+      "y": 592,
+      "w": 189,
+      "h": 44
+    },
+    "bug": {
+      "x": 322,
+      "y": 536,
+      "w": 52,
+      "h": 44
+    },
+    "offset": "(unset)",
+    "inquiryForms": 0
+  },
+  {
+    "file": "home-unclaimed-family-1280.png",
+    "status": 200,
+    "inquiryForms": 0
+  },
+  {
+    "file": "home-unclaimed-family-820.png",
+    "status": 200,
+    "inquiryForms": 0
+  },
+  {
+    "file": "home-unclaimed-family-390.png",
+    "status": 200,
+    "inquiryForms": 0
+  },
+  {
+    "file": "home-unclaimed-family-390x660-footer.png",
+    "status": 200,
+    "ctaBar": null,
+    "tabBar": {
+      "x": 0,
+      "y": 596,
+      "w": 390,
+      "h": 64
+    },
+    "ctaOverlapsTab": false,
+    "claimFooter": null,
+    "advisor": {
+      "x": 177,
+      "y": 528,
+      "w": 189,
+      "h": 44
+    },
+    "bug": {
+      "x": 322,
+      "y": 472,
+      "w": 52,
+      "h": 44
+    },
+    "offset": "64px",
+    "inquiryForms": 0
+  }
+]

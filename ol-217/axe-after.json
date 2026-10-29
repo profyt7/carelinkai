@@ -1,0 +1,222 @@
+[
+  {
+    "file": "home-claimed-guest-1280.png",
+    "status": 200,
+    "axe": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": [
+          ".bg-amber-500"
+        ]
+      }
+    ],
+    "inquiryForms": 1
+  },
+  {
+    "file": "home-claimed-guest-820.png",
+    "status": 200,
+    "inquiryForms": 1
+  },
+  {
+    "file": "home-claimed-guest-390.png",
+    "status": 200,
+    "axe": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": [
+          ".bg-amber-500"
+        ]
+      }
+    ],
+    "inquiryForms": 1
+  },
+  {
+    "file": "home-claimed-guest-390x660-footer.png",
+    "status": 200,
+    "ctaBar": null,
+    "tabBar": null,
+    "ctaOverlapsTab": false,
+    "claimFooter": null,
+    "advisor": {
+      "x": 177,
+      "y": 592,
+      "w": 189,
+      "h": 44
+    },
+    "bug": {
+      "x": 322,
+      "y": 536,
+      "w": 52,
+      "h": 44
+    },
+    "offset": "(unset)",
+    "inquiryForms": 1
+  },
+  {
+    "file": "home-claimed-family-1280.png",
+    "status": 200,
+    "inquiryForms": 1
+  },
+  {
+    "file": "home-claimed-family-820.png",
+    "status": 200,
+    "inquiryForms": 1
+  },
+  {
+    "file": "home-claimed-family-390.png",
+    "status": 200,
+    "inquiryForms": 1
+  },
+  {
+    "file": "home-claimed-family-390x660-footer.png",
+    "status": 200,
+    "ctaBar": {
+      "x": 0,
+      "y": 529,
+      "w": 390,
+      "h": 67
+    },
+    "tabBar": {
+      "x": 0,
+      "y": 596,
+      "w": 390,
+      "h": 64
+    },
+    "ctaOverlapsTab": false,
+    "claimFooter": null,
+    "advisor": {
+      "x": 177,
+      "y": 461,
+      "w": 189,
+      "h": 44
+    },
+    "bug": {
+      "x": 322,
+      "y": 405,
+      "w": 52,
+      "h": 44
+    },
+    "offset": "131px",
+    "inquiryForms": 1
+  },
+  {
+    "file": "home-unclaimed-guest-1280.png",
+    "status": 200,
+    "axe": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": [
+          ".bg-amber-500"
+        ]
+      }
+    ],
+    "inquiryForms": 1
+  },
+  {
+    "file": "home-unclaimed-guest-820.png",
+    "status": 200,
+    "inquiryForms": 1
+  },
+  {
+    "file": "home-unclaimed-guest-390.png",
+    "status": 200,
+    "axe": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": [
+          ".bg-amber-500"
+        ]
+      }
+    ],
+    "inquiryForms": 1
+  },
+  {
+    "file": "home-unclaimed-guest-390x660-footer.png",
+    "status": 200,
+    "ctaBar": null,
+    "tabBar": null,
+    "ctaOverlapsTab": false,
+    "claimFooter": {
+      "visible": false,
+      "box": {
+        "x": 0,
+        "y": -582,
+        "w": 390,
+        "h": 73
+      }
+    },
+    "advisor": {
+      "x": 177,
+      "y": 592,
+      "w": 189,
+      "h": 44
+    },
+    "bug": {
+      "x": 322,
+      "y": 536,
+      "w": 52,
+      "h": 44
+    },
+    "offset": "(unset)",
+    "inquiryForms": 1
+  },
+  {
+    "file": "home-unclaimed-family-1280.png",
+    "status": 200,
+    "inquiryForms": 1
+  },
+  {
+    "file": "home-unclaimed-family-820.png",
+    "status": 200,
+    "inquiryForms": 1
+  },
+  {
+    "file": "home-unclaimed-family-390.png",
+    "status": 200,
+    "inquiryForms": 1
+  },
+  {
+    "file": "home-unclaimed-family-390x660-footer.png",
+    "status": 200,
+    "ctaBar": {
+      "x": 0,
+      "y": 529,
+      "w": 390,
+      "h": 67
+    },
+    "tabBar": {
+      "x": 0,
+      "y": 596,
+      "w": 390,
+      "h": 64
+    },
+    "ctaOverlapsTab": false,
+    "claimFooter": {
+      "visible": true,
+      "box": {
+        "x": 0,
+        "y": 423,
+        "w": 390,
+        "h": 73
+      }
+    },
+    "advisor": {
+      "x": 177,
+      "y": 461,
+      "w": 189,
+      "h": 44
+    },
+    "bug": {
+      "x": 322,
+      "y": 405,
+      "w": 52,
+      "h": 44
+    },
+    "offset": "131px",
+    "inquiryForms": 1
+  }
+]
