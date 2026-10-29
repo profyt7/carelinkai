@@ -30,6 +30,7 @@ import {
   FiX,
   FiLoader,
 } from "react-icons/fi";
+import { errorSummary } from '@/lib/log-safe';
 
 type UserRole =
   | "FAMILY"
@@ -311,7 +312,7 @@ export default function RegisterPage() {
         router.push(`/auth/login?verify=1&email=${encodeURIComponent(data.email)}`);
       }, 2200);
     } catch (err: any) {
-      console.error("Registration error:", err);
+      console.error("Registration error:", errorSummary(err));
       setApiError(
         err.response?.data?.message || "Registration failed. Please try again."
       );

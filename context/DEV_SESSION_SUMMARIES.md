@@ -2562,3 +2562,23 @@
   - sets the GA MP secret;
   - deletes the Pixel/Clarity/GTM env vars;
   - works through the audit's manual deletion steps.
+
+### 2026-10-29 — PR #10 merged; OL-231 auth logs → outcome codes (PR open)
+- **Objective:** answer the two pre-merge confirmations on PR #10 (GA4 URL policy, server-side consent), merge, prod-verify the tracker removal, then a separate PR for OL-231.
+- **Work completed:**
+  - **#10:**
+    - Added route-level tests pinning the URL policy (q, location, name, email, phone, message and unlisted params never reach GA or AnalyticsEvent) and the server consent gate (every event type, submissions included).
+    - Added a read-only `check_trackers` step to prod-verify.
+    - Posted the confirmations on the PR; CI green on `efd7bbcf`; squash-merged `8e67e7d2`.
+  - **OL-231:** 98 auth/signup log calls fixed:
+    - raw errors → `errorSummary()`;
+    - identifiers dropped from outcome logs;
+    - debug dumps deleted (register request/body, token generation, JWT/session callbacks).
+- **Files changed (OL-231):** `src/lib/{auth,auth-db-simple,auth-utils,email}.ts`, `src/app/api/auth/**` (14 routes), `src/app/auth/{login,register,verify}/page.tsx`, `scripts/pii-log-scan.cjs`, `__tests__/auth-log-guard.unit.test.ts`, context files.
+- **Commands run:** `jest` (full), `tsc`, `next lint`; prod-verify dispatched with `check_trackers`.
+- **Tests/build status:** jest 154 suites / 1762 passed (10 skipped, pre-existing); tsc + lint clean.
+- **Deployment impact:**
+  - OL-231: log text only, no behaviour change.
+  - #10 is live once Render deploys `8e67e7d2`.
+- **New risks/blockers:** `AuditLog` metadata still stores email + IP (DB audit trail; decide separately).
+- **Recommended next step:** Chris reviews and merges the OL-231 PR; sets the GA MP secret when ready.

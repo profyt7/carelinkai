@@ -28,6 +28,7 @@ import { authenticator } from "otplib";
 import { z } from "zod";
 import { compare } from "bcryptjs";
 import { captureError } from '@/lib/sentry';
+import { errorSummary } from '@/lib/log-safe';
 
 
 // Rate limiting implementation
@@ -274,7 +275,7 @@ export async function POST(request: NextRequest) {
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: 'auth:disable-2fa' },
     });
-    console.error("Disable 2FA error:", error);
+    console.error("Disable 2FA error:", errorSummary(error));
     
     // Generic error response
     return NextResponse.json(

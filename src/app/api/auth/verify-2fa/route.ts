@@ -26,6 +26,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { timingSafeEqual } from "crypto";
 import { captureError } from '@/lib/sentry';
+import { errorSummary } from '@/lib/log-safe';
 
 
 // Rate limiting implementation
@@ -100,7 +101,7 @@ function verifyTOTP(token: string, secret: string): boolean {
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: 'auth:verify-2fa' },
     });
-    console.error("TOTP verification error:", error);
+    console.error("TOTP verification error:", errorSummary(error));
     return false;
   }
 }
@@ -134,7 +135,7 @@ function verifyBackupCode(providedCode: string, storedCodes: string[]): string |
       captureError(error instanceof Error ? error : new Error(String(error)), {
         tags: { route: 'auth:verify-2fa' },
       });
-      console.error("Backup code verification error:", error);
+      console.error("Backup code verification error:", errorSummary(error));
     }
   }
   
@@ -300,7 +301,7 @@ export async function POST(request: NextRequest) {
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: 'auth:verify-2fa' },
     });
-    console.error("2FA verification error:", error);
+    console.error("2FA verification error:", errorSummary(error));
     
     // Generic error response
     return NextResponse.json(

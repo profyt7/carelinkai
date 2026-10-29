@@ -22,6 +22,7 @@ import { z } from "zod";
 import { randomBytes } from "crypto";
 import { sendVerificationEmail } from "@/lib/email";
 import { captureError } from '@/lib/sentry';
+import { errorSummary } from '@/lib/log-safe';
 
 
 // Constants
@@ -73,7 +74,6 @@ function checkRateLimit(email: string): { allowed: boolean; resetIn?: number } {
  * Create a verification token and store it in the database
  */
 async function createVerificationToken(userId: string): Promise<string> {
-  console.log(`[resendVerification] Generating token for userId=${userId}`);
   const token = randomBytes(32).toString('hex');
   const expires = new Date();
   expires.setHours(expires.getHours() + TOKEN_EXPIRY_HOURS);
@@ -86,10 +86,6 @@ async function createVerificationToken(userId: string): Promise<string> {
     },
   });
 
-  console.log(
-    `[resendVerification] Token persisted for userId=${userId} ` +
-    `expires=${expires.toISOString()}`
-  );
   return token;
 }
 
@@ -146,7 +142,7 @@ export async function POST(request: NextRequest) {
     // For security, don't reveal if user exists or not
     // Always return success message
     if (!user) {
-      console.log(`[resendVerification] User not found: ${normalizedEmail}`);
+      console.log('[resendVerification] User not found');
       return NextResponse.json({
         success: true,
         message: "If an account exists with this email, a verification link has been sent."
@@ -155,7 +151,7 @@ export async function POST(request: NextRequest) {
     
     // Check if user is already active
     if (user.status === UserStatus.ACTIVE) {
-      console.log(`[resendVerification] User already active: ${normalizedEmail}`);
+      console.log('[resendVerification] User already active');
       return NextResponse.json({
         success: true,
         message: "Your account is already verified. You can log in now."
@@ -164,7 +160,7 @@ export async function POST(request: NextRequest) {
     
     // Check if user is pending
     if (user.status !== UserStatus.PENDING) {
-      console.log(`[resendVerification] User not pending: ${normalizedEmail}, status: ${user.status}`);
+      console.log('[resendVerification] User not pending');
       return NextResponse.json({
         success: true,
         message: "If an account exists with this email, a verification link has been sent."
@@ -178,7 +174,7 @@ export async function POST(request: NextRequest) {
     const emailSent = await sendVerificationEmail(user.email, user.firstName, token);
     
     if (!emailSent) {
-      console.error(`[resendVerification] Failed to send email to ${normalizedEmail}`);
+      console.error('[resendVerification] Failed to send email');
       return NextResponse.json(
         { 
           success: false, 
@@ -188,7 +184,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    console.log(`[resendVerification] Success for ${normalizedEmail}`);
+    console.log('[resendVerification] Success');
     
     return NextResponse.json({
       success: true,
@@ -199,7 +195,7 @@ export async function POST(request: NextRequest) {
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: 'auth:resend-verification' },
     });
-    console.error("Resend verification error:", error);
+    console.error("Resend verification error:", errorSummary(error));
     
     return NextResponse.json(
       { 

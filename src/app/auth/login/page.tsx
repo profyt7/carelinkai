@@ -10,6 +10,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { FiMail, FiLock, FiAlertCircle, FiCheckCircle } from "react-icons/fi";
+import { errorSummary } from '@/lib/log-safe';
 
 type FormData = {
   email: string;
@@ -79,7 +80,7 @@ export default function LoginPage() {
         setError(data.message || "Failed to resend verification email. Please try again.");
       }
     } catch (err) {
-      console.error("Resend verification error:", err);
+      console.error("Resend verification error:", errorSummary(err));
       setError("An error occurred. Please try again.");
     } finally {
       setResendingEmail(false);
@@ -100,7 +101,7 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        console.error("NextAuth signIn error:", result.error);
+        console.error('NextAuth signIn error');
         setError(result.error);
         if (result.error.toLowerCase().includes("verify") || result.error.toLowerCase().includes("pending")) {
           setShowVerificationHelp(true);
@@ -124,7 +125,7 @@ export default function LoginPage() {
         }
       }
     } catch (err) {
-      console.error("Unhandled sign-in exception:", err);
+      console.error("Unhandled sign-in exception:", errorSummary(err));
       setError("An unexpected error occurred. Please try again.");
       setIsLoading(false);
     }

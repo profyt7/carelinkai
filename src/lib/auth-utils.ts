@@ -17,6 +17,7 @@ import {
   hasAllPermissions,
   canPerformAction,
 } from "@/lib/permissions";
+import { errorSummary } from '@/lib/log-safe';
 
 /**
  * Error thrown when authorization fails
@@ -462,17 +463,8 @@ export function handleAuthError(error: unknown) {
     );
   }
   
-  // Unknown error - log detailed information to console (visible in Render logs)
-  console.error("========================================");
-  console.error("UNHANDLED ERROR IN AUTH UTILS");
-  console.error("========================================");
-  console.error("Error type:", error?.constructor?.name);
-  console.error("Error object:", error);
-  if (error instanceof Error) {
-    console.error("Error message:", error.message);
-    console.error("Error stack:", error.stack);
-  }
-  console.error("========================================");
+  // Unknown error. OL-231: log the error class/code only (the message can echo user input).
+  console.error("UNHANDLED ERROR IN AUTH UTILS:", errorSummary(error));
   
   // Return detailed error information
   const errorResponse: any = { 

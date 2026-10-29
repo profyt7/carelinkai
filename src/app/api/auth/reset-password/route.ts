@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { captureError } from '@/lib/sentry';
+import { errorSummary } from '@/lib/log-safe';
 
 export const dynamic = "force-dynamic";
 
@@ -83,7 +84,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    console.log(`[RESET PASSWORD] Password reset successful for user: ${user.email}`);
+    console.log('[RESET PASSWORD] Password reset successful');
 
     return NextResponse.json({
       message: "Password has been reset successfully.",
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: 'auth:reset-password' },
     });
-    console.error("[RESET PASSWORD] Error:", error);
+    console.error("[RESET PASSWORD] Error:", errorSummary(error));
     return NextResponse.json(
       { message: "An error occurred. Please try again." },
       { status: 500 }

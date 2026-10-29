@@ -21,6 +21,7 @@ import { AuditAction } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { captureError } from '@/lib/sentry';
+import { errorSummary } from '@/lib/log-safe';
 
 
 // Input validation schema
@@ -106,7 +107,7 @@ export async function POST(request: NextRequest) {
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: 'auth:validate-reset-token' },
     });
-    console.error("Token validation error:", error);
+    console.error("Token validation error:", errorSummary(error));
     
     // Generic error response
     return NextResponse.json(
@@ -174,7 +175,7 @@ export async function GET(request: NextRequest) {
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: 'auth:validate-reset-token' },
     });
-    console.error("Token validation error:", error);
+    console.error("Token validation error:", errorSummary(error));
     
     // Generic error response
     return NextResponse.json(

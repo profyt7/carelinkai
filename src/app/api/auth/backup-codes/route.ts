@@ -24,6 +24,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { randomBytes } from "crypto";
 import { captureError } from '@/lib/sentry';
+import { errorSummary } from '@/lib/log-safe';
 
 
 // Constants
@@ -137,7 +138,7 @@ export async function GET(request: NextRequest) {
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: 'auth:backup-codes' },
     });
-    console.error("Backup codes retrieval error:", error);
+    console.error("Backup codes retrieval error:", errorSummary(error));
     
     // Generic error response
     return NextResponse.json(
@@ -243,7 +244,7 @@ export async function POST(request: NextRequest) {
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: 'auth:backup-codes' },
     });
-    console.error("Backup codes generation error:", error);
+    console.error("Backup codes generation error:", errorSummary(error));
     
     // Generic error response
     return NextResponse.json(

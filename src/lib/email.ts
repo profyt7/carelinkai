@@ -15,6 +15,7 @@ import { Resend } from 'resend';
 import { captureError } from '@/lib/sentry';
 import { VIDEO_LINK_TEXT, VIDEO_LINK_TOKEN } from '@/lib/dp-outreach/copy';
 import { filterSuppressed } from '@/lib/email/suppression';
+import { errorSummary } from '@/lib/log-safe';
 
 // Resend client, constructed lazily on first send. `new Resend(undefined)`
 // throws at construction, so building it at module scope made *importing* this
@@ -100,7 +101,8 @@ export async function sendVerificationEmail(
   verificationToken: string
 ): Promise<boolean> {
   try {
-    console.log(`[Resend] Sending verification email to ${email}`);
+    // OL-231: outcome codes only — never the recipient address, token or link.
+    console.log('[Resend] Sending verification email');
     
     // Check if Resend API key is configured
     if (!process.env.RESEND_API_KEY) {
@@ -114,7 +116,7 @@ export async function sendVerificationEmail(
     const verificationLink = `${APP_URL}/auth/verify?token=${verificationToken}`;
     
     // Send email using Resend
-    const { data, error } = await guardedResendSend({
+    const { error } = await guardedResendSend({
       from: `${APP_NAME} <${FROM_EMAIL}>`,
       to: [email],
       subject: `Verify Your ${APP_NAME} Account`,
@@ -123,16 +125,15 @@ export async function sendVerificationEmail(
     });
     
     if (error) {
-      console.error('[Resend] Error sending email:', error);
+      console.error('[Resend] Error sending verification email:', errorSummary(error));
       return false;
     }
     
     console.log('[Resend] ✅ Verification email sent successfully');
-    console.log('[Resend] Email ID:', data?.id);
     return true;
     
   } catch (error) {
-    console.error('[Resend] Exception while sending email:', error);
+    console.error('[Resend] Exception while sending verification email:', errorSummary(error));
     return false;
   }
 }
@@ -1159,7 +1160,7 @@ export async function sendPasswordResetEmail(
   resetToken: string
 ): Promise<boolean> {
   try {
-    console.log(`[Resend] Sending password reset email to ${email}`);
+    console.log('[Resend] Sending password reset email');
     
     if (!process.env.RESEND_API_KEY) {
       console.error('[Resend] RESEND_API_KEY is not configured');
@@ -1184,7 +1185,7 @@ export async function sendPasswordResetEmail(
     });
     
     if (error) {
-      console.error('[Resend] Error sending password reset email:', error);
+      console.error('[Resend] Error sending password reset email:', errorSummary(error));
       return false;
     }
     
@@ -1192,7 +1193,7 @@ export async function sendPasswordResetEmail(
     return true;
     
   } catch (error) {
-    console.error('[Resend] Exception sending password reset:', error);
+    console.error('[Resend] Exception sending password reset:', errorSummary(error));
     return false;
   }
 }
