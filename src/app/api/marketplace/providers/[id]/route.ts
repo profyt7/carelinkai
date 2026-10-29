@@ -8,6 +8,8 @@ import { isMockModeEnabled } from '@/lib/mockMode';
 import { isMockViewerAllowed } from '@/lib/mockMode.server';
 import { getMockProviderDetail } from '@/lib/mock/providers';
 import { computeProviderRideStats } from '@/lib/rideStats';
+import { isPaidFeatureEnabled } from '@/lib/billing/paid-features';
+import { isBoosted } from '@/lib/providers/boost';
 
 /**
  * GET /api/marketplace/providers/[id]
@@ -176,6 +178,8 @@ export async function GET(
       licenseNumber: provider.licenseNumber,
       yearsInBusiness: provider.yearsInBusiness,
       isVerified: provider.isVerified,
+      // Boost is visibility only; isVerified above is untouched by it.
+      boosted: isPaidFeatureEnabled('PROVIDER_BOOST') && isBoosted(provider),
       serviceTypes: provider.serviceTypes || [],
       coverageArea: provider.coverageArea,
       photoUrl,

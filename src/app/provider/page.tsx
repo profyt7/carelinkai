@@ -6,6 +6,7 @@ import Link from "next/link";
 import { FiInbox, FiMessageCircle, FiEdit, FiCheckCircle, FiAlertCircle, FiCreditCard, FiMapPin, FiTruck, FiShield, FiCircle } from "react-icons/fi";
 import { computeProviderRideStats, scoreLabel, type RideStats } from "@/lib/rideStats";
 import { isPaidFeatureEnabled } from "@/lib/billing/paid-features";
+import { isBoosted } from "@/lib/providers/boost";
 
 async function getProviderDashboardData(userId: string) {
   const provider = await prisma.provider.findUnique({
@@ -16,6 +17,8 @@ async function getProviderDashboardData(userId: string) {
       isActive: true,
       businessName: true,
       listingStatus: true,
+      boostStatus: true,
+      founderBoostEndsAt: true,
       serviceTypes: true,
       bio: true,
       rateBaseFare: true,
@@ -66,13 +69,18 @@ export default async function ProviderDashboard() {
   const { provider, newLeads, activeLeads, recentLeads, rideStats } = await getProviderDashboardData(session.user.id);
   const displayName = session.user.firstName || session.user.name?.split(" ")[0] || "there";
 
-  const listingActive = provider?.listingStatus === "ACTIVE" || provider?.listingStatus === "TRIALING";
-  const listingPastDue = provider?.listingStatus === "PAST_DUE";
-  const listingNone = !provider?.listingStatus || provider?.listingStatus === "CANCELED";
+  // 10/29 provider pricing: with PROVIDER_LISTING_ENABLED the listing is free, so an active
+  // profile is a live listing; the paid-listing states below only apply to legacy subscribers.
+  const listingFree = isPaidFeatureEnabled("PROVIDER_LISTING");
+  const boostOn = isPaidFeatureEnabled("PROVIDER_BOOST");
+  const boosted = boostOn && !!provider && isBoosted(provider);
+  const legacyActive = provider?.listingStatus === "ACTIVE" || provider?.listingStatus === "TRIALING";
+  const listingActive = listingFree ? !!provider?.isActive : legacyActive;
+  const listingPastDue = !listingFree && provider?.listingStatus === "PAST_DUE";
 
   // Profile completeness checklist
   const verifiedCredentials = provider?.credentials?.length ?? 0;
-  const listingSalesOn = isPaidFeatureEnabled("PROVIDER_LISTING");
+  const listingPageOn = listingFree || boostOn || legacyActive;
   const checklistItems = provider ? [
     { label: "Business name set",        done: !!provider.businessName,                   href: "/settings/provider" },
     { label: "Bio written",              done: !!provider.bio,                            href: "/settings/provider" },
@@ -81,8 +89,7 @@ export default async function ProviderDashboard() {
     { label: "Rate set",                 done: !!(provider.rateBaseFare ?? provider.ratePerMile ?? provider.rateWaitPerHour), href: "/settings/provider" },
     { label: "1+ credential uploaded",   done: verifiedCredentials >= 1,                  href: "/settings/provider/credentials" },
     { label: "3 credentials (Certified)",done: verifiedCredentials >= 3,                  href: "/settings/provider/credentials" },
-    // OL-186: only a checklist step while paid listings are switched on.
-    ...(listingSalesOn ? [{ label: "Listing activated", done: listingActive, href: "/settings/provider/billing" }] : []),
+    // The listing is free (nothing to activate), so it is no longer a checklist step.
   ] : [];
   const completedCount = checklistItems.filter((i) => i.done).length;
   const completionPct = provider ? Math.round((completedCount / checklistItems.length) * 100) : 0;
@@ -196,12 +203,12 @@ export default async function ProviderDashboard() {
               listingPastDue ? "bg-error-100 text-error-800" :
               "bg-neutral-100 text-neutral-600"
             }`}>
-              {listingActive ? "Active" : listingPastDue ? "Past Due" : "Inactive"}
+              {listingActive ? (listingFree ? "Free · Live" : "Active") : listingPastDue ? "Past Due" : "Inactive"}
             </span>
           </div>
           <p className="text-sm font-medium text-neutral-700">Marketplace Listing</p>
           <p className="text-xs text-neutral-500 mt-0.5">
-            {listingActive ? "Visible in search results" : "Not visible to clients"}
+            {listingActive ? (boosted ? "Visible in search · Boosted" : "Visible in search results") : "Not visible to clients"}
           </p>
         </div>
 
@@ -247,7 +254,7 @@ export default async function ProviderDashboard() {
             { href: "/messages", icon: <FiMessageCircle className="h-5 w-5 text-primary-600" />, bg: "bg-primary-100", title: "Messages", desc: "Check your conversations" },
             { href: "/settings/provider", icon: <FiEdit className="h-5 w-5 text-secondary-600" />, bg: "bg-secondary-100", title: "Edit Profile", desc: "Update services and info" },
             { href: "/settings/provider/credentials", icon: <FiShield className="h-5 w-5 text-violet-600" />, bg: "bg-violet-100", title: "Credentials", desc: `${verifiedCredentials}/3 verified` },
-            ...(listingSalesOn || listingActive ? [{ href: "/settings/provider/billing", icon: <FiCreditCard className="h-5 w-5 text-success-600" />, bg: "bg-success-100", title: "Listing & Billing", desc: listingActive ? "Manage subscription" : "Activate listing" }] : []),
+            ...(listingPageOn ? [{ href: "/settings/provider/billing", icon: <FiCreditCard className="h-5 w-5 text-success-600" />, bg: "bg-success-100", title: "Listing & Boost", desc: boosted ? "Boost is on" : boostOn ? "Free listing · Boost available" : "Your free listing" }] : []),
             { href: "/marketplace?tab=providers", icon: <FiMapPin className="h-5 w-5 text-warning-600" />, bg: "bg-warning-100", title: "View Marketplace", desc: "See your public profile" },
             ...(rideStats ? [{ href: "/rides", icon: <FiTruck className="h-5 w-5 text-primary-600" />, bg: "bg-primary-100", title: "Ride Dispatch", desc: "Manage today's runs" }] : []),
           ].map((a) => (
@@ -271,15 +278,8 @@ export default async function ProviderDashboard() {
             <FiInbox className="h-10 w-10 text-neutral-300 mx-auto mb-3" />
             <p className="font-medium text-neutral-700">No inquiries yet</p>
             <p className="text-sm text-neutral-500 mt-1">
-              {listingActive || !listingSalesOn
-                ? "Families will contact you here once they find your listing."
-                : "Activate your marketplace listing to start receiving inquiries."}
+              Families will contact you here once they find your listing.
             </p>
-            {!listingActive && listingSalesOn && (
-              <Link href="/settings/provider/billing" className="mt-4 inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 transition-colors">
-                Activate Listing →
-              </Link>
-            )}
           </div>
         ) : (
           <div className="bg-white rounded-lg border border-neutral-200 divide-y divide-neutral-100">

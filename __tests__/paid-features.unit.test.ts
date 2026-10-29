@@ -82,7 +82,7 @@ const post = (url: string, body?: unknown) =>
   new NextRequest(`http://localhost${url}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body ?? {}) });
 
 describe('registry', () => {
-  it('has exactly the nine switches (ten minus Family Plus, retired OL-189), each with its env name', () => {
+  it('has exactly the eleven switches (Family Plus retired OL-189; Provider Boost + the commission stub added 10/29), each with its env name', () => {
     expect(PAID_FEATURE_KEYS.map((k) => PAID_FEATURES[k].env).sort()).toEqual([
       'BACKGROUND_CHECKS_ENABLED',
       'CAREGIVER_PRO_ENABLED',
@@ -91,6 +91,8 @@ describe('registry', () => {
       'FEATURED_LISTING_ENABLED',
       'MARKETPLACE_HIRE_FEE_ENABLED',
       'OPERATOR_PLANS_ENABLED',
+      'PROVIDER_BOOST_ENABLED',
+      'PROVIDER_COMMISSION_ENABLED',
       'PROVIDER_LISTING_ENABLED',
       'RIDES_PAYMENTS_ENABLED',
     ]);
@@ -119,7 +121,7 @@ describe('registry', () => {
   it('status rows carry names and on/off only — never a value', () => {
     process.env['RIDES_PAYMENTS_ENABLED'] = 'yes';
     const rows = paidFeatureStatus();
-    expect(rows).toHaveLength(9);
+    expect(rows).toHaveLength(11);
     expect(rows.find((r) => r.key === 'RIDES_PAYMENTS')).toEqual({ key: 'RIDES_PAYMENTS', env: 'RIDES_PAYMENTS_ENABLED', label: PAID_FEATURES.RIDES_PAYMENTS.label, enabled: true });
     expect(JSON.stringify(rows)).not.toContain('"yes"');
   });
@@ -150,7 +152,8 @@ const gated: Gated[] = [
   { name: 'POST /api/operator/billing/subscribe', key: 'OPERATOR_PLANS', call: async () => (await import('@/app/api/operator/billing/subscribe/route')).POST(post('/x', { plan: 'STARTER' })) },
   { name: 'POST /api/operator/billing/switch-plan', key: 'OPERATOR_PLANS', call: async () => (await import('@/app/api/operator/billing/switch-plan/route')).POST(post('/x', { plan: 'GROWTH' })) },
   { name: 'POST /api/caregiver/billing/subscribe', key: 'CAREGIVER_PRO', call: async () => (await import('@/app/api/caregiver/billing/subscribe/route')).POST(post('/x')) },
-  { name: 'POST /api/provider/billing/subscribe', key: 'PROVIDER_LISTING', call: async () => (await import('@/app/api/provider/billing/subscribe/route')).POST(post('/x')) },
+  { name: 'POST /api/provider/billing/subscribe (Boost)', key: 'PROVIDER_BOOST', call: async () => (await import('@/app/api/provider/billing/subscribe/route')).POST(post('/x')) },
+  { name: 'POST /api/provider/boost/founder', key: 'PROVIDER_BOOST', call: async () => (await import('@/app/api/provider/boost/founder/route')).POST() },
 ];
 
 describe.each(gated)('$name ($key)', ({ key, call }) => {

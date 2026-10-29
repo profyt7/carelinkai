@@ -770,6 +770,27 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
 - **Deferred:** `getRecentActivity()`, `getAllDashboardData()` and `getDashboardData()` in `src/lib/dashboard-data.ts` form an apparently unused chain that reads audit records (with user emails). Left unchanged and deferred to a future maintenance batch; before removing, check dynamic imports, scripts and tests for callers.
 - **Path:** `prisma/schema.prisma` (`AuditLog`), `src/lib/auth.ts`, `src/lib/audit.ts`, `src/app/api/admin/audit-logs/**`, `src/app/api/cron/credential-expiry/route.ts`, `src/lib/dashboard-data.ts`
 
+### OL-233: Provider pricing: free listing, Boost $39/mo, founding providers (10/29)
+- **Status:** 🟡 PR open, branch `feat/provider-free-listing` (not merged). Nothing runs until the founder flips flags.
+- **What:**
+  - `PROVIDER_LISTING_ENABLED` now means a free listing (no charge path); the $99 references are retired.
+  - `PROVIDER_BOOST_ENABLED` + `STRIPE_PRICE_PROVIDER_BOOST`: Boost $39/mo. Perks: top placement (two-tier paging), a "Boosted" badge (never Verified), instant lead email, and a photo-limit entitlement.
+  - Founding providers: first 25 free for 90 days, no card, lapses on its own (advisory-locked claim).
+  - `PROVIDER_COMMISSION_ENABLED`: stub flag only, with a TODO for the Connect rail.
+  - Homepage: a Providers persona card (5-card row) when the listing flag is on.
+  - Migration `20261030000000_provider_boost`: additive nullable columns.
+- **Gaps (decide before flipping Boost on):**
+  - No provider photo gallery exists, so the photo perk is shown as "when photo galleries launch".
+  - Missing service categories: meal delivery (only Meal Preparation), home health (only generic Medical Services), physical therapy.
+- **Found (not fixed):**
+  - `/marketplace/providers` sends `serviceTypes=`, but the API reads `serviceType`/`services`, so the service filter is a no-op.
+  - The caregiver profile shows "$99 marketplace access fee applies on Starter" without checking `MARKETPLACE_HIRE_FEE_ENABLED`.
+- **Founder:**
+  - Create the Stripe Boost price and set `STRIPE_PRICE_PROVIDER_BOOST`.
+  - Flip `PROVIDER_LISTING_ENABLED` / `PROVIDER_BOOST_ENABLED`; the homepage reads them at build, so Render's redeploy picks them up.
+  - Run the migration (auto on deploy).
+- **Path:** `src/lib/providers/boost.ts`, `src/app/api/provider/{billing/subscribe,boost/founder}`, `src/app/settings/provider/billing/page.tsx`, `src/app/api/marketplace/providers/route.ts`, `src/app/api/webhooks/stripe/route.ts`, `src/app/api/leads/route.ts`, `src/app/HomePageClient.tsx`, `__tests__/provider-pricing.unit.test.tsx`
+
 ### OL-222: PhotoGallery's slide counter overlaps the photo caption
 - **Status:** ✅ fixed by OL-227 (counter in its own top-left chip; caption + View All share a clamped bottom bar). Was: found 2026-10-29 during OL-217.
 - **What:** on `/homes/[id]` the gallery's bottom-left "1 / 3" counter is drawn over the "Photo 1" caption text, so both are hard to read. OL-217 froze PhotoGallery internals, so it wasn't touched there. Fix: give the caption and counter separate slots (or drop the generic "Photo N" caption when there's no real one).

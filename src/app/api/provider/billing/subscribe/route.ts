@@ -10,11 +10,14 @@ import { UserRole } from '@prisma/client';
 
 /**
  * POST /api/provider/billing/subscribe
- * Creates a Stripe Checkout Session for the $99/mo provider listing fee.
- * On success, Stripe fires customer.subscription.created → webhook sets listingStatus=ACTIVE.
+ * Provider Boost ($39/mo). The provider listing itself is free (10/29 pricing change), so this is
+ * the only provider checkout. Gated by PROVIDER_BOOST_ENABLED; with STRIPE_PRICE_PROVIDER_BOOST
+ * unset it answers 503 before touching Stripe (no charge path). On success Stripe fires
+ * customer.subscription.created → the webhook sets Provider.boostStatus. Boost never touches
+ * Provider.isVerified.
  */
-export async function POST(request: NextRequest) {
-  const off = paidFeatureDisabledResponse('PROVIDER_LISTING');
+export async function POST(_request: NextRequest) {
+  const off = paidFeatureDisabledResponse('PROVIDER_BOOST');
   if (off) return off;
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
@@ -26,11 +29,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const priceId = process.env['STRIPE_PRICE_PROVIDER_LISTING'];
+  const priceId = process.env['STRIPE_PRICE_PROVIDER_BOOST'];
   if (!priceId) {
     return NextResponse.json(
-      { error: 'Provider listing price not configured. Set STRIPE_PRICE_PROVIDER_LISTING in environment variables.' },
-      { status: 400 }
+      { error: 'Provider Boost is not available yet.', feature: 'PROVIDER_BOOST', reason: 'price_not_configured' },
+      { status: 503, headers: { 'cache-control': 'no-store' } },
     );
   }
 
@@ -39,7 +42,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Provider profile not found' }, { status: 404 });
   }
 
-  // Create or reuse Stripe customer
+  // Create or reuse the Stripe customer.
   let stripeCustomerId = provider.stripeCustomerId;
   if (!stripeCustomerId) {
     const customer = await stripe.customers.create({
@@ -48,10 +51,7 @@ export async function POST(request: NextRequest) {
       metadata: { providerId: provider.id, userId: user.id },
     });
     stripeCustomerId = customer.id;
-    await prisma.provider.update({
-      where: { id: provider.id },
-      data: { stripeCustomerId },
-    });
+    await prisma.provider.update({ where: { id: provider.id }, data: { stripeCustomerId } });
   }
 
   const appUrl = process.env['NEXT_PUBLIC_APP_URL'] || 'https://getcarelinkai.com';
@@ -60,12 +60,10 @@ export async function POST(request: NextRequest) {
     customer: stripeCustomerId,
     mode: 'subscription',
     line_items: [{ price: priceId, quantity: 1 }],
-    subscription_data: {
-      metadata: { providerId: provider.id },
-    },
-    success_url: `${appUrl}/settings/provider/billing?subscription=success`,
-    cancel_url: `${appUrl}/settings/provider/billing?subscription=canceled`,
-    metadata: { providerId: provider.id },
+    subscription_data: { metadata: { providerId: provider.id, product: 'provider_boost' } },
+    success_url: `${appUrl}/settings/provider/billing?boost=success`,
+    cancel_url: `${appUrl}/settings/provider/billing?boost=canceled`,
+    metadata: { providerId: provider.id, product: 'provider_boost' },
     allow_promotion_codes: true,
   });
 

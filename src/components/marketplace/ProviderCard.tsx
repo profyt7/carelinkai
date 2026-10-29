@@ -1,4 +1,5 @@
 import React from 'react';
+import BoostedBadge from '@/components/providers/BoostedBadge';
 import Image from 'next/image';
 import { getBlurDataURL } from '@/lib/imageBlur';
 import { FiUser, FiMapPin, FiCheckCircle, FiClock, FiDollarSign, FiHeart, FiShield } from 'react-icons/fi';
@@ -14,6 +15,8 @@ interface ProviderCardProps {
     state: string | null;
     serviceTypes: string[];
     isVerified: boolean;
+    /** Provider Boost (visibility only; never affects isVerified). */
+    boosted?: boolean;
     yearsInBusiness: number | null;
     credentialCount?: number;
     verifiedCredentialCount?: number;
@@ -149,6 +152,7 @@ const ProviderCard: React.FC<ProviderCardProps> = ({ provider, serviceTypeOption
         
         {/* Badges row */}
         <div className="flex flex-wrap gap-2 mb-3">
+          {provider.boosted && <BoostedBadge />}
           {/* Verification status */}
           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getVerificationBadgeColor(provider.isVerified)}`}>
             <FiCheckCircle className="mr-1" size={12} />

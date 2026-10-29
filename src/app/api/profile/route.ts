@@ -264,6 +264,13 @@ export async function GET(request: NextRequest) {
             rateWaitPerHour: true,
             instantBook: true,
             vehicleCapacity: true,
+            // Listing & Boost page (the listing fields were never selected, so its status never showed).
+            listingStatus: true,
+            listingPeriodEndsAt: true,
+            boostStatus: true,
+            boostPeriodEndsAt: true,
+            founderBoostStartedAt: true,
+            founderBoostEndsAt: true,
             credentials: {
               select: {
                 id: true,

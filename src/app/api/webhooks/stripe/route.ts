@@ -86,6 +86,16 @@ async function findProviderByCustomer(customerId: string) {
 }
 
 /**
+ * Provider Boost ($39/mo) vs. the legacy paid listing: Boost checkouts carry
+ * metadata.product = 'provider_boost', and the price is STRIPE_PRICE_PROVIDER_BOOST.
+ */
+function isProviderBoostSubscription(sub: Stripe.Subscription): boolean {
+  if (sub.metadata?.['product'] === 'provider_boost') return true;
+  const boostPrice = process.env['STRIPE_PRICE_PROVIDER_BOOST'];
+  return !!boostPrice && (sub.items?.data ?? []).some((i) => i.price?.id === boostPrice);
+}
+
+/**
  * Finds a Caregiver by Stripe customer ID (pro subscription).
  */
 async function findCaregiverByProCustomer(customerId: string) {
@@ -228,6 +238,19 @@ export async function POST(request: NextRequest) {
 
       // Check provider listing subscription
       const provider = await findProviderByCustomer(customerId);
+      if (provider && isProviderBoostSubscription(sub)) {
+        // Boost buys visibility only: never touches isVerified.
+        await prisma.provider.update({
+          where: { id: provider.id },
+          data: {
+            boostStripeSubscriptionId: sub.id,
+            boostStatus: status,
+            ...(currentPeriodEndsAt !== null && { boostPeriodEndsAt: currentPeriodEndsAt }),
+          },
+        });
+        logger.info("Provider Boost subscription updated", { providerId: provider.id, status, subscriptionId: sub.id });
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
       if (provider) {
         await prisma.provider.update({
           where: { id: provider.id },
@@ -286,6 +309,14 @@ export async function POST(request: NextRequest) {
 
       // Provider listing canceled
       const providerCanceled = await findProviderByCustomer(customerId);
+      if (providerCanceled && (providerCanceled.boostStripeSubscriptionId === sub.id || isProviderBoostSubscription(sub))) {
+        await prisma.provider.update({
+          where: { id: providerCanceled.id },
+          data: { boostStatus: SubscriptionStatus.CANCELED },
+        });
+        logger.info("Provider Boost subscription canceled", { providerId: providerCanceled.id });
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
       if (providerCanceled) {
         await prisma.provider.update({
           where: { id: providerCanceled.id },

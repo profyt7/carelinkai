@@ -15,6 +15,9 @@ import { createAuditLog } from "@/lib/audit";
 import { recordLeadConsent } from "@/lib/consent/lead-consent";
 import { LEAD_CONSENT_FORMS } from "@/lib/consent/lead-consent-text";
 import { errorSummary } from '@/lib/log-safe';
+import { isPaidFeatureEnabled } from "@/lib/billing/paid-features";
+import { isBoosted } from "@/lib/providers/boost";
+import { sendNewLeadOperatorEmail } from "@/lib/email";
 
 // Validation schema
 const createLeadSchema = z.object({
@@ -107,6 +110,8 @@ export async function POST(req: NextRequest) {
     // 5. Validate target exists (Aide or Provider)
     let targetExists = false;
     let targetName = "";
+    // Provider Boost perk: instant lead alert (set below when the target provider is boosted).
+    let boostAlert: { businessName: string; toEmail: string; contactName: string } | null = null;
 
     if (data.targetType === "AIDE") {
       const aide = await prisma.caregiver.findUnique({
@@ -131,12 +136,19 @@ export async function POST(req: NextRequest) {
         select: {
           id: true,
           businessName: true,
+          contactEmail: true,
+          contactName: true,
+          boostStatus: true,
+          founderBoostEndsAt: true,
         },
       });
 
       if (provider) {
         targetExists = true;
         targetName = provider.businessName;
+        if (isPaidFeatureEnabled("PROVIDER_BOOST") && isBoosted(provider) && provider.contactEmail) {
+          boostAlert = { businessName: provider.businessName, toEmail: provider.contactEmail, contactName: provider.contactName };
+        }
       }
     }
 
@@ -194,6 +206,19 @@ export async function POST(req: NextRequest) {
         familyId: family.id,
       },
     });
+
+    // 7b. Boost perk: instant email alert to a boosted provider. Generic copy (no message, no
+    // family details), skipped when RESEND_API_KEY is unset; never blocks the lead.
+    if (boostAlert) {
+      const appUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "https://getcarelinkai.com").replace(/\/$/, "");
+      void sendNewLeadOperatorEmail({
+        facilityName: boostAlert.businessName,
+        toEmail: boostAlert.toEmail,
+        operatorFirstName: boostAlert.contactName?.split(" ")[0] || undefined,
+        leadType: "inquiry",
+        ctaUrl: `${appUrl}/provider`,
+      }).catch(() => {});
+    }
 
     // 8. Return success response
     return NextResponse.json(

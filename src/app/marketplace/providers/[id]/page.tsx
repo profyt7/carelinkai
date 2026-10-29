@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import BoostedBadge from '@/components/providers/BoostedBadge';
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -37,6 +38,8 @@ type Provider = {
   licenseNumber: string | null;
   yearsInBusiness: number | null;
   isVerified: boolean;
+  /** Provider Boost (visibility only; never affects isVerified). */
+  boosted?: boolean;
   isActive: boolean;
   serviceTypes: string[];
   coverageArea: {
@@ -250,6 +253,7 @@ export default function ProviderDetailPage() {
                     <h1 className="text-3xl font-bold text-neutral-900">
                       {provider.businessName}
                     </h1>
+                    {provider.boosted && <BoostedBadge size="md" />}
                     {provider.isVerified && (
                       <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-success-100 text-success-800">
                         <FiCheckCircle className="mr-1 h-4 w-4" />
