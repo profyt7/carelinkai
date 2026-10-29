@@ -1,0 +1,45 @@
+{
+  "guestEnd": {
+    "bar": {
+      "top": 593,
+      "bottom": 660
+    },
+    "barHidden": "false",
+    "claim": {
+      "top": 520,
+      "bottom": 593
+    },
+    "advisor": {
+      "top": 525,
+      "bottom": 569
+    },
+    "bug": {
+      "top": 469,
+      "bottom": 513
+    },
+    "offset": "67px",
+    "innerHeight": 660
+  },
+  "keyboard": {
+    "barHidden": "true",
+    "bar": {
+      "top": 296,
+      "bottom": 363
+    },
+    "message": {
+      "top": -103,
+      "bottom": -13
+    },
+    "submit": {
+      "top": 161,
+      "bottom": 199
+    },
+    "tab": {
+      "top": 296,
+      "bottom": 360
+    },
+    "innerHeight": 360
+  },
+  "submitStatus": 201,
+  "confirmText": "We've received your message about Chagrin Valley Manor. A CareLinkAI advisor will follow up."
+}
