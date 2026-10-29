@@ -216,22 +216,22 @@ export const URGENCY_TO_ENUM: Record<UrgencyInput, InboundLeadUrgency> = { today
 
 export type RecordInboundOutcome =
   | { status: 'created'; lane: 'lead'; leadId: string; callerType: InboundCallerType }
-  | { status: 'created'; lane: 'observation'; observationId: string; homeId: string }
+  | { status: 'created'; lane: 'observation'; observationId: string; homeId: string; homeName: string }
   | { status: 'duplicate'; lane: 'lead'; leadId: string }
   | { status: 'duplicate'; lane: 'observation'; observationId: string }
   | { status: 'invalid'; error: 'callback_phone_required' };
 
 /** Find the home whose business line the call came from. */
-export async function matchHomeByPhone(fromNumber: string | null): Promise<{ id: string } | null> {
+export async function matchHomeByPhone(fromNumber: string | null): Promise<{ id: string; name: string } | null> {
   if (!fromNumber) return null;
   const last4 = fromNumber.slice(-4);
   const candidates = await prisma.assistedLivingHome.findMany({
     where: { phone: { contains: last4 }, isDemo: false },
-    select: { id: true, phone: true },
+    select: { id: true, name: true, phone: true },
     take: 50,
   });
   const hit = candidates.find((h) => toE164(h.phone) === fromNumber);
-  return hit ? { id: hit.id } : null;
+  return hit ? { id: hit.id, name: hit.name } : null;
 }
 
 /**
@@ -289,7 +289,7 @@ export async function recordInboundLead(parsed: ParsedInboundLead): Promise<Reco
           });
           return row;
         });
-        return { status: 'created', lane: 'observation', observationId: created.id, homeId: home.id };
+        return { status: 'created', lane: 'observation', observationId: created.id, homeId: home.id, homeName: home.name };
       } catch (e) {
         const dup = await prisma.availabilityObservation.findUnique({ where: { conversationId: parsed.conversationId }, select: { id: true } });
         if (dup) return { status: 'duplicate', lane: 'observation', observationId: dup.id };

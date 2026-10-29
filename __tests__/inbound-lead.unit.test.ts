@@ -27,6 +27,9 @@ jest.mock('@/lib/prisma', () => {
   return { prisma: p };
 });
 jest.mock('@/lib/sentry', () => ({ captureError: jest.fn() }));
+// The webhook fires OL-167b alerts; keep Resend / Twilio out of this suite.
+jest.mock('@/lib/email', () => ({ guardedResendSend: jest.fn(async () => ({ data: { id: 'msg' }, error: null })) }));
+jest.mock('@/lib/sms/sms-service', () => ({ smsService: { sendSMS: jest.fn(async () => true), isConfigured: () => true } }));
 
 import { prisma } from '@/lib/prisma';
 import { signElevenLabsPayload, ELEVENLABS_SIGNATURE_HEADER } from '@/lib/availability/call-result';

@@ -107,6 +107,11 @@ export default function CallQaPage() {
     }
   }, [status]);
   useEffect(() => { void load(); }, [load]);
+  // Alert emails link to /admin/call-qa#obs-{id}; rows render after the fetch.
+  useEffect(() => {
+    if (!data || !window.location.hash.startsWith('#obs-')) return;
+    document.getElementById(window.location.hash.slice(1))?.scrollIntoView({ block: 'center' });
+  }, [data]);
 
   async function act(row: Row, action: 'approve' | 'correct' | 'reject' | 'do_not_call') {
     setBusy(row.id);
@@ -184,7 +189,7 @@ export default function CallQaPage() {
             const e = editing[r.id];
             const pending = r.qaStatus === 'PENDING';
             return (
-              <li key={r.id} className="bg-white rounded-2xl shadow p-4 md:p-5" data-testid="call-qa-row" data-observation-id={r.id} data-qa-status={r.qaStatus} data-outcome={r.outcome}>
+              <li key={r.id} id={`obs-${r.id}`} className="bg-white rounded-2xl shadow p-4 md:p-5" data-testid="call-qa-row" data-observation-id={r.id} data-qa-status={r.qaStatus} data-outcome={r.outcome}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <div className="font-semibold text-neutral-900">{r.home.name} <span className="text-neutral-500 font-normal">· {r.home.address?.city ?? ''}</span></div>
