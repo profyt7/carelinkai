@@ -33,7 +33,9 @@ export async function POST(request: NextRequest) {
     } catch {
       return new NextResponse(null, { status: 204 });
     }
-    // No analytics consent asserted → store nothing.
+    // Consent gate, on every event and before both the DB write and the GA send. Consent lives in
+    // the visitor's browser (localStorage), so the server can only enforce the flag the client
+    // sends; track() / trackPageView() never call this endpoint without it. No flag → nothing.
     if (body?.consent !== "analytics" || !opaqueId(body?.sid)) return new NextResponse(null, { status: 204 });
     const sid = String(body.sid);
     // sanitizePath (inside buildMpBody) drops every query param but `view` / `page`.

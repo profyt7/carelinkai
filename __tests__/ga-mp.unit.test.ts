@@ -93,6 +93,48 @@ describe('POST /api/analytics/track → GA', () => {
     expect(JSON.stringify(body)).not.toMatch(/jane|title/i);
   });
 
+  // GA4 URL policy: page_location = canonical origin + pathname + only `view` / `page` (short
+  // [A-Za-z0-9_-] values). Nothing else from the URL, and nothing but allowlisted props, reaches
+  // GA or the AnalyticsEvent table (which stores no path at all).
+  it.each(['search_performed', 'inquiry_submitted', 'page_view'] as const)(
+    'URL policy (%s): q, location, name, email, phone, message and unlisted params never reach GA or the table',
+    async (name) => {
+      const fields = { q: 'jane doe', location: 'Beachwood', name: 'Jane Doe', email: 'jane@x.co', phone: '2165550199', message: 'mom has dementia', utm_source: 'fb', ref: 'abc', foo: 'bar' };
+      const path = `/search?${new URLSearchParams({ ...fields, view: 'map', page: '2' }).toString()}`;
+      const props: Record<string, unknown> =
+        name === 'search_performed'
+          ? { view: 'grid', has_budget_filter: false, has_location_filter: true, verified_only: false, medicaid_waiver: false, result_count_bucket: '1-5' }
+          : name === 'inquiry_submitted' ? { listing_id: 'cmhome123', entry: 'rail' } : {};
+      await post({ name, sid: SID, consent: 'analytics', path, props: { ...props, ...fields } });
+
+      const ga = gaBodies()[0];
+      expect(ga.events[0].params.page_location).toBe('https://getcarelinkai.com/search?view=map&page=2');
+      const gaKeys = Object.keys(ga.events[0].params);
+      for (const k of Object.keys(fields)) expect(gaKeys).not.toContain(k);
+      const rows = create.mock.calls.map((c) => (c[0] as { data: Record<string, unknown> }).data);
+      for (const row of rows) {
+        expect(Object.keys(row).sort()).toEqual(['anonSessionId', 'listingId', 'name', 'propsJson']);
+        for (const k of Object.keys(fields)) expect(Object.keys(row.propsJson as object)).not.toContain(k);
+      }
+      for (const out of [JSON.stringify(ga), ...rows.map((r) => JSON.stringify(r))]) {
+        for (const v of Object.values(fields)) expect(out).not.toContain(v);
+        expect(out).not.toMatch(/[?&](q|location|name|email|phone|message|utm_source|ref|foo)=/);
+      }
+      expect(create).toHaveBeenCalledTimes(name === 'page_view' ? 0 : 1);
+    },
+  );
+
+  it.each(['inquiry_submitted', 'tour_requested', 'inquiry_started', 'page_view'])(
+    'server consent gate (%s): no consent flag → nothing stored, nothing sent to GA',
+    async (name) => {
+      for (const consent of [undefined, 'none', 'marketing', true, 'ANALYTICS']) {
+        await post({ name, sid: SID, consent, path: '/homes/cmhome123', props: { listing_id: 'cmhome123', entry: 'rail' } });
+      }
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(create).not.toHaveBeenCalled();
+    },
+  );
+
   it('contacts GA and stores nothing without analytics consent', async () => {
     await post({ name: 'page_view', sid: SID, path: '/' });
     await post({ name: 'inquiry_started', sid: SID, consent: 'none', props: { listing_id: 'cmhome123', entry: 'rail' } });

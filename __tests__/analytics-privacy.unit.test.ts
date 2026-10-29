@@ -53,6 +53,18 @@ const everyString = (v: unknown): string[] =>
   typeof v === 'string' ? [v] : Array.isArray(v) ? v.flatMap(everyString) : v && typeof v === 'object' ? Object.values(v).flatMap(everyString) : [];
 
 describe('consent', () => {
+  it('consent is read on every event: withdrawing it mid-session stops page views and submission events', () => {
+    consent(true);
+    trackPageView();
+    track('inquiry_submitted', { listing_id: 'cmhome123abc', entry: 'rail' });
+    expect(sent.map((e) => e.name)).toEqual(['page_view', 'inquiry_submitted']);
+    consent(false);
+    trackPageView();
+    track('inquiry_submitted', { listing_id: 'cmhome123abc', entry: 'rail' });
+    track('tour_requested', { listing_id: 'cmhome123abc', entry: 'rail' });
+    expect(sent).toHaveLength(2);
+  });
+
   it('page views: nothing without consent; with consent only the event name, no props', () => {
     trackPageView();
     consent(false);
