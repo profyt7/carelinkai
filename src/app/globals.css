@@ -507,6 +507,12 @@
   @apply scale-[0.98];
 }
 
+/* OL-217: the listing page sets this while its inquiry form / confirmation is on screen on a phone, so the
+   floating widgets (Care Advisor, Report Bug) never sit on a field, the consent box or the buttons. */
+body[data-listing-form-open] [data-floating-widget] {
+  visibility: hidden;
+}
+
 /* Respect user's motion preferences */
 @media (prefers-reduced-motion: reduce) {
   *,

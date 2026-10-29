@@ -13,6 +13,7 @@ export function BugReportButton() {
         onClick={() => setIsOpen(true)}
         className="fixed bottom-[calc(var(--bottom-stack-offset,0px)+5rem)] right-4 z-50 flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 md:right-6 md:bottom-[calc(var(--bottom-stack-offset,0px)+6rem)]"
         title="Report a bug"
+        data-floating-widget
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

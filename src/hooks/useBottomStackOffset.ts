@@ -22,6 +22,17 @@ function publish() {
   else document.body.style.removeProperty('--bottom-stack-offset');
 }
 
+/**
+ * For a bar whose share isn't simply its own height (the OL-217 listing CTA bar riding off screen with the page):
+ * set its share directly. 0 removes it.
+ */
+export function setBottomStackHeight(key: string, px: number) {
+  if ((heights.get(key) ?? 0) === px) return;
+  if (px > 0) heights.set(key, px);
+  else heights.delete(key);
+  publish();
+}
+
 export function useBottomStackOffset(ref: RefObject<HTMLElement | null>, key: string, enabled = true) {
   useEffect(() => {
     const el = ref.current;

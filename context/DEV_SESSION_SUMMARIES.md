@@ -2389,6 +2389,30 @@
 
 <!-- Add new sessions above this line, newest first -->
 
+### 2026-10-29 — OL-217 facility profile (/homes/[id]) on the Direction D standard — PR open
+- **Objective:** restructure `/homes/[id]` to the Direction D facility profile: header, key-stat tiles, section nav, ONE inquiry pathway with a mobile CTA bar, the sections in order, and the claim CTA demoted. Metadata, JSON-LD, URL, handlers, frozen components and test ids stay unchanged. Screenshots before and after, axe, new e2e. No merge.
+- **Work completed:**
+  - Presentation rewrite in `page.tsx` (see OL-217 in open loops and the technical state for the decisions).
+  - The CTA bar docks on the tab bar when signed in. A sticky bar stopped 64px short because of the shell's `<main>` `pb-16`.
+  - "Scrolled past the panel" uses a scroll check. An IntersectionObserver missed instant jumps, which was found when the reduced-motion harness showed no bar.
+  - New e2e `listing-profile.spec.ts`.
+  - The `listing-no-mock` 390 half asserts the static section bar.
+  - OL-222 logged (PhotoGallery counter over its caption; pre-existing).
+- **Files changed:** `src/app/homes/[id]/page.tsx`, `e2e/public/directory/{listing-profile,listing-no-mock}.spec.ts`, context files.
+- **Commands run:**
+  - squash-merged PR #7 (`99a44aea`)
+  - local Postgres + standalone builds of main and the branch with a fixed clock
+  - Playwright screenshot/axe harness (scratchpad) and pngjs diff
+  - `tsc`, `eslint`, `jest`
+  - e2e groups (directory, concierge, operator) against a fresh migrated database with `--retries=0`
+- **Tests/build status:**
+  - tsc and eslint clean; jest 149 suites passed (1669 tests, 10 skipped).
+  - axe at 1280/390 on both fixture pages: 0 new violations (color-contrast 6→1, 7→1).
+  - e2e (local, `--retries=0`): `listing-profile` 2/2, stable ×3 (6/6); directory group (the CI job's spec list incl. `public/directory/`) 102 passed. Concierge and operator groups: see the PR.
+- **Deployment impact:** UI only on `/homes/[id]`. No schema, env, API, route, metadata or JSON-LD change.
+- **New risks/blockers:** none. Inspection data in the screenshots is fictional and local only.
+- **Recommended next step:** Chris reviews the screenshots (`assets/ol-217-screenshots`) and the inquiry flow at 390 and 1280, then merges; prod-verify after.
+
 ### 2026-10-29 — OL-216 search result cards on the Direction D standard (closes OL-208) — PR open
 - **Objective:** make `SearchResultCard` the only card on `/search` (grid + list); add the results helper, a card-shaped skeleton and an honest empty state; lift the floating widgets above the mobile tab bar (OL-208); align the SEO directory card. No change to search logic, filters, URL, pagination, map or `/api/search`.
 - **Work completed:**
