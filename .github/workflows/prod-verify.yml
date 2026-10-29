@@ -58,6 +58,14 @@ on:
         description: 'Space-separated paths that must be listed in /sitemap.xml (empty = skip)'
         required: false
         default: ''
+      mobile_overflow_paths:
+        description: 'OL-227: space-separated paths checked in a mobile browser (390×844, 375×667): page never wider than the device (empty = skip)'
+        required: false
+        default: ''
+      mobile_overflow_home_name:
+        description: 'OL-227: a listing name to find via /cleveland/assisted-living + suburb pages and check the same way (empty = skip)'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -322,6 +330,74 @@ jobs:
             pass('Not sure → both lanes render (free help first, offer second)');
           } catch (e) {
             bad(`browser check threw: ${e.message}`);
+          } finally {
+            await browser.close();
+          }
+          const fs = await import('node:fs');
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, out.join('\n') + '\n');
+          console.log(out.join('\n'));
+          if (fail) process.exit(1);
+          EOF
+          node check.mjs
+
+      - name: Mobile overflow — page never wider than the device (browser, OL-227)
+        if: ${{ inputs.mobile_overflow_paths != '' || inputs.mobile_overflow_home_name != '' }}
+        shell: bash
+        env:
+          BASE: ${{ inputs.base }}
+          PATHS: ${{ inputs.mobile_overflow_paths }}
+          HOME_NAME: ${{ inputs.mobile_overflow_home_name }}
+        run: |
+          set -e
+          mkdir -p pwm && cd pwm
+          npm init -y >/dev/null
+          npm i playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null 2>&1
+          cat > check.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          const BASE = process.env.BASE;
+          const out = [];
+          let fail = false;
+          const pass = (m) => out.push(`- ✅ ${m}`);
+          const bad = (m) => { out.push(`- ❌ ${m}`); fail = true; console.error('::error::' + m); };
+          const browser = await chromium.launch();
+          const UA = 'CareLinkAI-ProdVerify/1.0 (+github-actions)';
+          const paths = (process.env.PATHS || '').split(/\s+/).filter(Boolean);
+          try {
+            if (process.env.HOME_NAME) {
+              // Find the listing's /homes/<id> link on the directory hub or one of its suburb pages.
+              const page = await browser.newPage({ userAgent: UA });
+              const name = process.env.HOME_NAME.toLowerCase();
+              const findOn = async (path) => {
+                await page.goto(BASE + path, { waitUntil: 'domcontentloaded' });
+                return page.evaluate((n) => {
+                  const a = [...document.querySelectorAll('a[href^="/homes/"]')].find((el) => (el.textContent || '').toLowerCase().includes(n));
+                  return a ? a.getAttribute('href') : null;
+                }, name);
+              };
+              let href = await findOn('/cleveland/assisted-living');
+              if (!href) {
+                const suburbs = await page.evaluate(() => [...new Set([...document.querySelectorAll('a[href^="/cleveland/assisted-living/"]')].map((a) => a.getAttribute('href')))]);
+                for (const s of suburbs) { href = await findOn(s); if (href) break; }
+              }
+              if (href) { pass(`found "${process.env.HOME_NAME}" at ${href}`); paths.push(href); }
+              else bad(`listing "${process.env.HOME_NAME}" not found on /cleveland/assisted-living or its suburb pages`);
+              await page.close();
+            }
+            for (const vp of [{ width: 390, height: 844 }, { width: 375, height: 667 }]) {
+              const ctx = await browser.newContext({ viewport: vp, isMobile: true, hasTouch: true, userAgent: UA });
+              const page = await ctx.newPage();
+              for (const p of paths) {
+                await page.goto(BASE + p, { waitUntil: 'networkidle', timeout: 60000 }).catch(() => page.waitForLoadState('domcontentloaded'));
+                await page.waitForTimeout(1500);
+                const m = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth: window.innerWidth }));
+                const ok = m.innerWidth === vp.width && m.scrollWidth <= m.innerWidth;
+                (ok ? pass : bad)(`${p} @ ${vp.width}×${vp.height}: scrollWidth ${m.scrollWidth}, innerWidth ${m.innerWidth} (device ${vp.width})`);
+              }
+              await ctx.close();
+            }
+          } catch (e) {
+            bad(`mobile overflow check threw: ${e.message}`);
           } finally {
             await browser.close();
           }

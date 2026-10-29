@@ -30,6 +30,9 @@ interface PhotoGalleryProps {
   placeholderImageUrl?: string;
 }
 
+/** OL-227: the hero box — 4:3 below md, the existing fixed height at ≥ md; never wider than its container. */
+const HERO_BOX = 'w-full max-w-full overflow-hidden rounded-lg aspect-[4/3] md:aspect-auto md:h-96';
+
 const PhotoGallery: React.FC<PhotoGalleryProps> = ({
   photos,
   initialIndex = 0,
@@ -160,7 +163,7 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
   if (!photos.length) {
     if (placeholderImageUrl) {
       return (
-        <div className="relative h-64 w-full overflow-hidden rounded-lg bg-neutral-100 md:h-96">
+        <div className={`relative ${HERO_BOX} bg-neutral-100`}>
           <Image
             src={placeholderImageUrl}
             alt="Representative senior-living photo (no operator photo yet)"
@@ -175,13 +178,13 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
         </div>
       );
     }
-    return <HomeImagePlaceholder className="h-64 w-full rounded-lg md:h-96" />;
+    return <HomeImagePlaceholder className={HERO_BOX} />;
   }
 
   return (
-    <div className="photo-gallery">
-      {/* Main gallery display */}
-      <div className="relative h-64 w-full overflow-hidden rounded-lg bg-neutral-100 md:h-96">
+    <div className="photo-gallery w-full min-w-0">
+      {/* Main gallery display: same box on every listing, whatever the source image dimensions (object-cover). */}
+      <div className={`relative ${HERO_BOX} bg-neutral-100`} data-testid="photo-gallery-hero">
         {/* Loading indicator */}
         {isLoading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-neutral-100 bg-opacity-75">
@@ -205,9 +208,23 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
             style={{ opacity: isLoading ? 0 : 1 }}
           />
           
-          {/* Caption overlay */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-            <p className="text-sm text-white">{currentPhoto.caption}</p>
+          {/* Bottom bar over a gradient: the caption (1 line < md, 2 lines ≥ md, ellipsis) and "View All" share a
+              flex row, so a long caption can never run under the button. */}
+          <div className="absolute inset-x-0 bottom-0 flex items-end gap-3 bg-gradient-to-t from-black/70 via-black/30 to-transparent px-3 pb-3 pt-10">
+            <p className="line-clamp-1 min-w-0 flex-1 break-words text-sm text-white md:line-clamp-2" data-testid="photo-gallery-caption">
+              {currentPhoto.caption}
+            </p>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                openLightbox(activeIndex);
+              }}
+              className="flex shrink-0 items-center rounded-md bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 shadow-md transition-all hover:bg-neutral-50"
+              data-testid="photo-gallery-view-all"
+            >
+              <FiGrid className="mr-1.5 h-4 w-4" />
+              View All
+            </button>
           </div>
         </div>
 
@@ -237,32 +254,21 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
           </>
         )}
 
-        {/* Photo count and view all button */}
-        <div className="absolute bottom-4 left-4 z-10 rounded-md bg-black/50 px-2 py-1 text-xs text-white">
+        {/* Photo count: its own top-left chip, clear of the caption bar */}
+        <div className="absolute left-3 top-3 z-10 rounded-md bg-black/60 px-2 py-1 text-xs text-white" data-testid="photo-gallery-counter">
           {activeIndex + 1} / {photos.length}
         </div>
-        
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            openLightbox(activeIndex);
-          }}
-          className="absolute bottom-4 right-4 z-10 flex items-center rounded-md bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 shadow-md transition-all hover:bg-neutral-50"
-        >
-          <FiGrid className="mr-1.5 h-4 w-4" />
-          View All
-        </button>
       </div>
 
       {/* Thumbnail strip */}
       {photos.length > 1 && (
-        <div className="mt-2 flex w-full items-center overflow-x-auto pb-2">
-          <div className="flex space-x-2">
+        <div className="mt-2 w-full min-w-0 max-w-full snap-x snap-mandatory overflow-x-auto pb-2" data-testid="photo-gallery-thumbs">
+          <div className="flex w-max gap-2">
             {photos.map((photo, index) => (
               <button
                 key={photo.id}
                 onClick={() => setActiveIndex(index)}
-                className={`relative h-16 w-24 shrink-0 overflow-hidden rounded-md border-2 transition-all ${
+                className={`relative h-16 w-16 shrink-0 snap-start overflow-hidden rounded-md border-2 transition-all ${
                   index === activeIndex 
                     ? "border-primary-500" 
                     : "border-transparent hover:border-neutral-300"
@@ -272,7 +278,7 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                   src={photo.url}
                   alt={`Thumbnail ${index + 1}`}
                   fill
-                  sizes="96px"
+                  sizes="64px"
                   className="object-cover"
                 />
               </button>

@@ -2389,6 +2389,24 @@
 
 <!-- Add new sessions above this line, newest first -->
 
+### 2026-10-29 — OL-227 gallery overflow hotfix (+ OL-226 review package)
+- **Objective:** fix the live /homes/[id] phone overflow (gallery wider than the viewport; iOS Safari zoomed out), uniform hero, contained thumbnail strip, non-overlapping caption / counter (closes OL-222); post the OL-226 review package on PR #10.
+- **Work completed:**
+  - OL-226 review package posted on #10 (audit, event mapping, privacy tests, screenshots).
+  - OL-227:
+    - Reproduced: 855px page at a 390px device on an 8-photo listing.
+    - Root-caused: implicit grid column + `min-width: auto` → thumbnail-row width.
+    - Fixed in PhotoGallery and the gallery wrapper (layout only).
+    - New e2e with production-like fixtures, plus a prod-verify mobile-overflow step.
+- **Files changed:** `src/components/homes/PhotoGallery.tsx`, `src/app/homes/[id]/page.tsx`, `e2e/public/directory/gallery-overflow.spec.ts`, `public/images/e2e/*.jpg`, `.github/workflows/prod-verify.yml`, context files.
+- **Commands run:** local standalone builds (old and new), Playwright with `--retries=0`, fixture screenshot script, a local smoke test of the prod-verify mobile step.
+- **Tests/build status:**
+  - `gallery-overflow` 4/4 on the fix; it fails on the old build.
+  - Directory group 108/108; concierge group 47/47; jest 149/149; tsc and eslint clean.
+- **Deployment impact:** layout of the /homes/[id] gallery only. No data, API or env change. Two small fixture images ship in `public/images/e2e/`.
+- **New risks/blockers:** none. Production photos are Cloudinary URLs (unreachable in this sandbox), so the fixtures use local images of the same shapes.
+- **Recommended next step:** merge, prod-verify with `mobile_overflow_home_name=St. Mary of the Woods`, then rebase OL-226 (#10).
+
 ### 2026-10-29 — OL-217 pre-merge review fixes, merge, prod-verify
 - **Objective:** answer the pre-merge review on PR #8 (end-of-page and keyboard evidence, capacity gate, Availability box); fix the mobile floating-widget overlap it found; merge on approval; prod-verify; log the follow-ups.
 - **Work completed:**

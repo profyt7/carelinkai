@@ -981,15 +981,19 @@ export default function HomeDetailPage() {
             </div>
 
             {/* Gallery: PhotoGallery as the hero; ≥ md a second photo + "All photos" beside it. No real photos → the placeholder tile. */}
+            {/* OL-227: explicit minmax(0, 1fr) columns + min-w-0 children — with implicit columns the track grew to the
+                thumbnail strip's content width (8 photos ≈ 824px) and the whole page overflowed on phones. */}
             {photos.length === 0 ? (
-              <HomeImagePlaceholder className="mt-4 h-56 w-full rounded-xl md:h-80" label="Photos coming soon" subtitle="No photos yet" />
+              <div className="mt-4 aspect-[4/3] w-full md:aspect-auto md:h-80" data-testid="photo-gallery-hero">
+                <HomeImagePlaceholder className="h-full w-full rounded-xl" label="Photos coming soon" subtitle="No photos yet" />
+              </div>
             ) : (
-              <div ref={galleryRef} className={`mt-4 grid gap-2 ${photos.length > 1 ? 'md:grid-cols-3' : ''}`}>
-                <div className={photos.length > 1 ? 'md:col-span-2' : ''}>
+              <div ref={galleryRef} className={`mt-4 grid min-w-0 grid-cols-1 gap-2 ${photos.length > 1 ? 'md:grid-cols-3' : ''}`}>
+                <div className={`min-w-0 ${photos.length > 1 ? 'md:col-span-2' : ''}`}>
                   <PhotoGallery photos={photos} />
                 </div>
                 {photos.length > 1 && (
-                  <div className="relative hidden self-start overflow-hidden rounded-lg md:block">
+                  <div className="relative hidden min-w-0 self-start overflow-hidden rounded-lg md:block">
                     {/* eslint-disable-next-line @next/next/no-img-element -- second tile only; PhotoGallery owns the optimised hero */}
                     <img src={photos[1].url} alt={`${realHome.name}, photo 2 of ${photos.length}`} className="h-96 w-full object-cover" />
                     <button type="button" onClick={openAllPhotos} className={`${BTN_SECONDARY} absolute bottom-3 right-3 py-1.5`}>
