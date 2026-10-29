@@ -61,6 +61,7 @@ export default function CareConcierge() {
         onClick={() => setOpen(true)}
         className={`fixed bottom-[calc(var(--bottom-stack-offset,0px)+1.5rem)] right-6 z-50 flex items-center gap-2 px-4 py-3 bg-primary-600 text-white rounded-full shadow-lg hover:bg-primary-700 transition-all ${open ? 'hidden' : ''}`}
         aria-label="Ask a Care Advisor"
+        data-floating-widget
       >
         <FiMessageCircle size={20} />
         <span className="text-sm font-medium">Ask a Care Advisor</span>

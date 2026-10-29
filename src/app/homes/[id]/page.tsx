@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -44,7 +44,7 @@ import FeaturedBadge from "@/components/homes/FeaturedBadge";
 import AvailabilityBadge, { UNVERIFIED_AVAILABILITY } from "@/components/availability/AvailabilityBadge";
 import HomeImagePlaceholder from "@/components/homes/HomeImagePlaceholder";
 import PriceLine from "@/components/ui/PriceLine";
-import { useBottomStackOffset } from "@/hooks/useBottomStackOffset";
+import { setBottomStackHeight } from "@/hooks/useBottomStackOffset";
 import { listingBreadcrumb } from "@/lib/seo/listing-meta";
 import HomeReviews from "@/components/homes/HomeReviews";
 import InspectionHistory from "@/components/homes/InspectionHistory";
@@ -181,7 +181,6 @@ export default function HomeDetailPage() {
   const [panelEl, setPanelEl] = useState<HTMLDivElement | null>(null);
   const [ctaEl, setCtaEl] = useState<HTMLDivElement | null>(null);
   const panelRefCb = useCallback((el: HTMLDivElement | null) => { bookingRef.current = el; setPanelEl(el); }, []);
-  const ctaRef = useMemo(() => ({ current: ctaEl }), [ctaEl]);
   const role = (sessionData?.user as { role?: string } | undefined)?.role;
   const isStaff = role === "OPERATOR" || role === "STAFF" || role === "ADMIN";
   const signedIn = authStatus === "authenticated";
@@ -236,14 +235,6 @@ export default function HomeDetailPage() {
     };
   }, [compact, panelEl]);
   const showCta = compact && !panelInView;
-  // The bar is the last thing in the page flow; a guest who scrolls on into the site footer leaves it behind.
-  const [ctaOnScreen, setCtaOnScreen] = useState(false);
-  useEffect(() => {
-    if (!ctaEl || typeof IntersectionObserver === "undefined") return;
-    const io = new IntersectionObserver(([entry]) => setCtaOnScreen(entry.isIntersecting), { threshold: 0.5 });
-    io.observe(ctaEl);
-    return () => io.disconnect();
-  }, [ctaEl]);
   // Signed in, the page scrolls inside the shell's <main>, which ends above the tab bar and pads its bottom; a
   // sticky bar would stop inside that padding and float above a strip of content. So the bar is fixed on top of
   // whatever sits below the scroller (the tab bar), with an in-flow spacer for any height the padding doesn't cover.
@@ -261,8 +252,55 @@ export default function HomeDetailPage() {
     window.addEventListener("resize", onResize);
     return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", onResize); };
   }, [ctaEl, signedIn, compact]);
-  // OL-208: floating widgets clear the bar (on top of the tab bar when signed in).
-  useBottomStackOffset(ctaRef, "listing-cta-bar", showCta && ctaOnScreen);
+  // OL-208 + end-of-listing clearance, both from the floating widgets' measured boxes ([data-floating-widget]).
+  // `reach` = how far the widgets extend above the bottom stack; the largest settled value is kept so the
+  // clearance doesn't jump when a widget hides. A docked bar lifts the widgets by its height. A guest's sticky
+  // bar rides away with the listing: the widgets ride on its top edge, then drop back to their normal offset once
+  // the bar is clear of their zone — so they never sit on the bar's buttons.
+  const reachRef = useRef(0);
+  const [clearance, setClearance] = useState(0);
+  const [panelOnScreen, setPanelOnScreen] = useState(false);
+  useEffect(() => {
+    if (!compact || !ctaEl) { setBottomStackHeight("listing-cta-bar", 0); setClearance(0); setPanelOnScreen(false); return; }
+    let raf = 0;
+    let retry: ReturnType<typeof setTimeout> | undefined;
+    let tries = 0;
+    const check = () => {
+      raf = 0;
+      const vh = window.innerHeight;
+      const lift = parseFloat(getComputedStyle(document.body).getPropertyValue("--bottom-stack-offset")) || 0;
+      document.querySelectorAll<HTMLElement>("[data-floating-widget]").forEach((w) => {
+        const r = w.getBoundingClientRect();
+        // Skip a widget mid-transition (its box is between two offsets) or not rendered.
+        if (r.height && !w.getAnimations?.().length) reachRef.current = Math.max(reachRef.current, Math.ceil(vh - lift - r.top));
+      });
+      const reach = reachRef.current;
+      // The widgets mount on their own schedule (root layout); re-measure briefly until they're there.
+      if (!reach && tries++ < 20) retry = setTimeout(schedule, 500);
+      setClearance(reach ? reach + 8 : 0);
+      const bar = ctaEl.getBoundingClientRect();
+      const share = !showCta ? 0 : signedIn ? ctaEl.offsetHeight : bar.top < vh && bar.bottom >= vh - reach ? vh - bar.top : 0;
+      setBottomStackHeight("listing-cta-bar", Math.max(0, Math.round(share)));
+      if (panelEl) { const p = panelEl.getBoundingClientRect(); setPanelOnScreen(p.bottom > 0 && p.top < vh); }
+    };
+    const schedule = () => { if (!raf) raf = requestAnimationFrame(check); };
+    check();
+    document.addEventListener("scroll", schedule, { capture: true, passive: true });
+    window.addEventListener("resize", schedule);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(retry);
+      document.removeEventListener("scroll", schedule, { capture: true });
+      window.removeEventListener("resize", schedule);
+      setBottomStackHeight("listing-cta-bar", 0);
+    };
+  }, [compact, ctaEl, panelEl, showCta, signedIn]);
+  // While the inquiry form or its confirmation is on screen on a phone, the widgets step aside (globals.css).
+  const formOpen = compact && bookingStep > 0 && panelOnScreen;
+  useEffect(() => {
+    document.body.toggleAttribute("data-listing-form-open", formOpen);
+    return () => document.body.removeAttribute("data-listing-form-open");
+  }, [formOpen]);
 
   // Section nav: mark the section in the reading band as current (aria-current="location").
   const [activeSection, setActiveSection] = useState(SECTIONS[0].id);
@@ -1384,6 +1422,9 @@ export default function HomeDetailPage() {
           </div>
         )}
 
+        {/* < lg: room for the floating widgets above the bar, so the last content (contact details, claim line) can
+            scroll clear of them. Measured, see `clearance`. */}
+        {clearance > 0 && <div aria-hidden="true" data-testid="listing-widget-clearance" className="lg:hidden" style={{ height: clearance }} />}
         {/* < lg: sticky bottom CTA bar once the inline panel has scrolled away (§4). Last in the page flow, so its
             height is the bottom padding; signed in it docks on the tab bar (see `dock`). Hidden + inert while the
             inline panel is on screen. */}

@@ -11,19 +11,25 @@
  *     (viewport 390×360), the bar covers neither the focused field nor the submit.
  *   - 1280, signed in as FAMILY: the same submission through the right-rail panel;
  *     no CTA bar; one form in the accessibility tree.
+ *   - Floating widgets (pointer checks via elementFromPoint + trial tap): at max scroll the claim link (FAMILY,
+ *     unclaimed) and the Contact email (FAMILY, claimed) are tappable; as a guest's CTA bar scrolls away its
+ *     "Send Inquiry" and the claim link stay tappable; with the keyboard open the message field, consent box and
+ *     "Continue →" are tappable, and the confirmation isn't covered.
  *   - No state inspection on file → three key-stat tiles, no "0 …" claim.
  * Test data is fictional; RESEND_API_KEY is unset in CI, so nothing is emailed.
  *
  *   npx playwright test --config=playwright.e2e.config.ts e2e/public/directory/listing-profile.spec.ts
  */
-import { test, expect, type Browser, type Page } from '@playwright/test';
+import { test, expect, type Browser, type Locator, type Page } from '@playwright/test';
 
 const ts = Date.now();
 const ADMIN = 'admin@carelinkai.com';
 const OP_EMAIL = `listing-profile-op-${ts}@test.carelinkai.com`;
 const FAMILY_EMAIL = `listing-profile-family-${ts}@test.carelinkai.com`;
 const HOME = `E2E Profile Home ${ts}`;
+const CLAIMED = `E2E Profile Claimed ${ts}`;
 let homeId = '';
+let claimedId = '';
 
 const CONSENT_INIT = () => {
   try {
@@ -47,9 +53,48 @@ async function signedIn(browser: Browser, email: string, viewport: { width: numb
   return page;
 }
 
-async function openListing(page: Page) {
-  await page.goto(`/homes/${homeId}`, { waitUntil: 'domcontentloaded' });
-  await expect(page.getByRole('heading', { level: 1, name: HOME, exact: true })).toBeVisible({ timeout: 60_000 });
+async function openListing(page: Page, id = homeId, name = HOME) {
+  await page.goto(`/homes/${id}`, { waitUntil: 'domcontentloaded' });
+  await expect(page.getByRole('heading', { level: 1, name, exact: true })).toBeVisible({ timeout: 60_000 });
+}
+
+/**
+ * Scroll to the very end (the app shell scrolls inside <main>; the public shell scrolls the window), once the page
+ * has measured the floating widgets and laid out its end-of-listing clearance.
+ */
+const scrollToEnd = async (page: Page) => {
+  await expect(page.getByTestId('listing-widget-clearance')).toHaveCount(1);
+  await page.evaluate(() => {
+    window.scrollTo(0, document.documentElement.scrollHeight);
+    document.querySelectorAll('main').forEach((m) => { m.scrollTop = m.scrollHeight; });
+  });
+};
+
+/**
+ * Pointer check, no scrolling: the element is wholly inside the viewport and the centre plus four inset corners all
+ * hit it (not a floating widget, the CTA bar or the tab bar), then a trial tap passes Playwright's hit-target check.
+ * Retried briefly so the bar's / widgets' 200 ms transitions can settle.
+ */
+async function expectTappable(loc: Locator, what: string) {
+  await expect(async () => {
+    const r = await loc.evaluate((el) => {
+      const b = el.getBoundingClientRect();
+      const inside = b.width > 0 && b.top >= 0 && b.left >= 0 && b.bottom <= innerHeight && b.right <= innerWidth;
+      // Corner probes inset past a rounded corner (hit-testing follows border-radius).
+      const i = Math.min(10, b.width / 4, b.height / 4);
+      const pts: Array<[number, number]> = [
+        [b.left + b.width / 2, b.top + b.height / 2], [b.left + i, b.top + i], [b.right - i, b.top + i], [b.left + i, b.bottom - i], [b.right - i, b.bottom - i],
+      ];
+      const blockers = pts
+        .map(([x, y]) => document.elementFromPoint(x, y))
+        .filter((h) => !h || !(h === el || el.contains(h)))
+        .map((h) => (h ? h.getAttribute('aria-label') || h.getAttribute('title') || h.closest('[data-testid]')?.getAttribute('data-testid') || h.tagName : 'nothing'));
+      return { inside, blockers };
+    });
+    expect(r.inside, `${what} fully inside the viewport`).toBe(true);
+    expect(r.blockers, `${what} not covered`).toEqual([]);
+  }).toPass({ timeout: 5_000 });
+  await loc.tap({ trial: true, timeout: 5_000 });
 }
 
 /** Inquiry panels exposed to assistive tech (aria-hidden / inert / display:none excluded). */
@@ -94,15 +139,20 @@ test.describe('@critical OL-217 facility profile — one inquiry pathway', () =>
   test.beforeAll(async ({ request }) => {
     await request.post('/api/dev/upsert-admin', { data: { email: ADMIN } });
     const res = await request.post('/api/dev/upsert-operator', {
-      data: { email: OP_EMAIL, companyName: `Profile Ops ${ts}`, homes: [{ name: HOME, city: 'Beachwood', zipCode: '44122', careLevel: ['ASSISTED'], unclaimed: true }] },
+      data: { email: OP_EMAIL, companyName: `Profile Ops ${ts}`, homes: [
+        { name: HOME, city: 'Beachwood', zipCode: '44122', careLevel: ['ASSISTED'], unclaimed: true },
+        { name: CLAIMED, city: 'Beachwood', zipCode: '44122', careLevel: ['ASSISTED'] },
+      ] },
     });
     expect(res.status(), 'dev seed').toBe(200);
-    homeId = ((await res.json()).homes as Array<{ id: string; name: string }>).find((h) => h.name === HOME)!.id;
+    const homes = (await res.json()).homes as Array<{ id: string; name: string }>;
+    homeId = homes.find((h) => h.name === HOME)!.id;
+    claimedId = homes.find((h) => h.name === CLAIMED)!.id;
     expect((await request.post('/api/dev/upsert-family', { data: { email: FAMILY_EMAIL } })).ok(), 'family seed').toBe(true);
   });
 
   test.afterAll(async ({ request }) => {
-    await request.delete('/api/dev/upsert-operator', { data: { email: OP_EMAIL, homeIds: [homeId] } }).catch(() => undefined);
+    await request.delete('/api/dev/upsert-operator', { data: { email: OP_EMAIL, homeIds: [homeId, claimedId] } }).catch(() => undefined);
   });
 
   test('390×660 FAMILY: CTA bar above the tab bar, claim line reachable, inquiry via the bar', async ({ browser }) => {
@@ -119,11 +169,7 @@ test.describe('@critical OL-217 facility profile — one inquiry pathway', () =>
     await expect(bar).toHaveAttribute('data-hidden', 'true');
     await expect(page.getByRole('button', { name: 'Send Inquiry' })).toHaveCount(1);
 
-    // Scroll to the end of the page (the app shell scrolls inside <main>).
-    await page.evaluate(() => {
-      window.scrollTo(0, document.documentElement.scrollHeight);
-      document.querySelectorAll('main').forEach((m) => { m.scrollTop = m.scrollHeight; });
-    });
+    await scrollToEnd(page);
     await expect(bar).toHaveAttribute('data-hidden', 'false');
     await expect(bar).toBeVisible();
     const tab = page.locator('nav.mobile-tab-bar');
@@ -138,10 +184,11 @@ test.describe('@critical OL-217 facility profile — one inquiry pathway', () =>
     const offset = await page.evaluate(() => parseFloat(getComputedStyle(document.body).getPropertyValue('--bottom-stack-offset')) || 0);
     expect(offset).toBeGreaterThanOrEqual(tabBox!.height + barBox!.height - 2);
 
+    // At max scroll the claim link clears the floating widgets, the CTA bar and the tab bar.
     const claim = page.getByTestId('listing-claim-footer');
-    await claim.scrollIntoViewIfNeeded();
-    await expect(claim).toBeVisible();
-    await expect(claim.getByRole('link', { name: 'Claim this listing' })).toHaveAttribute('href', '/auth/register?role=OPERATOR');
+    const claimLink = claim.getByRole('link', { name: 'Claim this listing' });
+    await expect(claimLink).toHaveAttribute('href', '/auth/register?role=OPERATOR');
+    await expectTappable(claimLink, 'Claim this listing at max scroll');
     const claimBox = await claim.boundingBox();
     const barNow = await bar.boundingBox();
     if (barNow && (await bar.getAttribute('data-hidden')) === 'false') {
@@ -155,26 +202,59 @@ test.describe('@critical OL-217 facility profile — one inquiry pathway', () =>
     await expect(bar).toHaveAttribute('data-hidden', 'true');
     await expect(exposedPanels(page)).toHaveCount(1);
 
-    // On-screen keyboard: the visual viewport shrinks; the bar must not cover the focused field or the submit.
-    await page.locator('#message').focus();
+    // On-screen keyboard (simulated: the viewport shrinks to 390×360) with the form focused: nothing — CTA bar,
+    // floating widgets, tab bar — covers the message field, the consent checkbox or "Continue →".
+    const message = page.locator('#message');
+    await message.focus();
     await page.setViewportSize({ width: 390, height: 360 });
-    await page.locator('#message').scrollIntoViewIfNeeded();
-    const covers = async (sel: string) =>
-      page.evaluate((s) => {
-        const el = document.querySelector(s)!.getBoundingClientRect();
-        const b = document.querySelector('[data-testid="listing-cta-bar"]') as HTMLElement;
-        if (b.dataset.hidden === 'true') return false;
-        const r = b.getBoundingClientRect();
-        return r.top < el.bottom && r.bottom > el.top;
-      }, sel);
-    expect(await covers('#message'), 'bar over the focused field').toBe(false);
-    await page.getByRole('button', { name: 'Continue →' }).scrollIntoViewIfNeeded();
-    expect(await covers('[data-testid="listing-inquiry-panel"] button[type="submit"]'), 'bar over the submit button').toBe(false);
+    for (const [loc, what] of [
+      [message, 'message field'],
+      [page.locator('#inquiry-main-lead-consent'), 'consent checkbox'],
+      [page.getByRole('button', { name: 'Continue →' }), 'Continue →'],
+    ] as const) {
+      await loc.scrollIntoViewIfNeeded();
+      await expectTappable(loc, `${what} (keyboard open)`);
+    }
+    await expect(message).toBeFocused();
     await page.setViewportSize({ width: 390, height: 660 });
 
     await fillAndSubmit(page, `Mobile Family ${ts}`);
+    // The confirmation isn't covered by the floating widgets either.
+    const confirmation = page.getByTestId('inquiry-confirmation-unclaimed');
+    await confirmation.scrollIntoViewIfNeeded();
+    await expectTappable(confirmation, 'inquiry confirmation');
     await page.context().close();
     await expectQueued(browser, `Mobile Family ${ts}`);
+  });
+
+  test('390×660 guest: claim link and the bar\'s "Send Inquiry" stay tappable as the bar scrolls away', async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 660 }, hasTouch: true });
+    await ctx.addInitScript(CONSENT_INIT);
+    const page = await ctx.newPage();
+    await openListing(page);
+    await expect(page.getByTestId('listing-widget-clearance')).toHaveCount(1);
+    const bar = page.getByTestId('listing-cta-bar');
+    const send = bar.getByRole('button', { name: 'Send Inquiry' });
+    const claimLink = page.getByTestId('listing-claim-footer').getByRole('link', { name: 'Claim this listing' });
+    // From the end of the listing (bar docked at the bottom) on into the site footer, in 40px steps.
+    const listingEnd = await bar.evaluate((b) => b.parentElement!.getBoundingClientRect().bottom + window.scrollY - window.innerHeight);
+    for (let y = listingEnd; y <= listingEnd + 320; y += 40) {
+      await page.evaluate((top) => window.scrollTo(0, top), y);
+      await expect(bar).toHaveAttribute('data-hidden', 'false');
+      const inView = (l: Locator) => l.evaluate((el) => { const r = el.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; });
+      if (await inView(send)) await expectTappable(send, `bar "Send Inquiry" at +${y - listingEnd}px`);
+      if (await inView(claimLink)) await expectTappable(claimLink, `Claim this listing at +${y - listingEnd}px`);
+    }
+    await ctx.close();
+  });
+
+  test('390×660 FAMILY, claimed home: the Contact Information email is tappable at max scroll', async ({ browser }) => {
+    const page = await signedIn(browser, FAMILY_EMAIL, { width: 390, height: 660 });
+    await openListing(page, claimedId, CLAIMED);
+    await scrollToEnd(page);
+    await expect(page.getByTestId('listing-cta-bar')).toHaveAttribute('data-hidden', 'false');
+    await expectTappable(page.getByRole('link', { name: OP_EMAIL }), 'operator email at max scroll');
+    await page.context().close();
   });
 
   test('1280 FAMILY: the right-rail panel submits; no CTA bar; one form', async ({ browser }) => {
