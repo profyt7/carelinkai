@@ -214,11 +214,26 @@ export default function HomeDetailPage() {
   }, []);
   const [panelInView, setPanelInView] = useState(true);
   useEffect(() => {
-    if (!compact || !panelEl || typeof IntersectionObserver === "undefined") { setPanelInView(true); return; }
-    // "Out of view" = scrolled past (above the viewport); before the reader reaches the panel there is no bar.
-    const io = new IntersectionObserver(([entry]) => setPanelInView(entry.isIntersecting || entry.boundingClientRect.top > 0), { threshold: 0 });
-    io.observe(panelEl);
-    return () => io.disconnect();
+    if (!compact || !panelEl) { setPanelInView(true); return; }
+    // "Out of view" = scrolled past (above the visible top); before the reader reaches the panel there is no bar.
+    // A scroll check, not an IntersectionObserver: a jump from below the fold to past it (End key, anchor link,
+    // reduced motion) never crosses an intersection threshold, so an observer would not fire.
+    const scroller = panelEl.closest("main");
+    let raf = 0;
+    const check = () => {
+      raf = 0;
+      const top = scroller && scroller.scrollHeight > scroller.clientHeight ? Math.max(0, scroller.getBoundingClientRect().top) : 0;
+      setPanelInView(panelEl.getBoundingClientRect().bottom > top);
+    };
+    const schedule = () => { if (!raf) raf = requestAnimationFrame(check); };
+    check();
+    document.addEventListener("scroll", schedule, { capture: true, passive: true });
+    window.addEventListener("resize", schedule);
+    return () => {
+      cancelAnimationFrame(raf);
+      document.removeEventListener("scroll", schedule, { capture: true });
+      window.removeEventListener("resize", schedule);
+    };
   }, [compact, panelEl]);
   const showCta = compact && !panelInView;
   // The bar is the last thing in the page flow; a guest who scrolls on into the site footer leaves it behind.
@@ -229,6 +244,23 @@ export default function HomeDetailPage() {
     io.observe(ctaEl);
     return () => io.disconnect();
   }, [ctaEl]);
+  // Signed in, the page scrolls inside the shell's <main>, which ends above the tab bar and pads its bottom; a
+  // sticky bar would stop inside that padding and float above a strip of content. So the bar is fixed on top of
+  // whatever sits below the scroller (the tab bar), with an in-flow spacer for any height the padding doesn't cover.
+  const [dock, setDock] = useState<{ bottom: number; spacer: number } | null>(null);
+  useEffect(() => {
+    const main = ctaEl?.closest("main");
+    if (!signedIn || !compact || !ctaEl || !main) { setDock(null); return; }
+    // Read after the shell's own effects (it sets its mobile padding on mount/resize).
+    const read = () => setDock({
+      bottom: Math.max(0, Math.round(window.innerHeight - main.getBoundingClientRect().bottom)),
+      spacer: Math.max(0, Math.ceil(ctaEl.offsetHeight - (parseFloat(getComputedStyle(main).paddingBottom) || 0))),
+    });
+    let raf = requestAnimationFrame(read);
+    const onResize = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(read); };
+    window.addEventListener("resize", onResize);
+    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", onResize); };
+  }, [ctaEl, signedIn, compact]);
   // OL-208: floating widgets clear the bar (on top of the tab bar when signed in).
   useBottomStackOffset(ctaRef, "listing-cta-bar", showCta && ctaOnScreen);
 
@@ -1353,8 +1385,9 @@ export default function HomeDetailPage() {
         )}
 
         {/* < lg: sticky bottom CTA bar once the inline panel has scrolled away (§4). Last in the page flow, so its
-            height is the bottom padding; signed in, the page scrolls inside the shell above the tab bar. Hidden + inert
-            while the inline panel is on screen. */}
+            height is the bottom padding; signed in it docks on the tab bar (see `dock`). Hidden + inert while the
+            inline panel is on screen. */}
+        {dock && dock.spacer > 0 && <div aria-hidden="true" className="lg:hidden" style={{ height: dock.spacer }} />}
         <div
           ref={setCtaEl}
           data-testid="listing-cta-bar"
@@ -1364,7 +1397,10 @@ export default function HomeDetailPage() {
           className={`sticky bottom-0 z-30 border-t border-line bg-white/95 px-4 pt-3 shadow-dropdown backdrop-blur lg:hidden motion-safe:transition-all motion-safe:duration-200 ${
             showCta ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-full opacity-0'
           }`}
-          style={{ paddingBottom: signedIn ? '0.75rem' : 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
+          style={{
+            paddingBottom: signedIn ? '0.75rem' : 'calc(0.75rem + env(safe-area-inset-bottom, 0px))',
+            ...(dock ? { position: 'fixed' as const, left: 0, right: 0, bottom: dock.bottom } : {}),
+          }}
         >
           <div className="mx-auto flex max-w-xl gap-2">
             <button type="button" onClick={onScheduleTour} className={`${BTN_PRIMARY} flex-1`}>Schedule a Tour</button>

@@ -49,7 +49,7 @@ async function signedIn(browser: Browser, email: string, viewport: { width: numb
 
 async function openListing(page: Page) {
   await page.goto(`/homes/${homeId}`, { waitUntil: 'domcontentloaded' });
-  await expect(page.getByRole('heading', { level: 1, name: HOME })).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByRole('heading', { level: 1, name: HOME, exact: true })).toBeVisible({ timeout: 60_000 });
 }
 
 /** Inquiry panels exposed to assistive tech (aria-hidden / inert / display:none excluded). */
@@ -128,9 +128,12 @@ test.describe('@critical OL-217 facility profile — one inquiry pathway', () =>
     await expect(bar).toBeVisible();
     const tab = page.locator('nav.mobile-tab-bar');
     await expect(tab).toBeVisible();
-    const [barBox, tabBox] = [await bar.boundingBox(), await tab.boundingBox()];
-    expect(barBox && tabBox).toBeTruthy();
-    expect(barBox!.y + barBox!.height, 'CTA bar ends above the tab bar').toBeLessThanOrEqual(tabBox!.y + 1);
+    const tabBox = await tab.boundingBox();
+    expect(tabBox).toBeTruthy();
+    // The bar slides in (200 ms); measure once it has settled.
+    await expect.poll(async () => { const b = await bar.boundingBox(); return b ? b.y + b.height : Infinity; }, { message: 'CTA bar ends above the tab bar' })
+      .toBeLessThanOrEqual(tabBox!.y + 1);
+    const barBox = await bar.boundingBox();
     // OL-208: the floating widgets clear tab bar + CTA bar.
     const offset = await page.evaluate(() => parseFloat(getComputedStyle(document.body).getPropertyValue('--bottom-stack-offset')) || 0);
     expect(offset).toBeGreaterThanOrEqual(tabBox!.height + barBox!.height - 2);
