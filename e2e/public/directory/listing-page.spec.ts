@@ -104,9 +104,12 @@ test.describe('@critical /homes/[id] listing page (OL-173)', () => {
 
     // (b) capacity / availability
     await expect(page.getByTestId('listing-capacity-tile')).toHaveCount(0);
-    await expect(page.getByTestId('listing-availability-tile')).toContainText('Contact to confirm');
-    await expect(page.getByTestId('quick-facts-availability')).toHaveText('Availability: contact to confirm');
+    // Pre-launch dedupe: availability is stated in the inquiry panel (and the < lg CTA bar), not
+    // repeated in a stat tile or the About quick facts.
+    await expect(page.getByTestId('listing-availability-tile')).toHaveCount(0);
+    await expect(page.getByTestId('quick-facts-availability')).toHaveCount(0);
     await expect(page.getByTestId('sidebar-availability')).toContainText('Availability: contact to confirm');
+    await expect(page.getByTestId('panel-availability-detail')).toHaveText('Availability changes often — we verify on request.');
     const body = page.locator('body');
     await expect(body).not.toContainText(/\b\d+ Residents\b/);
     await expect(body).not.toContainText(/spots? available/i);

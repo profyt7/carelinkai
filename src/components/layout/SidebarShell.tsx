@@ -218,6 +218,8 @@ export default function SidebarShell({
   const [drawerCollapsed, setDrawerCollapsed] = useState<Record<string, boolean>>({});
   // Rail flyout for a group.
   const [flyout, setFlyout] = useState<{ id: string; top: number; left: number } | null>(null);
+  // Icon-rail tooltip (hover + keyboard focus). Fixed-positioned so the scrolling nav can't clip it.
+  const [tip, setTip] = useState<{ label: string; top: number; left: number } | null>(null);
   const flyoutRef = useRef<HTMLDivElement>(null);
   // Responsive mode: is the md–lg icon rail showing right now?
   const [mqRail, setMqRail] = useState(false);
@@ -287,6 +289,7 @@ export default function SidebarShell({
 
   const select = (id: string) => {
     onSelect?.(id);
+    setTip(null);
     setFlyout(null);
     setDrawerOpen(false);
   };
@@ -321,6 +324,17 @@ export default function SidebarShell({
     });
   };
 
+  /** Tooltip handlers for a top-level icon in the rail (its label is visually hidden there). */
+  const railTip = (label: string) => {
+    if (!railNow) return {};
+    const show = (e: { currentTarget: Element }) => {
+      const r = e.currentTarget.getBoundingClientRect();
+      setTip({ label, top: r.top + r.height / 2, left: r.right + 8 });
+    };
+    const hide = () => setTip(null);
+    return { onMouseEnter: show, onFocus: show, onMouseLeave: hide, onBlur: hide };
+  };
+
   const navItem = (item: SidebarNavItem, opts: { inDrawer?: boolean; nested?: boolean } = {}) => {
     const active = item.id === activeId;
     const showLabel = opts.inDrawer || opts.nested ? '' : labelCls;
@@ -336,7 +350,7 @@ export default function SidebarShell({
         )}
       </>
     );
-    const common = { className: cls, 'aria-current': active ? ('page' as const) : undefined, title: rail && !opts.inDrawer && !opts.nested ? item.label : undefined };
+    const common = { className: cls, 'aria-current': active ? ('page' as const) : undefined, ...(!opts.inDrawer && !opts.nested ? railTip(item.label) : {}) };
     return item.href ? (
       <LinkAs key={item.id} href={item.href} {...common} onClick={() => select(item.id)}>{inner}</LinkAs>
     ) : (
@@ -360,8 +374,9 @@ export default function SidebarShell({
             aria-expanded={open}
             aria-controls={open ? listId : undefined}
             aria-haspopup="true"
-            title={item.label}
+            {...railTip(item.label)}
             onClick={(e: ReactMouseEvent<HTMLButtonElement>) => {
+              setTip(null);
               const r = e.currentTarget.getBoundingClientRect();
               setFlyout(open ? null : { id: item.id, top: r.top, left: r.right + 8 });
             }}
@@ -446,6 +461,16 @@ export default function SidebarShell({
           {brand ?? <BrandMark tone={tone} rail={rail ? true : responsiveRail ? 'responsive' : false} href={homeHref} linkAs={LinkAs} />}
         </div>
         <nav className="flex-1 space-y-1 overflow-y-auto px-2 py-4" aria-label={navLabel}>{renderItems()}</nav>
+        {tip && railNow && !flyout && (
+          <div
+            aria-hidden="true"
+            data-testid="rail-tooltip"
+            className="pointer-events-none fixed z-50 -translate-y-1/2 whitespace-nowrap rounded-md bg-neutral-900 px-2.5 py-1 text-xs font-medium text-white shadow-lg"
+            style={{ top: tip.top, left: tip.left }}
+          >
+            {tip.label}
+          </div>
+        )}
         {sidebarFooter && !rail && <div className="px-3 pb-3">{sidebarFooter}</div>}
         {user && (
           <div className={`flex items-center gap-3 border-t ${t.border} ${rail ? 'justify-center px-2' : 'px-4'} py-3`}>

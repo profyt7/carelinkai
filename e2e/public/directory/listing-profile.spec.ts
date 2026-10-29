@@ -241,7 +241,13 @@ test.describe('@critical OL-217 facility profile — one inquiry pathway', () =>
     for (let y = listingEnd; y <= listingEnd + 320; y += 40) {
       await page.evaluate((top) => window.scrollTo(0, top), y);
       await expect(bar).toHaveAttribute('data-hidden', 'false');
-      const inView = (l: Locator) => l.evaluate((el) => { const r = el.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; });
+      // "In view" = below the sticky site header (anything under it is scrolled past, not tappable by design).
+      const inView = (l: Locator) => l.evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        const header = document.querySelector('header');
+        const top = header && getComputedStyle(header).position === 'sticky' ? header.getBoundingClientRect().bottom : 0;
+        return r.top >= top && r.bottom <= innerHeight;
+      });
       if (await inView(send)) await expectTappable(send, `bar "Send Inquiry" at +${y - listingEnd}px`);
       if (await inView(claimLink)) await expectTappable(claimLink, `Claim this listing at +${y - listingEnd}px`);
     }
