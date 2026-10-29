@@ -5,6 +5,7 @@ import { inquiryResponseGenerator } from '@/lib/ai/inquiry-response-generator';
 import { inquiryEmailService } from '@/lib/email/inquiry-email-service';
 import { prisma } from '@/lib/prisma';
 import * as Sentry from '@sentry/nextjs';
+import { errorSummary } from '@/lib/log-safe';
 
 // Tell Next.js this route is fully dynamic - prevents build-time execution
 export const dynamic = 'force-dynamic';
@@ -113,7 +114,7 @@ export async function POST(
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error('Error generating response:', errorMessage, error);
+    console.error('Error generating response:', errorMessage, errorSummary(error));
     Sentry.captureException(error, {
       tags: { route: 'generate-response', inquiryId: params.id },
     });

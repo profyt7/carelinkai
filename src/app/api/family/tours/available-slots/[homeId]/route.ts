@@ -12,6 +12,7 @@ import { authOptions } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/permissions";
 import { suggestOptimalTimes } from "@/lib/tour-scheduler/ai-tour-scheduler";
 import { captureError } from '@/lib/sentry';
+import { errorSummary } from '@/lib/log-safe';
 
 export async function GET(
   request: NextRequest,
@@ -62,7 +63,7 @@ export async function GET(
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: 'family:tours:available-slots:{homeId}' },
     });
-    console.error("[Available Slots API] Error:", error);
+    console.error("[Available Slots API] Error:", errorSummary(error));
     return NextResponse.json(
       { error: "Failed to get available slots" },
       { status: 500 }

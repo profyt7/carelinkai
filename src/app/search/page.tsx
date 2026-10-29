@@ -43,6 +43,7 @@ import dynamic from "next/dynamic";
 import { HomeCardSkeleton } from "@/components/ui/skeleton-loader";
 import EmptyState from "@/components/ui/empty-state";
 import SearchResultCard from "@/components/search/SearchResultCard";
+import { track, resultCountBucket, CARE_LEVEL_VALUES } from "@/lib/analytics/events";
 import { toSearchResultHome } from "@/components/search/adapters";
 
 // Dynamically import the map (Leaflet) to avoid SSR issues
@@ -277,14 +278,19 @@ function SearchPageContent() {
     setFilters(prev => ({ ...prev, [name]: value }));
   };
 
-  const track = async (event: string, properties?: Record<string, any>) => {
-    try {
-      await fetch('/api/analytics/track', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ event, properties })
-      });
-    } catch {}
+  // OL-226: one funnel event per completed search — filter shape and a result-count bucket only,
+  // never the typed query or location text.
+  const trackSearch = (params: SearchParams, totalResults: number) => {
+    track('search_performed', {
+      care_levels: (params.careLevels || []).filter((l): l is (typeof CARE_LEVEL_VALUES)[number] =>
+        (CARE_LEVEL_VALUES as readonly string[]).includes(l)),
+      has_budget_filter: Boolean(params.priceMin || params.priceMax),
+      has_location_filter: Boolean(params.location || params.radius),
+      verified_only: Boolean(params.verified),
+      medicaid_waiver: Boolean(params.medicaidWaiver),
+      view: viewType,
+      result_count_bucket: resultCountBucket(totalResults),
+    });
   };
   
   // Handle care level selection (multiple selection)
@@ -435,11 +441,13 @@ function SearchPageContent() {
           },
           results: slice,
         });
+        trackSearch(params, MOCK_HOMES.length);
         return;
       }
       const response = await searchHomes(params);
       if (requestId !== latestRequestId.current) return; // stale
       setSearchResponse(response);
+      if (response?.success !== false) trackSearch(params, response?.pagination?.totalResults ?? response?.results?.length ?? 0);
     } catch (error) {
       console.error("Search error:", error);
     } finally {
@@ -599,7 +607,6 @@ function SearchPageContent() {
         });
       } catch {}
     })();
-    track('personalization_applied');
     setShowPersonalize(false);
     // Trigger search with new resident profile
     applyFilters();
@@ -611,7 +618,6 @@ function SearchPageContent() {
   const openExplain = (home: SearchResultItem) => {
     setExplainHome(home);
     setShowExplain(true);
-    track('explain_match_opened', { homeId: home.id });
   };
 
   const closeExplain = () => {
@@ -668,10 +674,12 @@ function SearchPageContent() {
       </div>
     ) : null;
 
-  const renderCard = (home: SearchResultItem, variant: "grid" | "list") => (
+  const renderCard = (home: SearchResultItem, variant: "grid" | "list", index: number) => (
     <SearchResultCard
       key={home.id}
       variant={variant}
+      trackSource="search"
+      trackPosition={((searchResponse?.pagination?.page ?? 1) - 1) * (searchResponse?.pagination?.limit ?? 0) + index + 1}
       home={toSearchResultHome(home)}
       saved={favoriteIds.has(home.id)}
       comparing={compareIds.has(home.id)}
@@ -960,7 +968,7 @@ function SearchPageContent() {
             {/* Personalization status */}
             {filters.residentProfile && (
               <div className="mb-3 rounded-md border border-primary-200 bg-primary-50 px-3 py-2 text-xs text-primary-800">
-                AI personalization enabled. <button onClick={openPersonalize} className="underline hover:no-underline">Edit profile</button> or <button onClick={() => { try { localStorage.removeItem("carelink_resident_profile"); } catch {}; setFilters(prev => ({ ...prev, residentProfile: undefined })); applyFilters(); track('personalization_cleared'); }} className="underline hover:no-underline">clear</button>.
+                AI personalization enabled. <button onClick={openPersonalize} className="underline hover:no-underline">Edit profile</button> or <button onClick={() => { try { localStorage.removeItem("carelink_resident_profile"); } catch {}; setFilters(prev => ({ ...prev, residentProfile: undefined })); applyFilters(); }} className="underline hover:no-underline">clear</button>.
               </div>
             )}
             {/* Results summary */}
@@ -1064,7 +1072,7 @@ function SearchPageContent() {
             {/* Grid view — SearchResultCard (OL-216): 1-up < md, 2-up md, 3-up ≥ lg */}
             {!isLoading && viewType === "grid" && searchResults.length > 0 && (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" data-testid="search-results-grid">
-                {searchResults.map((home) => renderCard(home, "grid"))}
+                {searchResults.map((home, i) => renderCard(home, "grid", i))}
               </div>
             )}
             
@@ -1082,7 +1090,7 @@ function SearchPageContent() {
             {/* List view — the same card, horizontal at ≥ md */}
             {!isLoading && viewType === "list" && searchResults.length > 0 && (
               <div className="space-y-4" data-testid="search-results-list">
-                {searchResults.map((home) => renderCard(home, "list"))}
+                {searchResults.map((home, i) => renderCard(home, "list", i))}
               </div>
             )}
             

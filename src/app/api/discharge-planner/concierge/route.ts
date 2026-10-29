@@ -25,6 +25,7 @@ import { isPayerSource } from '@/lib/payer/payer-source';
 import { recordEvent } from '@/lib/events/record-event';
 import { deriveIntakeFacts } from '@/lib/concierge/intake-facts';
 import { toDpFacilityResponse } from '@/lib/concierge/facility-response-engine';
+import { errorSummary } from '@/lib/log-safe';
 
 // Minimum-necessary intake. Kept in-app; never emailed out.
 const patientInfoSchema = z.object({
@@ -123,7 +124,7 @@ export async function POST(request: NextRequest) {
     if (error?.name === 'UnauthenticatedError') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    console.error('[concierge] submit error:', error);
+    console.error('[concierge] submit error:', errorSummary(error));
     captureError(error instanceof Error ? error : new Error(String(error)), { tags: { feature: 'concierge' } });
     return NextResponse.json({ error: 'Could not submit your request. Please try again.' }, { status: 500 });
   }
@@ -162,7 +163,7 @@ export async function GET() {
     if (error?.name === 'UnauthenticatedError') {
       return NextResponse.json({ error: 'Unauthorized', requests: [] }, { status: 401 });
     }
-    console.error('[concierge] list error:', error);
+    console.error('[concierge] list error:', errorSummary(error));
     return NextResponse.json({ error: 'Failed to load concierge requests', requests: [] }, { status: 500 });
   }
 }

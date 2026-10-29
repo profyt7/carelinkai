@@ -143,7 +143,7 @@ export default async function SuburbAssistedLivingPage({ params }: { params: Par
         {listings.length > 0 ? (
           <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" data-testid="listings-grid" data-count={listings.length}>
             {listings.map((l, i) => (
-              <ListingCard key={l.id} listing={l} priority={i < 3} />
+              <ListingCard key={l.id} listing={l} priority={i < 3} position={i + 1} />
             ))}
           </div>
         ) : (

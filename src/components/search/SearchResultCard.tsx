@@ -8,6 +8,7 @@ import FeaturedBadge from '@/components/homes/FeaturedBadge';
 import HomeImagePlaceholder from '@/components/homes/HomeImagePlaceholder';
 import PriceLine, { type PriceLineView } from '@/components/ui/PriceLine';
 import type { MedicaidWaiverPublicView } from '@/lib/medicaid/waiver';
+import { listingTrackAttrs } from '@/lib/analytics/listing-attrs';
 
 /**
  * The one search result card (OL-202 spec, on /search since OL-216). Placeholder-first:
@@ -53,6 +54,9 @@ type Props = {
   /** Heading level for the home name (default 3: page h1 → results h2 → card h3). */
   headingLevel?: 2 | 3 | 4 | 5 | 6;
   className?: string;
+  /** OL-226: where the card is shown + its 1-based rank, for the listing_clicked funnel event. */
+  trackSource?: 'search' | 'directory' | 'ai_match' | 'favorites';
+  trackPosition?: number;
 };
 
 const CONTROL =
@@ -69,6 +73,8 @@ export default function SearchResultCard({
   insights,
   headingLevel = 3,
   className = '',
+  trackSource,
+  trackPosition,
 }: Props) {
   const Heading = `h${headingLevel}` as 'h3';
   const link = href ?? `/homes/${home.id}`;
@@ -84,6 +90,17 @@ export default function SearchResultCard({
       data-testid="search-result-card"
       data-home-id={home.id}
       data-variant={variant}
+      {...(trackSource && trackPosition
+        ? listingTrackAttrs({
+            id: home.id,
+            position: trackPosition,
+            source: trackSource,
+            verified: Boolean(home.availabilityFreshness?.fresh),
+            hasPhoto: !(home.photoIsPlaceholder || !home.imageUrl),
+            hasPrice: Boolean(home.pricing?.hasPrice),
+            claimed: !home.isUnclaimed,
+          })
+        : {})}
       className={`group flex flex-col overflow-hidden rounded-xl border border-line bg-surface-raised shadow-card motion-safe:transition-shadow hover:shadow-card-hover ${
         list ? 'md:flex-row' : ''
       } ${className}`}

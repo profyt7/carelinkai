@@ -29,6 +29,19 @@ const PHI_KEYS = new Set([
   'address',
   'patientInfo',
   'fileUrl',
+  // OL-230: inquiry / tour / concierge form fields and free-text search queries.
+  'residentName',
+  'fullName',
+  'phoneNumber',
+  'careNeeded',
+  'careNeeds',
+  'familyNotes',
+  'additionalInfo',
+  'message',
+  'q',
+  'query',
+  'naturalQuery',
+  'searchQuery',
 ]);
 
 /**

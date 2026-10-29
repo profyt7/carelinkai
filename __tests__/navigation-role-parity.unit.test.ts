@@ -75,7 +75,9 @@ const newPairs = (role: string, o: Opts) => new Set(flattenNav(getNavForRole(rol
  * /operator/caregivers by getComputedHref; the Admin group now links the admin
  * page it names. ADMIN keeps /operator/caregivers under Communities.
  */
-const ADDED = new Set(['ADMIN /admin/caregivers']);
+// OL-226 adds /admin/analytics/funnel (Conversion Funnel) to the Admin group.
+const ADDED = new Set(['ADMIN /admin/caregivers', 'ADMIN /admin/analytics/funnel']);
+const NEW_ADMIN_HREFS = ['/admin/analytics/funnel'];
 
 describe('OL-206 role navigation parity', () => {
   it('covers all 8 roles', () => {
@@ -118,7 +120,8 @@ describe('OL-206 role navigation parity', () => {
     const group = getNavForRole('ADMIN', navOpts(COMBOS[0])).find((i) => i.id === 'Admin')!;
     const hrefs = group.children!.map((c) => c.href).filter((h) => h?.startsWith('/admin/'));
     expect(oldAdmin).toHaveLength(20);
-    expect(hrefs).toEqual(oldAdmin);
+    expect(hrefs.filter((h) => !NEW_ADMIN_HREFS.includes(h!))).toEqual(oldAdmin);
+    expect(hrefs[hrefs.indexOf('/admin/analytics') + 1]).toBe('/admin/analytics/funnel');
     expect(getNavForRole('OPERATOR', navOpts(COMBOS[0])).some((i) => i.id === 'Admin')).toBe(false);
   });
 

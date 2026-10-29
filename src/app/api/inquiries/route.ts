@@ -18,6 +18,7 @@ import { notifyUnclaimedHomeInquiry, isUnclaimedHome } from '@/lib/claim-engine/
 import { sendNewLeadOperatorEmail } from '@/lib/email';
 import { coordinateConciergeInquiry } from '@/lib/concierge/tour-coordination';
 import { routeUnclaimedInquiry } from '@/lib/leads/web-inquiry-lead';
+import { errorSummary } from '@/lib/log-safe';
 
 /**
  * POST /api/inquiries - Create a new inquiry
@@ -138,7 +139,7 @@ export async function POST(request: NextRequest) {
 
     // Trigger follow-up scheduling hook (non-blocking)
     afterInquiryCreated(inquiry.id).catch(err => {
-      console.error('Failed to schedule follow-ups:', err);
+      console.error('Failed to schedule follow-ups:', errorSummary(err));
     });
 
     // SMS alert to operator (non-blocking) — claimed homes only (the directory
@@ -216,7 +217,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error creating inquiry:', error);
+    console.error('Error creating inquiry:', errorSummary(error));
     return NextResponse.json(
       { 
         success: false, 
@@ -383,7 +384,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching inquiries:', error);
+    console.error('Error fetching inquiries:', errorSummary(error));
     return NextResponse.json(
       { 
         success: false, 

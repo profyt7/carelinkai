@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/permissions";
+import { errorSummary } from '@/lib/log-safe';
 
 export async function GET(
   request: NextRequest,
@@ -103,7 +104,7 @@ export async function GET(
 
     return NextResponse.json({ success: true, tour: response });
   } catch (error) {
-    console.error("[Tour Details API] Error:", error);
+    console.error("[Tour Details API] Error:", errorSummary(error));
     return NextResponse.json(
       { error: "Failed to fetch tour details" },
       { status: 500 }

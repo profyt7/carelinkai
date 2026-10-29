@@ -2389,6 +2389,31 @@
 
 <!-- Add new sessions above this line, newest first -->
 
+### 2026-10-29 — OL-226 conversion measurement — PR open
+- **Objective:** measure the search → listing → profile → inquiry/tour funnel without collecting free text or contact details. Extend the existing consent-gated analytics, add no new service or dependency, and add one small admin page. Audit the current analytics stack first.
+- **Work completed:**
+  - **Audit** (in the PR description):
+    - `/api/analytics/track` only console-logged payloads, plus IP and user id, with no consent gate and no storage.
+    - GA4's default page view sent full URLs, `?q=` included.
+    - The Meta Pixel loads on all public routes.
+    - Clarity is masked site-wide but records URLs.
+    - The listing inquiry handlers console-log contact details and care needs.
+  - **Built:**
+    - an allowlisted `track()` and a privacy guard;
+    - triggers for the seven events;
+    - the `AnalyticsEvent` table and storage route, with 90-day retention;
+    - `/admin/analytics/funnel`;
+    - Clarity masks on forms, and the Sentry console-breadcrumb drop.
+  - **Logged:** OL-226, plus OL-228…OL-230.
+- **Files changed:** see OL-226 in open loops (22 source/test files + migration + context).
+- **Commands run:** `prisma migrate deploy` on a fresh DB; `tsc`, `eslint`, `jest`; standalone build; Playwright with `--retries=0`; screenshot script against fictional seeded events.
+- **Tests/build status:**
+  - tsc and eslint clean; jest 151/151 suites (1696 passed, 10 skipped).
+  - New privacy suite: 22 tests, mutation-checked.
+  - e2e: `analytics-funnel` 4/4 (a–d); directory group 108/108; concierge group 47/47.
+- **Deployment impact:** one additive migration (`AnalyticsEvent`). With consent, the browser now posts funnel events to `/api/analytics/track` (stored, 90 days). GA page views are now sanitized and manual. No env change.
+- **New risks/blockers:** see OL-230 (PII console logs; renumbered from OL-227, which became the gallery hotfix), OL-228 (Pixel decision) and OL-229 (Clarity URLs, GTM container, GA Enhanced Measurement settings).
+- **Recommended next step:** Chris reviews the event mapping, the privacy tests and the funnel screenshots, then merges. Then OL-230 (delete the PII diagnostic logs) and the GA property settings in OL-229.
 ### 2026-10-29 — OL-227 gallery overflow hotfix (+ OL-226 review package)
 - **Objective:** fix the live /homes/[id] phone overflow (gallery wider than the viewport; iOS Safari zoomed out), uniform hero, contained thumbnail strip, non-overlapping caption / counter (closes OL-222); post the OL-226 review package on PR #10.
 - **Work completed:**
@@ -2499,3 +2524,41 @@
 - **Deployment impact:** none at runtime. After merge the founder sets `DEMO_ACCOUNT_PASSWORD` in Render and runs `npx tsx scripts/rotate-demo-passwords.ts --force` from a Render shell so prod demo rows stop accepting the old passwords.
 - **New risks/blockers:** OL-213 — rotate the credentials found; decide on history rewrite / fresh public repo before flipping visibility.
 - **Recommended next step:** rotation per the report, then a PR removing the credential-bearing PDFs / `verify_user.mjs` and adding gitleaks rules for Postgres URLs.
+
+### 2026-10-29 — PR #10 privacy round: Pixel/Clarity/GTM/gtag out, GA4 server-side, PII logs out (OL-228, OL-229, OL-230)
+- **Objective:** before review of PR #10:
+  - remove the Meta Pixel;
+  - delete inquiry/tour PII logging, with a guard test;
+  - make Clarity safe or remove it;
+  - verify GA4 gets only allowlisted, sanitized data by inspecting real GA requests;
+  - consent-declined = zero optional analytics;
+  - admin funnel PII-free;
+  - post a read-only historical audit.
+  - No merge.
+- **Work completed:**
+  - **Pixel (OL-228):** loader, `fbq` helpers (`src/lib/analytics.ts` deleted), marketing-cookie copy and `data-clarity-mask` attributes removed.
+  - **Clarity (OL-229):** removed entirely. No URL rewrite API and no pre-render route guard in the App Router, so neither requirement could be guaranteed.
+  - **GTM and gtag.js:** removed too. GA4 Enhanced Measurement reads the browser URL from property settings, and the GTM container could load any tag.
+  - **GA4:** now fed server-side from `/api/analytics/track` via the Measurement Protocol (`src/lib/analytics/ga-mp.ts`), with allowlisted params and `page_location` rebuilt from the sanitized path. Fails closed without `GA_MP_API_SECRET`.
+  - **Logs (OL-230):** listing inquiry/tour handler logs and ~100 tour-API debug logs deleted; every in-scope route logs `errorSummary()`. `scripts/pii-log-scan.cjs` AST guard added.
+  - **Sentry:** scrubbing (URLs, console crumbs, Prisma/Zod text) in client, server and edge; Session Replay removed; `scrubPhi` keys extended.
+  - **Audit:** historical audit posted on PR #10.
+- **Files changed:** `src/components/analytics/{AnalyticsScripts,CookieConsent,FunnelTracking}.tsx`, `src/lib/analytics/{events,ga-mp}.ts`, `src/lib/{consent,log-safe,phi-scrubber}.ts`, `src/lib/sentry/scrub-event.ts`, `src/instrumentation-client.ts`, `sentry.{server,edge}.config.ts`, `src/app/api/analytics/track/route.ts`, `src/app/homes/[id]/page.tsx`, `src/app/api/family/tours/request/route.ts` + 15 inquiry/tour/concierge/leads/search routes (`errorSummary`), `src/app/layout.tsx`, the 5 form components (mask attr), `.env.example`, `.github/workflows/e2e-family.yml` (GA capture env on the public job), `scripts/pii-log-scan.cjs`, `__tests__/{pii-log-guard,ga-mp}.unit.test.ts`, `__tests__/analytics-privacy.unit.test.ts`, `e2e/public/directory/analytics-funnel.spec.ts`, context files.
+- **Commands run:** `tsc --noEmit`, `eslint`, `jest` (full), `npm run build`, standalone server + Playwright with `--retries=0` against a fresh migrated Postgres, with `GA_MP_ENDPOINT` pointing at the spec's capture server.
+- **Tests/build status:**
+  - tsc + eslint clean.
+  - jest: 153 suites, 1738 passed (10 skipped, pre-existing).
+  - build OK.
+  - `analytics-funnel.spec.ts` 5/5 with no retries.
+  - Public directory + concierge e2e suites (`e2e/public/directory/`, `e2e/public/concierge/`, `concierge-flow`) all pass with no retries.
+  - First run: 2 failures, both caused by this change. The listing form had stopped reading the `/api/inquiries` response body, so the specs' `resp.json()` hung. The body is now drained again (not logged).
+- **Deployment impact:**
+  - Browser no longer loads any third-party tracker.
+  - GA receives nothing until `GA_MP_API_SECRET` + `GA_MEASUREMENT_ID` are set in Render.
+  - Sentry has no replays.
+  - No schema change.
+- **New risks/blockers:** OL-231 (auth logs login emails). GA reports lose device/geo/referrer dimensions (by design).
+- **Recommended next step:** Chris reviews PR #10 and the audit, then:
+  - sets the GA MP secret;
+  - deletes the Pixel/Clarity/GTM env vars;
+  - works through the audit's manual deletion steps.

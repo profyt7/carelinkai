@@ -705,6 +705,12 @@ jobs:
       # can drive ping → reply → Verified. No RESEND_API_KEY → nothing is sent.
       CRON_SECRET: e2e-cron-secret
       PING_ENABLED: "1"
+      # OL-229: GA4 is fed server-side (Measurement Protocol). FAKE stream id and secret;
+      # GA_MP_ENDPOINT points at the capture server analytics-funnel.spec.ts runs, so the
+      # spec inspects the real GA requests and nothing reaches Google from CI.
+      GA_MEASUREMENT_ID: G-E2ETEST00
+      GA_MP_API_SECRET: e2e-fake
+      GA_MP_ENDPOINT: http://127.0.0.1:4599/mp/collect
 
     steps:
       - name: Checkout

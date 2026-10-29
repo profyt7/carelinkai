@@ -7,6 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import TourRequestModal from '@/components/tours/TourRequestModal';
 import AvailabilityBadge, { UNVERIFIED_AVAILABILITY, type AvailabilityViewProp } from '@/components/availability/AvailabilityBadge';
+import { listingTrackAttrs } from '@/lib/analytics/listing-attrs';
 
 interface MatchResult {
   id: string;
@@ -190,10 +191,18 @@ export default function ResultsPage() {
         
         {/* Results Grid */}
         <div className="space-y-6">
-          {results.map((result) => (
+          {results.map((result, i) => (
             <div
               key={result.id}
               className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition"
+              {...listingTrackAttrs({
+                id: result.home.id,
+                position: i + 1,
+                source: 'ai_match',
+                verified: Boolean(result.home.availabilityFreshness?.fresh),
+                hasPhoto: result.home.photos.length > 0,
+                hasPrice: Boolean(result.home.priceMin),
+              })}
             >
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
                 {/* Left Column: Image and Rank */}

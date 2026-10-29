@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-10-29 (night) — OL-227 hotfix PR open (/homes/[id] gallery overflowed the viewport on phones; closes OL-222). Prior: 2026-10-29 (late) — OL-217 ✅ MERGED #8 (squash) `9294a7d8`. Follow-ups OL-222 (gallery counter over caption), OL-223 (two "all photos" buttons), OL-224 (compact limited-data states on mobile) and OL-225 (one mobile support control, not scheduled). Prior: OL-217 PR open (facility profile /homes/[id] on the Direction D standard: one inquiry pathway, CTA bar, claim demoted). Prior: OL-216 ✅ MERGED #6 (squash) `57d5e21e`, closing OL-208. Follow-ups OL-218…OL-221 logged (directory placeholder tile, /search a11y leftovers, Search Tips copy, waiver data in /api/search). OL-217 (`/homes/[id]` restructure) is reserved for the next batch. Prior: 2026-10-28 (night) — OL-215 added (Render crons were inactive until 10/28; Monthly Reset unverified until its Nov 1 run); `.github/workflows-disabled/` removed; #3 CI shard-check fix, #4 render.yaml cron record merged. Prior: OL-207 ✅ MERGED #1 (squash) `d965c008`; OL-205 and OL-209 closed with it. Repo moved to a fresh public `profyt7/carelinkai` (one squashed commit); old repo archived private as `carelinkai-archive`. Prior: 2026-10-28 — OL-212 PR open (demo passwords from DEMO_ACCOUNT_PASSWORD); OL-213 added (credentials in git history / tracked PDFs — founder rotation). Prior: 2026-10-27 — OL-210 PR open (remove the CI migrate-deploy job). OL-206 ✅ MERGED #807 `1977ff6a`, prod-verified; #808 (CI runs once per PR) ✅ MERGED `0d553dfb`. Earlier the same day: OL-208 added (Care Advisor bubble covers mobile "More"); OL-209 added (header/sidebar user block duplicated); OL-202 ✅ MERGED #806 `24537cee`. Prior: 2026-10-24 — OL-177 + OL-178 PR open (unclaimed inquiries → inbound queue; MapTiler); OL-176 ✅ MERGED #783 `3af16f2c`; OL-175 ✅ MERGED #782 `3c08889d`; OL-171…OL-174 ✅ MERGED (#777 `ba7d9ba3` · #778 `972c8b63` · #779 `83367965` · #780 `3c29ad10`). Prior: 2026-10-22 — OL-153 #774 `b3a6b298` + OL-169 #775 `caff286b` ✅ MERGED. Prior: 2026-10-21 (W2 batch merged) — OL-167 a–d + OL-168 ✅ MERGED (#768 `0f1b2ba8` · #771 `481a463d` · #772 `fcdeebf3` · #770 `5d5fb05d` · #769 `2a2eba26`). Prior: OL-166 a–d ✅ MERGED (#762–#765); OL-165 residuals closed. Prior: 10/20 batch MERGED (#749, #761, #750–#759; see DEV_SESSION_SUMMARIES 2026-10-20/21); OL-163 a–e, OL-159, OL-160, OL-161, OL-162, OL-165 now ✅ MERGED (residuals noted inline); OL-166 follow-ups in flight. Prior: 2026-10-17 — sprint W5 batch: six stacked PRs open (#743–#748); OL-155…OL-158 added; OL-148 (W4), OL-140 (W3), OL-146 (font flake), OL-154 (decline flake, #743) closed; OL-141/OL-150 residuals folded into OL-155/#748. Prior: 2026-10-13 (evening) — sprint W4 batch: six more PRs open (#733–#738), OL-148…OL-153 added; OL-142 and OL-143 built (decision residuals only), OL-144 half-closed (Beachwood/Lakewood shipped). Earlier same day — sprint W3 batch: six PRs open (#726–#731), OL-140…OL-147 added; OL-125/OL-129 residuals carried. Previous rebuild 2026-10-05 — **rebuilt from the repo** (sprint W2 item 7). Sources: the 56 open PRs on GitHub, `grep TODO|FIXME` over `src/`, every `test.skip`/`fixme` in `__tests__/`, `tests/`, `e2e/`, the CI workflows, and the previous version of this file (all 115 prior OL ids carried forward below with their last known status). Each entry: **OL id · one-line status · file path**. Triage: **SHIP NOW** = this week, **LATER** = backlog, **FOUNDER** = needs Chris (settings, money, legal), **CLOSED** = verified done (kept for id continuity)._
+_Last updated: 2026-10-29 (late night) — PR #10 privacy round: Meta Pixel, Clarity, GTM and gtag removed (OL-228/229 ✅ code side); GA4 server-side via Measurement Protocol; PII logs removed + log guard (OL-230 ✅); Sentry URL/error scrubbing, Replay removed; OL-231 added (auth logs emails). Prior: 2026-10-29 (night) — OL-226 PR open (conversion measurement: allowlisted funnel events, privacy guard, consent-gated first-party aggregate, /admin/analytics/funnel). OL-228, OL-229 and OL-230 added from its audit (Meta Pixel decision, Clarity/GTM/GA settings, PII in browser console logs). OL-227 hotfix ✅ MERGED #11 `8ad5a347` (gallery overflow on phones; closed OL-222). Prior: 2026-10-29 (late) — OL-217 ✅ MERGED #8 (squash) `9294a7d8`. Follow-ups OL-222 (gallery counter over caption), OL-223 (two "all photos" buttons), OL-224 (compact limited-data states on mobile) and OL-225 (one mobile support control, not scheduled). Prior: OL-217 PR open (facility profile /homes/[id] on the Direction D standard: one inquiry pathway, CTA bar, claim demoted). Prior: OL-216 ✅ MERGED #6 (squash) `57d5e21e`, closing OL-208. Follow-ups OL-218…OL-221 logged (directory placeholder tile, /search a11y leftovers, Search Tips copy, waiver data in /api/search). OL-217 (`/homes/[id]` restructure) is reserved for the next batch. Prior: 2026-10-28 (night) — OL-215 added (Render crons were inactive until 10/28; Monthly Reset unverified until its Nov 1 run); `.github/workflows-disabled/` removed; #3 CI shard-check fix, #4 render.yaml cron record merged. Prior: OL-207 ✅ MERGED #1 (squash) `d965c008`; OL-205 and OL-209 closed with it. Repo moved to a fresh public `profyt7/carelinkai` (one squashed commit); old repo archived private as `carelinkai-archive`. Prior: 2026-10-28 — OL-212 PR open (demo passwords from DEMO_ACCOUNT_PASSWORD); OL-213 added (credentials in git history / tracked PDFs — founder rotation). Prior: 2026-10-27 — OL-210 PR open (remove the CI migrate-deploy job). OL-206 ✅ MERGED #807 `1977ff6a`, prod-verified; #808 (CI runs once per PR) ✅ MERGED `0d553dfb`. Earlier the same day: OL-208 added (Care Advisor bubble covers mobile "More"); OL-209 added (header/sidebar user block duplicated); OL-202 ✅ MERGED #806 `24537cee`. Prior: 2026-10-24 — OL-177 + OL-178 PR open (unclaimed inquiries → inbound queue; MapTiler); OL-176 ✅ MERGED #783 `3af16f2c`; OL-175 ✅ MERGED #782 `3c08889d`; OL-171…OL-174 ✅ MERGED (#777 `ba7d9ba3` · #778 `972c8b63` · #779 `83367965` · #780 `3c29ad10`). Prior: 2026-10-22 — OL-153 #774 `b3a6b298` + OL-169 #775 `caff286b` ✅ MERGED. Prior: 2026-10-21 (W2 batch merged) — OL-167 a–d + OL-168 ✅ MERGED (#768 `0f1b2ba8` · #771 `481a463d` · #772 `fcdeebf3` · #770 `5d5fb05d` · #769 `2a2eba26`). Prior: OL-166 a–d ✅ MERGED (#762–#765); OL-165 residuals closed. Prior: 10/20 batch MERGED (#749, #761, #750–#759; see DEV_SESSION_SUMMARIES 2026-10-20/21); OL-163 a–e, OL-159, OL-160, OL-161, OL-162, OL-165 now ✅ MERGED (residuals noted inline); OL-166 follow-ups in flight. Prior: 2026-10-17 — sprint W5 batch: six stacked PRs open (#743–#748); OL-155…OL-158 added; OL-148 (W4), OL-140 (W3), OL-146 (font flake), OL-154 (decline flake, #743) closed; OL-141/OL-150 residuals folded into OL-155/#748. Prior: 2026-10-13 (evening) — sprint W4 batch: six more PRs open (#733–#738), OL-148…OL-153 added; OL-142 and OL-143 built (decision residuals only), OL-144 half-closed (Beachwood/Lakewood shipped). Earlier same day — sprint W3 batch: six PRs open (#726–#731), OL-140…OL-147 added; OL-125/OL-129 residuals carried. Previous rebuild 2026-10-05 — **rebuilt from the repo** (sprint W2 item 7). Sources: the 56 open PRs on GitHub, `grep TODO|FIXME` over `src/`, every `test.skip`/`fixme` in `__tests__/`, `tests/`, `e2e/`, the CI workflows, and the previous version of this file (all 115 prior OL ids carried forward below with their last known status). Each entry: **OL id · one-line status · file path**. Triage: **SHIP NOW** = this week, **LATER** = backlog, **FOUNDER** = needs Chris (settings, money, legal), **CLOSED** = verified done (kept for id continuity)._
 
 _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified after each via the new `prod-verify.yml` workflow): **#723** ops tooling `870a65f` · **#721** OL-124 gate `0df4b18` · **#714** public routes `4f95aec` · **#718** Sentry 401 noise `b402dd5` · **#717** isDemo filter `189dd8d` · **#716** closed as superseded by #721 · **#720** this file `b81fc9f` · **#715** memory restarts `b0b4078` · **#719** Prisma warm-up `97e6583` · **#724** workflow fix `87df579`. All eight sprint PRs are on main and verified live._
 
@@ -7,8 +7,42 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
 
 ## 🔴 SHIP NOW (this week)
 
-### OL-227: /homes/[id] gallery overflows the viewport on phones — hotfix PR open
-- **Status:** 🟡 PR open 2026-10-29, branch `fix/ol-227-gallery-overflow` (base main `114cfb89`). Live production bug (iOS Safari: page zoomed out, header and content in the left half, gallery past the right edge; seen on St. Mary of the Woods, 8 photos with long captions).
+### OL-226: Conversion measurement (allowlisted funnel events + admin funnel) — PR open
+- **Status:** 🟡 PR open 2026-10-29, branch `feat/ol-226-measurement` (base main `114cfb89`).
+- **What:**
+  - **Events:** `src/lib/analytics/events.ts` is the only way to emit them, via `track(name, props)` with a closed union of seven events, each with an allowlisted prop type:
+    - `search_performed`, `listing_clicked`, `profile_viewed`
+    - `inquiry_started`, `inquiry_submitted`, `tour_requested`
+    - `concierge_clicked`
+  - **Privacy guard:** `src/lib/analytics/sanitize.ts`.
+    - Paths keep only `view` / `page`.
+    - Email-, phone- or free-text-looking values (> 40 chars) are rejected.
+    - Unknown keys are dropped.
+  - **Firing rules:**
+    - Submitted/requested fire only in the 2xx success branch, after the confirmation renders.
+    - Started fires when step 1 of the form opens.
+- **Consent:**
+  - Everything sits behind the existing analytics consent.
+  - **Privacy round (2026-10-29, on the same PR):** no third-party script runs in the browser any more.
+    - Meta Pixel, Clarity, GTM and gtag.js are removed (OL-228, OL-229).
+    - GA4 gets the same sanitized events plus `page_view` server-side via the Measurement Protocol (`src/lib/analytics/ga-mp.ts`).
+    - GA needs `GA_MP_API_SECRET` + `GA_MEASUREMENT_ID` and fails closed without them.
+- **Storage:**
+  - New `AnalyticsEvent` table (migration `20261029000000_analytics_event`) holds only sanitized props, plus a random per-tab `anonSessionId` from sessionStorage, created only after consent.
+  - No IP, user id or cookie.
+  - `/api/analytics/track` re-sanitizes, stores, and no longer logs payloads or IPs.
+  - 90-day retention via the daily credential-expiry cron.
+- **Admin:** `/admin/analytics/funnel` (Admin nav → Conversion Funnel), with 7/14/30-day ranges.
+  - Totals plus unique sessions per event, and session-based step rates with raw counts and an n < 30 note.
+  - A profile→inquiry breakdown by availability, photo and price.
+  - The operational inquiry count as a cross-check.
+- **Also:**
+  - Sentry (client, server, edge) drops `console` breadcrumbs; strips query strings from request, breadcrumb, span and transaction URLs; trims Prisma/Zod error text. Session Replay is removed (`src/lib/sentry/scrub-event.ts`).
+  - PII console logs deleted (OL-230); `scripts/pii-log-scan.cjs` + `__tests__/pii-log-guard.unit.test.ts` enforce it.
+  - The old unconsented `/search` tracker calls are removed.
+- **Path:** `src/lib/analytics/{events,sanitize,funnel,listing-attrs,retention}.ts`, `src/components/analytics/{AnalyticsScripts,FunnelTracking}.tsx`, `src/app/api/analytics/track/route.ts`, `src/app/admin/analytics/funnel/page.tsx`, `prisma/schema.prisma`, `__tests__/analytics-{privacy,funnel}.unit.test.ts`, `e2e/public/directory/analytics-funnel.spec.ts`
+### OL-227: /homes/[id] gallery overflows the viewport on phones — MERGED
+- **Status:** ✅ MERGED 2026-10-29, PR #11 (squash) `8ad5a347`; prod-verify with the mobile-overflow check on St. Mary of the Woods follows. Was: branch `fix/ol-227-gallery-overflow` (base main `114cfb89`). Live production bug (iOS Safari: page zoomed out, header and content in the left half, gallery past the right edge; seen on St. Mary of the Woods, 8 photos with long captions).
 - **Cause:** the OL-217 gallery wrapper is a CSS grid with no explicit columns below md. Its child kept `min-width: auto`, so the implicit track grew to the thumbnail row's content width (8 × 96px + gaps ≈ 824px). The hero, caption and arrows stretched with it, and mobile browsers widened the layout viewport to match.
 - **Fix (layout/CSS only):**
   - Wrapper: `grid-cols-1` (minmax(0, 1fr)) + `min-w-0` children.
@@ -628,6 +662,58 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
 - **Not done (needs branch-protection info):** `quality.yml` and `ci.yml` run the same lint + type-check + jest + build on every PR. Dropping one halves that cost, but only safe once we know which is a required check.
 
 ## 🟡 LATER (backlog, ordered roughly by leverage)
+
+### OL-230: Listing inquiry handlers log contact details and care needs to the browser console
+- **Status:** ✅ fixed on PR #10 (OL-226 branch, 2026-10-29, not merged).
+  - The listing inquiry/tour handler diagnostics are deleted, and the tour API's ~100 debug logs (raw body, family name/email, data to insert) are gone.
+  - Every in-scope route logs `errorSummary(err)` (class + code) instead of raw errors.
+  - Sentry scrubbing and Replay removal are listed under OL-226.
+  - Guard: `scripts/pii-log-scan.cjs` (AST scan of homes / tours / concierge / search pages and the inquiry, tour, concierge, leads, search and analytics routes) in `__tests__/pii-log-guard.unit.test.ts`.
+  - Residual: auth logs login emails (`src/lib/auth.ts`, `src/lib/auth-db-simple.ts`, `src/lib/email.ts`); see OL-231.
+- **Original finding:** found 2026-10-29 in the OL-226 audit.
+- **What:** `handleInquirySubmit` / `handleTourSchedule` in `src/app/homes/[id]/page.tsx` `console.log` the family's name, email, phone, resident name, care needs, message and the full request payload ("TOUR DIAGNOSTIC").
+  - OL-226 stops these reaching Sentry as breadcrumbs: the client `beforeBreadcrumb` drops `console`.
+  - They still print in the visitor's browser.
+  - Not yet verified: Sentry Session Replay (10% of sessions, 100% on error) may still capture console output.
+  - Fix: delete the diagnostic logging (no logic change), and consider turning off Replay console capture.
+- **Path:** `src/app/homes/[id]/page.tsx`, `src/instrumentation-client.ts`
+
+### OL-228: Meta Pixel — decide whether it stays
+- **Status:** ✅ removed on PR #10 (founder decision 2026-10-29).
+  - Removed: the loader, the `fbq` helpers (`src/lib/analytics.ts` deleted), the marketing-cookie consent copy and the `.env.example` entry.
+  - An e2e asserts zero requests to facebook.net / connect.facebook.net on `/`, `/search?q=test`, `/homes/[id]`, `/concierge` and `/cleveland/assisted-living`, with every consent box ticked.
+  - A jest source scan forbids any Pixel code in `src/`.
+  - Founder: delete `NEXT_PUBLIC_FACEBOOK_PIXEL_ID` in Render if set; historical steps are in the PR #10 audit comment.
+- **Original finding:**
+- **What:** with marketing consent, the Pixel loads on every non-sensitive route: `/`, `/search`, `/homes/[id]`, `/cleveland/*`, `/concierge`, …
+  - It sends `PageView` once on load.
+  - Its init sends the full page URL to Meta. A visitor landing on `/search?q=…` sends the typed query.
+  - Once loaded it stays through client-side navigation.
+  - Unused helpers in `src/lib/analytics.ts` would send `Contact` / `Schedule` / `Lead` events. No caller today; OL-226 doesn't use them.
+- **Path:** `src/components/analytics/AnalyticsScripts.tsx`, `src/lib/analytics.ts`
+
+### OL-229: Clarity URLs, GTM container and GA property settings
+- **Status:** ✅ code side done on PR #10.
+  - **Clarity removed:** its URL capture can't be restricted, and the App Router has no pre-render guard.
+  - **GTM and gtag.js removed:** Enhanced Measurement and the container are outside code control.
+  - **GA4 is server-side only:** Measurement Protocol, allowlisted params, sanitized `page_location`.
+  - **Founder:**
+    - set `GA_MP_API_SECRET` + `GA_MEASUREMENT_ID` in Render to keep GA;
+    - delete `NEXT_PUBLIC_GTM_ID` and `NEXT_PUBLIC_CLARITY_PROJECT_ID`;
+    - delete the Clarity project;
+    - follow the GA/Sentry deletion steps in the PR #10 audit comment.
+- **Original finding:**
+- **What:**
+  - (1) Clarity records page URLs, query strings included (`/search?q=…`). Its content is masked site-wide (`<body data-clarity-mask>`). It isn't loaded *initially* on sensitive routes, but once loaded it keeps recording after client-side navigation into them.
+  - (2) The GTM container loads with analytics consent; its tags aren't in the repo and weren't audited.
+  - (3) GA4 Enhanced Measurement ("page changes based on browser history", "site search") can still send full URLs. Founder setting: turn both off in the GA property, since OL-226 sends page_view itself.
+- **Path:** `src/components/analytics/AnalyticsScripts.tsx`
+
+### OL-231: Auth flows log login email addresses to Render logs
+- **Status:** 🟡 open (found 2026-10-29 by the OL-230 log scan, out of that PR's scope).
+- **What:** `console.log/warn` with the email on every login attempt, failure, 2FA failure and success (`src/lib/auth.ts`), in the legacy `src/lib/auth-db-simple.ts`, and on verification / password-reset sends (`src/lib/email.ts`).
+  - Fix: log a user id or a masked email; extend `scripts/pii-log-scan.cjs` SCOPE to `src/lib/auth*` and `src/lib/email.ts`.
+- **Path:** `src/lib/auth.ts`, `src/lib/auth-db-simple.ts`, `src/lib/email.ts`
 
 ### OL-222: PhotoGallery's slide counter overlaps the photo caption
 - **Status:** ✅ fixed by OL-227 (counter in its own top-left chip; caption + View All share a clamped bottom bar). Was: found 2026-10-29 during OL-217.

@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { z } from 'zod';
+import { errorSummary } from '@/lib/log-safe';
 
 // Validation schema for creating follow-ups
 const createFollowUpSchema = z.object({
@@ -156,7 +157,7 @@ export async function POST(
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error creating follow-up:', error);
+    console.error('Error creating follow-up:', errorSummary(error));
     return NextResponse.json(
       { 
         success: false, 
@@ -229,7 +230,7 @@ export async function GET(
     
     return NextResponse.json({ success: true, followUps });
   } catch (error) {
-    console.error('Error fetching follow-ups:', error);
+    console.error('Error fetching follow-ups:', errorSummary(error));
     return NextResponse.json(
       { 
         success: false, 
@@ -324,7 +325,7 @@ export async function PATCH(
     
     return NextResponse.json({ success: true, followUp });
   } catch (error) {
-    console.error('Error updating follow-up:', error);
+    console.error('Error updating follow-up:', errorSummary(error));
     return NextResponse.json(
       { 
         success: false, 

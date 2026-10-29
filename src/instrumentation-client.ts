@@ -4,6 +4,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { scrubPhi } from '@/lib/phi-scrubber';
+import { scrubBreadcrumb, scrubEvent } from '@/lib/sentry/scrub-event';
 
 const SENTRY_DSN = process.env.NEXT_PUBLIC_SENTRY_DSN;
 
@@ -27,10 +28,6 @@ if (SENTRY_DSN) {
     // Profiling - capture profiling data for sampled transactions
     profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
 
-    // Session Replay - capture 10% of sessions, 100% of sessions with errors
-    replaysSessionSampleRate: 0.1,
-    replaysOnErrorSampleRate: 1.0,
-
     // Environment tracking
     environment: process.env.NODE_ENV || 'development',
 
@@ -52,12 +49,9 @@ if (SENTRY_DSN) {
 
     // Integrations
     integrations: [
-      // Session Replay — mask all inputs (form fields are primary PHI risk in replays)
-      Sentry.replayIntegration({
-        maskAllText: false,
-        maskAllInputs: true,
-        blockAllMedia: false,
-      }),
+      // OL-230: Session Replay removed. It recorded page URLs (search ?q=) and unmasked page
+      // text (typed search terms echoed on /search, names on dashboards). Don't re-add without
+      // maskAllText + URL scrubbing verified.
       // Browser Tracing
       Sentry.browserTracingIntegration(),
       // Browser Profiling
@@ -83,6 +77,8 @@ if (SENTRY_DSN) {
       if (noise.some((n) => haystack.includes(n))) {
         return null;
       }
+      // OL-226/230: strip query strings from every URL, trim error text that echoes input.
+      scrubEvent(event);
       // Scrub PHI/PII from captured events
       if (event.request?.data) {
         event.request.data = scrubPhi(event.request.data);
@@ -93,7 +89,14 @@ if (SENTRY_DSN) {
       return event;
     },
 
+    beforeSendTransaction(event) {
+      return scrubEvent(event);
+    },
+
     beforeBreadcrumb(breadcrumb) {
+      // OL-226/230: console breadcrumbs never reach Sentry; navigation/fetch URLs lose their
+      // query string (/search?q=…).
+      if (!scrubBreadcrumb(breadcrumb)) return null;
       if (breadcrumb.data) {
         breadcrumb.data = scrubPhi(breadcrumb.data) as Record<string, unknown>;
       }

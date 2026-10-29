@@ -37,6 +37,7 @@ import { placeholderImageFor } from '@/lib/placeholder-images';
 import { availabilityView } from '@/lib/availability/availability';
 import { pricingView } from '@/lib/pricing/pricing';
 import { compareSearchRank, isFeaturedActive } from '@/lib/directory/featured-rank';
+import { errorSummary } from '@/lib/log-safe';
 
 // Constants
 const DEFAULT_PAGE_SIZE = 10;
@@ -701,7 +702,7 @@ export async function GET(request: NextRequest) {
         })
       ]);
     } catch (dbErr) {
-      console.error('DB query failed, falling back to mocks:', dbErr);
+      console.error('DB query failed, falling back to mocks:', errorSummary(dbErr));
       homes = [];
       totalCount = 0;
     }
@@ -969,7 +970,7 @@ export async function GET(request: NextRequest) {
     }, { status: 200 });
     
   } catch (error) {
-    console.error('Search API error:', error);
+    console.error('Search API error:', errorSummary(error));
 
     return NextResponse.json({
       success: false,
