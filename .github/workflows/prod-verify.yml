@@ -66,6 +66,11 @@ on:
         description: 'OL-227: a listing name to find via /cleveland/assisted-living + suburb pages and check the same way (empty = skip)'
         required: false
         default: ''
+      check_trackers:
+        description: 'OL-228/229: /, /search?q=test, one /homes/<id> and /concierge load zero scripts or requests from facebook.net, clarity.ms, googletagmanager.com, google-analytics.com (analytics consent granted; /api/analytics/track blocked so nothing is written); /admin/analytics/funnel answers without a server error'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -398,6 +403,76 @@ jobs:
             }
           } catch (e) {
             bad(`mobile overflow check threw: ${e.message}`);
+          } finally {
+            await browser.close();
+          }
+          const fs = await import('node:fs');
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, out.join('\n') + '\n');
+          console.log(out.join('\n'));
+          if (fail) process.exit(1);
+          EOF
+          node check.mjs
+
+      - name: No third-party trackers on public pages (browser, OL-228/229)
+        if: ${{ inputs.check_trackers }}
+        shell: bash
+        env:
+          BASE: ${{ inputs.base }}
+        run: |
+          set -e
+          mkdir -p pwt && cd pwt
+          npm init -y >/dev/null
+          npm i playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null 2>&1
+          cat > check.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          const BASE = process.env.BASE;
+          const TRACKERS = /(^|\.)(facebook\.net|clarity\.ms|googletagmanager\.com|google-analytics\.com)$/;
+          const out = [];
+          let fail = false;
+          const pass = (m) => out.push(`- ✅ ${m}`);
+          const bad = (m) => { out.push(`- ❌ ${m}`); fail = true; console.error('::error::' + m); };
+          const UA = 'CareLinkAI-ProdVerify/1.0 (+github-actions)';
+          const browser = await chromium.launch();
+          try {
+            // Worst case: the visitor ACCEPTED analytics (and the legacy marketing flag).
+            const ctx = await browser.newContext({ userAgent: UA });
+            await ctx.addInitScript(() => {
+              try { localStorage.setItem('carelinkai_cookie_consent', JSON.stringify({ necessary: true, analytics: true, marketing: true })); } catch {}
+            });
+            // Read-only run: never write funnel rows to production.
+            let trackBlocked = 0;
+            await ctx.route('**/api/analytics/track', (r) => { trackBlocked++; return r.abort(); });
+            const page = await ctx.newPage();
+            const seen = [];
+            page.on('request', (r) => { try { if (TRACKERS.test(new URL(r.url()).hostname)) seen.push(r.url()); } catch {} });
+
+            await page.goto(BASE + '/cleveland/assisted-living', { waitUntil: 'domcontentloaded' });
+            const listing = await page.evaluate(() => document.querySelector('a[href^="/homes/"]')?.getAttribute('href') || null);
+            if (!listing) bad('no /homes/<id> link found on /cleveland/assisted-living');
+            const paths = ['/', '/search?q=test', ...(listing ? [listing] : []), '/concierge'];
+            for (const p of paths) {
+              const before = seen.length;
+              await page.goto(BASE + p, { waitUntil: 'networkidle', timeout: 60000 }).catch(() => page.waitForLoadState('load'));
+              await page.waitForTimeout(3000);
+              const state = await page.evaluate(() => ({
+                scripts: [...document.scripts].map((s) => s.src).filter((s) => /facebook\.net|clarity\.ms|googletagmanager\.com|google-analytics\.com/.test(s)),
+                globals: ['fbq', 'clarity', 'gtag', 'dataLayer'].filter((g) => typeof window[g] !== 'undefined'),
+              }));
+              const reqs = seen.slice(before);
+              if (!reqs.length && !state.scripts.length && !state.globals.length) pass(`${p}: 0 tracker requests, 0 tracker scripts, no fbq/clarity/gtag/dataLayer`);
+              else bad(`${p}: requests ${JSON.stringify(reqs)} scripts ${JSON.stringify(state.scripts)} globals ${JSON.stringify(state.globals)}`);
+            }
+            pass(`first-party /api/analytics/track calls blocked (not written): ${trackBlocked}`);
+            await ctx.close();
+
+            // Admin funnel route: deployed and answering (auth redirect for an anonymous visitor), no 5xx.
+            const r = await fetch(BASE + '/admin/analytics/funnel', { redirect: 'manual', headers: { 'User-Agent': UA } });
+            const loc = r.headers.get('location') || '';
+            if (r.status < 500 && r.status !== 404) pass(`/admin/analytics/funnel → ${r.status}${loc ? ` (${loc.replace(/\?.*$/, '')})` : ''}`);
+            else bad(`/admin/analytics/funnel → ${r.status}`);
+          } catch (e) {
+            bad(`tracker check threw: ${e.message}`);
           } finally {
             await browser.close();
           }
