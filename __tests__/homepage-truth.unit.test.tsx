@@ -131,3 +131,22 @@ describe('LIVE TODAY features block and trust stats (OL-240)', () => {
     expect(stats).toContain('To List Your Community');
   });
 });
+
+describe('founder UX truth (OL-241): no unsourced figures or callback promises we can\'t keep', () => {
+  // "$5,000 mistake" had no source; "one business hour" is a callback time nobody guarantees yet.
+  const BANNED = /\$5,000 mistake|one business hour/i;
+  const fs = require('fs') as typeof import('fs');
+  const path = require('path') as typeof import('path');
+
+  it('the rendered homepage carries neither phrase, and the concierge block leads with the verified shortlist', () => {
+    const html = renderToString(<HomePageClient />);
+    expect(text(html)).not.toMatch(BANNED);
+    expect(text(html)).toContain('Get a verified shortlist before you commit to a home.');
+  });
+
+  it('neither phrase is anywhere in the homepage source or the shared contact line (FAQ answers render on click)', () => {
+    for (const f of ['src/app/HomePageClient.tsx', 'src/lib/contact.ts']) {
+      expect(fs.readFileSync(path.join(process.cwd(), f), 'utf8')).not.toMatch(BANNED);
+    }
+  });
+});

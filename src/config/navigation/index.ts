@@ -1,4 +1,5 @@
 import type { PaidFeatureKey } from '@/lib/billing/paid-features';
+import type { OperatorCapability } from '@/lib/operator/capabilities';
 import { ADMIN_NAV } from './admin';
 import { AFFILIATE_NAV } from './affiliate';
 import { CAREGIVER_NAV } from './caregiver';
@@ -12,7 +13,7 @@ export type { NavItem, NavShell } from './types';
 
 /**
  * OL-206 — role → navigation. One role, one nav. getNavForRole applies
- * roleRestriction, paidFeature and the marketplace flag, so the sidebar only
+ * roleRestriction, paidFeature, operator capabilities and the marketplace flag, so the sidebar only
  * ever receives items the user can see (same rules the old DashboardLayout
  * applied inline).
  */
@@ -66,6 +67,8 @@ export type NavVisibilityOptions = {
   paidFeatures?: ((key: PaidFeatureKey) => boolean) | Partial<Record<PaidFeatureKey, boolean>>;
   /** NEXT_PUBLIC_MARKETPLACE_ENABLED !== 'false'. Hides /marketplace itself, as before. */
   marketplaceEnabled?: boolean;
+  /** OL-241 operator capabilities (useOperatorCapabilities().has, or a map). Missing = hidden. */
+  capabilities?: ((key: OperatorCapability) => boolean) | Partial<Record<OperatorCapability, boolean>>;
 };
 
 function isVisible(item: NavItem, role: string, opts: NavVisibilityOptions): boolean {
@@ -74,6 +77,11 @@ function isVisible(item: NavItem, role: string, opts: NavVisibilityOptions): boo
   if (item.paidFeature) {
     const pf = opts.paidFeatures;
     const on = typeof pf === 'function' ? pf(item.paidFeature) : pf?.[item.paidFeature] === true;
+    if (!on) return false;
+  }
+  if (item.capability) {
+    const c = opts.capabilities;
+    const on = typeof c === 'function' ? c(item.capability) : c?.[item.capability] === true;
     if (!on) return false;
   }
   return true;

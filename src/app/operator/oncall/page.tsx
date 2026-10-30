@@ -9,6 +9,7 @@ import Breadcrumbs from '@/components/ui/breadcrumbs';
 import OnCallQueue from '@/components/operator/oncall/OnCallQueue';
 import { planHasFeature } from '@/lib/subscription';
 import { isPaidFeatureEnabled } from '@/lib/billing/paid-features';
+import { smsService } from '@/lib/sms/sms-service';
 
 export default async function OnCallAIPage() {
   const session = await getServerSession(authOptions);
@@ -17,8 +18,27 @@ export default async function OnCallAIPage() {
   const op = await prisma.operator.findUnique({ where: { userId: session.user.id } });
   if (!op) redirect('/dashboard');
 
-  // Gate: Professional+ only
-  if (!planHasFeature(op.subscriptionPlan, 'PROFESSIONAL')) {
+  // OL-241: On-Call reaches caregivers by SMS only, and the start route needs the Professional plan. With
+  // either missing (or plans switched off) a direct visit gets a plain "not available yet", no upgrade prompt.
+  const plansOn = isPaidFeatureEnabled('OPERATOR_PLANS');
+  const professional = planHasFeature(op.subscriptionPlan, 'PROFESSIONAL');
+  if (!smsService.isConfigured() || (!professional && !plansOn)) {
+    return (
+      <div className="p-4 sm:p-6 max-w-2xl" data-testid="oncall-unavailable">
+        <Breadcrumbs items={[{ label: 'Operator', href: '/operator' }, { label: 'On-Call AI' }]} />
+        <div className="mt-6 rounded-xl border border-neutral-200 bg-white p-8 text-center">
+          <h2 className="text-xl font-bold text-neutral-900 mb-2">On-Call AI isn&apos;t available yet</h2>
+          <p className="text-neutral-600 max-w-md mx-auto">
+            Text-message shift coverage is coming soon. Until then, post open shifts from{' '}
+            <Link href="/operator/shifts" className="text-primary-600 hover:underline">Shifts</Link>.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Gate: Professional+ only (an upgrade prompt only while plans are on and SMS is configured)
+  if (!professional) {
     return (
       <div className="p-4 sm:p-6 max-w-2xl">
         <Breadcrumbs items={[{ label: 'Operator', href: '/operator' }, { label: 'On-Call AI' }]} />
@@ -31,7 +51,7 @@ export default async function OnCallAIPage() {
             Automatically text and call your caregivers to fill open shifts. First to reply YES gets the shift.
             Available on the <strong>Professional</strong> and <strong>Growth</strong> plans.
           </p>
-          {isPaidFeatureEnabled('OPERATOR_PLANS') && (
+          {plansOn && (
             <Link
               href="/operator/billing"
               className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg font-semibold text-sm hover:bg-primary-700 transition-colors"

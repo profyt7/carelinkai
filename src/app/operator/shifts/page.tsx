@@ -7,6 +7,8 @@ import EmptyState from '@/components/ui/empty-state';
 import { FiCalendar } from 'react-icons/fi';
 import ShiftAutoFillPanel from '@/components/operator/shifts/ShiftAutoFillPanel';
 import ShiftsTable from '@/components/operator/shifts/ShiftsTable';
+import { smsService } from '@/lib/sms/sms-service';
+import { operatorCapabilities } from '@/lib/operator/capabilities';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -24,6 +26,8 @@ export default async function OperatorShiftsPage() {
         orderBy: { name: 'asc' },
       })
     : [];
+
+  const canAutofill = operatorCapabilities(user?.role, op ? op.subscriptionPlan : undefined, smsService.isConfigured()).SHIFT_AUTOFILL;
 
   const where = op ? { home: { operatorId: op.id } } : {};
 
@@ -46,7 +50,8 @@ export default async function OperatorShiftsPage() {
             <Link href="/operator/shifts/new" className="btn btn-primary">Create Shift</Link>
           </div>
         </div>
-        {homes.length > 0 && (
+        {/* OL-241: only when POST /api/operator/shifts/autofill would accept it (Professional plan); no upgrade prompt. */}
+        {homes.length > 0 && canAutofill && (
           <div className="mb-6">
             <ShiftAutoFillPanel homes={homes} />
           </div>

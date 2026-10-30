@@ -55,10 +55,10 @@ function allText(props: Parameters<typeof HomePageClient>[0]) {
   return { text: chunks.join('\n'), tabsClicked: tabLabels.length, faqs: questions.length, tabLabels };
 }
 
-const SPEED = /in minutes|within minutes|under 15 min|< ?15 min|in seconds|Responds in seconds|\d+% faster|Saves \d+\+? hours|\d clicks|hours instead of days|days, not months|50\+|\b5[- ]min|\(5 min\)|Setup in \d+ minutes|instantly|filling the shift/i;
+const SPEED = /in minutes|within minutes|under 15 min|< ?15 min|in seconds|Responds in seconds|\d+% faster|Saves \d+\+? hours|\d clicks|hours instead of days|days, not months|50\+|\b5[- ]min|\(5 min\)|Setup in \d+ minutes|instantly|filling the shift|\$5,000 mistake|one business hour/i;
 const PLUMBING = /employment record|Stripe (collects|handles)|via SMS|SMS and IVR|\bIVR\b|texts caregivers/i;
 // "$0" is allowed (free); so is the live Family Concierge offer. Any other price needs its product's flag on.
-const CONCIERGE = /\$399|\$5,000/g;
+const CONCIERGE = /\$399/g;
 const PRICE = /\$\s?[1-9]/;
 const RATE = /\b\d{2}%|\d{2}–\d{2}%/;
 

@@ -363,7 +363,8 @@ export default function HomePage({
               <p className="text-sm font-semibold uppercase tracking-wide text-primary-600">Family Concierge · Greater Cleveland</p>
               {/* OL-165: the headline is the mistake, not the time saved. One line + the guarantee + the link. */}
               <h2 className="mt-2 text-3xl md:text-4xl font-bold text-neutral-900" data-testid="home-concierge-headline">
-                {CONCIERGE_OFFER.headline}
+                {/* OL-241: no unsourced dollar figure in the homepage headline. */}
+                Get a verified shortlist before you commit to a home.
               </h2>
               <p className="mt-4 text-lg text-neutral-800">{CONCIERGE_OFFER.oneLine}</p>
               <p className="mt-3 flex gap-3 text-neutral-800" data-testid="home-concierge-guarantee">
@@ -1880,7 +1881,7 @@ export default function HomePage({
               <AnimatePresence>
                 {openFaqIndex === 6 && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-                    <div className="px-6 pb-5 text-neutral-500"><p>Yes — <a href={CONTACT_PHONE_TEL} className="text-primary-600 hover:underline" data-testid="faq-phone">{CONTACT_PHONE_DISPLAY}</a>. Our front desk answers around the clock, takes your name and callback number, and a person calls you back within one business hour during the day (Mon–Fri 8–6 ET) or first thing the next morning. Please don’t share patient details on the line; share them securely at getcarelinkai.com/concierge.</p></div>
+                    <div className="px-6 pb-5 text-neutral-500"><p>Yes — <a href={CONTACT_PHONE_TEL} className="text-primary-600 hover:underline" data-testid="faq-phone">{CONTACT_PHONE_DISPLAY}</a>. Our front desk answers around the clock, takes your name and callback number, and a person calls you back within one business day. Please don’t share patient details on the line; share them securely at getcarelinkai.com/concierge.</p></div>
                   </motion.div>
                 )}
               </AnimatePresence>

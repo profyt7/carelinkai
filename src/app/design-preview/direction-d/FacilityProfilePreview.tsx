@@ -88,7 +88,7 @@ export default function FacilityProfilePreview({ mode, home, viewer = 'guest' }:
         <button type="button" className={`${BTN_PRIMARY} w-full`}>Schedule a tour</button>
         <button type="button" className={`${BTN_SECONDARY} w-full`}>Send an inquiry</button>
       </div>
-      <p className="mt-3 text-xs text-neutral-600">Free for families. A person from our care team follows up within one business hour, Mon–Fri.</p>
+      <p className="mt-3 text-xs text-neutral-600">Free for families. A person from our care team follows up within one business day, Mon–Fri.</p>
     </section>
   );
 

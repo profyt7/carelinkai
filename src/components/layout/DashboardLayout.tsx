@@ -25,6 +25,7 @@ import PWAStatus from "../pwa/PWAStatus";
 // Admin impersonation banner
 import ImpersonationBanner from "../admin/ImpersonationBanner";
 import { usePaidFeatures } from "@/hooks/usePaidFeatures";
+import { useOperatorCapabilities } from "@/hooks/useOperatorCapabilities";
 // OL-206: per-role navigation on the SidebarShell
 import SidebarShell, { type SidebarNavItem } from "./SidebarShell";
 import { flattenNav, getActiveNavId, getMobileTabIds, getNavForRole, getToneForRole, type NavItem } from "@/config/navigation";
@@ -58,6 +59,8 @@ export default function DashboardLayout({
   const marketplaceEnabled =
     process.env['NEXT_PUBLIC_MARKETPLACE_ENABLED'] !== 'false';
   const { isEnabled: isPaidFeatureOn } = usePaidFeatures();
+  // OL-241: plan- and SMS-dependent operator tools (On-Call AI) show only when usable. Operators only.
+  const { has: hasCapability } = useOperatorCapabilities(String(session?.user?.role || '').toUpperCase() === 'OPERATOR');
 
   // Responsive state
   const [isMobile, setIsMobile] = useState(false);
@@ -345,8 +348,8 @@ export default function DashboardLayout({
 
   const contentEl = (<>{children}</>);
 
-  // OL-206: this role's navigation, already filtered (role, paid features, marketplace flag).
-  const navOpts = { paidFeatures: isPaidFeatureOn, marketplaceEnabled };
+  // OL-206: this role's navigation, already filtered (role, paid features, operator capabilities, marketplace flag).
+  const navOpts = { paidFeatures: isPaidFeatureOn, marketplaceEnabled, capabilities: hasCapability };
   const navTree = getNavForRole(userRole, navOpts);
   // The logo links to the role's dashboard home (its first nav item).
   const homeHref = flattenNav(navTree)[0]?.href ?? '/dashboard';
