@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import HomePageClient from './HomePageClient';
 import { isPaidFeatureEnabled } from '@/lib/billing/paid-features';
+import { loadProductTour } from '@/lib/marketing/product-tour';
 
 /**
  * Home page (server shell). The marketing page itself is a large client
@@ -46,6 +47,8 @@ export default function HomePage() {
       complianceKitsOn={isPaidFeatureEnabled('COMPLIANCE_KITS')}
       // Prices for flag-off products stay hidden (Caregiver Pro).
       caregiverProOn={isPaidFeatureEnabled('CAREGIVER_PRO')}
+      // Demo-section product tour: only when /public/demo/tour.json exists.
+      tourSlides={loadProductTour()}
     />
   );
 }

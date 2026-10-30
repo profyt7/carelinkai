@@ -102,3 +102,51 @@ describe('prices come back only with their flags', () => {
     expect(hits(text, SPEED)).toEqual([]);
   });
 });
+
+describe('"See CareLinkAI in action" section', () => {
+  const ORIGINAL = process.env.NEXT_PUBLIC_DEMO_VIDEO_ID;
+  afterEach(() => {
+    if (ORIGINAL === undefined) delete process.env.NEXT_PUBLIC_DEMO_VIDEO_ID;
+    else process.env.NEXT_PUBLIC_DEMO_VIDEO_ID = ORIGINAL;
+  });
+  const demo = () => document.querySelector('#request-demo') as HTMLElement;
+
+  it('no video id: no Watch Demo button, no placeholder tile, no setup text anywhere', () => {
+    delete process.env.NEXT_PUBLIC_DEMO_VIDEO_ID;
+    const { text } = allText({});
+    for (const t of ['Set NEXT_PUBLIC', 'NEXT_PUBLIC_DEMO_VIDEO_ID', 'Watch Demo', 'Watch the overview', 'Demo video coming soon', 'See every feature in action']) expect(text).not.toContain(t);
+    expect(demo().querySelector('iframe')).toBeNull();
+    expect(demo().querySelector('[data-testid="product-tour"]')).toBeNull();
+  });
+
+  it('intro speaks to every audience; bullets are live capabilities only (no billing, analytics)', () => {
+    delete process.env.NEXT_PUBLIC_DEMO_VIDEO_ID;
+    const { text } = allText({});
+    expect(text).toContain("Request a personalized walkthrough. We'll show families how to find and compare verified communities, and show care homes, caregivers and providers how to manage inquiries, staffing and listings in one place.");
+    expect(text).not.toMatch(/billing, analytics/i);
+    const bullets = Array.from(demo().querySelectorAll('[data-testid="demo-capabilities"] li'), (li) => li.textContent?.replace('✓', '').trim());
+    expect(bullets).toEqual([
+      'Operator dashboard: inquiries, residents, shifts',
+      'Inquiry pipeline with AI-drafted replies',
+      'Marketplace: applications, direct hire, per-diem shifts',
+      'Family portal: search, documents, messaging',
+    ]);
+    // Still true with every paid flag on: billing / analytics never come back here.
+    const on = allText({ operatorPlansOn: true, caregiverProOn: true, backgroundChecksOn: true, complianceKitsOn: true, providerListingOn: true }).text;
+    expect(on).not.toMatch(/billing, analytics/i);
+  });
+
+  it('video id set: Watch Demo + the embed show as before, still no setup text', () => {
+    process.env.NEXT_PUBLIC_DEMO_VIDEO_ID = 'abc123XYZ';
+    const { container } = render(<HomePageClient />);
+    expect(container.textContent).toContain('Watch Demo');
+    expect(container.querySelector('#request-demo iframe')?.getAttribute('src')).toContain('youtube.com/embed/abc123XYZ');
+    expect(container.textContent).not.toContain('Set NEXT_PUBLIC');
+  });
+
+  it('tour slides render the ProductTour slot', () => {
+    const { container } = render(<HomePageClient tourSlides={[{ src: '/demo/01.png', caption: 'Search verified communities', alt: 'Search' }]} />);
+    expect(container.querySelector('#request-demo [data-testid="product-tour"]')).not.toBeNull();
+    expect(container.textContent).toContain('Search verified communities');
+  });
+});

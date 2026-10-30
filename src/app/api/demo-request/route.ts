@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { escapeHtml as e, sendEmail } from '@/lib/email/transactional';
 import { recordLeadConsent } from '@/lib/consent/lead-consent';
 import { LEAD_CONSENT_FORMS } from '@/lib/consent/lead-consent-text';
+import { captureError } from '@/lib/sentry';
 
 const schema = z.object({
   name: z.string().min(1).max(100),
@@ -42,10 +43,12 @@ export async function POST(req: NextRequest) {
       demoRequestId: record.id,
     });
 
-    // Notify Chris — non-blocking
-    notifyAdmin(record).catch((err) =>
-      console.error('[DEMO_REQUEST] Notification failed:', err)
-    );
+    // Notify Chris — non-blocking. The form promises a reply within one business day and this
+    // email is the only notice (no admin list), so a failed send goes to Sentry, not just the log.
+    notifyAdmin(record).catch((err) => {
+      console.error('[DEMO_REQUEST] Notification failed:', err instanceof Error ? err.message : String(err));
+      captureError(err instanceof Error ? err : new Error(String(err)), { tags: { feature: 'demo-request', channel: 'email' }, extra: { demoRequestId: record.id } });
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {
@@ -55,6 +58,7 @@ export async function POST(req: NextRequest) {
 }
 
 async function notifyAdmin(record: {
+  id: string;
   name: string;
   email: string;
   company?: string | null;
@@ -79,7 +83,7 @@ async function notifyAdmin(record: {
     .join('\n');
 
   // OL-181: Resend (the old EmailService fell through to its mock provider and sent nothing).
-  await sendEmail({
+  const sent = await sendEmail({
     to: adminEmail,
     categories: ['demo-request'],
     subject: `🎯 New Demo Request — ${record.name}${record.company ? ` (${record.company})` : ''}`,
@@ -100,4 +104,6 @@ async function notifyAdmin(record: {
       </div>
     `,
   });
+  // sendEmail reports failure instead of throwing.
+  if (!sent.success) throw sent.error instanceof Error ? sent.error : new Error('demo-request admin email failed');
 }

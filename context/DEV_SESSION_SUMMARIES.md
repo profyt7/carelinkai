@@ -2717,3 +2717,12 @@
   - Chris decides whether founders get Professional during the free period. Options: honour `freeAccessUntil` in the gates, or set the plan on claim.
   - Hide the On-Call / auto-fill UI while it can't be used.
 
+### 2026-10-30 — OL-242 homepage demo section truth pass
+- **Objective:** no visitor can see setup text; the demo section claims only live capabilities; ProductTour slot ready for slides.
+- **Work completed:** video button, tile and modal hidden until `NEXT_PUBLIC_DEMO_VIDEO_ID` is set (the modal no longer has a placeholder). Intro rewritten for all audiences. Bullets cut to live capabilities and checked against their flags. `ProductTour` carousel (buttons, arrow keys, swipe, dots) appears only when `public/demo/tour.json` exists. Middleware bypass for flat `/demo/` assets, found while screenshotting (the slides redirected to login). The demo-request admin email failure now reaches Sentry.
+- **Files changed:** `src/app/HomePageClient.tsx`, `src/app/page.tsx`, `src/components/marketing/{ProductTour,DemoVideoModal}.tsx`, `src/lib/marketing/{product-tour,demo-section}.ts`, `src/middleware.ts`, `src/app/api/demo-request/route.ts`, tests (`homepage-truth-full.render`, `product-tour.unit`, `demo-assets.middleware`, `demo-request.notify.unit`), context files.
+- **Commands run:** `npm run type-check`, `next lint` (changed files), `npm test -- --ci` (168 suites, 1944 passed), `next dev` + Playwright screenshots at 390 / 1280.
+- **Tests/build status:** local green; build left to CI.
+- **Deployment impact:** none until `tour.json` lands; no new env vars.
+- **New risks/blockers:** demo requests have no admin list (email only).
+- **Recommended next step:** Chris supplies `public/demo/tour.json` + 16:10 slides.
