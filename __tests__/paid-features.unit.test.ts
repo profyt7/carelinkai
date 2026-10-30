@@ -172,7 +172,7 @@ describe.each(gated)('$name ($key)', ({ key, call }) => {
   });
 });
 
-describe('POST /api/rides — only instant book (payment up front) is gated', () => {
+describe('POST /api/rides — families need RIDES_PAYMENTS; operators are gated only on instant book', () => {
   const ride = (instantBook: boolean) => ({
     providerId: 'p1',
     pickupAddress: '1 Main St',
@@ -180,28 +180,36 @@ describe('POST /api/rides — only instant book (payment up front) is gated', ()
     scheduledAt: new Date(Date.now() + 86_400_000).toISOString(),
     instantBook,
   });
-  beforeEach(() => getServerSession.mockResolvedValue({ user: { id: 'u1', role: 'FAMILY' } }));
+  const as = (role: string) => getServerSession.mockResolvedValue({ user: { id: 'u1', role } });
 
-  it('instant book, off → 503', async () => {
+  it('FAMILY, off → 403 for a plain request and for instant book, before any provider lookup', async () => {
+    as('FAMILY');
     const { POST } = await import('@/app/api/rides/route');
-    const res = await POST(post('/api/rides', ride(true)));
-    expect(res.status).toBe(503);
-    expect((await res.json()).error).toBe(PAID_FEATURES.RIDES_PAYMENTS.message);
+    for (const instant of [false, true]) {
+      const res = await POST(post('/api/rides', ride(instant)));
+      expect(res.status).toBe(403);
+      expect((await res.json()).error).toBe('Ride requests are not available yet.');
+    }
     expect(prisma.provider.findUnique).not.toHaveBeenCalled();
   });
 
-  it('plain request, off → still accepted (proceeds to provider lookup)', async () => {
-    const { POST } = await import('@/app/api/rides/route');
-    const res = await POST(post('/api/rides', ride(false)));
-    expect(res.status).toBe(404); // mocked provider not found — past the switch
-    expect(prisma.provider.findUnique).toHaveBeenCalled();
-  });
-
-  it('instant book, on → proceeds', async () => {
+  it('FAMILY, on → proceeds (plain and instant book)', async () => {
+    as('FAMILY');
     on('RIDES_PAYMENTS');
     const { POST } = await import('@/app/api/rides/route');
-    const res = await POST(post('/api/rides', ride(true)));
-    expect(res.status).toBe(404);
+    expect((await POST(post('/api/rides', ride(false)))).status).toBe(404); // mocked provider not found — past the switch
+    expect((await POST(post('/api/rides', ride(true)))).status).toBe(404);
+  });
+
+  it('OPERATOR, off → plain resident ride still accepted; instant book → 503', async () => {
+    as('OPERATOR');
+    const { POST } = await import('@/app/api/rides/route');
+    const plain = await POST(post('/api/rides', ride(false)));
+    expect(plain.status).toBe(404); // past the switch
+    expect(prisma.provider.findUnique).toHaveBeenCalled();
+    const instant = await POST(post('/api/rides', ride(true)));
+    expect(instant.status).toBe(503);
+    expect((await instant.json()).error).toBe(PAID_FEATURES.RIDES_PAYMENTS.message);
   });
 });
 

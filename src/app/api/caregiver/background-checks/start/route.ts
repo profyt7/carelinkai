@@ -4,8 +4,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { createCandidate, createReport } from "@/lib/checkr";
+import { isPaidFeatureEnabled } from "@/lib/billing/paid-features";
 
 export async function POST(request: NextRequest) {
+  // OL-186: no Checkr order (candidate or report) while BACKGROUND_CHECKS is off. 404 before
+  // auth: the endpoint does not exist while the feature is off.
+  if (!isPaidFeatureEnabled("BACKGROUND_CHECKS")) {
+    return NextResponse.json({ error: "Not found" }, { status: 404, headers: { "cache-control": "no-store" } });
+  }
   try {
     const { session, error } = await requireAnyRole(["CAREGIVER"] as any);
     if (error) return error;
