@@ -32,6 +32,7 @@ import {
   FiLoader,
 } from "react-icons/fi";
 import { errorSummary } from '@/lib/log-safe';
+import { PROVIDER_CATEGORIES, categoryDisplayLabel } from "@/lib/providers/categories";
 
 type UserRole =
   | "FAMILY"
@@ -196,6 +197,7 @@ export default function RegisterPage() {
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [providerCategories, setProviderCategories] = useState<string[]>([]);
 
   const {
     register,
@@ -294,6 +296,8 @@ export default function RegisterPage() {
           data.role === "FAMILY" ? data.relationshipToRecipient : undefined,
         carePreferences:
           data.role === "FAMILY" ? data.carePreferences : undefined,
+        serviceTypes:
+          data.role === "PROVIDER" && providerCategories.length > 0 ? providerCategories : undefined,
         // Pass claimToken in the body so the register API redeems it at signup
         // time — this survives the email-verification redirect
         claimToken: claimTokenFromUrl ?? undefined,
@@ -932,6 +936,42 @@ export default function RegisterPage() {
                     )}
                   </div>
                 </>
+              )}
+
+              {/* PROVIDER-only: launch categories (optional, any number) */}
+              {currentRole === "PROVIDER" && (
+                <fieldset data-testid="register-provider-categories">
+                  <legend className="block text-sm font-medium text-neutral-700 mb-1">
+                    What services do you offer?{" "}
+                    <span className="text-neutral-400">(Optional, pick all that apply)</span>
+                  </legend>
+                  <div className="flex flex-wrap gap-2">
+                    {PROVIDER_CATEGORIES.map((c) => {
+                      const on = providerCategories.includes(c.value);
+                      return (
+                        <button
+                          key={c.value}
+                          type="button"
+                          aria-pressed={on}
+                          title={c.description}
+                          onClick={() =>
+                            setProviderCategories((prev) =>
+                              on ? prev.filter((v) => v !== c.value) : [...prev, c.value]
+                            )
+                          }
+                          className={`px-3 py-1 rounded-full border text-sm text-left ${
+                            on ? "bg-primary-600 text-white border-primary-600" : "bg-white text-neutral-700 border-neutral-300"
+                          }`}
+                        >
+                          {categoryDisplayLabel(c)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-1 text-xs text-neutral-500">
+                    Skilled categories are for licensed clinical care. You can change these later on your profile.
+                  </p>
+                </fieldset>
               )}
 
               {/* Terms and Conditions */}

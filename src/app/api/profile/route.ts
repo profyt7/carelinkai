@@ -81,6 +81,7 @@ const providerProfileSchema = baseProfileSchema.extend({
   licenseNumber: z.string().optional().nullable(),
   yearsInBusiness: z.number().int().min(0).optional().nullable(),
   serviceTypes: z.array(z.string()).max(50).optional(),
+  deliveryModes: z.array(z.enum(['in-home', 'facility', 'remote'])).max(3).optional(),
   coverageArea: z.record(z.any()).optional(),
   isActive: z.boolean().optional(),
   // Transport fields
@@ -253,6 +254,7 @@ export async function GET(request: NextRequest) {
             isVerified: true,
             isActive: true,
             serviceTypes: true,
+            deliveryModes: true,
             coverageArea: true,
             rideTypes: true,
             wheelchairAccessible: true,
@@ -589,6 +591,7 @@ export async function PATCH(request: NextRequest) {
             'licenseNumber' in roleSpecificFields ||
             'yearsInBusiness' in roleSpecificFields ||
             'serviceTypes' in roleSpecificFields ||
+            'deliveryModes' in roleSpecificFields ||
             'coverageArea' in roleSpecificFields ||
             'isActive' in roleSpecificFields
           ) {
@@ -604,6 +607,7 @@ export async function PATCH(request: NextRequest) {
             if (rs.licenseNumber !== undefined) updateData.licenseNumber = rs.licenseNumber;
             if (rs.yearsInBusiness !== undefined) updateData.yearsInBusiness = rs.yearsInBusiness;
             if (rs.serviceTypes !== undefined) updateData.serviceTypes = rs.serviceTypes;
+            if (rs.deliveryModes !== undefined) updateData.deliveryModes = rs.deliveryModes;
             if (rs.coverageArea !== undefined) updateData.coverageArea = rs.coverageArea;
             if (rs.isActive !== undefined) updateData.isActive = rs.isActive;
             if (rs.rideTypes !== undefined) updateData.rideTypes = rs.rideTypes;

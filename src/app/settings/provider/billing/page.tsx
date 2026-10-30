@@ -7,7 +7,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { FiCheckCircle, FiAlertCircle, FiExternalLink, FiTrendingUp } from "react-icons/fi";
 import toast from "react-hot-toast";
 import { usePaidFeatures, PaidFeatureUnavailable } from "@/hooks/usePaidFeatures";
-import { BOOST_PERKS, BOOST_PRICE_LABEL, FOUNDER_BOOST_DAYS, FOUNDER_BOOST_SPOTS, isBoosted } from "@/lib/providers/boost";
+import { BOOST_DISCLAIMER, BOOST_PERKS, BOOST_PRICE_LABEL, FOUNDER_BOOST_DAYS, FOUNDER_BOOST_SPOTS, isBoosted } from "@/lib/providers/boost";
 
 /**
  * Listing & Boost (10/29 provider pricing):
@@ -155,7 +155,7 @@ export default function ProviderBillingPage() {
         {boostSuccess && (
           <div className="p-4 bg-success-50 border border-success-200 rounded-lg flex items-start gap-3">
             <FiCheckCircle className="h-5 w-5 text-success-600 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-success-800">Boost is active. You&apos;ll rank first in provider search.</p>
+            <p className="text-sm text-success-800">Boost is active. Your listing now shows in the promoted (Boosted) spots in provider search.</p>
           </div>
         )}
         {boostCanceled && (
@@ -230,6 +230,7 @@ export default function ProviderBillingPage() {
                   </li>
                 ))}
               </ul>
+              <p className="-mt-4 mb-6 text-xs text-neutral-500" data-testid="boost-disclaimer">{BOOST_DISCLAIMER}</p>
 
               {/* Founding-provider offer */}
               {boostOn && founder && !paidBoostActive && (

@@ -670,11 +670,11 @@ export const HOWTO_GUIDES: HowToGuide[] = [
     audiences: ["provider"],
     icon: "📣",
     whoFor: "Providers who want to be discoverable by families — how the free listing and optional Boost work, and how their public profile appears.",
-    summary: "Your **provider listing is free**: families searching for care can find you, and inquiries arrive on your dashboard. **Provider Boost** ($39/mo, optional) adds top placement in provider search, a Boosted badge and instant lead alerts. Boost never changes your Verified status. Your **public profile** shows your verified badge (earned through credentials), services, reviews, and contact options.",
+    summary: "Your **provider listing is free**: families searching for care can find you, and inquiries arrive on your dashboard. **Provider Boost** ($39/mo, optional) adds boosted placement in provider search (always labelled as promoted), a Boosted badge and instant lead alerts. Boost is paid promotion: it never rates your quality or changes your Verified status. Your **public profile** shows your verified badge (earned through credentials), services, reviews, and contact options.",
     readTime: "2 min",
     steps: [
       { section: "Free listing and optional Boost", text: "Sign in and open Listing & Boost (/settings/provider/billing). Your listing shows as Free — there is nothing to buy to be listed." },
-      { text: "Optional: Provider Boost ($39/month) gives top placement in provider search, a Boosted badge, instant email alerts for new inquiries, and a higher photo limit once photo galleries launch. Boost is paid visibility; it never grants or displays Verified." },
+      { text: "Optional: Provider Boost ($39/month) gives boosted placement in provider search (labelled \"Boosted\", promoted), a Boosted badge, and instant email alerts for new inquiries. Boost is paid promotion; it never rates your quality and never grants or displays Verified." },
       { text: "Founding providers: while spots last, the first 25 providers can claim Boost free for 90 days — no card, and nothing is charged afterwards. Otherwise click Boost for $39/mo (secured by Stripe; cancel anytime — your free listing stays)." },
       { section: "Your public profile (what families see)", text: "Open View Marketplace from your dashboard, or your public provider page (/marketplace/providers/[id])." },
       { text: "It shows your business name + Verified badge, contact, years in business, Visit Website, Reviews (with Write a Review), About, Services Offered, an About This Listing summary (verified credentials count, services offered), and a Safety & Background Checks panel." },

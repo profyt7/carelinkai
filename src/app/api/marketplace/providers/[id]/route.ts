@@ -74,7 +74,6 @@ export async function GET(
         bio: mockProvider.bio,
         website: mockProvider.website,
         insuranceInfo: mockProvider.insuranceInfo,
-        licenseNumber: mockProvider.licenseNumber,
         yearsInBusiness: mockProvider.yearsInBusiness,
         isVerified: mockProvider.isVerified,
         isActive: true,
@@ -175,12 +174,13 @@ export async function GET(
       bio: provider.bio,
       website: provider.website,
       insuranceInfo: provider.insuranceInfo,
-      licenseNumber: provider.licenseNumber,
+      // licenseNumber is self-reported and admin-only (/api/admin/providers/[id]); never public.
       yearsInBusiness: provider.yearsInBusiness,
       isVerified: provider.isVerified,
       // Boost is visibility only; isVerified above is untouched by it.
       boosted: isPaidFeatureEnabled('PROVIDER_BOOST') && isBoosted(provider),
       serviceTypes: provider.serviceTypes || [],
+      deliveryModes: provider.deliveryModes || [],
       coverageArea: provider.coverageArea,
       photoUrl,
       credentials: provider.credentials,

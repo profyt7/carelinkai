@@ -7,6 +7,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { FiMapPin, FiStar, FiSearch, FiFilter, FiCheckCircle, FiLoader, FiHeart, FiX } from "react-icons/fi";
 import MarketplaceTabs from "@/components/marketplace/MarketplaceTabs";
 import ProviderCard from "@/components/marketplace/ProviderCard";
+import { PROVIDER_CATEGORIES, categoryDisplayLabel } from "@/lib/providers/categories";
 
 type Provider = {
   id: string;
@@ -27,16 +28,8 @@ type Provider = {
   distanceMiles?: number;
 };
 
-const serviceTypeOptions = [
-  { value: "transportation", label: "Transportation" },
-  { value: "meal-prep", label: "Meal Preparation" },
-  { value: "housekeeping", label: "Housekeeping" },
-  { value: "personal-care", label: "Personal Care" },
-  { value: "companionship", label: "Companionship" },
-  { value: "medical-services", label: "Medical Services" },
-  { value: "home-modification", label: "Home Modification" },
-  { value: "respite-care", label: "Respite Care" },
-];
+// The six launch categories (src/lib/providers/categories.ts); each also finds legacy values.
+const serviceTypeOptions = PROVIDER_CATEGORIES.map((c) => ({ value: c.value, label: categoryDisplayLabel(c) }));
 
 const LS_KEY = "marketplace:providers:filters";
 
@@ -515,12 +508,12 @@ export default function ProvidersPage() {
       <div className="mt-4 pt-4 border-t border-neutral-200">
         <h4 className="font-medium text-sm mb-2">Service Types</h4>
         {serviceTypeOptions.map((option) => (
-          <label key={option.value} className="flex items-center gap-2 text-sm whitespace-nowrap mb-1">
+          <label key={option.value} className="flex items-start gap-2 text-sm mb-1" data-testid={`svc-filter-${option.value}`}>
             <input
               type="checkbox"
               checked={selectedServiceTypes.includes(option.value)}
               onChange={() => toggleServiceType(option.value)}
-              className="h-4 w-4 text-primary-600 border-neutral-300 rounded"
+              className="mt-0.5 h-4 w-4 shrink-0 text-primary-600 border-neutral-300 rounded"
             />
             <span>{option.label}</span>
           </label>
@@ -545,8 +538,8 @@ export default function ProvidersPage() {
         providersCount={totalCount}
       />
 
-      {/* Two-column layout */}
-      <div className="flex md:space-x-6">
+      {/* Two-column layout (md+); < md the Filters button stacks above the results */}
+      <div className="flex flex-col md:flex-row md:space-x-6">
         {/* Sidebar (desktop) */}
         <div className="hidden md:block md:w-72 md:shrink-0">
           <FilterSidebar />
@@ -576,7 +569,7 @@ export default function ProvidersPage() {
         )}
 
         {/* Main content */}
-        <div className="flex-1">
+        <div className="min-w-0 flex-1" data-testid="providers-results">
           {/* Active Filter Chips */}
           {chips.length > 0 && (
             <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -640,7 +633,6 @@ export default function ProvidersPage() {
                   <ProviderCard
                     key={provider.id}
                     provider={provider}
-                    serviceTypeOptions={serviceTypeOptions}
                     isFavorite={providerFavorites.has(provider.id)}
                     onToggleFavorite={() => toggleProviderFavorite(provider.id)}
                   />

@@ -13,7 +13,8 @@ import {
   FiVideo, FiGlobe, FiBarChart, FiChevronDown, FiPhone, FiMail, FiMapPin,
   FiMenu, FiX, FiPlay, FiTruck
 } from "react-icons/fi";
-import { BOOST_PRICE_LABEL, PROVIDER_SERVICE_SUMMARY } from "@/lib/providers/boost";
+import { BOOST_PROMO_LINE } from "@/lib/providers/boost";
+import { PROVIDER_CATEGORIES, PROVIDER_CATEGORY_SUMMARY } from "@/lib/providers/categories";
 import { prefersReducedMotion, durations, easings } from "@/lib/animations";
 
 /** Must equal AVAILABILITY_FRESH_DAYS (src/lib/availability/availability.ts, server-only); pinned by __tests__/homepage-hero.unit.test.tsx. */
@@ -487,7 +488,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                   <span className="text-xs font-bold bg-warning-100 text-warning-800 border border-warning-200 rounded-full px-2.5 py-1 uppercase tracking-wide">Free Listing</span>
                 </div>
                 <p className="text-neutral-900 font-semibold">List your services free.</p>
-                <p className="text-sm text-neutral-500 mb-4">{`${PROVIDER_SERVICE_SUMMARY}.`}</p>
+                <p className="text-sm text-neutral-500 mb-4">{`${PROVIDER_CATEGORY_SUMMARY}.`}</p>
                 <ul className="space-y-2 mb-6">
                   <li className="flex items-start">
                     <FiCheck className="text-warning-600 mt-1 mr-2 flex-shrink-0" />
@@ -500,7 +501,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                   {providerBoostOn && (
                     <li className="flex items-start" data-testid="persona-providers-boost">
                       <FiCheck className="text-warning-600 mt-1 mr-2 flex-shrink-0" />
-                      <span className="text-sm text-neutral-500">{`Optional Boost: top placement for ${BOOST_PRICE_LABEL}`}</span>
+                      <span className="text-sm text-neutral-500">{BOOST_PROMO_LINE}</span>
                     </li>
                   )}
                 </ul>
@@ -1262,8 +1263,9 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                     </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                  {['Transportation', 'Housekeeping', 'Meal Delivery', 'Home Health', 'Personal Care', 'Companionship', 'Medical Equipment', 'Physical Therapy'].map((s) => (
+                {/* The six launch categories: each can be picked at signup and found in provider search. */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6" data-testid="provider-category-chips">
+                  {PROVIDER_CATEGORIES.map((c) => c.label).map((s) => (
                     <div key={s} className="bg-neutral-50 border border-neutral-200 rounded-lg px-3 py-2 text-sm text-center text-neutral-500 font-medium">{s}</div>
                   ))}
                 </div>
@@ -1273,7 +1275,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                     <div className="font-bold text-neutral-900">{providerListingOn ? 'Marketplace listing — free' : 'List your business on CareLinkAI'}</div>
                     <div className="text-sm text-neutral-500 mt-1">
                       Get discovered by care homes and families searching in your area.
-                      {providerListingOn && providerBoostOn ? ` Optional Boost for top placement: ${BOOST_PRICE_LABEL}.` : ''}
+                      {providerListingOn && providerBoostOn ? ` ${BOOST_PROMO_LINE}.` : ''}
                     </div>
                   </div>
                   <Link href="/auth/register?role=provider" className="bg-gradient-to-r from-primary-500 to-secondary-500 text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity whitespace-nowrap shadow-lg">

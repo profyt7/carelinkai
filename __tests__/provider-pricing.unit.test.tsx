@@ -3,7 +3,9 @@
  * These fail if:
  *   - with both flags off the homepage persona row changes (today's four cards, today's classes);
  *   - with the flags on the Providers card, the free listing or the $39 Boost copy is missing;
- *   - Boost grants, implies or displays "Verified";
+ *   - Boost grants, implies or displays "Verified", or its placement reads as anything but promotion;
+ *   - a photo-limit perk shows up in Boost copy (galleries don't exist yet);
+ *   - a founding Boost outlives day 90, stores a payment method, creates a Stripe object or can charge;
  *   - the founding-provider counter goes past 25 or a 26th claim succeeds;
  *   - any charge path runs while STRIPE_PRICE_PROVIDER_BOOST is unset;
  *   - a $99 provider price reference comes back.
@@ -16,7 +18,19 @@ import { NextRequest } from 'next/server';
 
 const stripeCreate = jest.fn();
 const customersCreate = jest.fn();
-jest.mock('@/lib/stripe', () => ({ stripe: { checkout: { sessions: { create: (...a: unknown[]) => stripeCreate(...a) } }, customers: { create: (...a: unknown[]) => customersCreate(...a) } } }));
+// Every Stripe call that could store a card or charge one; the founding offer must touch none.
+const stripeAny = jest.fn();
+jest.mock('@/lib/stripe', () => ({
+  stripe: {
+    checkout: { sessions: { create: (...a: unknown[]) => stripeCreate(...a) } },
+    customers: { create: (...a: unknown[]) => customersCreate(...a) },
+    paymentMethods: { attach: (...a: unknown[]) => stripeAny('paymentMethods.attach', ...a) },
+    setupIntents: { create: (...a: unknown[]) => stripeAny('setupIntents.create', ...a) },
+    paymentIntents: { create: (...a: unknown[]) => stripeAny('paymentIntents.create', ...a) },
+    subscriptions: { create: (...a: unknown[]) => stripeAny('subscriptions.create', ...a) },
+    invoices: { create: (...a: unknown[]) => stripeAny('invoices.create', ...a) },
+  },
+}));
 jest.mock('next-auth', () => ({ getServerSession: jest.fn() }));
 jest.mock('@/lib/auth', () => ({ authOptions: {} }));
 const db: { claimed: number; provider: Record<string, unknown> | null; updates: unknown[] } = { claimed: 0, provider: null, updates: [] };
@@ -38,7 +52,7 @@ import HomePageClient from '@/app/HomePageClient';
 import ProviderCard from '@/components/marketplace/ProviderCard';
 import BoostedBadge from '@/components/providers/BoostedBadge';
 import {
-  BOOST_PRICE_LABEL, FOUNDER_BOOST_DAYS, FOUNDER_BOOST_SPOTS, founderSpotsLeft, founderWindow, isBoosted, photoLimit, PROVIDER_PHOTO_LIMIT, twoTierPage,
+  BOOST_PERKS, BOOST_PRICE_LABEL, FOUNDER_BOOST_DAYS, FOUNDER_BOOST_SPOTS, founderSpotsLeft, founderWindow, isBoosted, photoLimit, PROVIDER_PHOTO_LIMIT, twoTierPage,
 } from '@/lib/providers/boost';
 import { getServerSession } from 'next-auth';
 
@@ -69,7 +83,7 @@ describe('homepage persona row', () => {
     expect(headings(row)).toEqual(['For Families', 'For Operators', 'For Healthcare Pros', 'For Caregivers', 'For Providers']);
     expect(row).toContain('data-cards="5"');
     expect(row).toMatch(/List your services free/);
-    expect(row).toContain('Rides &amp; NEMT, home care, companionship, housekeeping, meals, home health and therapy.');
+    expect(row).toContain('Home health care, personal care, therapy, medical transportation, meal delivery and medical equipment.');
     expect(row).toContain('href="/auth/register?role=provider"');
     expect(row).not.toContain(BOOST_PRICE_LABEL);
   });
@@ -77,7 +91,8 @@ describe('homepage persona row', () => {
   it('listing + Boost on → the card also shows Boost at $39/mo', () => {
     const row = personaRow(renderToString(<HomePageClient providerListingOn providerBoostOn />));
     expect(row).toContain('data-testid="persona-providers-boost"');
-    expect(row).toContain('Optional Boost: top placement for $39/mo');
+    expect(row).toContain('Optional Boost (promoted placement): $39/mo');
+    expect(row).not.toMatch(/top placement|ranks? first|best|photo/i);
   });
 
   it('five cards lay out 3+2 centered (md/lg) and 5-up (xl), never one card stretched alone', () => {
@@ -98,11 +113,23 @@ describe('Boost never grants or displays "Verified"', () => {
     expect(html).not.toContain('Verified Provider');
   });
 
-  it('the badge text and tooltip say paid placement, never Verified', () => {
+  it('the badge reads as promotion: "Boosted", tooltip and screen-reader text "Promoted", never Verified or quality', () => {
     const html = renderToString(<BoostedBadge />);
     expect(html).toContain('>Boosted');
-    expect(html).toContain('not a verification');
-    expect(html.replace('not a verification', '')).not.toMatch(/verif/i);
+    expect(html).toContain('title="Promoted"');
+    expect(html).toContain('<span class="sr-only"> (Promoted)</span>');
+    expect(html).not.toMatch(/verif|top|best|quality|rated/i);
+  });
+
+  it('Boost perks: placement (labelled promoted), badge, instant alerts — no photo limit anywhere in the UI copy', () => {
+    expect(BOOST_PERKS).toHaveLength(3);
+    expect(BOOST_PERKS[0]).toMatch(/promoted/);
+    expect(BOOST_PERKS.join(' ')).not.toMatch(/photo|top placement|rank first/i);
+    for (const f of ['src/app/settings/provider/billing/page.tsx', 'src/app/learn/howto/content.ts', 'src/app/HomePageClient.tsx', 'src/components/providers/BoostedBadge.tsx']) {
+      const src = read(f);
+      expect(src).not.toMatch(/PROVIDER_PHOTO_LIMIT|photoLimit|photo limit|photo galler(y|ies) launch|top placement|rank first/i);
+    }
+    expect(read('src/lib/providers/boost.ts')).toContain('PROVIDER_PHOTO_LIMIT = { free: 3, boosted: 12 }');
   });
 
   it('no Boost code path writes isVerified', () => {
@@ -133,7 +160,7 @@ describe('Boost state', () => {
     expect(isBoosted({ founderBoostEndsAt: endsAt }, endsAt)).toBe(false);
   });
 
-  it('photo limit is higher only while boosted and the Boost flag is on', () => {
+  it('photo-limit constants stay in code (3/12), unused by any UI', () => {
     expect(photoLimit({ boostStatus: 'ACTIVE' }, true)).toBe(PROVIDER_PHOTO_LIMIT.boosted);
     expect(photoLimit({ boostStatus: 'ACTIVE' }, false)).toBe(PROVIDER_PHOTO_LIMIT.free);
     expect(photoLimit({}, true)).toBe(PROVIDER_PHOTO_LIMIT.free);
@@ -180,6 +207,63 @@ describe('founding-provider counter', () => {
     expect(full.status).toBe(409);
     expect(await full.json()).toMatchObject({ spotsLeft: 0 });
     expect(db.updates).toHaveLength(1);
+  });
+
+  it('founding benefit ends at day 90 (clock mocked), with nothing stored but the two dates', async () => {
+    jest.useFakeTimers();
+    const claimAt = new Date('2026-11-02T15:00:00Z');
+    jest.setSystemTime(claimAt);
+    try {
+      const { POST } = await import('@/app/api/provider/boost/founder/route');
+      db.claimed = 0;
+      db.provider = { id: 'p9', founderBoostStartedAt: null };
+      const res = await POST();
+      expect(res.status).toBe(200);
+      const upd = db.updates[0] as { data: Record<string, Date> };
+      // Only the window: no card, customer, subscription or payment field is written.
+      expect(Object.keys(upd.data).sort()).toEqual(['founderBoostEndsAt', 'founderBoostStartedAt']);
+      expect(upd.data.founderBoostStartedAt.getTime()).toBe(claimAt.getTime());
+      const ends = upd.data.founderBoostEndsAt;
+      expect(ends.getTime() - claimAt.getTime()).toBe(90 * 86_400_000);
+      const stored = { founderBoostEndsAt: ends };
+
+      jest.setSystemTime(new Date(claimAt.getTime() + 89 * 86_400_000));
+      expect(isBoosted(stored)).toBe(true); // day 89: still boosted
+      jest.setSystemTime(new Date(ends.getTime() - 1));
+      expect(isBoosted(stored)).toBe(true); // last millisecond of day 90
+      jest.setSystemTime(ends);
+      expect(isBoosted(stored)).toBe(false); // day 90 over
+      jest.setSystemTime(new Date(claimAt.getTime() + 365 * 86_400_000));
+      expect(isBoosted(stored)).toBe(false); // and it stays over: no renewal path
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('no payment method, no Stripe object, no charge: the founding path never imports Stripe', async () => {
+    const { POST } = await import('@/app/api/provider/boost/founder/route');
+    db.claimed = 5;
+    db.provider = { id: 'p10', founderBoostStartedAt: null };
+    expect((await POST()).status).toBe(200);
+    expect(stripeCreate).not.toHaveBeenCalled();
+    expect(customersCreate).not.toHaveBeenCalled();
+    expect(stripeAny).not.toHaveBeenCalled();
+    const src = read('src/app/api/provider/boost/founder/route.ts');
+    expect(src).not.toMatch(/@\/lib\/stripe|stripe\.|paymentMethod|setupIntent|stripeCustomerId|boostStripeSubscriptionId|boostStatus\s*:/);
+    // Paid Boost state only ever comes from a Stripe subscription webhook, which a founder never has.
+    expect(isBoosted({ boostStatus: null, founderBoostEndsAt: new Date(Date.now() - 1) })).toBe(false);
+  });
+
+  it('the counter reflects the real number of claimed spots (GET)', async () => {
+    const { GET } = await import('@/app/api/provider/boost/founder/route');
+    for (const [claimed, left] of [[0, 25], [7, 18], [24, 1], [25, 0], [31, 0]] as const) {
+      db.claimed = claimed;
+      db.provider = null;
+      const body = await (await GET()).json();
+      expect(body).toMatchObject({ total: 25, spotsLeft: left });
+    }
+    const prisma = (await import('@/lib/prisma')).prisma as any;
+    expect(prisma.provider.count).toHaveBeenLastCalledWith({ where: { founderBoostStartedAt: { not: null } } });
   });
 
   it('a provider can claim only once', async () => {

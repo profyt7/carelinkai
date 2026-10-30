@@ -423,12 +423,13 @@ model Provider {
   bio                   String?
   website               String?
   insuranceInfo         String?
-  licenseNumber         String?
+  licenseNumber         String?              // license/certification number: self-reported, admin-only
   yearsInBusiness       Int?
   isVerified            Boolean              @default(false)
   isActive              Boolean              @default(true)
-  serviceTypes          String[]
-  coverageArea          Json?
+  serviceTypes          String[]             // launch categories, several allowed (src/lib/providers/categories.ts); legacy values kept as-is
+  deliveryModes         String[]             @default([]) // in-home | facility | remote (optional)
+  coverageArea          Json?                // { cities, states, zipCodes }
   // Transport-specific fields (Phase 1)
   rideTypes             String[]             // STANDARD | WHEELCHAIR | STRETCHER | ESCORT
   wheelchairAccessible  Boolean              @default(false)

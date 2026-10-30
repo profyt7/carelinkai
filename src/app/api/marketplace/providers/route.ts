@@ -10,12 +10,13 @@ import { isMockViewerAllowed } from '@/lib/mockMode.server';
 import { generateMockProviders, filterMockProviders } from '@/lib/mock/providers';
 import { isPaidFeatureEnabled } from '@/lib/billing/paid-features';
 import { boostedWhere, isBoosted, notBoostedWhere, twoTierPage } from '@/lib/providers/boost';
+import { parseCategoryParam, storedValuesFor } from '@/lib/providers/categories';
 
 /**
  * GET /api/marketplace/providers
  * 
  * Fetches providers with optional filters
- * Supports filtering by: q, serviceType, city, state, verified
+ * Supports filtering by: q, serviceTypes (csv of launch categories; serviceType/services still read), city, state, verified
  * Supports pagination with page and pageSize parameters
  * 
  * Mock Mode Support:
@@ -34,7 +35,7 @@ export async function GET(request: Request) {
     if (useMockData) {
       // Extract filter parameters for mock data filtering
       const q = searchParams.get('q') || undefined;
-      const serviceType = searchParams.get('serviceType') || undefined;
+      const serviceType = parseCategoryParam(searchParams).join(',') || undefined;
       const city = searchParams.get('city') || undefined;
       const state = searchParams.get('state') || undefined;
       const verified = searchParams.get('verified') || undefined;
@@ -86,12 +87,9 @@ export async function GET(request: Request) {
     const idsParam = searchParams.get('ids');
     const ids = idsParam ? idsParam.split(',').map((s) => s.trim()).filter(Boolean) : null;
     const q = searchParams.get('q');
-    // Accept both 'serviceType' (single) and 'services' (csv) — normalize to lowercase array
-    const serviceTypeSingle = searchParams.get('serviceType');
-    const serviceTypesRaw = serviceTypeSingle
-      ? [serviceTypeSingle]
-      : (searchParams.get('services')?.split(',').filter(Boolean) || []);
-    const serviceTypeFilters = serviceTypesRaw.map((s) => s.toLowerCase()).filter(Boolean);
+    // `serviceTypes` (csv) is what /marketplace/providers sends; each launch category also matches
+    // its legacy stored values (see src/lib/providers/categories.ts). Old serviceType/services links still work.
+    const serviceTypeFilters = storedValuesFor(parseCategoryParam(searchParams));
     const city = searchParams.get('city');
     const state = searchParams.get('state');
     const verified = searchParams.get('verified');
@@ -324,6 +322,7 @@ export async function GET(request: Request) {
         verifiedCredentialCount: provider.credentials.filter((c: any) => c.status === 'VERIFIED').length,
         ratingAverage: 0,
         reviewCount: 0,
+        deliveryModes: provider.deliveryModes || [],
         // Transport fields
         rideTypes: provider.rideTypes || [],
         wheelchairAccessible: provider.wheelchairAccessible,
