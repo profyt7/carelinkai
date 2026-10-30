@@ -6,7 +6,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { SMSService } from "@/lib/sms/sms-service";
-import { paidFeatureDisabledResponse } from "@/lib/billing/paid-features";
+import { isPaidFeatureEnabled, paidFeatureDisabledResponse } from "@/lib/billing/paid-features";
 
 const createRideSchema = z.object({
   providerId: z.string().min(1),
@@ -50,6 +50,10 @@ export async function POST(req: NextRequest) {
   const role = session.user.role as string;
   if (!["FAMILY", "OPERATOR", "STAFF", "ADMIN"].includes(role))
     return NextResponse.json({ error: "Not authorized to request rides" }, { status: 403 });
+  // Family rides follow RIDES_PAYMENTS (nav, dashboard and the provider-page button hide with it).
+  // Operator / staff resident rides are unaffected.
+  if (role === "FAMILY" && !isPaidFeatureEnabled("RIDES_PAYMENTS"))
+    return NextResponse.json({ error: "Ride requests are not available yet." }, { status: 403 });
 
   const body = await req.json();
   const parsed = createRideSchema.safeParse(body);
