@@ -19,7 +19,7 @@ import { isSupportSlotPath } from '@/components/support/support-slot';
  *    element is under it, clicks pass through at once and it fades out after a short delay; it comes
  *    back once the spot has been clear for a moment (hysteresis, no flicker). Keyboard focus always
  *    brings it back. The menu opens at the nearest spot that covers no primary action, and closes on
- *    scroll or an outside click.
+ *    a wheel/touch scroll or an outside click.
  *  - Header (result-heavy pages, see support-slot.ts): the button sits in the page header and the
  *    menu opens as a strip at the bottom of the header, in flow, so nothing is ever covered.
  *
@@ -191,17 +191,18 @@ export default function SupportDock() {
     const inside = (t: EventTarget | null) => Boolean(t instanceof Node && (dockRef.current?.contains(t) || menuRef.current?.contains(t)));
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); closeMenu(true); } };
     const onDown = (e: PointerEvent) => { if (!inside(e.target)) closeMenu(false); };
-    // Close on a real scroll (> 40px since opening), not on a scroll that was already settling.
-    const scrollY = () => { const m = document.querySelector('main'); return window.scrollY + (m ? m.scrollTop : 0); };
-    const y0 = scrollY();
-    const onScroll = (e: Event) => { if (floating && !inside(e.target) && Math.abs(scrollY() - y0) > 40) closeMenu(false); };
+    // Close when the person scrolls (wheel / touch drag), not on programmatic or still-settling smooth
+    // scrolls (e.g. the scroll a focus change started just before the menu opened).
+    const onUserScroll = (e: Event) => { if (floating && !inside(e.target)) closeMenu(false); };
     document.addEventListener('keydown', onKey);
     document.addEventListener('pointerdown', onDown, true);
-    document.addEventListener('scroll', onScroll, { capture: true, passive: true });
+    document.addEventListener('wheel', onUserScroll, { capture: true, passive: true });
+    document.addEventListener('touchmove', onUserScroll, { capture: true, passive: true });
     return () => {
       document.removeEventListener('keydown', onKey);
       document.removeEventListener('pointerdown', onDown, true);
-      document.removeEventListener('scroll', onScroll, { capture: true });
+      document.removeEventListener('wheel', onUserScroll, { capture: true });
+      document.removeEventListener('touchmove', onUserScroll, { capture: true });
     };
   }, [menuOpen, closeMenu, floating]);
 
