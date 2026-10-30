@@ -22,6 +22,9 @@ import { prefersReducedMotion, durations, easings } from "@/lib/animations";
 const VERIFIED_AVAILABILITY_DAYS = 10;
 import DemoRequestForm from "@/components/marketing/DemoRequestForm";
 import DemoVideoModal from "@/components/marketing/DemoVideoModal";
+import ProductTour from "@/components/marketing/ProductTour";
+import type { TourSlide } from "@/lib/marketing/product-tour";
+import { demoSectionCapabilities } from "@/lib/marketing/demo-section";
 import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/contact";
 import { CONCIERGE_OFFER } from "@/lib/concierge/offer";
 
@@ -64,6 +67,7 @@ export default function HomePage({
   operatorPlansOn = false,
   complianceKitsOn = false,
   caregiverProOn = false,
+  tourSlides = null,
 }: {
   providerListingOn?: boolean;
   providerBoostOn?: boolean;
@@ -72,6 +76,8 @@ export default function HomePage({
   operatorPlansOn?: boolean;
   complianceKitsOn?: boolean;
   caregiverProOn?: boolean;
+  /** /public/demo/tour.json slides (read on the server); none → no tour. */
+  tourSlides?: TourSlide[] | null;
 } = {}) {
   // "Now Live" / "Coming Soon" follow the same flags as the product (src/lib/marketing/roadmap.ts).
   const roadmapFlags: RoadmapFlags = { providerListingOn, ridesPaymentsOn, backgroundChecksOn, operatorPlansOn, complianceKitsOn };
@@ -82,6 +88,8 @@ export default function HomePage({
   const [reducedMotion, setReducedMotion] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [demoVideoOpen, setDemoVideoOpen] = useState(false);
+  const demoVideoId = (process.env.NEXT_PUBLIC_DEMO_VIDEO_ID ?? '').trim();
+  const demoCapabilities = demoSectionCapabilities();
 
   useEffect(() => {
     setMounted(true);
@@ -1956,11 +1964,10 @@ export default function HomePage({
         </div>
       </section>
 
-      {/* 9. REQUEST A DEMO SECTION */}
-      <DemoVideoModal open={demoVideoOpen} onClose={() => setDemoVideoOpen(false)} />
+      {/* 9. REQUEST A DEMO SECTION — the video, its button and its modal exist only once NEXT_PUBLIC_DEMO_VIDEO_ID is set. */}
+      {demoVideoId && <DemoVideoModal open={demoVideoOpen} onClose={() => setDemoVideoOpen(false)} />}
       <section id="request-demo" className="py-20 bg-white border-t border-neutral-100">
         <div className="max-w-5xl mx-auto px-4 md:px-6">
-          {/* Video-first row */}
           <div className="text-center mb-12">
             <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-primary-100 text-primary-700 mb-4 uppercase tracking-wide">
               Live Demo
@@ -1969,54 +1976,37 @@ export default function HomePage({
               See CareLinkAI in action
             </h2>
             <p className="text-neutral-500 text-lg mb-8 max-w-2xl mx-auto">
-              Watch the overview or request a personalized walkthrough. We&apos;ll show you how operators manage inquiries, staffing and residents in one platform.
+              Request a personalized walkthrough. We&apos;ll show families how to find and compare verified communities, and show care homes, caregivers and providers how to manage inquiries, staffing and listings in one place.
             </p>
-            <button
-              onClick={() => setDemoVideoOpen(true)}
-              className="group inline-flex items-center gap-3 bg-primary-600 hover:bg-primary-700 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg transition-all duration-200 hover:-translate-y-0.5"
-            >
-              <span className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
-                <FiPlay className="ml-0.5" />
-              </span>
-              Watch Demo
-            </button>
+            {demoVideoId && (
+              <button
+                onClick={() => setDemoVideoOpen(true)}
+                className="group inline-flex items-center gap-3 bg-primary-600 hover:bg-primary-700 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg transition-all duration-200 hover:-translate-y-0.5"
+              >
+                <span className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                  <FiPlay className="ml-0.5" />
+                </span>
+                Watch Demo
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-            {/* Left — inline video embed */}
-            <div>
-              {process.env.NEXT_PUBLIC_DEMO_VIDEO_ID ? (
+            <div className="space-y-5">
+              {demoVideoId && (
                 <div className="aspect-video rounded-xl overflow-hidden shadow-lg border border-neutral-200">
                   <iframe
-                    src={`https://www.youtube.com/embed/${process.env.NEXT_PUBLIC_DEMO_VIDEO_ID}?rel=0`}
+                    src={`https://www.youtube.com/embed/${demoVideoId}?rel=0`}
                     title="CareLinkAI Product Demo"
                     className="w-full h-full"
                     allow="fullscreen"
                     allowFullScreen
                   />
                 </div>
-              ) : (
-                <button
-                  onClick={() => setDemoVideoOpen(true)}
-                  className="group relative w-full aspect-video rounded-xl overflow-hidden shadow-lg border border-neutral-200 bg-gradient-to-br from-primary-900 to-secondary-900 flex items-center justify-center"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary-600/30 to-secondary-600/30" />
-                  <div className="relative text-center px-8">
-                    <div className="h-16 w-16 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-4 group-hover:bg-white/30 transition-colors">
-                      <FiPlay size={28} className="text-white ml-1" />
-                    </div>
-                    <p className="text-white font-semibold text-lg">Watch the overview</p>
-                    <p className="text-white/70 text-sm mt-1">See every feature in action</p>
-                  </div>
-                </button>
               )}
-              <ul className="mt-5 space-y-2">
-                {[
-                  "Operator dashboard: shifts, residents, billing, analytics",
-                  "Inquiry pipeline with AI-drafted replies",
-                  "Marketplace: applications, direct hire, per-diem shifts",
-                  "Family portal: placement search, documents, messaging",
-                ].map((item) => (
+              <ProductTour slides={tourSlides} />
+              <ul className="space-y-2" data-testid="demo-capabilities">
+                {demoCapabilities.map((item) => (
                   <li key={item} className="flex items-start gap-2.5 text-sm text-neutral-600">
                     <span className="h-5 w-5 rounded-full bg-success-100 text-success-600 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">✓</span>
                     {item}

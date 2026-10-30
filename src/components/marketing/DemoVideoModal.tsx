@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
-import { FiX, FiPlay } from "react-icons/fi";
+import { FiX } from "react-icons/fi";
 
-// Replace DEMO_VIDEO_ID with your YouTube video ID once you have one.
-// e.g. if your URL is https://www.youtube.com/watch?v=dQw4w9WgXcQ the ID is dQw4w9WgXcQ
-const DEMO_VIDEO_ID = process.env.NEXT_PUBLIC_DEMO_VIDEO_ID || "";
+// NEXT_PUBLIC_DEMO_VIDEO_ID = the YouTube video id. Unset → the modal never renders
+// (the homepage also hides its button), so no setup text can reach a visitor.
+const DEMO_VIDEO_ID = (process.env.NEXT_PUBLIC_DEMO_VIDEO_ID || "").trim();
 
 interface DemoVideoModalProps {
   open: boolean;
@@ -20,7 +20,7 @@ export default function DemoVideoModal({ open, onClose }: DemoVideoModalProps) {
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open || !DEMO_VIDEO_ID) return null;
 
   return (
     <div
@@ -36,28 +36,15 @@ export default function DemoVideoModal({ open, onClose }: DemoVideoModalProps) {
           Close
         </button>
 
-        {DEMO_VIDEO_ID ? (
-          <div className="aspect-video rounded-xl overflow-hidden shadow-2xl">
-            <iframe
-              src={`https://www.youtube.com/embed/${DEMO_VIDEO_ID}?autoplay=1&rel=0`}
-              title="CareLinkAI Product Demo"
-              className="w-full h-full"
-              allow="autoplay; fullscreen"
-              allowFullScreen
-            />
-          </div>
-        ) : (
-          /* Placeholder — shown until a real video ID is configured */
-          <div className="aspect-video rounded-xl overflow-hidden shadow-2xl bg-neutral-900 flex flex-col items-center justify-center gap-4">
-            <div className="h-20 w-20 rounded-full bg-primary-600 flex items-center justify-center">
-              <FiPlay size={36} className="text-white ml-1" />
-            </div>
-            <p className="text-white text-lg font-semibold">Demo video coming soon</p>
-            <p className="text-neutral-400 text-sm text-center max-w-xs">
-              Set <code className="bg-neutral-800 px-1 rounded">NEXT_PUBLIC_DEMO_VIDEO_ID</code> to your YouTube video ID to enable this.
-            </p>
-          </div>
-        )}
+        <div className="aspect-video rounded-xl overflow-hidden shadow-2xl">
+          <iframe
+            src={`https://www.youtube.com/embed/${DEMO_VIDEO_ID}?autoplay=1&rel=0`}
+            title="CareLinkAI Product Demo"
+            className="w-full h-full"
+            allow="autoplay; fullscreen"
+            allowFullScreen
+          />
+        </div>
       </div>
     </div>
   );
