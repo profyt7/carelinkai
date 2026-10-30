@@ -110,7 +110,7 @@ export default function PWAInstallButton({
           <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-neutral-800 text-white text-xs rounded py-1 px-2 w-48 z-10">
             <div className="flex items-start">
               <FiSmartphone className="mt-0.5 mr-1 flex-shrink-0" />
-              <span>Install CareLink AI on your device for a better experience with offline access</span>
+              <span>Install CareLinkAI on your device for a better experience with offline access</span>
             </div>
             <div className="absolute left-1/2 transform -translate-x-1/2 top-full">
               <div className="border-solid border-t-neutral-800 border-t-8 border-x-transparent border-x-8 border-b-0"></div>

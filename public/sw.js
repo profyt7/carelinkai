@@ -1,5 +1,5 @@
 /**
- * CareLink AI - Service Worker
+ * CareLinkAI - Service Worker
  * Provides offline functionality, background sync, and push notifications
  */
 
@@ -546,12 +546,12 @@ self.addEventListener('push', event => {
   } catch (error) {
     // If the data isn't JSON, use the text as the body
     notificationData = {
-      title: 'CareLink AI',
+      title: 'CareLinkAI',
       body: event.data ? event.data.text() : 'New notification'
     };
   }
   
-  const title = notificationData.title || 'CareLink AI';
+  const title = notificationData.title || 'CareLinkAI';
   const options = {
     body: notificationData.body,
     icon: notificationData.icon || '/icons/icon-192x192.png',

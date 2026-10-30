@@ -24,8 +24,8 @@ export default function PWAPushTest() {
   const { requestNotificationPermission } = usePWA();
   
   // State for notification test form
-  const [title, setTitle] = useState("CareLink AI Test");
-  const [body, setBody] = useState("This is a test notification from CareLink AI");
+  const [title, setTitle] = useState("CareLinkAI Test");
+  const [body, setBody] = useState("This is a test notification from CareLinkAI");
   const [isUrgent, setIsUrgent] = useState(false);
   
   // State for notification permission and subscription

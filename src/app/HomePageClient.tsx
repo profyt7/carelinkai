@@ -14,6 +14,9 @@ import {
   FiMenu, FiX, FiPlay
 } from "react-icons/fi";
 import { prefersReducedMotion, durations, easings } from "@/lib/animations";
+
+/** Must equal AVAILABILITY_FRESH_DAYS (src/lib/availability/availability.ts, server-only); pinned by __tests__/homepage-hero.unit.test.tsx. */
+const VERIFIED_AVAILABILITY_DAYS = 10;
 import DemoRequestForm from "@/components/marketing/DemoRequestForm";
 import DemoVideoModal from "@/components/marketing/DemoVideoModal";
 import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/contact";
@@ -177,19 +180,8 @@ export default function HomePage() {
       </nav>
 
       {/* 1. HERO SECTION - Enhanced */}
-      <section className="relative py-20 md:py-28 overflow-hidden">
-        {/* Background image */}
-        <div className="absolute inset-0">
-          <Image
-            src="/images/hero-bg2.jpg"
-            alt=""
-            fill
-            className="object-cover object-center"
-            priority
-          />
-          {/* Light gradient — image already has a bright background so minimal overlay needed */}
-          <div className="absolute inset-0 bg-gradient-to-r from-white from-35% via-white/75 via-55% to-white/10" />
-        </div>
+      <section className="relative py-20 md:py-28 overflow-hidden bg-gradient-to-br from-white via-white to-primary-50">
+        {/* Pre-launch: no stock photo of faces behind the hero; the brand gradient and blobs carry it. */}
 
         {/* Subtle decorative blobs on top of image */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -271,44 +263,35 @@ export default function HomePage() {
               </div>
             </div>
             
-            {/* Hero visual */}
-            <div className="hidden lg:block relative">
-              <div className="relative">
-                {/* Main card */}
-                <div className="bg-white p-6 rounded-2xl shadow-2xl border border-neutral-200 transform hover:scale-105 transition-transform duration-300">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center">
-                      <FiHeart className="text-white text-2xl" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-neutral-900 text-lg">Perfect Match Found</h3>
-                      <p className="text-sm text-neutral-500">Sunshine Valley Care</p>
-                    </div>
-                    <div className="text-secondary-500 font-bold text-2xl">✓</div>
+            {/* What we verify — an editorial trust panel (pre-launch). Every line is a qualified claim
+                the product backs: ODH license where matched, ODH inspection facts, and "Verified"
+                availability only within VERIFIED_AVAILABILITY_DAYS (= AVAILABILITY_FRESH_DAYS) of the community confirming it. */}
+            <aside aria-labelledby="hero-trust-heading" data-testid="hero-trust-panel" className="rounded-2xl border border-neutral-200 bg-white/90 p-6 shadow-sm md:p-8 lg:ml-auto lg:max-w-md">
+              <p id="hero-trust-heading" className="text-xs font-semibold uppercase tracking-widest text-neutral-500">What we verify</p>
+              <ul className="mt-5 space-y-6">
+                <li className="flex gap-4">
+                  <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-700"><FiShield aria-hidden="true" className="h-5 w-5" /></span>
+                  <div>
+                    <p className="font-semibold text-neutral-900">Licensed by ODH</p>
+                    <p className="mt-1 text-sm leading-relaxed text-neutral-600">We show a home&apos;s Ohio Department of Health license once we&apos;ve matched it to the state record.</p>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-4 text-center">
-                      <div className="text-3xl font-bold text-primary-500">24/7</div>
-                      <div className="text-xs text-neutral-500 font-medium">Care Available</div>
-                    </div>
-                    <div className="bg-gradient-to-br from-secondary-50 to-secondary-100 rounded-xl p-4 text-center">
-                      <div className="text-3xl font-bold text-secondary-500">5★</div>
-                      <div className="text-xs text-neutral-500 font-medium">Rating</div>
-                    </div>
+                </li>
+                <li className="flex gap-4">
+                  <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-secondary-50 text-secondary-700"><FiFileText aria-hidden="true" className="h-5 w-5" /></span>
+                  <div>
+                    <p className="font-semibold text-neutral-900">State inspection facts</p>
+                    <p className="mt-1 text-sm leading-relaxed text-neutral-600">Ohio survey and citation history, linked to the public source. No grades, no paid rankings.</p>
                   </div>
-                </div>
-                
-                {/* Floating badges */}
-                <div className="absolute -top-4 -right-4 bg-white px-4 py-2 rounded-full shadow-lg border border-neutral-200 flex items-center space-x-2">
-                  <FiZap className="text-primary-500" />
-                  <span className="text-sm font-semibold">AI Matched</span>
-                </div>
-                <div className="absolute -bottom-4 -left-4 bg-white px-4 py-2 rounded-full shadow-lg border border-neutral-200 flex items-center space-x-2">
-                  <FiShield className="text-secondary-500" />
-                  <span className="text-sm font-semibold">HIPAA Secure</span>
-                </div>
-              </div>
-            </div>
+                </li>
+                <li className="flex gap-4">
+                  <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-success-50 text-success-700"><FiCheck aria-hidden="true" className="h-5 w-5" /></span>
+                  <div>
+                    <p className="font-semibold text-neutral-900">Verified availability</p>
+                    <p className="mt-1 text-sm leading-relaxed text-neutral-600">{`Open beds say Verified only when the community confirmed them with us in the last ${VERIFIED_AVAILABILITY_DAYS} days. Everything else is labelled unverified.`}</p>
+                  </div>
+                </li>
+              </ul>
+            </aside>
           </div>
         </div>
       </section>
