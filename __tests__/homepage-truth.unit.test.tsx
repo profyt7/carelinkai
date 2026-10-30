@@ -110,3 +110,24 @@ describe('cards follow the flags', () => {
     expect(nowLiveItems(on).map((i) => i.desc).join(' ')).not.toMatch(/\bSMS\b|text message|IVR/i);
   });
 });
+
+describe('LIVE TODAY features block and trust stats (OL-240)', () => {
+  const html = renderToString(<HomePageClient />);
+  const features = text(section(html, 'features'));
+  const stats = text(section(html, 'testimonials'));
+  // Phrases removed in this audit; none may come back (the whole-page render test covers tabs and FAQs).
+  const GONE = /in minutes|Responds in seconds|60% faster|Saves 5\+ hours|Hire in 3 clicks|3 clicks|employment record|created instantly|instantly|< ?15 min|50\+|SMS|IVR|real time/i;
+
+  it('describes what each feature does, with no unsourced numbers or speed claims', () => {
+    expect(features).not.toMatch(GONE);
+    expect(features).not.toMatch(PRICE);
+    expect(features).not.toContain('On-Call AI Shift Coverage');
+    for (const t of ['AI drafts a personalized reply', 'The caregiver gets an in-app notification', 'both get a confirmation email']) expect(features).toContain(t);
+  });
+
+  it('trust stats carry no unsourced numbers', () => {
+    expect(stats).not.toMatch(GONE);
+    expect(stats).not.toMatch(/On-Call AI Shift Fill|AI Match Data Points/);
+    expect(stats).toContain('To List Your Community');
+  });
+});

@@ -44,6 +44,8 @@ export default function HomePage() {
       backgroundChecksOn={isPaidFeatureEnabled('BACKGROUND_CHECKS')}
       operatorPlansOn={isPaidFeatureEnabled('OPERATOR_PLANS')}
       complianceKitsOn={isPaidFeatureEnabled('COMPLIANCE_KITS')}
+      // Prices for flag-off products stay hidden (Caregiver Pro).
+      caregiverProOn={isPaidFeatureEnabled('CAREGIVER_PRO')}
     />
   );
 }
