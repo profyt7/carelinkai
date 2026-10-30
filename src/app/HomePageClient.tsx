@@ -728,7 +728,7 @@ export default function HomePage({
               How It Works
             </h2>
             <p className="text-xl text-neutral-500 max-w-3xl mx-auto">
-              Simple, and free to start for everyone
+              Simple and free to get started for everyone
             </p>
           </div>
           
@@ -776,7 +776,7 @@ export default function HomePage({
                   </div>
                   <div>
                     <h4 className="font-semibold text-neutral-900">Schedule Tours</h4>
-                    <p className="text-sm text-neutral-500">Book visits and find the perfect fit</p>
+                    <p className="text-sm text-neutral-500">Request a visit; the home confirms the time</p>
                   </div>
                 </div>
               </div>

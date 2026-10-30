@@ -27,6 +27,7 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
      - The care homes footer now reads "Free to list. Claim your community's listing or add a new one." It used to say "Plans from $99/mo · 14-day free trial".
      - The discharge-planner steps now follow the real concierge flow, with no "instantly" or "in minutes".
      - The subtitle no longer says "fast".
+     - Families step 3 says "Request a visit; the home confirms the time". Tours are requests the operator confirms, not instant bookings.
   3. `__tests__/homepage-truth.unit.test.tsx` (13 tests):
      - overclaim and price regexes over both sections;
      - listing flag off and on;
