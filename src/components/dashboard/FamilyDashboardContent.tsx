@@ -7,6 +7,7 @@ import { DashboardSkeleton } from './DashboardSkeleton';
 import { FileText, Calendar, CheckCircle, MapPin, Car, Heart } from 'lucide-react';
 import Link from 'next/link';
 import ConciergeUpsellCard from './ConciergeUpsellCard';
+import { usePaidFeature } from '@/hooks/usePaidFeatures';
 
 interface Metrics {
   inquiryStatus?: {
@@ -40,6 +41,8 @@ interface Alert {
 }
 
 export function FamilyDashboardContent() {
+  // "My Rides" follows the same switch as the family nav's Rides link.
+  const { enabled: ridesOn } = usePaidFeature('RIDES_PAYMENTS');
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
@@ -179,18 +182,20 @@ export function FamilyDashboardContent() {
               </div>
             </div>
           </Link>
-          <Link
-            href="/rides"
-            className="bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg p-4 transition-colors duration-200"
-          >
-            <div className="flex items-center space-x-3">
-              <Car size={24} className="text-primary-600" />
-              <div>
-                <h3 className="font-medium text-neutral-900">My Rides</h3>
-                <p className="text-sm text-neutral-600">Book & manage transport</p>
+          {ridesOn && (
+            <Link
+              href="/rides"
+              className="bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg p-4 transition-colors duration-200"
+            >
+              <div className="flex items-center space-x-3">
+                <Car size={24} className="text-primary-600" />
+                <div>
+                  <h3 className="font-medium text-neutral-900">My Rides</h3>
+                  <p className="text-sm text-neutral-600">Book & manage transport</p>
+                </div>
               </div>
-            </div>
-          </Link>
+            </Link>
+          )}
           <Link
             href="/favorites"
             className="bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg p-4 transition-colors duration-200"

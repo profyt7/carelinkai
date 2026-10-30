@@ -15,10 +15,18 @@ interface DashboardSummary {
   homes: number;
   inquiries: number;
   activeResidents: number;
+  /** Listing-reported: occupiedBeds / licensedBeds across the operator's homes. */
   occupancyRate: number;
+  occupiedBeds?: number;
+  licensedBeds?: number;
   recentInquiries: any[];
   expiringLicenses: any[];
   newInquiriesCount: number;
+}
+
+/** "1 new inquiry", "2 new inquiries" (was "2 new inquirys"). */
+export function newInquiryLabel(n: number): string {
+  return `new ${n === 1 ? 'inquiry' : 'inquiries'}`;
 }
 
 interface Operator {
@@ -43,6 +51,8 @@ export default function OperatorDashboardPage() {
     newInquiriesCount: 0,
   });
   const [operators, setOperators] = useState<Operator[]>([]);
+  // Old payloads (no licensedBeds) keep showing the rate; a zero capacity shows "—", not 0%.
+  const hasCapacity = summary.licensedBeds === undefined ? true : summary.licensedBeds > 0;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -133,7 +143,8 @@ export default function OperatorDashboardPage() {
           <Link href="/operator/inquiries" className="card hover:shadow-lg transition-shadow cursor-pointer">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm text-neutral-500">Open Inquiries</div>
+                {/* summary.inquiries counts every inquiry, not only open ones. */}
+                <div className="text-sm text-neutral-500">Total Inquiries</div>
                 <div className="mt-1 text-2xl font-semibold">{summary.inquiries}</div>
                 {summary.newInquiriesCount > 0 && (
                   <div className="mt-1 text-xs text-error-600 font-medium">{summary.newInquiriesCount} new</div>
@@ -145,19 +156,26 @@ export default function OperatorDashboardPage() {
           <Link href="/operator/residents" className="card hover:shadow-lg transition-shadow cursor-pointer">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm text-neutral-500">Active Residents</div>
+                <div className="text-sm text-neutral-500">Residents in CareLinkAI</div>
                 <div className="mt-1 text-2xl font-semibold">{summary.activeResidents}</div>
+                <div className="mt-1 text-xs text-neutral-500">Active resident records</div>
               </div>
               <FiUsers className="h-8 w-8 text-success-500" />
             </div>
           </Link>
-          <div className={`card ${summary.occupancyRate < 50 ? 'border-error-200 bg-error-50' : summary.occupancyRate < 80 ? 'border-warning-200 bg-warning-50' : ''}`}>
+          {/* Listing-reported occupancy (beds occupied / capacity on the listings), not resident records. */}
+          <div className={`card ${!hasCapacity ? '' : summary.occupancyRate < 50 ? 'border-error-200 bg-error-50' : summary.occupancyRate < 80 ? 'border-warning-200 bg-warning-50' : ''}`} data-testid="occupancy-card">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm text-neutral-500">Occupancy Rate</div>
-                <div className="mt-1 text-2xl font-semibold">{summary.occupancyRate}%</div>
+                <div className="text-sm text-neutral-500">Listing Occupancy</div>
+                <div className="mt-1 text-2xl font-semibold">{hasCapacity ? `${summary.occupancyRate}%` : '—'}</div>
+                <div className="mt-1 text-xs text-neutral-500">
+                  {hasCapacity
+                    ? `${summary.occupiedBeds ?? 0} of ${summary.licensedBeds} beds, as reported on your listings`
+                    : 'Add bed capacity to your listings'}
+                </div>
               </div>
-              <FiTrendingUp className={`h-8 w-8 ${summary.occupancyRate < 50 ? 'text-error-500' : summary.occupancyRate < 80 ? 'text-warning-500' : 'text-success-500'}`} />
+              <FiTrendingUp className={`h-8 w-8 ${!hasCapacity ? 'text-neutral-400' : summary.occupancyRate < 50 ? 'text-error-500' : summary.occupancyRate < 80 ? 'text-warning-500' : 'text-success-500'}`} />
             </div>
           </div>
         </div>
@@ -179,7 +197,7 @@ export default function OperatorDashboardPage() {
                   {summary.newInquiriesCount > 0 && (
                     <div className="flex items-center justify-between">
                       <span className="text-amber-800">
-                        <strong>{summary.newInquiriesCount}</strong> new inquiry{summary.newInquiriesCount > 1 ? 's' : ''} waiting for response
+                        <strong>{summary.newInquiriesCount}</strong> {newInquiryLabel(summary.newInquiriesCount)} waiting for response
                       </span>
                       <Link href="/operator/inquiries" className="text-amber-900 hover:underline font-medium">
                         View →

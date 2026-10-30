@@ -14,6 +14,7 @@
 import { fireEvent, render } from '@testing-library/react';
 import React from 'react';
 import HomePageClient from '@/app/HomePageClient';
+import { loadProductTour } from '@/lib/marketing/product-tour';
 
 jest.mock('framer-motion', () => {
   const React = require('react');
@@ -144,9 +145,13 @@ describe('"See CareLinkAI in action" section', () => {
     expect(container.textContent).not.toContain('Set NEXT_PUBLIC');
   });
 
-  it('tour slides render the ProductTour slot', () => {
-    const { container } = render(<HomePageClient tourSlides={[{ src: '/demo/01.png', caption: 'Search verified communities', alt: 'Search' }]} />);
-    expect(container.querySelector('#request-demo [data-testid="product-tour"]')).not.toBeNull();
-    expect(container.textContent).toContain('Search verified communities');
+  it('the committed tour renders in the section, with the 90-second lead and the sample-data note', () => {
+    const tour = loadProductTour();
+    expect(tour).not.toBeNull();
+    const { container } = render(<HomePageClient tour={tour} />);
+    const demo = container.querySelector('#request-demo')!;
+    expect(demo.querySelector('[data-testid="product-tour"]')).not.toBeNull();
+    expect(demo.textContent).toContain("Take a 90-second tour, or request a personalized walkthrough. We'll show families how to find and compare verified communities, and show care homes, caregivers and providers how to manage inquiries, staffing and listings in one place.");
+    expect(demo.textContent).toContain('All names, homes and prices shown are sample data.');
   });
 });

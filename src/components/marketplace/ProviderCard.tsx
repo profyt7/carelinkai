@@ -1,4 +1,7 @@
+'use client';
+
 import React from 'react';
+import { usePaidFeature } from '@/hooks/usePaidFeatures';
 import BoostedBadge from '@/components/providers/BoostedBadge';
 import { serviceLabels } from '@/lib/providers/categories';
 import Image from 'next/image';
@@ -36,6 +39,8 @@ interface ProviderCardProps {
 }
 
 const ProviderCard: React.FC<ProviderCardProps> = ({ provider, serviceTypeOptions = [], isFavorite = false, onToggleFavorite }) => {
+  // OL-186: the order link exists only while BACKGROUND_CHECKS is on.
+  const { enabled: bgChecksOn } = usePaidFeature('BACKGROUND_CHECKS');
   // Format the location (city, state)
   const location = [provider.city, provider.state]
     .filter(Boolean)
@@ -254,13 +259,15 @@ const ProviderCard: React.FC<ProviderCardProps> = ({ provider, serviceTypeOption
             </Link>
           )}
         </div>
-        <Link
-          href={`/marketplace/providers/${provider.id}`}
-          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-md border border-primary-200 bg-primary-50 py-1.5 text-xs font-medium text-primary-700 hover:bg-primary-100 transition-colors"
-        >
-          <FiShield size={12} />
-          Run Background Check
-        </Link>
+        {bgChecksOn && (
+          <Link
+            href={`/marketplace/providers/${provider.id}`}
+            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-md border border-primary-200 bg-primary-50 py-1.5 text-xs font-medium text-primary-700 hover:bg-primary-100 transition-colors"
+          >
+            <FiShield size={12} />
+            Run Background Check
+          </Link>
+        )}
       </div>
     </div>
   );

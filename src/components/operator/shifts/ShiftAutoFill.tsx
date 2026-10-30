@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import { usePaidFeature } from '@/hooks/usePaidFeatures';
 
 interface CaregiverMatch {
   caregiverId: string;
@@ -34,6 +35,8 @@ const BG_CHECK_BADGE: Record<string, string> = {
 };
 
 export default function ShiftAutoFill({ homeId, homeName }: Props) {
+  // OL-186: check status only while BACKGROUND_CHECKS is on.
+  const { enabled: bgChecksOn } = usePaidFeature('BACKGROUND_CHECKS');
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
@@ -141,9 +144,11 @@ export default function ShiftAutoFill({ homeId, homeName }: Props) {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-medium text-neutral-900">{match.name}</span>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${BG_CHECK_BADGE[match.backgroundCheckStatus] ?? BG_CHECK_BADGE['NOT_STARTED']}`}>
-                          {match.backgroundCheckStatus.replace(/_/g, ' ')}
-                        </span>
+                        {bgChecksOn && (
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${BG_CHECK_BADGE[match.backgroundCheckStatus] ?? BG_CHECK_BADGE['NOT_STARTED']}`}>
+                            {match.backgroundCheckStatus.replace(/_/g, ' ')}
+                          </span>
+                        )}
                         {match.reliabilityScore != null && (
                           <span className="text-xs text-neutral-500">⭐ {match.reliabilityScore.toFixed(0)}/100</span>
                         )}
