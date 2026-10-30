@@ -210,14 +210,11 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
               </div>
               
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-neutral-900 leading-tight" data-testid="home-hero-headline">
-                Cleveland senior living, honestly labeled.{' '}
-                <span className="bg-gradient-to-r from-primary-500 to-secondary-500 bg-clip-text text-transparent">
-                  Free for families.
-                </span>
+                Cleveland assisted living, with every fact clearly labeled.
               </h1>
               
               <p className="mt-6 text-xl text-neutral-700 max-w-xl leading-relaxed" data-testid="home-hero-subhead">
-                We&apos;re confirming open beds, starting prices and Medicaid waiver status directly with Greater Cleveland communities, and we show you exactly what&apos;s verified and when. Built with HIPAA-aligned safeguards.
+                Assisted living and memory care communities, plus in-home care and service providers for seniors living at home. We&apos;re confirming open beds, starting prices and Medicaid waiver status directly with communities, and we show you exactly what&apos;s verified and when. <span className="font-semibold text-neutral-900">Free for families.</span> Built with HIPAA-aligned safeguards.
               </p>
               
               {/* CTAs */}

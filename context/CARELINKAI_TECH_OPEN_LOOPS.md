@@ -11,10 +11,16 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
 - **Status:** 🟡 PR open, branch `fix/prelaunch-polish-2` (Chris reviews; not merged).
 - **What:**
   1. Homepage, meta/OG, JSON-LD and /cleveland copy no longer claims availability is already confirmed. It now says "we're confirming…" and "what's verified and when".
+     - H1: "Cleveland assisted living, with every fact clearly labeled."
+     - The subhead names in-home care and service providers.
   2. Homepage header is one row at 390: smaller logo below sm, CTA `whitespace-nowrap`, 44px menu button.
-  3. A single `SupportDock` replaces the two floating buttons (Care Advisor + Report Bug).
-     - It's one launcher with a menu, and it steps aside while a link, button, field or heading is under it.
-     - Positioning stays central (`--bottom-stack-offset`, `data-floating-widget`).
+  3. A single `SupportDock` replaces the two floating buttons (Care Advisor + Report Bug): one launcher, one menu.
+     - **Floating mode (most pages):** clicks pass through at once and it fades out after 120ms while a link, button, field, heading or labelled region is under it (rect-overlap check); it returns after 350ms clear.
+       - Checks are event-driven: rAF-throttled scroll/resize, ResizeObserver, MutationObserver and load. No polling.
+       - The menu opens at the nearest clear spot and closes on a scroll of more than 40px or an outside click.
+     - **Header mode (`/search`, `/marketplace/providers`):** the launcher sits in the header and the menu opens as an in-flow strip, so nothing is covered. These pages are full-width results; floating, the launcher was hidden most of the time or missed small targets.
+     - Keyboard: Tab, Enter/Space, arrows/Tab, Escape returns focus to the launcher.
+     - Acceptance e2e: 5 pages × 390/1280.
   4. Provider search: text search, city and state are separate AND clauses (they used to OR).
   5. The "Rating" sort is gone. The default is verified first, then name. Cards show stars only with real public reviews (now counted from `ProviderReview`).
   6. Provider card names reserve space for the heart (`pr-10`, `line-clamp-2`, full-name tooltip).

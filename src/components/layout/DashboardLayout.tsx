@@ -5,6 +5,7 @@ import type { TouchEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
+import { isSupportSlotPath } from "@/components/support/support-slot";
 import { useSession, signOut } from "next-auth/react";
 import {
   FiMenu,
@@ -493,6 +494,9 @@ export default function DashboardLayout({
               </form>
             )}
             
+            {/* Support launcher lives here on result-heavy pages (SupportDock header mode). */}
+            {isSupportSlotPath(pathname) && <div data-support-slot="app" className="flex items-center" />}
+
             {/* Real-time notifications */}
             <NotificationCenter />
 
@@ -603,6 +607,7 @@ export default function DashboardLayout({
             </div>
           </div>
         </header>
+        {isSupportSlotPath(pathname) && <div data-support-slot-panel />}
 
         {/* Mobile Search Overlay */}
         {isMobile && showMobileSearch && (
