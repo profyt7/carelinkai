@@ -2736,3 +2736,20 @@
 - **Deployment impact:** homepage and /help show the tour on deploy. No env changes.
 - **New risks/blockers:** slides 08, 11 and 14 show claims the app now hides (re-capture). Provider-page ride requests and the caregiver background-check start API aren't flag-gated.
 - **Recommended next step:** re-capture slides 08 / 11 / 14; decide on provider-page ride requests while Rides is hidden.
+
+### 2026-10-30 (late) — Founder UX truth: hide unusable operator tools; founding-offer audit
+- **Objective:** Hide On-Call AI and shift auto-fill where the server would reject them, change the homepage concierge and callback copy, and audit what founding operators are promised against what works (read-only).
+- **Work completed:**
+  - Capability layer (lib, API, hook, nav field), with gates on the On-Call page and the shifts page.
+  - Copy changes; banned phrases added to the truth tests.
+  - Part B audit in the PR body; follow-ups logged in OL-244.
+- **Files changed:** `src/lib/operator/capabilities.ts` (new), `src/app/api/operator/capabilities/route.ts` (new), `src/hooks/useOperatorCapabilities.tsx` (new), `src/config/navigation/{types,index,professional}.ts`, `src/components/layout/DashboardLayout.tsx`, `src/app/operator/{oncall,shifts}/page.tsx`, `src/app/HomePageClient.tsx`, `src/lib/contact.ts`, `src/app/design-preview/direction-d/FacilityProfilePreview.tsx`, tests, `context/*`.
+- **Commands run:**
+  - tsc, eslint, jest (169 suites before merging main);
+  - `next build`;
+  - Playwright operator-nav screenshots against the local build. A local-only DB tweak set the test operator's plan to PROFESSIONAL for a control shot, then reset it to null.
+- **Tests/build status:** green locally; CI on the PR.
+- **Deployment impact:** UI and copy only. No flags, env, Stripe, DB records or plan logic.
+- **New risks/blockers:** see OL-244. The founder promises in onboarding, learn copy and the concierge guarantee have no code path.
+- **Recommended next step:** Chris picks the founding-offer definition (PR body); then rewrite the onboarding founder card and the learn copy to match.
+

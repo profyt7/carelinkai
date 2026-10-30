@@ -3,6 +3,21 @@ _Last updated: 2026-10-30 (later) — **OL-243 PR** `feat/product-tour-content` 
 
 
 
+## Active Branch (2026-10-30, late) — `fix/founder-ux-truth` (PR open, Chris reviews; base main `a8e1d473`)
+- **Operator capabilities:** `src/lib/operator/capabilities.ts` mirrors the route checks.
+  - SHIFT_AUTOFILL = an OPERATOR with `planHasFeature(plan,'PROFESSIONAL')`.
+  - ONCALL = that, plus `smsService.isConfigured()`.
+  - `GET /api/operator/capabilities` serves them as booleans, and `useOperatorCapabilities` reads them client-side.
+  - `NavItem.capability` hides an item unless it's on (missing = hidden).
+- **What it changes:**
+  - The On-Call AI nav item, plus the page's upgrade prompt while plans are off.
+  - The /operator/shifts auto-fill panel.
+  - UI only: no plan, permission, flag or env change.
+- **Caveat:** if Twilio credentials are set in Render, `isConfigured()` is true even though A2P isn't approved. On-Call still stays hidden today, because every operator's plan is null.
+- **Copy:**
+  - The homepage concierge headline is "Get a verified shortlist before you commit to a home."
+  - The callback promise is "within one business day" (homepage FAQ, plus `CONTACT_HOURS_LINE` used by the footer, /contact and the concierge FAQ).
+
 ## Active Branch (2026-10-30, later) — OL-243 `feat/product-tour-content` (PR open, squash on green)
 - **Product tour:** `public/demo/tour.json` + 15 slides. `src/lib/marketing/product-tour-data.ts` (types, `parseTour`, `tourChapters`, `CHAPTER_HELP_ANCHOR`; no Node APIs) + `product-tour.ts` (server `loadProductTour`). `ProductTour` is mounted on the homepage demo section and /help "Start here" (`src/app/help/page.tsx` server shell → `HelpPageClient.tsx`, per-role sections `#help-*`).
 - **Background checks off = no status anywhere users see:** `BackgroundCheckBadge`, marketplace `CaregiverCard` / `ProviderCard`, operator `SmartSearchBar` / `ShiftAutoFill`, application pages, `/api/marketplace/caregivers` badges, caregiver dashboard tile, `/caregiver/verification` (`PaidFeatureGate`). Admin pages unchanged.
