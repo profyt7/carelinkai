@@ -64,8 +64,8 @@ test.describe('provider search: AND filters, honest sort and ratings, card layou
     const sort = page.locator('select').filter({ has: page.locator('option[value="verified"]') }).first();
     await expect(sort).toHaveValue('verified');
     await expect(page.locator('option', { hasText: /Rating/ })).toHaveCount(0);
-    // Close the mobile filter drawer (w-80, left) by tapping the overlay to its right.
-    await page.mouse.click(380, 420);
+    await page.getByRole('button', { name: 'Close filters' }).click();
+    await expect(page.getByRole('button', { name: 'Close filters' })).toHaveCount(0);
 
     await expect(page.getByTestId('provider-rating')).toHaveCount(0);
     await expect(page.getByText(/0\.0 \(0\)/)).toHaveCount(0);
@@ -74,7 +74,11 @@ test.describe('provider search: AND filters, honest sort and ratings, card layou
     // The card root holds both the name and the (absolutely positioned) favourite button.
     const card = page.locator('div').filter({ has: title }).filter({ has: page.getByRole('button', { name: /favorites/ }) }).last();
     const heart = card.getByRole('button', { name: /favorites/ });
-    const [t, h] = [(await title.boundingBox())!, (await heart.boundingBox())!];
+    await title.scrollIntoViewIfNeeded();
+    await expect(heart).toBeVisible();
+    const [t, h] = [await title.boundingBox(), await heart.boundingBox()];
+    expect(t && h, 'name and heart are laid out').toBeTruthy();
+    if (!t || !h) return;
     const overlap = !(t.x + t.width <= h.x || h.x + h.width <= t.x || t.y + t.height <= h.y || h.y + h.height <= t.y);
     expect(overlap, 'name box clear of the heart').toBe(false);
   });

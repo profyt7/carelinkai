@@ -355,7 +355,7 @@ export default function ProvidersPage() {
       {isMobile && (
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-lg">Filters</h3>
-          <button onClick={() => setShowMobileFilters(false)} className="p-2 hover:bg-neutral-100 rounded-md">
+          <button onClick={() => setShowMobileFilters(false)} className="p-2 hover:bg-neutral-100 rounded-md" aria-label="Close filters">
             <FiX className="h-5 w-5" />
           </button>
         </div>
