@@ -140,7 +140,7 @@ describe('no Stripe in the screener / request files; no price in the server-rend
     const home = read('src/app/HomePageClient.tsx');
     // Hero: from the trust badge to the CTAs.
     const hero = home.slice(home.indexOf('{/* Trust badge */}'), home.indexOf('{/* CTAs */}'));
-    expect(hero).toContain('Verified Cleveland senior living.');
+    expect(hero).toContain('Cleveland assisted living, with every fact clearly labeled.');
     expect(hero).toContain('Free for families.');
     expect(hero).not.toMatch(/\bAI\b|AI-Powered|save you|guarantee|\$\s?\d/);
     // Every section-level headline (h1/h2) on the homepage is free of "AI" as the pitch.

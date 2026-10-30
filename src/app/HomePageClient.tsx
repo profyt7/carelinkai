@@ -96,9 +96,10 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
       <nav className="bg-white/90 backdrop-blur-sm border-b border-neutral-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 md:px-6">
           {/* Top row */}
-          <div className="flex justify-between items-center py-4">
-            <Link href="/" className="flex items-center group">
-              <div className="relative h-16 w-64">
+          {/* One row at every width: the logo shrinks below sm so the CTA and the menu button always fit (390: no wrap, no clip). */}
+          <div className="flex justify-between items-center gap-3 py-4" data-testid="home-header-row">
+            <Link href="/" className="flex min-w-0 items-center group">
+              <div className="relative h-12 w-40 sm:h-16 sm:w-64">
                 <Image
                   src="/images/logo.png"
                   alt="CareLinkAI"
@@ -120,7 +121,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
             </div>
 
             {/* Right side: auth buttons + hamburger */}
-            <div className="flex items-center space-x-3">
+            <div className="flex shrink-0 items-center gap-2 sm:gap-3">
               <Link
                 href="/auth/login"
                 className="hidden lg:block text-primary-500 hover:text-primary-600 font-medium transition-colors"
@@ -129,12 +130,14 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
               </Link>
               <Link
                 href="/auth/register"
-                className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:opacity-90 text-white px-5 py-2.5 rounded-lg font-medium transition-opacity shadow-lg text-sm"
+                className="whitespace-nowrap bg-gradient-to-r from-primary-500 to-secondary-500 hover:opacity-90 text-white px-3 py-2.5 sm:px-5 rounded-lg font-medium transition-opacity shadow-lg text-sm"
+                data-testid="home-header-signup"
               >
                 Sign up free
               </Link>
               <button
-                className="lg:hidden p-2 rounded-md text-neutral-600 hover:bg-neutral-100 transition-colors"
+                className="lg:hidden flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-neutral-600 hover:bg-neutral-100 transition-colors"
+                data-testid="home-header-menu"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
                 aria-expanded={mobileMenuOpen}
@@ -207,14 +210,11 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
               </div>
               
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-neutral-900 leading-tight" data-testid="home-hero-headline">
-                Verified Cleveland senior living.{' '}
-                <span className="bg-gradient-to-r from-primary-500 to-secondary-500 bg-clip-text text-transparent">
-                  Free for families.
-                </span>
+                Cleveland assisted living, with every fact clearly labeled.
               </h1>
               
               <p className="mt-6 text-xl text-neutral-700 max-w-xl leading-relaxed" data-testid="home-hero-subhead">
-                Open beds, starting prices and Medicaid waiver status confirmed with Greater Cleveland communities each week — so families and discharge planners act on what a community told us this week, not what a website said once. Built with HIPAA-aligned safeguards.
+                Assisted living and memory care communities, plus in-home care and service providers for seniors living at home. We&apos;re confirming open beds, starting prices and Medicaid waiver status directly with communities, and we show you exactly what&apos;s verified and when. <span className="font-semibold text-neutral-900">Free for families.</span> Built with HIPAA-aligned safeguards.
               </p>
               
               {/* CTAs */}
@@ -442,7 +442,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                 </li>
                 <li className="flex items-start">
                   <FiCheck className="text-primary-500 mt-1 mr-2 flex-shrink-0" />
-                  <span className="text-sm text-neutral-500">Real-time bed availability</span>
+                  <span className="text-sm text-neutral-500">Bed availability marked verified or not, with the date</span>
                 </li>
               </ul>
             </div>
@@ -1176,8 +1176,8 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                     <FiActivity className="text-white text-xl" />
                   </div>
                   <div>
-                    <h4 className="text-lg font-bold text-neutral-900 mb-2">Real-Time Availability</h4>
-                    <p className="text-neutral-500">See which facilities have beds available right now, eliminating endless phone calls.</p>
+                    <h4 className="text-lg font-bold text-neutral-900 mb-2">Availability, Honestly Labeled</h4>
+                    <p className="text-neutral-500">Open beds show as Verified only with the date a community confirmed them; everything else is marked unverified, so you know who to call first.</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-4">
@@ -1515,7 +1515,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                 <span className="bg-success-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">$0</span>
               </div>
               <p className="text-neutral-600 text-sm leading-relaxed max-w-xl mx-auto mb-5">
-                Hospital social workers and case managers get full access to AI placement search, multi-facility requests, real-time bed availability, and placement history &amp; analytics — at no cost, with HIPAA-aligned safeguards.
+                Hospital social workers and case managers get full access to AI placement search, multi-facility requests, bed availability marked verified or unverified, and placement history &amp; analytics — at no cost, with HIPAA-aligned safeguards.
               </p>
               <Link href="/auth/register?role=discharge_planner" className="inline-block bg-gradient-to-r from-secondary-500 to-primary-500 text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity shadow-lg">
                 Get Free Access
@@ -1689,7 +1689,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                     className="overflow-hidden"
                   >
                     <div className="px-6 pb-5 text-neutral-500">
-                      <p>You tell us who the care is for, what they need day to day, where they need to be, and how care will be paid for. We match that against what communities have confirmed to us this week — open beds, starting prices, care levels they accept, and Medicaid waiver status — and give you a short list you can act on, not a list of everyone with a website.</p>
+                      <p>You tell us who the care is for, what they need day to day, where they need to be, and how care will be paid for. We match that against what communities have told us — open beds, starting prices, care levels they accept, and Medicaid waiver status, each marked verified (with the date) or not — and give you a short list you can act on, not a list of everyone with a website.</p>
                     </div>
                   </motion.div>
                 )}
@@ -1727,7 +1727,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
               <AnimatePresence>
                 {openFaqIndex === 2 && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-                    <div className="px-6 pb-5 text-neutral-500"><p>Nothing, for families and hospital discharge planners. Searching every Cleveland-area community, seeing current prices and open beds, waiver status and inspection history is free. Care homes pay for their listings and tools, which is how the directory stays free for the people using it. One optional service costs money: our Family Concierge, $399 flat, for families paying privately who want a verified shortlist and a person on the phone through the move. If you’re paying with Medicaid, Medicare or the VA, our help is always free. No hidden fees, ever.</p></div>
+                    <div className="px-6 pb-5 text-neutral-500"><p>Nothing, for families and hospital discharge planners. Searching every Cleveland-area community, seeing starting prices and open beds (marked verified or not), waiver status and inspection history is free. Care homes pay for their listings and tools, which is how the directory stays free for the people using it. One optional service costs money: our Family Concierge, $399 flat, for families paying privately who want a verified shortlist and a person on the phone through the move. If you’re paying with Medicaid, Medicare or the VA, our help is always free. No hidden fees, ever.</p></div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1742,7 +1742,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
               <AnimatePresence>
                 {openFaqIndex === 3 && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-                    <div className="px-6 pb-5 text-neutral-500"><p>Most families have a verified shortlist within two business days. If a discharge is already scheduled, tell us the date and we work backward from it. Our directory shows which communities had open beds this week, so you’re not calling homes that are full.</p></div>
+                    <div className="px-6 pb-5 text-neutral-500"><p>Most families have a verified shortlist within two business days. If a discharge is already scheduled, tell us the date and we work backward from it. Our directory marks which communities have confirmed open beds, and when, so you’re not calling homes that are full.</p></div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1772,7 +1772,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
               <AnimatePresence>
                 {openFaqIndex === 5 && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-                    <div className="px-6 pb-5 text-neutral-500"><p>Because we asked this week. Communities update their own listings, and our team confirms open beds, starting prices and waiver status by phone on a regular cycle. Listings that passed that check show a ‘Verified’ badge with the date. If a listing isn’t verified, we say so.</p></div>
+                    <div className="px-6 pb-5 text-neutral-500"><p>We ask. Communities can update their own listings, and our team is confirming open beds, starting prices and waiver status directly with each community. A listing shows a ‘Verified’ badge only after that check, with the date. If a listing isn’t verified yet, we say so.</p></div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1802,7 +1802,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
               <AnimatePresence>
                 {openFaqIndex === 7 && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-                    <div className="px-6 pb-5 text-neutral-500"><p>We verify. Every week we confirm open beds, starting prices and Medicaid waiver status directly with Cleveland-area communities and mark listings ‘Verified’ with the date. Other directories list what a community said once; we show you what’s true this week. We never charge families, and we don’t take a cut of your move-in.</p></div>
+                    <div className="px-6 pb-5 text-neutral-500"><p>We&apos;re confirming open beds, starting prices and Medicaid waiver status directly with Cleveland-area communities, and we show you exactly what&apos;s verified and when: a listing says ‘Verified’ only with the date we confirmed it, and everything else is labeled unverified. Other directories list what a community said once. We never charge families, and we don’t take a cut of your move-in.</p></div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1960,7 +1960,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
         
         <div className="max-w-5xl mx-auto px-4 md:px-6 text-center relative z-10">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            Senior Care, Verified for Cleveland
+            Cleveland Senior Care, Honestly Labeled
           </h2>
           <p className="text-xl text-white/90 max-w-3xl mx-auto mb-10">
             Whether you're a family finding care, an operator managing a facility, a caregiver building a career, or a hospital discharge planner — CareLinkAI was built for you. Start free today.

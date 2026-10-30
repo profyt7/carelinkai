@@ -108,7 +108,8 @@ const ProviderCard: React.FC<ProviderCardProps> = ({ provider, serviceTypeOption
       )}
       <div className="p-4">
         {/* Header with photo and name */}
-        <div className="flex items-center mb-4">
+        {/* pr-10 keeps the name clear of the favourite heart (absolute, top-right) at every width. */}
+        <div className={`flex items-center mb-4 ${onToggleFavorite ? 'pr-10' : ''}`}>
           <div className="h-16 w-16 rounded-full overflow-hidden bg-neutral-100 flex-shrink-0">
             {provider.logoUrl || provider.photoUrl ? (
               <Image
@@ -128,8 +129,8 @@ const ProviderCard: React.FC<ProviderCardProps> = ({ provider, serviceTypeOption
               </div>
             )}
           </div>
-          <div className="ml-3">
-            <h3 className="font-medium text-neutral-900">{provider.businessName}</h3>
+          <div className="ml-3 min-w-0">
+            <h3 className="font-medium text-neutral-900 line-clamp-2 break-words" title={provider.businessName}>{provider.businessName}</h3>
             {(location || typeof provider.distanceMiles === 'number') && (
               <div className="flex items-center text-sm text-neutral-500">
                 <FiMapPin className="mr-1" size={14} />
@@ -144,17 +145,17 @@ const ProviderCard: React.FC<ProviderCardProps> = ({ provider, serviceTypeOption
           </div>
         </div>
 
-        {/* Rating row */}
-        <div className="mb-2 flex items-center text-sm">
-          {/* Stars */}
-          <span className="mr-2 flex">
-            {renderStars()}
-          </span>
-          {/* Numeric average & count */}
-          <span className="text-neutral-600">
-            {ratingAvg.toFixed(1)} ({reviewCount})
-          </span>
-        </div>
+        {/* Rating row: only once the provider has real reviews (no "0.0 (0)" placeholder stars). */}
+        {reviewCount > 0 && (
+          <div className="mb-2 flex items-center text-sm" data-testid="provider-rating">
+            <span className="mr-2 flex">
+              {renderStars()}
+            </span>
+            <span className="text-neutral-600">
+              {ratingAvg.toFixed(1)} ({reviewCount})
+            </span>
+          </div>
+        )}
         
         {/* Badges row */}
         <div className="flex flex-wrap gap-2 mb-3">

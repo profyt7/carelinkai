@@ -31,7 +31,7 @@ describe('OL-171 brand shell', () => {
     expect(read('src/app/cleveland/layout.tsx')).toMatch(/<SiteShell>/);
     expect(read('src/app/concierge/layout.tsx')).toMatch(/<SiteShell>/);
     const pub = read('src/components/layout/PublicShell.tsx');
-    expect(pub).toMatch(/<SiteHeader \/>/);
+    expect(pub).toMatch(/<SiteHeader( supportSlot=\{isSupportSlotPath\(pathname\)\})? \/>/);
     expect(pub).toMatch(/<SiteFooter \/>/);
   });
   it('header: homepage logo → /, nav Find care · Cleveland · Family Concierge · For care homes, phone, Log in', () => {

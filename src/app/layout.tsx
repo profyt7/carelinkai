@@ -18,9 +18,8 @@ export const fetchCache = "force-no-store";
 import PWAManager from "../components/pwa/PWAManager";
 import { ToastProvider } from "../components/ui/toast-provider";
 // Care Concierge - family-facing AI care advisor
-import CareConcierge from "../components/CareConcierge";
+import SupportDock from "../components/support/SupportDock";
 // Bug Report Button
-import { BugReportButton } from "../components/bug-report/BugReportButton";
 // Cookie consent banner
 import CookieConsent from "../components/analytics/CookieConsent";
 // Consent-gated first-party analytics (GA4 forwarded server-side)
@@ -258,11 +257,8 @@ export default function RootLayout({
                 {/* Global toaster for notifications */}
                 <ToastProvider />
                 
-                {/* Care Concierge - family care advisor */}
-                <CareConcierge />
-                
-                {/* Bug Report Button - Beta Testing */}
-                <BugReportButton />
+                {/* One floating support launcher (Care Advisor chat + Report a bug); steps aside over primary actions */}
+                <SupportDock />
                 
                 {/* Cookie Consent Banner */}
                 <CookieConsent />

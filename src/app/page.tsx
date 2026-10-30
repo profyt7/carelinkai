@@ -11,24 +11,24 @@ import { isPaidFeatureEnabled } from '@/lib/billing/paid-features';
 // OL-172 (a)(b): the homepage's own title / description / share card (no "AI" pitch).
 export const metadata: Metadata = {
   // The root layout's title template does not apply to the page in its own segment, so the suffix is written once here.
-  title: { absolute: 'Verified Cleveland Senior Living | CareLinkAI' },
+  title: { absolute: 'Cleveland Assisted Living, Every Fact Labeled | CareLinkAI' },
   description:
-    'Licensed assisted living and memory care homes across Greater Cleveland, with Ohio inspection facts and open beds confirmed by the home. Free for families.',
+    'Assisted living and memory care across Greater Cleveland, plus in-home care and service providers. Every fact labeled verified or not. Free for families.',
   alternates: { canonical: 'https://getcarelinkai.com/' },
   openGraph: {
-    title: 'Verified Cleveland Senior Living | CareLinkAI',
+    title: 'Cleveland Assisted Living, Every Fact Labeled | CareLinkAI',
     description:
-      'Licensed assisted living and memory care homes across Greater Cleveland, with Ohio inspection facts and open beds confirmed by the home. Free for families.',
+      'Assisted living and memory care across Greater Cleveland, plus in-home care and service providers. Every fact labeled verified or not. Free for families.',
     type: 'website',
     url: 'https://getcarelinkai.com/',
     siteName: 'CareLinkAI',
-    images: [{ url: '/images/og-image.jpg', width: 1200, height: 630, alt: 'CareLinkAI — verified Cleveland senior living' }],
+    images: [{ url: '/images/og-image.jpg', width: 1200, height: 630, alt: 'CareLinkAI — Cleveland senior living' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Verified Cleveland Senior Living | CareLinkAI',
+    title: 'Cleveland Assisted Living, Every Fact Labeled | CareLinkAI',
     description:
-      'Licensed assisted living and memory care homes across Greater Cleveland, with Ohio inspection facts and open beds confirmed by the home. Free for families.',
+      'Assisted living and memory care across Greater Cleveland, plus in-home care and service providers. Every fact labeled verified or not. Free for families.',
     images: ['/images/twitter-image.jpg'],
   },
 };

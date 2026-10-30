@@ -60,7 +60,7 @@ export default function ProvidersPage() {
   const [radius, setRadius] = useState("");
   const [geoLat, setGeoLat] = useState<number | null>(null);
   const [geoLng, setGeoLng] = useState<number | null>(null);
-  const [sortBy, setSortBy] = useState<"ratingDesc" | "rateAsc" | "rateDesc" | "distanceAsc" | "recency">("ratingDesc");
+  const [sortBy, setSortBy] = useState<"verified" | "rateAsc" | "rateDesc" | "distanceAsc" | "recency">("verified");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
 
   // Mobile filter visibility
@@ -111,7 +111,7 @@ export default function ProvidersPage() {
     if (!Number.isNaN(pageFromUrl) && pageFromUrl > 0) setPage(pageFromUrl);
     
     const sortFromUrl = sp.get("sortBy") as any;
-    if (sortFromUrl && ["ratingDesc", "rateAsc", "rateDesc", "distanceAsc", "recency"].includes(sortFromUrl)) {
+    if (sortFromUrl && ["verified", "rateAsc", "rateDesc", "distanceAsc", "recency"].includes(sortFromUrl)) {
       setSortBy(sortFromUrl);
     }
 
@@ -142,7 +142,7 @@ export default function ProvidersPage() {
           const spPage = parseInt(savedParams.get("page") || "1", 10);
           if (!Number.isNaN(spPage) && spPage > 0) setPage(spPage);
           const spSort = savedParams.get("sortBy") as any;
-          if (spSort && ["ratingDesc", "rateAsc", "rateDesc", "distanceAsc", "recency"].includes(spSort)) setSortBy(spSort);
+          if (spSort && ["verified", "rateAsc", "rateDesc", "distanceAsc", "recency"].includes(spSort)) setSortBy(spSort);
           const spRadius = savedParams.get("radiusMiles");
           const spLat = savedParams.get("lat");
           const spLng = savedParams.get("lng");
@@ -326,7 +326,7 @@ export default function ProvidersPage() {
     setRadius("");
     setGeoLat(null);
     setGeoLng(null);
-    setSortBy("ratingDesc");
+    setSortBy("verified");
     setFavoritesOnly(false);
     setPage(1);
   }, []);
@@ -355,7 +355,7 @@ export default function ProvidersPage() {
       {isMobile && (
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-lg">Filters</h3>
-          <button onClick={() => setShowMobileFilters(false)} className="p-2 hover:bg-neutral-100 rounded-md">
+          <button onClick={() => setShowMobileFilters(false)} className="p-2 hover:bg-neutral-100 rounded-md" aria-label="Close filters">
             <FiX className="h-5 w-5" />
           </button>
         </div>
@@ -400,7 +400,8 @@ export default function ProvidersPage() {
           onChange={(e) => { setSortBy(e.target.value as any); setPage(1); }}
           className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm"
         >
-          <option value="ratingDesc">Rating: High to Low</option>
+          {/* No "Rating" sort until providers have real reviews; the default is verified first, then name. */}
+          <option value="verified">Verified first, then name</option>
           <option value="recency">Most Recent</option>
           <option value="rateAsc">Price: Low to High</option>
           <option value="rateDesc">Price: High to Low</option>

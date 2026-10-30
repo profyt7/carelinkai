@@ -23,14 +23,19 @@ export const SITE_NAV: ReadonlyArray<{ href: string; label: string }> = [
  */
 export const SITE_HEADER_HEIGHT_PX = 65;
 
-export default function SiteHeader() {
+/**
+ * `supportSlot`: on result-heavy pages the support launcher (SupportDock) lives in the header instead
+ * of floating over the results: `[data-support-slot]` holds the button and `[data-support-slot-panel]`
+ * (a block at the bottom of the header) holds its menu, which opens in flow and covers nothing.
+ */
+export default function SiteHeader({ supportSlot = false }: { supportSlot?: boolean } = {}) {
   return (
     <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/95 backdrop-blur-sm" data-testid="site-header">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 md:px-6">
         <Link href="/" className="flex shrink-0 items-center" aria-label="CareLinkAI home" data-testid="site-logo">
           {/* Lazy, not `priority`/eager: React 19 preloads every non-lazy SSR image, and the logo must
               never compete with the page's LCP text. It is in the first viewport, so it still loads at once. */}
-          <Image src="/images/logo.png" alt="CareLinkAI" width={171} height={40} sizes="171px" loading="lazy" className="h-10 w-auto" />
+          <Image src="/images/logo.png" alt="CareLinkAI" width={171} height={40} sizes="171px" loading="lazy" className={supportSlot ? 'h-8 w-auto sm:h-10' : 'h-10 w-auto'} />
         </Link>
 
         <nav aria-label="Main" className="hidden items-center gap-6 lg:flex">
@@ -42,6 +47,7 @@ export default function SiteHeader() {
         </nav>
 
         <div className="hidden items-center gap-5 lg:flex">
+          {supportSlot && <div data-support-slot="desktop" className="flex items-center" />}
           <a href={CONTACT_PHONE_TEL} className="font-semibold text-primary-700 hover:underline" data-testid="header-phone">
             {CONTACT_PHONE_DISPLAY}
           </a>
@@ -55,6 +61,7 @@ export default function SiteHeader() {
           <a href={CONTACT_PHONE_TEL} className="text-sm font-semibold text-primary-700" data-testid="header-phone-mobile">
             {CONTACT_PHONE_DISPLAY}
           </a>
+          {supportSlot && <div data-support-slot="mobile" className="flex items-center" />}
           <details className="group relative">
             <summary
               className="flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-md text-neutral-700 hover:bg-neutral-100 [&::-webkit-details-marker]:hidden"
@@ -80,6 +87,7 @@ export default function SiteHeader() {
           </details>
         </div>
       </div>
+      {supportSlot && <div data-support-slot-panel />}
     </header>
   );
 }

@@ -1,7 +1,9 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
 import SiteFooter from '@/components/site/SiteFooter';
 import SiteHeader, { SITE_HEADER_HEIGHT_PX } from '@/components/site/SiteHeader';
+import { isSupportSlotPath } from '@/components/support/support-slot';
 
 /**
  * Public chrome for ANONYMOUS (logged-out) visitors browsing the directory
@@ -14,9 +16,10 @@ import SiteHeader, { SITE_HEADER_HEIGHT_PX } from '@/components/site/SiteHeader'
  * public page carries the homepage logo, nav, the published number and the footer.
  */
 export default function PublicShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   return (
     <div className="flex min-h-screen flex-col bg-neutral-50" data-testid="site-shell" style={{ ['--site-header-h' as string]: `${SITE_HEADER_HEIGHT_PX}px` }}>
-      <SiteHeader />
+      <SiteHeader supportSlot={isSupportSlotPath(pathname)} />
       <div className="flex-1">{children}</div>
       <SiteFooter />
     </div>
