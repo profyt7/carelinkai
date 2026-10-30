@@ -191,8 +191,21 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
       </nav>
 
       {/* 1. HERO SECTION - Enhanced */}
-      <section className="relative py-20 md:py-28 overflow-hidden bg-gradient-to-br from-white via-white to-primary-50">
-        {/* Pre-launch: no stock photo of faces behind the hero; the brand gradient and blobs carry it. */}
+      <section className="relative py-20 md:py-28 overflow-hidden" data-testid="home-hero">
+        {/* Background image (the original hero photo; the made-up match card that sat on it stays removed) */}
+        <div className="absolute inset-0">
+          <Image
+            src="/images/hero-bg2.jpg"
+            alt=""
+            fill
+            className="object-cover object-center"
+            priority
+            sizes="100vw"
+            data-testid="hero-photo"
+          />
+          {/* Light gradient — image already has a bright background so minimal overlay needed */}
+          <div className="absolute inset-0 bg-gradient-to-r from-white from-35% via-white/75 via-55% to-white/10" />
+        </div>
 
         {/* Subtle decorative blobs on top of image */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -271,35 +284,40 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
               </div>
             </div>
             
-            {/* What we verify — an editorial trust panel (pre-launch). Every line is a qualified claim
-                the product backs: ODH license where matched, ODH inspection facts, and "Verified"
-                availability only within VERIFIED_AVAILABILITY_DAYS (= AVAILABILITY_FRESH_DAYS) of the community confirming it. */}
-            <aside aria-labelledby="hero-trust-heading" data-testid="hero-trust-panel" className="rounded-2xl border border-neutral-200 bg-white/90 p-6 shadow-sm md:p-8 lg:ml-auto lg:max-w-md">
-              <p id="hero-trust-heading" className="text-xs font-semibold uppercase tracking-widest text-neutral-500">What we verify</p>
-              <ul className="mt-5 space-y-6">
-                <li className="flex gap-4">
-                  <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-700"><FiShield aria-hidden="true" className="h-5 w-5" /></span>
-                  <div>
-                    <p className="font-semibold text-neutral-900">Licensed by ODH</p>
-                    <p className="mt-1 text-sm leading-relaxed text-neutral-600">We show a home&apos;s Ohio Department of Health license once we&apos;ve matched it to the state record.</p>
-                  </div>
-                </li>
-                <li className="flex gap-4">
-                  <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-secondary-50 text-secondary-700"><FiFileText aria-hidden="true" className="h-5 w-5" /></span>
-                  <div>
-                    <p className="font-semibold text-neutral-900">State inspection facts</p>
-                    <p className="mt-1 text-sm leading-relaxed text-neutral-600">Ohio survey and citation history, linked to the public source. No grades, no paid rankings.</p>
-                  </div>
-                </li>
-                <li className="flex gap-4">
-                  <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-success-50 text-success-700"><FiCheck aria-hidden="true" className="h-5 w-5" /></span>
-                  <div>
-                    <p className="font-semibold text-neutral-900">Verified availability</p>
-                    <p className="mt-1 text-sm leading-relaxed text-neutral-600">{`Open beds say Verified only when the community confirmed them with us in the last ${VERIFIED_AVAILABILITY_DAYS} days. Everything else is labelled unverified.`}</p>
-                  </div>
-                </li>
-              </ul>
-            </aside>
+          </div>
+        </div>
+      </section>
+
+      {/* 1a. WHAT WE VERIFY — moved out of the hero (the photo has the right half). Every line is a qualified
+          claim the product backs: ODH license where matched, ODH inspection facts, and "Verified" availability
+          only within VERIFIED_AVAILABILITY_DAYS (= AVAILABILITY_FRESH_DAYS) of the community confirming it. */}
+      <section className="relative z-10 border-b border-neutral-200 bg-white py-10" aria-labelledby="hero-trust-heading">
+        <div className="max-w-7xl mx-auto px-4 md:px-6">
+          <div data-testid="hero-trust-panel" className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm md:p-8">
+            <p id="hero-trust-heading" className="text-xs font-semibold uppercase tracking-widest text-neutral-500">What we verify</p>
+            <ul className="mt-5 grid gap-6 md:grid-cols-3 md:gap-8">
+              <li className="flex gap-4">
+                <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-700"><FiShield aria-hidden="true" className="h-5 w-5" /></span>
+                <div>
+                  <p className="font-semibold text-neutral-900">Licensed by ODH</p>
+                  <p className="mt-1 text-sm leading-relaxed text-neutral-600">We show a home&apos;s Ohio Department of Health license once we&apos;ve matched it to the state record.</p>
+                </div>
+              </li>
+              <li className="flex gap-4">
+                <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-secondary-50 text-secondary-700"><FiFileText aria-hidden="true" className="h-5 w-5" /></span>
+                <div>
+                  <p className="font-semibold text-neutral-900">State inspection facts</p>
+                  <p className="mt-1 text-sm leading-relaxed text-neutral-600">Ohio survey and citation history, linked to the public source. No grades, no paid rankings.</p>
+                </div>
+              </li>
+              <li className="flex gap-4">
+                <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-success-50 text-success-700"><FiCheck aria-hidden="true" className="h-5 w-5" /></span>
+                <div>
+                  <p className="font-semibold text-neutral-900">Verified availability</p>
+                  <p className="mt-1 text-sm leading-relaxed text-neutral-600">{`Open beds say Verified only when the community confirmed them with us in the last ${VERIFIED_AVAILABILITY_DAYS} days. Everything else is labelled unverified.`}</p>
+                </div>
+              </li>
+            </ul>
           </div>
         </div>
       </section>

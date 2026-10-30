@@ -1,7 +1,8 @@
 /**
  * Pre-launch homepage + brand consistency (PR A). These fail if:
- *   - the hero brings back a stock photo of faces or the made-up "Perfect Match Found /
- *     Sunshine Valley Care / 5★" card;
+ *   - the hero loses its original photo (hero-bg2.jpg, restored 10/30 at the founder's request after
+ *     tester feedback) or brings back the made-up "Perfect Match Found / Sunshine Valley Care / 5★" card;
+ *   - "What we verify" moves back over the photo (it sits in its own strip right under the hero);
  *   - the trust panel loses one of its three facts, or its "Verified" window drifts from
  *     AVAILABILITY_FRESH_DAYS (the rule the listing badge uses);
  *   - the share image stops matching the size every page declares (1200×630);
@@ -20,12 +21,21 @@ const hero = (html: string) => html.slice(Math.max(0, html.indexOf('data-testid=
 describe('homepage hero', () => {
   const html = renderToString(<HomePageClient />);
 
-  it('has no stock photo and no made-up match card', () => {
-    expect(read('src/app/HomePageClient.tsx')).not.toContain('/images/hero-bg2.jpg');
+  it('keeps the original hero photo full-bleed, with no made-up match card on it', () => {
+    const src = read('src/app/HomePageClient.tsx');
+    const heroSrc = src.slice(src.indexOf('data-testid="home-hero"'), src.indexOf('</section>', src.indexOf('data-testid="home-hero"')));
+    expect(heroSrc).toContain('src="/images/hero-bg2.jpg"');
+    expect(heroSrc).toContain('bg-gradient-to-r from-white from-35% via-white/75 via-55% to-white/10');
+    expect(heroSrc).not.toContain('hero-trust-panel');
     for (const fake of ['Perfect Match Found', 'Sunshine Valley', '5★', 'AI Matched', 'HIPAA Secure']) expect(html).not.toContain(fake);
   });
 
-  it('shows the three-fact trust panel next to the headline', () => {
+  it('shows the three-fact trust panel in its own strip right after the hero', () => {
+    const src = read('src/app/HomePageClient.tsx');
+    const heroEnd = src.indexOf('</section>', src.indexOf('data-testid="home-hero"'));
+    const panelAt = src.indexOf('data-testid="hero-trust-panel"');
+    expect(panelAt).toBeGreaterThan(heroEnd);
+    expect(panelAt).toBeLessThan(src.indexOf('data-testid="home-concierge-section"'));
     const h = hero(html);
     expect(h).toContain('data-testid="hero-trust-panel"');
     expect(h).toContain('What we verify');
