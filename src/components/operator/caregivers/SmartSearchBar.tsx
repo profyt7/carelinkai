@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { FiZap, FiSearch, FiX, FiUser } from 'react-icons/fi';
 import Link from 'next/link';
+import { usePaidFeature } from '@/hooks/usePaidFeatures';
 
 interface SearchResult {
   id: string;
@@ -16,6 +17,8 @@ interface SearchResult {
 }
 
 export default function SmartSearchBar() {
+  // OL-186: check status only while BACKGROUND_CHECKS is on.
+  const { enabled: bgChecksOn } = usePaidFeature('BACKGROUND_CHECKS');
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -136,9 +139,11 @@ export default function SmartSearchBar() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium text-sm text-neutral-800">{r.name}</span>
                       <span className="text-xs text-neutral-400">#{i + 1} match</span>
-                      <span className={`text-xs px-1.5 py-0.5 rounded-full ${bgBadge(r.backgroundCheckStatus)}`}>
-                        BG: {r.backgroundCheckStatus}
-                      </span>
+                      {bgChecksOn && (
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${bgBadge(r.backgroundCheckStatus)}`}>
+                          BG: {r.backgroundCheckStatus}
+                        </span>
+                      )}
                       {r.reliabilityScore != null && (
                         <span className="text-xs text-neutral-500">
                           {r.reliabilityScore.toFixed(0)}/100 reliability

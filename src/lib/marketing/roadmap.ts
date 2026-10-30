@@ -4,7 +4,8 @@
  *
  * Truth rules (homepage truth audit, 10/30):
  *  - "Now Live" lists only what a real user can do today with production flags as they are.
- *  - Partial features say exactly what works (ride requests yes, online payment only with RIDES_PAYMENTS).
+ *  - Family rides (nav "Rides", dashboard "My Rides") are behind RIDES_PAYMENTS, so the rides card is
+ *    "Now Live" only with that flag and "Coming Soon" without it.
  *  - Nothing here promises outbound SMS: the Twilio A2P campaign is not approved, so text-message
  *    features stay in "Coming Soon" regardless of flags. Checkr is not live: no background-check badges
  *    unless BACKGROUND_CHECKS is on.
@@ -77,20 +78,15 @@ export function nowLiveItems(f: RoadmapFlags): RoadmapItem[] {
         : 'Families and care homes find transportation, meal delivery, home health and other providers and send a request',
     },
     {
-      key: 'rides',
-      icon: 'calendar',
-      title: 'Transport Ride Requests',
-      desc: f.ridesPaymentsOn
-        ? 'Families and care homes request a ride, the provider confirms and sets the fare, and the ride is paid online; email reminder the day before'
-        : 'Families and care homes request a ride and the provider confirms and sets the fare; email reminder the day before. Online payment is coming soon',
-    },
-    {
       key: 'affiliate',
       icon: 'trending',
       title: 'Referral Program',
       desc: 'Referral links and a dashboard that tracks the families you refer',
     },
   ];
+  if (f.ridesPaymentsOn) {
+    items.push({ key: 'rides', icon: 'calendar', title: 'Transport Ride Requests', desc: 'Families and care homes request a ride, the provider confirms and sets the fare, and the ride is paid online; email reminder the day before' });
+  }
   if (f.operatorPlansOn) {
     items.push({ key: 'autofill', icon: 'zap', title: 'AI Shift Auto-fill', desc: 'Describe an open shift in plain words and get matching available caregivers (Professional plan)' });
   }
@@ -108,6 +104,9 @@ export function comingSoonItems(f: RoadmapFlags): RoadmapItem[] {
     { key: 'checkins', icon: 'refresh', title: 'Weekly availability check-ins', desc: 'Communities and providers confirm openings with us every week' },
     { key: 'sms-coverage', icon: 'zap', title: 'Text-message shift coverage', desc: 'When a caregiver calls out, available staff get a text to pick up the shift' },
   ];
+  if (!f.ridesPaymentsOn) {
+    items.push({ key: 'rides', icon: 'calendar', title: 'Transport Ride Requests', desc: 'Request a ride from a transportation provider and pay online' });
+  }
   if (!f.operatorPlansOn) {
     items.push({ key: 'autofill', icon: 'calendar', title: 'AI Shift Auto-fill', desc: 'Describe an open shift in plain words and get matching available caregivers' });
   }

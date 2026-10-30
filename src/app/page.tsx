@@ -48,7 +48,7 @@ export default function HomePage() {
       // Prices for flag-off products stay hidden (Caregiver Pro).
       caregiverProOn={isPaidFeatureEnabled('CAREGIVER_PRO')}
       // Demo-section product tour: only when /public/demo/tour.json exists.
-      tourSlides={loadProductTour()}
+      tour={loadProductTour()}
     />
   );
 }

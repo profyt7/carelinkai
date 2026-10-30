@@ -2726,3 +2726,13 @@
 - **Deployment impact:** none until `tour.json` lands; no new env vars.
 - **New risks/blockers:** demo requests have no admin list (email only).
 - **Recommended next step:** Chris supplies `public/demo/tour.json` + 16:10 slides.
+
+### 2026-10-30 — OL-243 product tour content + truth fixes
+- **Objective:** put the 15-slide tour on the homepage and /help; fix the false claims its screenshots exposed.
+- **Work completed:** cherry-picked `chore/demo-tour-assets`; adapted `ProductTour` to the JSON shape and added the chips, controls, keyboard, swipe, Play timing, reduced motion, next/image, alt = caption and sample-data note. Homepage intro lead (only with a tour). /help "Start here" + per-role sections. Background-check UI gated on `BACKGROUND_CHECKS` (client + server). Operator dashboard plural and occupancy labels. Family rides behind `RIDES_PAYMENTS` (Chris chose it; roadmap card follows).
+- **Files changed:** see the PR; tests `product-tour.unit`, `homepage-truth.unit` (background-check + tour), `homepage-truth-full.render`, `truth-fixes.unit`, `navigation-role-parity` (declared rides difference).
+- **Commands run:** `npm run type-check`, `next lint` (changed files), `npm test -- --ci`, `next dev` + Playwright (390 / 1280 screenshots; Play / arrow keys / reduced motion checked in Chromium).
+- **Tests/build status:** local green; build left to CI.
+- **Deployment impact:** homepage and /help show the tour on deploy. No env changes.
+- **New risks/blockers:** slides 08, 11 and 14 show claims the app now hides (re-capture). Provider-page ride requests and the caregiver background-check start API aren't flag-gated.
+- **Recommended next step:** re-capture slides 08 / 11 / 14; decide on provider-page ride requests while Rides is hidden.

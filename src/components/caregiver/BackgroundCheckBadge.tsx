@@ -1,6 +1,7 @@
 "use client";
 
 import { FiShield, FiClock, FiAlertCircle, FiCheck } from "react-icons/fi";
+import { usePaidFeature } from "@/hooks/usePaidFeatures";
 
 type Status = "NOT_STARTED" | "PENDING" | "CLEAR" | "CONSIDER" | "FAILED" | "EXPIRED";
 
@@ -15,6 +16,9 @@ export default function BackgroundCheckBadge({
   size = "md",
   showLabel = true,
 }: BackgroundCheckBadgeProps) {
+  // OL-186: no check status (least of all "Background Checked") while the feature is off;
+  // seeded / legacy CLEAR rows must not read as a verified claim.
+  const { enabled } = usePaidFeature("BACKGROUND_CHECKS");
   const config = {
     CLEAR: {
       icon: <FiCheck />,
@@ -74,6 +78,8 @@ export default function BackgroundCheckBadge({
     md: "h-4 w-4",
     lg: "h-5 w-5",
   };
+
+  if (!enabled) return null;
 
   return (
     <span
