@@ -737,6 +737,18 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
   - Fix: log a user id or a masked email; extend `scripts/pii-log-scan.cjs` SCOPE to `src/lib/auth*` and `src/lib/email.ts`.
 - **Path:** `src/lib/auth.ts`, `src/lib/auth-db-simple.ts`, `src/lib/email.ts`
 
+### OL-235: Pre-launch profile polish (PR B)
+- **Status:** 🟡 PR open, branch `fix/prelaunch-profile-polish` (not merged).
+- **What:**
+  - `/homes/[id]` no longer repeats availability / price in stat tiles or the About quick facts. Both live in the inquiry panel (with the tiles' detail line and Transparent chip) and in the < lg CTA bar.
+  - No-photo placeholder: dot pattern + heart mark.
+  - Operator metric grid: flex-grow, so no empty slot when a metric is missing.
+  - Icon rail: hover/focus tooltips (fixed-positioned, aria-hidden).
+  - CareCredit "Apply" contrast fixed (axe 0 on the listing).
+- **Found (not fixed):** at 390 the Leaflet attribution draws over the sticky site header when scrolled.
+- **First phone screen (390×844):** the CTA bar now shows whenever the panel's availability + price aren't on screen (before reaching it, too), so name, location, care types, verified availability and known price are all on the first screen. Covered by `e2e/public/directory/listing-first-screen.spec.ts`.
+- **Path:** `src/app/homes/[id]/page.tsx`, `src/components/homes/HomeImagePlaceholder.tsx`, `src/components/dashboard/OperatorDashboardContent.tsx`, `src/components/layout/SidebarShell.tsx`, `__tests__/profile-polish.unit.test.tsx`
+
 ### OL-232: AuditLog — classify event types, purpose, access and retention (review item)
 - **Status:** 🟡 review item. **No deletion schedule is implemented or enabled.**
   - Failed-login rows (`action ACCESS_DENIED`, `resourceType AUTH`, `ipAddress`, `metadata.email` + reason; written in `src/lib/auth.ts`) stay unchanged.

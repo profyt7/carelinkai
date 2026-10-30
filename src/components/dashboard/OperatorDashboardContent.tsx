@@ -155,7 +155,10 @@ export function OperatorDashboardContent() {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+      {/* Metric tiles render only when their data exists, so the count varies (often 5 or 6). A fixed
+          2/3-column grid left an empty slot (e.g. 820px with 5 tiles); flex-grow lets the last row's
+          tiles fill it. Basis: 1 col, 2 from sm, 3 from lg. */}
+      <div data-testid="operator-metric-grid" className="mb-6 flex flex-wrap gap-4 [&>*]:grow [&>*]:basis-full sm:[&>*]:basis-[calc(50%-0.5rem)] lg:[&>*]:basis-[calc(33.333%-0.7rem)]">
         {metrics?.totalResidents && (
           <MetricCard
             title="Total Residents"

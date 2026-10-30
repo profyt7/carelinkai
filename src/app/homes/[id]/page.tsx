@@ -220,7 +220,8 @@ export default function HomeDetailPage() {
     });
   }, [realHome, inspectionChecked, inspection]);
 
-  // < lg the panel sits inline; once it scrolls out of view a sticky bottom bar carries the same two actions.
+  // < lg the panel sits inline. Whenever its availability + price aren't on screen (not reached yet, or scrolled
+  // past), a sticky bottom bar carries them with the same two actions, so a phone sees both on the first screen.
   const [compact, setCompact] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 1023.98px)");
@@ -232,15 +233,25 @@ export default function HomeDetailPage() {
   const [panelInView, setPanelInView] = useState(true);
   useEffect(() => {
     if (!compact || !panelEl) { setPanelInView(true); return; }
-    // "Out of view" = scrolled past (above the visible top); before the reader reaches the panel there is no bar.
+    // "In view" = the panel's facts block (availability + price) sits wholly inside the visible area, below the
+    // sticky header. Without that block (inquiry form open, Concierge) it falls back to "panel not scrolled past".
     // A scroll check, not an IntersectionObserver: a jump from below the fold to past it (End key, anchor link,
     // reduced motion) never crosses an intersection threshold, so an observer would not fire.
     const scroller = panelEl.closest("main");
     let raf = 0;
     const check = () => {
       raf = 0;
-      const top = scroller && scroller.scrollHeight > scroller.clientHeight ? Math.max(0, scroller.getBoundingClientRect().top) : 0;
-      setPanelInView(panelEl.getBoundingClientRect().bottom > top);
+      const inMain = Boolean(scroller && scroller.scrollHeight > scroller.clientHeight);
+      const header = document.querySelector<HTMLElement>('[data-testid="site-header"]');
+      const top = inMain ? Math.max(0, scroller!.getBoundingClientRect().top) : header && getComputedStyle(header).position === "sticky" ? Math.max(0, header.getBoundingClientRect().bottom) : 0;
+      const bottom = inMain ? scroller!.getBoundingClientRect().bottom : window.innerHeight;
+      const facts = panelEl.querySelector<HTMLElement>("[data-panel-facts]");
+      if (facts) {
+        const r = facts.getBoundingClientRect();
+        setPanelInView(r.top >= top - 1 && r.bottom <= bottom + 1);
+      } else {
+        setPanelInView(panelEl.getBoundingClientRect().bottom > top);
+      }
     };
     const schedule = () => { if (!raf) raf = requestAnimationFrame(check); };
     check();
@@ -305,9 +316,13 @@ export default function HomeDetailPage() {
     check();
     document.addEventListener("scroll", schedule, { capture: true, passive: true });
     window.addEventListener("resize", schedule);
+    // The bar slides in (200 ms): measured mid-slide it reads as off-screen, so measure again once it settles
+    // (it can now appear on the first screen, with no scroll to trigger a re-check).
+    ctaEl.addEventListener("transitionend", schedule);
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(retry);
+      ctaEl.removeEventListener("transitionend", schedule);
       document.removeEventListener("scroll", schedule, { capture: true });
       window.removeEventListener("resize", schedule);
       setBottomStackHeight("listing-cta-bar", 0);
@@ -651,11 +666,18 @@ export default function HomeDetailPage() {
                             : 'You’re acting on a patient’s behalf via CareLinkAI Concierge — request a tour and our care team coordinates it for you.'}
                         </div>
                       ) : (
-                        <div className="mt-3 space-y-2">
+                        <div className="mt-3 space-y-2" data-panel-facts>
                           {/* The badge is the visual; screen readers get the same fact once, as text. */}
                           <p className="sr-only" data-testid="sidebar-availability">{facts.availability.line}.</p>
                           <div aria-hidden="true"><AvailabilityBadge availability={availability} /></div>
+                          {/* Pre-launch: the availability / pricing tiles were removed as repeats of this panel; their extra lines live here now. */}
+                          <p className="text-xs text-neutral-600" data-testid="panel-availability-detail">
+                            {facts.availability.known ? facts.availability.detail : 'Availability changes often — we verify on request.'}
+                          </p>
                           <PriceLine pricing={realHome.pricing} />
+                          {realHome.pricing?.transparent && (
+                            <span className="inline-block rounded-full bg-success-50 px-2 py-0.5 text-[11px] font-medium text-success-700 ring-1 ring-inset ring-success-200">Transparent Pricing</span>
+                          )}
                         </div>
                       )}
                       <div className="mt-4 space-y-2">
@@ -921,8 +943,9 @@ export default function HomeDetailPage() {
                     )}
             </div>
 
-            {/* Key stats — four tiles, or three when there is no state inspection on file (never a "0 inspections"). */}
-            <dl data-testid="listing-key-stats" className={`mt-5 grid grid-cols-1 gap-3 ${inspection ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3'}`}>
+            {/* Key stats — care types, plus the state inspection when one is on file (never a "0 inspections").
+                Availability and price are not repeated here: they sit in the inquiry panel next to / right below. */}
+            <dl data-testid="listing-key-stats" className={`mt-5 grid grid-cols-1 gap-3 ${inspection ? 'sm:grid-cols-2' : ''}`}>
               <div className={TILE} data-testid="listing-care-tile">
                 <dt className={TILE_LABEL}>Care types</dt>
                 <dd className="mt-2">
@@ -934,26 +957,6 @@ export default function HomeDetailPage() {
                   {/* Capacity only when an operator / verified source set it (OL-173). */}
                   {facts.capacity != null && (
                     <p className="mt-2 text-xs text-neutral-700" data-testid="listing-capacity-tile">{facts.capacity} residents</p>
-                  )}
-                </dd>
-              </div>
-              <div className={TILE} data-testid="listing-availability-tile">
-                <dt className={TILE_LABEL}>Availability</dt>
-                <dd className="mt-2">
-                  <AvailabilityBadge availability={availability} />
-                  {facts.availability.known ? (
-                    facts.availability.detail && <p className="mt-1.5 text-xs text-neutral-600">{facts.availability.detail}</p>
-                  ) : (
-                    <p className="mt-1.5 text-xs text-neutral-600">Availability changes often — we verify on request.</p>
-                  )}
-                </dd>
-              </div>
-              <div className={TILE} data-testid="listing-pricing-tile">
-                <dt className={TILE_LABEL}>Pricing</dt>
-                <dd className="mt-2">
-                  <PriceLine pricing={realHome.pricing} />
-                  {realHome.pricing?.transparent && (
-                    <span className="mt-1.5 inline-block rounded-full bg-success-50 px-2 py-0.5 text-[11px] font-medium text-success-700 ring-1 ring-inset ring-success-200">Transparent Pricing</span>
                   )}
                 </dd>
               </div>
@@ -1053,13 +1056,15 @@ export default function HomeDetailPage() {
                     </p>
                   )}
                 </div>
+              {(facts.capacity != null || facts.gender || realHome.medicaidWaiver?.pendingLine) && (
               <dl className="mt-4 grid grid-cols-1 gap-4 rounded-xl border border-line bg-surface-raised p-6 md:grid-cols-2">
-                <div>
-                  <dt className="text-sm font-medium text-neutral-900">{facts.capacity != null ? 'Facility size' : 'Availability'}</dt>
-                  <dd className="text-sm text-neutral-700" data-testid="quick-facts-availability">
-                    {facts.capacity != null ? `${facts.capacity} beds · ` : ''}{facts.availability.line}
-                  </dd>
-                </div>
+                {/* Availability is in the inquiry panel; only the size stays here, when an operator set it. */}
+                {facts.capacity != null && (
+                  <div>
+                    <dt className="text-sm font-medium text-neutral-900">Facility size</dt>
+                    <dd className="text-sm text-neutral-700" data-testid="quick-facts-capacity">{facts.capacity} beds</dd>
+                  </div>
+                )}
                 {/* OL-176: only when an operator / admin set it — an empty column says nothing about who is accepted. */}
                 {facts.gender && (
                   <div data-testid="quick-facts-gender">
@@ -1075,6 +1080,7 @@ export default function HomeDetailPage() {
                   </div>
                 )}
               </dl>
+              )}
             </section>
 
             <section id="listing-amenities" aria-labelledby="listing-amenities-h" className={SECTION}>
@@ -1195,7 +1201,7 @@ export default function HomeDetailPage() {
                       href={CARECREDIT_APPLY_URL}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-shrink-0 text-xs px-3 py-1.5 bg-amber-500 text-white rounded-md font-semibold hover:bg-amber-600 transition-colors"
+                      className="flex-shrink-0 text-xs px-3 py-1.5 bg-amber-700 text-white rounded-md font-semibold hover:bg-amber-800 transition-colors"
                     >
                       Apply →
                     </a>
@@ -1333,6 +1339,12 @@ export default function HomeDetailPage() {
             ...(dock ? { position: 'fixed' as const, left: 0, right: 0, bottom: dock.bottom } : {}),
           }}
         >
+          {/* Availability + price at the point of inquiry (pre-launch). */}
+          <div className="mx-auto mb-2 flex max-w-xl flex-wrap items-center gap-x-3 gap-y-1 text-sm" data-testid="cta-bar-facts">
+            <span aria-hidden="true"><AvailabilityBadge availability={availability} /></span>
+            <span className="sr-only">{facts.availability.line}.</span>
+            <PriceLine pricing={realHome.pricing} />
+          </div>
           <div className="mx-auto flex max-w-xl gap-2">
             <button type="button" onClick={() => onScheduleTour('cta_bar')} className={`${BTN_PRIMARY} flex-1`}>Schedule a Tour</button>
             <button type="button" onClick={() => openInquiry('cta_bar')} className={`${BTN_SECONDARY} flex-1`}>Send Inquiry</button>
