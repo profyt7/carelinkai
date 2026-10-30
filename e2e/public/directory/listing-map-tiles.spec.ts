@@ -81,6 +81,37 @@ test.describe('@critical OL-178 listing map tiles → MapTiler only', () => {
     await expect(page.getByTestId('map-placeholder')).toHaveCount(0);
   });
 
+  test('390: the map (attribution included) never paints over the sticky site header', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.route('https://api.maptiler.com/**', (route) => route.fulfill({ status: 200, contentType: 'image/png', body: PNG }));
+    await page.goto(`/homes/${homeId}`, { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('heading', { level: 1, name: HOME_NAME })).toBeVisible({ timeout: 60_000 });
+    const leaflet = page.locator('#map-container.leaflet-container');
+    await leaflet.scrollIntoViewIfNeeded();
+    await expect(leaflet.locator('.leaflet-control-attribution')).toBeVisible({ timeout: 30_000 });
+    const header = page.getByTestId('site-header');
+    const hb = await header.boundingBox();
+    expect(hb, 'sticky header').not.toBeNull();
+    // Scroll so the map's bottom edge (where the attribution sits) slides under the header.
+    const mb = (await leaflet.boundingBox())!;
+    await page.mouse.wheel(0, mb.y + mb.height - (hb!.y + hb!.height / 2));
+    await page.waitForTimeout(300);
+    const m2 = (await leaflet.boundingBox())!;
+    const h2 = (await header.boundingBox())!;
+    expect(m2.y, 'map is under the header').toBeLessThan(h2.y + h2.height);
+    // Every point of the header that overlaps the map must hit the header, not a Leaflet layer.
+    const hits = await page.evaluate(({ y, x0, x1 }) => {
+      const out: boolean[] = [];
+      for (let x = x0 + 4; x < x1 - 4; x += 24) {
+        const el = document.elementFromPoint(x, y);
+        out.push(Boolean(el && el.closest('[data-testid="site-header"]')));
+      }
+      return out;
+    }, { y: h2.y + h2.height - 6, x0: Math.max(m2.x, 0), x1: Math.min(m2.x + m2.width, 390) });
+    expect(hits.length).toBeGreaterThan(0);
+    expect(hits.every(Boolean), 'header wins over every map layer').toBe(true);
+  });
+
   test('the page itself no longer sends Referrer-Policy: no-referrer', async ({ request }) => {
     const res = await request.get(`/homes/${homeId}`);
     expect(res.headers()['referrer-policy']).toBe('strict-origin-when-cross-origin');

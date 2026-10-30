@@ -2610,3 +2610,60 @@
 - **Deployment impact:** no schema change, no new env vars. Uses the existing `ADMIN_NOTIFY_EMAIL` + `RESEND_API_KEY`.
 - **New risks/blockers:** none. SMS stays planner-only until the A2P campaign is approved.
 - **Recommended next step:** watch the first real facility callback email after deploy.
+
+### 2026-10-30 — Pre-launch batch: provider fix-ups, leftovers, screenshot review, ordered merges
+- **Objective:**
+  - Finish PR #19 follow-ups:
+    - Boost copy without the photo perk;
+    - six launch categories;
+    - multi-category;
+    - optional fields;
+    - working category search;
+    - founding-offer tests;
+    - taxonomy doc.
+  - Open a small leftovers PR.
+  - Review all PR screenshots.
+  - Merge #20 → #21 → #19 → leftovers.
+- **Work completed:**
+  - **#19:**
+    - Boost perks: promoted placement ("Promoted" tooltip/sr text), badge, instant alerts. The photo perk is removed from all copy; the 3/12 constants are kept.
+    - Six launch categories with skilled vs non-medical labels. Legacy values map via aliases (no row changes); `medical-services` and `home-modification` deliberately map to nothing. `serviceTypes` was already a list.
+    - `deliveryModes` column (additive). `licenseNumber` is admin-only.
+    - Signup, profile, search and the homepage use the six. Page and API share `serviceTypes`.
+    - Fixed the < md search layout (results were about 60px wide).
+    - Founding-offer tests with a mocked clock; category e2e via `/api/dev/upsert-provider`; `docs/PROVIDER_TAXONOMY.md`.
+  - **#21:** the 390 first-screen check found price and availability below the fold.
+    - The CTA bar now shows until the panel's facts are on screen.
+    - The widgets re-measure after the bar's slide-in (they covered "Send Inquiry").
+    - New `listing-first-screen` e2e.
+  - **#22:**
+    - Hire-fee line gated by `MARKETPLACE_HIRE_FEE_ENABLED`.
+    - Listing map `isolate` (attribution was over the sticky header).
+    - `/settings/family/billing` → `/settings/family`.
+    - Inbound call alerts were already merged by #18 (OL-233), so they weren't redone.
+  - **Merged:** #20 `f0b5acbe`, #21 `ab265851`, #19 `1045d5e5`, then #22.
+- **Files changed:**
+  - #19: `src/lib/providers/{categories,boost}.ts`, the provider search/detail/admin pages and APIs, register page + API, the profile page + API, `HomePageClient`, the billing page, how-to, `BoostedBadge`, `ProviderCard`, the mock providers, the migration `20261030010000_provider_delivery_modes`, the tests, e2e and docs.
+  - #21: `src/app/homes/[id]/page.tsx` and the e2e.
+  - #22: the caregiver profile, `SimpleMap`, the family billing redirect, the tests and context.
+- **Commands run:**
+  - npm ci, prisma generate/migrate deploy (local DB), tsc, eslint, jest (160 suites), next build;
+  - Playwright against local production builds (category filter, listing specs, ×2–3 repeats);
+  - GitHub REST for PRs/merges.
+- **Tests/build status:**
+  - All CI checks green on each merged head.
+  - Local listing-page map checks need `NEXT_PUBLIC_MAPTILER_KEY` (CI sets a fake key).
+- **Deployment impact:**
+  - Two additive migrations run on deploy (`provider_boost`, `provider_delivery_modes`).
+  - All provider flags and `FEATURED_LISTING_ENABLED` stay off, so there's no Providers card or Boost copy live.
+  - No env vars set, no Stripe prices created.
+- **New risks/blockers (reported, not fixed):**
+  - At 390 the header's "Sign up free" wraps and the menu icon is clipped.
+  - The floating widgets overlap primary CTAs (hero 390, listing panel 1280, Listing & Boost 390).
+  - Provider search sorts by "Rating" over 0.0 placeholders.
+  - On provider cards the heart overlaps long names.
+  - The search API's `q` + city filters share `where.OR` (city acts as an OR).
+- **Recommended next step:**
+  - Decide on the header/widget overlap fixes.
+  - When ready to launch providers: create the Boost price, set `STRIPE_PRICE_PROVIDER_BOOST`, flip the flags.
+

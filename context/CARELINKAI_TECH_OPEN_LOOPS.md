@@ -7,6 +7,15 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
 
 ## 🔴 SHIP NOW (this week)
 
+### OL-237: Pre-launch leftovers (10/29)
+- **Status:** ✅ #22 (merges last in the 10/30 batch).
+- **What:**
+  - `marketplace/caregivers/[id]` shows "$99 marketplace access fee applies on Starter" only when `MARKETPLACE_HIRE_FEE_ENABLED` is on (it showed regardless).
+  - The listing map (`SimpleMap`) is its own stacking context (`isolate`), so Leaflet's attribution and controls (z-index 1000) no longer paint over the sticky site header at 390.
+  - `/settings/family/billing` now redirects to `/settings/family` (was `/settings`). The Family Plus webhook handlers, `Family.isPlus` and comments are unchanged.
+- **Already on main:** inbound call alerts for all four caller types (#18, OL-233). Nothing redone here.
+- **Path:** `src/app/marketplace/caregivers/[id]/page.tsx`, `src/components/search/SimpleMap.tsx`, `src/app/settings/family/billing/page.tsx`, `__tests__/prelaunch-leftovers.unit.test.ts`, `__tests__/retire-family-plus.unit.test.ts`, `e2e/public/directory/listing-map-tiles.spec.ts`
+
 ### OL-233: Inbound front-desk alerts — email for every caller type (extends OL-167b)
 - **Status:** PR open, branch `fix/inbound-alerts-all-lanes` (squash-merge on green).
 - **What:** every inbound call emails `ADMIN_NOTIFY_EMAIL` via Resend. Planner SMS + email and family/other email are unchanged. FACILITY calls now email too: "Facility callback: {name}, {facility}, {phone}" + openings / starting price / Medicaid. A matched home links to `/admin/call-qa#obs-{id}` (the QA observation is still written); an unmatched number links to `/admin/inbound-leads`. Subjects start with `[Planner]` / `[Family]` / `[Other]` / `[Facility]`. No reason or transcript text in any alert. SMS stays planner-only (A2P campaign pending).
@@ -715,7 +724,7 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
 - **Path:** `src/components/analytics/AnalyticsScripts.tsx`
 
 ### OL-234: Pre-launch homepage + brand consistency (PR A)
-- **Status:** 🟡 PR open, branch `fix/prelaunch-homepage` (not merged).
+- **Status:** ✅ merged #20 `f0b5acbe` (2026-10-30).
 - **What:**
   - **Hero:** stock photo (faces) and a made-up "Perfect Match Found / Sunshine Valley Care / 5★" card replaced by a truthful "What we verify" panel. It covers the ODH license where matched, ODH inspection facts, and Verified availability within `AVAILABILITY_FRESH_DAYS`.
   - **Share images:** `og-image.jpg` / `twitter-image.jpg` recomposed to the 1200×630 every page declares (logo unaltered).
@@ -738,7 +747,7 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
 - **Path:** `src/lib/auth.ts`, `src/lib/auth-db-simple.ts`, `src/lib/email.ts`
 
 ### OL-235: Pre-launch profile polish (PR B)
-- **Status:** 🟡 PR open, branch `fix/prelaunch-profile-polish` (not merged).
+- **Status:** ✅ merged #21 `ab265851` (2026-10-30), with the first-phone-screen follow-up.
 - **What:**
   - `/homes/[id]` no longer repeats availability / price in stat tiles or the About quick facts. Both live in the inquiry panel (with the tiles' detail line and Transparent chip) and in the < lg CTA bar.
   - No-photo placeholder: dot pattern + heart mark.
@@ -771,7 +780,7 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
 - **Path:** `prisma/schema.prisma` (`AuditLog`), `src/lib/auth.ts`, `src/lib/audit.ts`, `src/app/api/admin/audit-logs/**`, `src/app/api/cron/credential-expiry/route.ts`, `src/lib/dashboard-data.ts`
 
 ### OL-236: Provider pricing: free listing, Boost $39/mo, founding providers, launch taxonomy (10/29)
-- **Status:** 🟡 merging (PR #19). Nothing runs until the founder flips flags. Flags stay OFF.
+- **Status:** ✅ merged #19 `1045d5e5` (2026-10-30). Flags stay OFF; nothing runs until the founder flips them.
 - **What:**
   - `PROVIDER_LISTING_ENABLED` now means a free listing (no charge path); the $99 references are retired.
   - `PROVIDER_BOOST_ENABLED` + `STRIPE_PRICE_PROVIDER_BOOST`: Boost $39/mo. Perks:

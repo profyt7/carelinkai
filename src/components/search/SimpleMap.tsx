@@ -348,7 +348,9 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
     Boolean(validHomes[0]!.address?.coordinatesApproximate);
 
   return (
-    <div className="relative h-full w-full" style={{ minHeight: "320px" }} data-testid="simple-map">
+    // `isolate` keeps Leaflet's internal z-indexes (panes 400, controls/attribution 1000) inside the
+    // map, so they can't paint over the sticky site header when the page scrolls.
+    <div className="relative isolate h-full w-full" style={{ minHeight: "320px" }} data-testid="simple-map">
       <div ref={mapContainerRef} className="h-full w-full rounded-lg border-2 border-neutral-300" style={{ minHeight: "320px" }} id="map-container" />
       {showCount && (
         <div className="absolute top-4 right-4 bg-white rounded-lg shadow-md p-2 z-[1000]">
