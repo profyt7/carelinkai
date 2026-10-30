@@ -4,6 +4,7 @@
  * Generates realistic mock provider data for development and testing.
  * Used when mock mode is enabled via the carelink_mock_mode cookie.
  */
+import { PROVIDER_CATEGORY_VALUES, storedValuesFor } from '@/lib/providers/categories';
 
 export interface MockProvider {
   id: string;
@@ -39,18 +40,8 @@ export function generateMockProviders(
   serviceTypeOptions: string[] = []
 ): MockProvider[] {
   // Default service types if none provided
-  const defaultServiceTypes = [
-    'transportation',
-    'meal-prep',
-    'housekeeping',
-    'companionship',
-    'medical-transport',
-    'home-care',
-    'personal-care',
-    'meal-delivery',
-    'light-housekeeping',
-    'medication-management'
-  ];
+  // The six launch categories (src/lib/providers/categories.ts) plus two legacy values.
+  const defaultServiceTypes = [...PROVIDER_CATEGORY_VALUES, 'companionship', 'housekeeping'];
   
   const serviceTypes = serviceTypeOptions.length > 0 ? serviceTypeOptions : defaultServiceTypes;
   
@@ -214,11 +205,10 @@ export function filterMockProviders(
     );
   }
   
-  // Service type filter
+  // Service type filter: csv of categories, each matching its legacy aliases (any match)
   if (filters.serviceType) {
-    filtered = filtered.filter(p => 
-      p.serviceTypes.includes(filters.serviceType!)
-    );
+    const wanted = storedValuesFor(filters.serviceType.split(','));
+    filtered = filtered.filter(p => p.serviceTypes.some((s) => wanted.includes(s)));
   }
   
   // City filter

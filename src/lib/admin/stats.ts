@@ -13,6 +13,7 @@
  */
 
 import { prisma } from '@/lib/prisma';
+import { BOOST_PRICE_CENTS } from '@/lib/providers/boost';
 
 export interface AdminStats {
   userCount: number;
@@ -61,7 +62,8 @@ export async function getAdminStats(showDemo = false): Promise<AdminStats> {
       select: { subscriptionPlan: true },
     }),
     (prisma as any).caregiver.count({ where: { proStatus: { in: ['ACTIVE', 'TRIALING'] }, ...viaUser } }),
-    (prisma as any).provider.count({ where: { listingStatus: { in: ['ACTIVE', 'TRIALING'] }, ...viaUser } }),
+    // Paid Provider Boost subscribers (the listing is free since 10/29; founding-provider Boosts are free, not MRR).
+    (prisma as any).provider.count({ where: { boostStatus: { in: ['ACTIVE', 'TRIALING'] }, ...viaUser } }),
   ]);
 
   // Transport commissions: sum platformFee on COMPLETED rides this calendar month
@@ -78,7 +80,7 @@ export async function getAdminStats(showDemo = false): Promise<AdminStats> {
       : op.subscriptionPlan === 'GROWTH' ? 499 : 0;
     return sum + price;
   }, 0);
-  const providerMRR = (activeProvidersCount as number) * 99;
+  const providerMRR = (activeProvidersCount as number) * (BOOST_PRICE_CENTS / 100);
   const caregiverProMRR = (proCaregiversCount as number) * 19;
   const dpMRR = 0; // Discharge planners are FREE (ratified 2026-06-27) — not a revenue line.
   // Families are free — CareLinkAI Plus was retired (OL-189); Family.isPlus is dead data.

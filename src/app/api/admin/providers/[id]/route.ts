@@ -73,6 +73,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     licenseNumber: provider.licenseNumber,
     yearsInBusiness: provider.yearsInBusiness,
     serviceTypes: provider.serviceTypes,
+    deliveryModes: provider.deliveryModes,
     coverageArea: provider.coverageArea,
     isVerified: provider.isVerified,
     isActive: provider.isActive,

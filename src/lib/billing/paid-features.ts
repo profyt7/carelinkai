@@ -52,10 +52,25 @@ export const PAID_FEATURES = {
     label: 'Caregiver Pro membership',
     message: 'Caregiver Pro is not available yet.',
   },
+  // 10/29 provider pricing: the listing is FREE when this is on (no charge path). Kept in this
+  // map so the homepage card, nav and preflight read one switch.
   PROVIDER_LISTING: {
     env: 'PROVIDER_LISTING_ENABLED',
-    label: 'Provider marketplace listing subscription',
-    message: 'Paid provider listings are not available yet.',
+    label: 'Free provider listing (no charge)',
+    message: 'Provider listings are not open yet.',
+  },
+  PROVIDER_BOOST: {
+    env: 'PROVIDER_BOOST_ENABLED',
+    label: 'Provider Boost ($39/mo; founding providers free for 90 days)',
+    message: 'Provider Boost is not available yet.',
+  },
+  // Stub only: no code path reads this yet.
+  // TODO(Connect rail): provider commission rides the Stripe Connect payment rail (Revenue_Strategy
+  // §6 hire-fee decision; Supply_Growth_Plan_2026_10_29). Build it there, then gate it here.
+  PROVIDER_COMMISSION: {
+    env: 'PROVIDER_COMMISSION_ENABLED',
+    label: 'Provider commission (not built; waits for the Connect rail)',
+    message: 'Provider commission is not available.',
   },
 } as const;
 

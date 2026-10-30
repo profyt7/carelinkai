@@ -88,7 +88,7 @@ describe('GET /api/admin/checkout-preflight', () => {
     process.env['CAREGIVER_PRO_ENABLED'] = 'yes';
     delete process.env['CARE_WALLET_ENABLED'];
     const j = await (await GET()).json();
-    expect(j.paidFeatures).toHaveLength(9);
+    expect(j.paidFeatures).toHaveLength(11);
     expect(j.paidFeatures).toContainEqual(expect.objectContaining({ key: 'CAREGIVER_PRO', env: 'CAREGIVER_PRO_ENABLED', enabled: true }));
     expect(j.paidFeatures).toContainEqual(expect.objectContaining({ key: 'CARE_WALLET', env: 'CARE_WALLET_ENABLED', enabled: false }));
     expect(JSON.stringify(j.paidFeatures)).not.toContain('"yes"');

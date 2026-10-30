@@ -26,6 +26,7 @@ import { recordSmsConsent } from '@/lib/consent/sms-consent-server';
 import { SMS_CONSENT_FORMS } from '@/lib/consent/sms-consent';
 import { verifyClaimToken } from '@/lib/claim-token';
 import { errorSummary } from '@/lib/log-safe';
+import { PROVIDER_CATEGORY_VALUES } from '@/lib/providers/categories';
 
 
 // Constants
@@ -56,6 +57,9 @@ const registrationSchema = z.object({
   preferredContactMethod: z.enum(["EMAIL", "PHONE", "BOTH"]).optional(),
   referredByCode: z.string().max(20).optional(), // affiliate ?ref= code captured from URL
   claimToken: z.string().optional(), // Cleveland founder claim token
+  // PROVIDER only: launch categories picked at signup (optional; more can be added on the profile)
+  serviceTypes: z.array(z.string()).max(6).optional()
+    .refine((v) => !v || v.every((s) => PROVIDER_CATEGORY_VALUES.includes(s)), { message: "Unknown service category" }),
 });
 
 /**
@@ -165,6 +169,7 @@ export async function POST(request: NextRequest) {
       preferredContactMethod,
       referredByCode,
       claimToken,
+      serviceTypes,
     } = validationResult.data;
     
     // Normalize email to lowercase
@@ -338,7 +343,7 @@ export async function POST(request: NextRequest) {
               yearsInBusiness: null,
               isVerified: false,
               isActive: true,
-              serviceTypes: [], // Empty array, provider can add services later
+              serviceTypes: Array.from(new Set(serviceTypes ?? [])), // launch categories picked at signup; more on the profile
               coverageArea: {} // Empty JSON object for coverage area
             }
           });

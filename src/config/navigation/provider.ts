@@ -7,7 +7,7 @@ export const PROVIDER_NAV: NavItem[] = [
   { id: 'dashboard', name: 'Overview', icon: FiHome, href: '/dashboard', showInMobileBar: true, mobileOrder: 1 },
   rides,
   { id: 'credentials', name: 'Credentials', icon: FiShield, href: '/settings/provider/credentials', roleRestriction: ['PROVIDER'] },
-  { id: 'billing', name: 'Billing', icon: FiCreditCard, href: '/settings/provider/billing', roleRestriction: ['PROVIDER'], paidFeature: 'PROVIDER_LISTING' },
+  { id: 'billing', name: 'Listing & Boost', icon: FiCreditCard, href: '/settings/provider/billing', roleRestriction: ['PROVIDER'], paidFeature: 'PROVIDER_LISTING' },
   messages,
   settings,
   moreGroup([searchHomes, savedHomes, marketplace, family, calendar, learn, help]),

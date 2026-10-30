@@ -423,12 +423,13 @@ model Provider {
   bio                   String?
   website               String?
   insuranceInfo         String?
-  licenseNumber         String?
+  licenseNumber         String?              // license/certification number: self-reported, admin-only
   yearsInBusiness       Int?
   isVerified            Boolean              @default(false)
   isActive              Boolean              @default(true)
-  serviceTypes          String[]
-  coverageArea          Json?
+  serviceTypes          String[]             // launch categories, several allowed (src/lib/providers/categories.ts); legacy values kept as-is
+  deliveryModes         String[]             @default([]) // in-home | facility | remote (optional)
+  coverageArea          Json?                // { cities, states, zipCodes }
   // Transport-specific fields (Phase 1)
   rideTypes             String[]             // STANDARD | WHEELCHAIR | STRETCHER | ESCORT
   wheelchairAccessible  Boolean              @default(false)
@@ -441,11 +442,20 @@ model Provider {
   rateWaitPerHour       Decimal?             @db.Decimal(10, 2) // hourly wait rate
   instantBook           Boolean              @default(false)    // skip confirm step, family pays at booking
   vehicleCapacity       Int                  @default(4)        // max passengers per vehicle
-  // Marketplace listing subscription ($99/mo)
+  // Legacy paid-listing subscription. The listing is free since the 10/29 provider
+  // pricing change (PROVIDER_LISTING_ENABLED); these stay for any old subscriber.
   stripeCustomerId      String?              @unique
   stripeSubscriptionId  String?              @unique
   listingStatus         SubscriptionStatus?
   listingPeriodEndsAt   DateTime?
+  // Provider Boost ($39/mo, PROVIDER_BOOST_ENABLED): visibility only, never verification.
+  boostStatus               SubscriptionStatus?
+  boostStripeSubscriptionId String?              @unique
+  boostPeriodEndsAt         DateTime?
+  // Founding-provider offer: first 25 get Boost free for 90 days. No card, no auto-charge;
+  // it lapses at founderBoostEndsAt unless they subscribe.
+  founderBoostStartedAt     DateTime?
+  founderBoostEndsAt        DateTime?
   createdAt             DateTime             @default(now())
   updatedAt             DateTime             @updatedAt
   shortlistedByFamilies         FavoriteProvider[]
@@ -463,6 +473,8 @@ model Provider {
   @@index([isActive])
   @@index([serviceTypes])
   @@index([listingStatus])
+  @@index([boostStatus])
+  @@index([founderBoostStartedAt])
   @@index([createdAt])
 }
 

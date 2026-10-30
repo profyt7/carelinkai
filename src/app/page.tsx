@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import HomePageClient from './HomePageClient';
+import { isPaidFeatureEnabled } from '@/lib/billing/paid-features';
 
 /**
  * Home page (server shell). The marketing page itself is a large client
@@ -33,5 +34,11 @@ export const metadata: Metadata = {
 };
 
 export default function HomePage() {
-  return <HomePageClient />;
+  // 10/29 provider pricing flags (server-read). Both default off → the persona row is unchanged.
+  return (
+    <HomePageClient
+      providerListingOn={isPaidFeatureEnabled('PROVIDER_LISTING')}
+      providerBoostOn={isPaidFeatureEnabled('PROVIDER_BOOST')}
+    />
+  );
 }

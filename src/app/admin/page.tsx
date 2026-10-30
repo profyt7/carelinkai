@@ -222,7 +222,7 @@ export default async function AdminDashboard({
                 <FiCreditCard className="text-secondary-400 text-sm" />
               </div>
               <p className="text-2xl font-bold text-neutral-900">${stats.mrr.provider.toLocaleString()}</p>
-              <p className="text-xs text-neutral-500 mt-1">{stats.mrrCounts.providers} active · $99/mo</p>
+              <p className="text-xs text-neutral-500 mt-1">{stats.mrrCounts.providers} Boost · $39/mo (listing free)</p>
             </div>
             <div className="bg-white rounded-lg border border-neutral-200 p-5">
               <div className="flex items-center justify-between mb-2">

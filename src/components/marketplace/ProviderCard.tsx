@@ -1,4 +1,6 @@
 import React from 'react';
+import BoostedBadge from '@/components/providers/BoostedBadge';
+import { serviceLabels } from '@/lib/providers/categories';
 import Image from 'next/image';
 import { getBlurDataURL } from '@/lib/imageBlur';
 import { FiUser, FiMapPin, FiCheckCircle, FiClock, FiDollarSign, FiHeart, FiShield } from 'react-icons/fi';
@@ -14,6 +16,8 @@ interface ProviderCardProps {
     state: string | null;
     serviceTypes: string[];
     isVerified: boolean;
+    /** Provider Boost (visibility only; never affects isVerified). */
+    boosted?: boolean;
     yearsInBusiness: number | null;
     credentialCount?: number;
     verifiedCredentialCount?: number;
@@ -70,8 +74,13 @@ const ProviderCard: React.FC<ProviderCardProps> = ({ provider, serviceTypeOption
   };
   
   // Get visible service types and count of hidden ones
-  const visibleServiceTypes = provider.serviceTypes.slice(0, 3);
-  const hiddenServiceTypesCount = Math.max(0, provider.serviceTypes.length - 3);
+  // Launch-category labels (legacy values folded into their category, skilled vs non-medical marked)
+  const labels = serviceTypeOptions.length > 0
+    ? provider.serviceTypes.map((s) => serviceTypeOptions.find((o) => o.value === s)?.label || serviceLabels([s])[0])
+    : serviceLabels(provider.serviceTypes);
+  const uniqueLabels = Array.from(new Set(labels));
+  const visibleServiceTypes = uniqueLabels.slice(0, 3);
+  const hiddenServiceTypesCount = Math.max(0, uniqueLabels.length - 3);
 
   // Dynamic badges (gamification / achievements)
   const additionalBadges = provider.badges ?? [];
@@ -149,6 +158,7 @@ const ProviderCard: React.FC<ProviderCardProps> = ({ provider, serviceTypeOption
         
         {/* Badges row */}
         <div className="flex flex-wrap gap-2 mb-3">
+          {provider.boosted && <BoostedBadge />}
           {/* Verification status */}
           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getVerificationBadgeColor(provider.isVerified)}`}>
             <FiCheckCircle className="mr-1" size={12} />
@@ -205,8 +215,7 @@ const ProviderCard: React.FC<ProviderCardProps> = ({ provider, serviceTypeOption
         {provider.serviceTypes.length > 0 && (
           <div className="mb-4">
             <div className="flex flex-wrap gap-2">
-              {visibleServiceTypes.map((serviceType, index) => {
-                const serviceLabel = serviceTypeOptions.find(opt => opt.value === serviceType)?.label || serviceType.replace(/-/g, ' ');
+              {visibleServiceTypes.map((serviceLabel, index) => {
                 return (
                   <span 
                     key={index} 

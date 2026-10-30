@@ -11,8 +11,10 @@ import {
   FiSearch, FiStar, FiZap, FiBriefcase, FiMessageCircle, FiCalendar,
   FiFileText, FiClock, FiTarget, FiTrendingUp, FiAward, FiSmartphone,
   FiVideo, FiGlobe, FiBarChart, FiChevronDown, FiPhone, FiMail, FiMapPin,
-  FiMenu, FiX, FiPlay
+  FiMenu, FiX, FiPlay, FiTruck
 } from "react-icons/fi";
+import { BOOST_PROMO_LINE } from "@/lib/providers/boost";
+import { PROVIDER_CATEGORIES, PROVIDER_CATEGORY_SUMMARY } from "@/lib/providers/categories";
 import { prefersReducedMotion, durations, easings } from "@/lib/animations";
 
 /** Must equal AVAILABILITY_FRESH_DAYS (src/lib/availability/availability.ts, server-only); pinned by __tests__/homepage-hero.unit.test.tsx. */
@@ -41,7 +43,13 @@ const cardHover = {
   hover: { scale: 1.03, y: -5 },
 };
 
-export default function HomePage() {
+/**
+ * Provider pricing flags (10/29), read on the server and passed in:
+ *   providerListingOn → the Providers persona card + "free listing" copy;
+ *   providerBoostOn   → Boost price copy ($39/mo).
+ * Both off → the page renders exactly as before, except the retired $99 listing price.
+ */
+export default function HomePage({ providerListingOn = false, providerBoostOn = false }: { providerListingOn?: boolean; providerBoostOn?: boolean } = {}) {
   const { enabled: kitsEnabled } = usePaidFeature('COMPLIANCE_KITS');
   const [activeBenefitTab, setActiveBenefitTab] = useState('families');
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
@@ -348,8 +356,14 @@ export default function HomePage() {
             </p>
           </div>
           
-          {/* Four-segment strategy */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mt-12">
+          {/* Four-segment strategy (five with the Providers card: 3+2 centered at md/lg, 5-up at xl, never an orphan stretched alone) */}
+          <div
+            data-testid="persona-row"
+            data-cards={providerListingOn ? 5 : 4}
+            className={providerListingOn
+              ? 'mt-12 flex flex-wrap justify-center gap-8 [&>*]:w-full md:[&>*]:w-[calc((100%-4rem)/3)] xl:[&>*]:w-[calc((100%-8rem)/5)] xl:[&>*]:p-6 [&>*>div.flex]:flex-wrap [&>*>div.flex]:gap-y-2 xl:[&_h3]:text-xl'
+              : 'grid md:grid-cols-2 lg:grid-cols-4 gap-8 mt-12'}
+          >
             <div className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-2xl border border-primary-500/20 hover:shadow-lg transition-shadow">
               <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-400 flex items-center justify-center mb-6">
                 <FiUsers className="text-white text-3xl" />
@@ -463,6 +477,39 @@ export default function HomePage() {
                 </li>
               </ul>
             </div>
+
+            {providerListingOn && (
+              <div data-testid="persona-providers" className="bg-gradient-to-br from-warning-50 to-white p-8 rounded-2xl border border-warning-500/20 hover:shadow-lg transition-shadow flex flex-col">
+                <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-warning-500 to-warning-400 flex items-center justify-center mb-6">
+                  <FiTruck className="text-white text-3xl" />
+                </div>
+                <div className="flex flex-wrap items-center gap-3 mb-3">
+                  <h3 className="text-2xl font-bold text-neutral-900">For Providers</h3>
+                  <span className="text-xs font-bold bg-warning-100 text-warning-800 border border-warning-200 rounded-full px-2.5 py-1 uppercase tracking-wide">Free Listing</span>
+                </div>
+                <p className="text-neutral-900 font-semibold">List your services free.</p>
+                <p className="text-sm text-neutral-500 mb-4">{`${PROVIDER_CATEGORY_SUMMARY}.`}</p>
+                <ul className="space-y-2 mb-6">
+                  <li className="flex items-start">
+                    <FiCheck className="text-warning-600 mt-1 mr-2 flex-shrink-0" />
+                    <span className="text-sm text-neutral-500">Get found by families who need help at home</span>
+                  </li>
+                  <li className="flex items-start">
+                    <FiCheck className="text-warning-600 mt-1 mr-2 flex-shrink-0" />
+                    <span className="text-sm text-neutral-500">Inquiries straight to your dashboard</span>
+                  </li>
+                  {providerBoostOn && (
+                    <li className="flex items-start" data-testid="persona-providers-boost">
+                      <FiCheck className="text-warning-600 mt-1 mr-2 flex-shrink-0" />
+                      <span className="text-sm text-neutral-500">{BOOST_PROMO_LINE}</span>
+                    </li>
+                  )}
+                </ul>
+                <Link href="/auth/register?role=provider" className="mt-auto inline-flex items-center font-semibold text-warning-800 hover:underline underline-offset-2">
+                  List your services free <FiArrowRight className="ml-1" aria-hidden="true" />
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -1216,15 +1263,20 @@ export default function HomePage() {
                     </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                  {['Transportation', 'Housekeeping', 'Meal Delivery', 'Home Health', 'Personal Care', 'Companionship', 'Medical Equipment', 'Physical Therapy'].map((s) => (
+                {/* The six launch categories: each can be picked at signup and found in provider search. */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6" data-testid="provider-category-chips">
+                  {PROVIDER_CATEGORIES.map((c) => c.label).map((s) => (
                     <div key={s} className="bg-neutral-50 border border-neutral-200 rounded-lg px-3 py-2 text-sm text-center text-neutral-500 font-medium">{s}</div>
                   ))}
                 </div>
                 <div className="bg-gradient-to-r from-primary-500/10 to-secondary-500/10 rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 border border-primary-500/20">
                   <div>
-                    <div className="font-bold text-neutral-900">Marketplace listing — $99/mo</div>
-                    <div className="text-sm text-neutral-500 mt-1">Get discovered by care homes and families searching in your area. Cancel anytime. No contracts.</div>
+                    {/* 10/29: the $99/mo listing price is retired; the listing is free when PROVIDER_LISTING_ENABLED is on. */}
+                    <div className="font-bold text-neutral-900">{providerListingOn ? 'Marketplace listing — free' : 'List your business on CareLinkAI'}</div>
+                    <div className="text-sm text-neutral-500 mt-1">
+                      Get discovered by care homes and families searching in your area.
+                      {providerListingOn && providerBoostOn ? ` ${BOOST_PROMO_LINE}.` : ''}
+                    </div>
                   </div>
                   <Link href="/auth/register?role=provider" className="bg-gradient-to-r from-primary-500 to-secondary-500 text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity whitespace-nowrap shadow-lg">
                     List Your Business →

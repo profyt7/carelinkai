@@ -770,6 +770,41 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
 - **Deferred:** `getRecentActivity()`, `getAllDashboardData()` and `getDashboardData()` in `src/lib/dashboard-data.ts` form an apparently unused chain that reads audit records (with user emails). Left unchanged and deferred to a future maintenance batch; before removing, check dynamic imports, scripts and tests for callers.
 - **Path:** `prisma/schema.prisma` (`AuditLog`), `src/lib/auth.ts`, `src/lib/audit.ts`, `src/app/api/admin/audit-logs/**`, `src/app/api/cron/credential-expiry/route.ts`, `src/lib/dashboard-data.ts`
 
+### OL-236: Provider pricing: free listing, Boost $39/mo, founding providers, launch taxonomy (10/29)
+- **Status:** 🟡 merging (PR #19). Nothing runs until the founder flips flags. Flags stay OFF.
+- **What:**
+  - `PROVIDER_LISTING_ENABLED` now means a free listing (no charge path); the $99 references are retired.
+  - `PROVIDER_BOOST_ENABLED` + `STRIPE_PRICE_PROVIDER_BOOST`: Boost $39/mo. Perks:
+    - boosted placement (two-tier paging), always labelled as promoted (a "Boosted" badge with "Promoted" tooltip and sr text);
+    - the badge itself;
+    - instant lead email.
+    - Placement never implies quality or Verified.
+    - The photo-limit perk is removed from all copy; the `PROVIDER_PHOTO_LIMIT` 3/12 constants stay in code, unused.
+  - Founding providers: the first 25 get Boost free for 90 days.
+    - No card, no Stripe object; it lapses on its own (advisory-locked claim).
+    - Tested with a mocked clock: day 90 ends it, only the two dates are written, the counter is real.
+  - `PROVIDER_COMMISSION_ENABLED`: stub flag only, with a TODO for the Connect rail.
+  - **Launch taxonomy** (`src/lib/providers/categories.ts`, `docs/PROVIDER_TAXONOMY.md`):
+    - Six categories, with skilled and non-medical labelled apart.
+    - Multi-select already existed (`serviceTypes String[]`). Legacy values map through aliases; no row is rewritten.
+    - `medical-services` and `home-modification` deliberately map to nothing.
+    - Supported in signup, profile, search and the homepage card.
+    - Search filter fixed: page and API both use `serviceTypes`; old params still read.
+  - Optional fields:
+    - delivery mode (new `deliveryModes` column);
+    - service area (existing cities/states/ZIPs);
+    - license/certification number (existing; now admin-only, removed from the public API).
+  - Homepage: a Providers persona card (5-card row) when the listing flag is on. The benefits-tab chips are the six categories.
+  - Migrations (additive):
+    - `20261030000000_provider_boost`: nullable columns;
+    - `20261030010000_provider_delivery_modes`: one array column.
+- **Gap:** no provider photo gallery yet (constants ready).
+- **Founder:**
+  - Create the Stripe Boost price and set `STRIPE_PRICE_PROVIDER_BOOST`.
+  - Flip `PROVIDER_LISTING_ENABLED` / `PROVIDER_BOOST_ENABLED`; the homepage reads them at build.
+  - Migrations run on deploy.
+- **Path:** `src/lib/providers/{boost,categories}.ts`, `src/app/api/provider/{billing/subscribe,boost/founder}`, `src/app/settings/provider/billing/page.tsx`, `src/app/api/marketplace/providers/route.ts`, `src/app/marketplace/providers/**`, `src/app/settings/profile/page.tsx`, `src/app/auth/register/page.tsx`, `src/app/api/auth/register/route.ts`, `src/app/HomePageClient.tsx`, `__tests__/provider-{pricing,taxonomy}.unit.test.*`, `e2e/public/directory/provider-category-filter.spec.ts`
+
 ### OL-222: PhotoGallery's slide counter overlaps the photo caption
 - **Status:** ✅ fixed by OL-227 (counter in its own top-left chip; caption + View All share a clamped bottom bar). Was: found 2026-10-29 during OL-217.
 - **What:** on `/homes/[id]` the gallery's bottom-left "1 / 3" counter is drawn over the "Photo 1" caption text, so both are hard to read. OL-217 froze PhotoGallery internals, so it wasn't touched there. Fix: give the caption and counter separate slots (or drop the generic "Photo N" caption when there's no real one).

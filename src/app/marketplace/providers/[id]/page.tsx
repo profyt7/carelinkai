@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import BoostedBadge from '@/components/providers/BoostedBadge';
+import { DELIVERY_MODES, serviceLabels } from '@/lib/providers/categories';
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -34,9 +36,12 @@ type Provider = {
   bio: string | null;
   website: string | null;
   insuranceInfo: string | null;
-  licenseNumber: string | null;
+  licenseNumber?: string | null;
+  deliveryModes?: string[];
   yearsInBusiness: number | null;
   isVerified: boolean;
+  /** Provider Boost (visibility only; never affects isVerified). */
+  boosted?: boolean;
   isActive: boolean;
   serviceTypes: string[];
   coverageArea: {
@@ -71,16 +76,6 @@ type Provider = {
   } | null;
 };
 
-const serviceTypeOptions = [
-  { value: "transportation", label: "Transportation" },
-  { value: "meal-prep", label: "Meal Preparation" },
-  { value: "housekeeping", label: "Housekeeping" },
-  { value: "personal-care", label: "Personal Care" },
-  { value: "companionship", label: "Companionship" },
-  { value: "medical-services", label: "Medical Services" },
-  { value: "home-modification", label: "Home Modification" },
-  { value: "respite-care", label: "Respite Care" },
-];
 
 export default function ProviderDetailPage() {
   const params = useParams();
@@ -250,6 +245,7 @@ export default function ProviderDetailPage() {
                     <h1 className="text-3xl font-bold text-neutral-900">
                       {provider.businessName}
                     </h1>
+                    {provider.boosted && <BoostedBadge size="md" />}
                     {provider.isVerified && (
                       <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-success-100 text-success-800">
                         <FiCheckCircle className="mr-1 h-4 w-4" />
@@ -330,13 +326,10 @@ export default function ProviderDetailPage() {
                 Services Offered
               </h2>
               <div className="flex flex-wrap gap-3">
-                {provider.serviceTypes.map((service) => {
-                  const serviceLabel =
-                    serviceTypeOptions.find((opt) => opt.value === service)?.label ||
-                    service;
+                {serviceLabels(provider.serviceTypes).map((serviceLabel) => {
                   return (
                     <span
-                      key={service}
+                      key={serviceLabel}
                       className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-primary-100 text-primary-800 border border-primary-200"
                     >
                       {serviceLabel}
@@ -344,6 +337,12 @@ export default function ProviderDetailPage() {
                   );
                 })}
               </div>
+              {(provider.deliveryModes ?? []).length > 0 && (
+                <p className="mt-4 text-sm text-neutral-600" data-testid="provider-delivery-modes">
+                  <span className="font-medium text-neutral-700">How services are delivered: </span>
+                  {DELIVERY_MODES.filter((m) => provider.deliveryModes!.includes(m.value)).map((m) => m.label).join(' · ')}
+                </p>
+              )}
             </div>
           </div>
 
@@ -509,20 +508,15 @@ export default function ProviderDetailPage() {
           )}
 
           {/* Licensing & Insurance */}
-          {(provider.licenseNumber || provider.insuranceInfo) && (
+          {/* License/certification numbers are self-reported and admin-only (not verified), so not shown here. */}
+          {provider.insuranceInfo && (
             <div className="bg-white rounded-lg shadow border border-neutral-200 overflow-hidden">
               <div className="p-6">
                 <h2 className="text-xl font-semibold text-neutral-900 mb-4">
                   <FiAward className="inline h-5 w-5 mr-2" />
-                  Licensing & Insurance
+                  Insurance
                 </h2>
                 <div className="space-y-3">
-                  {provider.licenseNumber && (
-                    <div>
-                      <h3 className="text-sm font-medium text-neutral-700">License Number</h3>
-                      <p className="text-neutral-600">{provider.licenseNumber}</p>
-                    </div>
-                  )}
                   {provider.insuranceInfo && (
                     <div>
                       <h3 className="text-sm font-medium text-neutral-700">Insurance</h3>

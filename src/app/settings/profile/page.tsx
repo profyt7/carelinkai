@@ -9,6 +9,7 @@ import { z } from "zod";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import SmsConsentCheckbox, { emptySmsConsent } from "@/components/consent/SmsConsentCheckbox";
 import type { SmsConsentPayload } from "@/lib/consent/sms-consent";
+import { DELIVERY_MODES, PROVIDER_CATEGORIES, PROVIDER_CATEGORY_VALUES, categoryDisplayLabel, serviceLabels } from "@/lib/providers/categories";
 import { 
   FiUser, 
   FiMail, 
@@ -72,6 +73,7 @@ const providerSchema = baseProfileSchema.extend({
   licenseNumber: z.string().optional().nullable(),
   yearsInBusiness: z.number().int().min(0).optional().nullable(),
   serviceTypes: z.array(z.string()).min(1, "Select at least one service type"),
+  deliveryModes: z.array(z.enum(["in-home", "facility", "remote"])).optional(),
   coverageArea: z.object({
     cities: z.array(z.string()).optional(),
     states: z.array(z.string()).optional(),
@@ -407,6 +409,7 @@ export default function ProfileSettings() {
           licenseNumber: data.licenseNumber || "",
           yearsInBusiness: data.yearsInBusiness || "",
           serviceTypes: Array.isArray(data.serviceTypes) ? data.serviceTypes : [],
+          deliveryModes: Array.isArray(data.deliveryModes) ? data.deliveryModes : [],
           coverageArea: data.coverageArea || { cities: [], states: [], zipCodes: [] },
         };
       default:
@@ -1380,15 +1383,11 @@ export default function ProfileSettings() {
         );
       
       case "PROVIDER":
+        // The six launch categories, plus any legacy value this provider already has (kept, removable).
+        const legacySelected = (formData.serviceTypes || []).filter((v: string) => !PROVIDER_CATEGORY_VALUES.includes(v));
         const serviceTypeOptions = [
-          { value: "transportation", label: "Transportation" },
-          { value: "meal-prep", label: "Meal Preparation" },
-          { value: "housekeeping", label: "Housekeeping" },
-          { value: "personal-care", label: "Personal Care" },
-          { value: "companionship", label: "Companionship" },
-          { value: "medical-services", label: "Medical Services" },
-          { value: "home-modification", label: "Home Modification" },
-          { value: "respite-care", label: "Respite Care" },
+          ...PROVIDER_CATEGORIES.map((c) => ({ value: c.value, label: categoryDisplayLabel(c), description: c.description })),
+          ...legacySelected.map((v: string) => ({ value: v, label: `${serviceLabels([v])[0]} (older category)`, description: "" })),
         ];
 
         return (
@@ -1547,14 +1546,44 @@ export default function ProfileSettings() {
                         : "bg-white text-neutral-700 border-neutral-300"
                     }`}
                     aria-pressed={(formData.serviceTypes || []).includes(opt.value)}
+                    title={opt.description || undefined}
                   >
                     {opt.label}
                   </button>
                 ))}
               </div>
+              <p className="mt-2 text-xs text-neutral-500">
+                Pick every category you offer. Skilled categories (home health, therapy) are for licensed clinical care;
+                choose Personal Care &amp; Home Assistance for non-medical help.
+              </p>
               {errors.serviceTypes && (
                 <p className="mt-1 text-sm text-error-600">{errors.serviceTypes}</p>
               )}
+            </div>
+
+            <div className="col-span-6">
+              <fieldset>
+                <legend className="block text-sm font-medium text-neutral-700">
+                  How do you deliver services? <span className="text-neutral-400">(Optional)</span>
+                </legend>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {DELIVERY_MODES.map((m) => (
+                    <button
+                      key={m.value}
+                      type="button"
+                      onClick={() => toggleArrayValue("deliveryModes", m.value)}
+                      className={`px-3 py-1 rounded-full border text-sm ${
+                        (formData.deliveryModes || []).includes(m.value)
+                          ? "bg-primary-600 text-white border-primary-600"
+                          : "bg-white text-neutral-700 border-neutral-300"
+                      }`}
+                      aria-pressed={(formData.deliveryModes || []).includes(m.value)}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
             </div>
 
             {/* Licensing & Insurance */}
@@ -1567,7 +1596,7 @@ export default function ProfileSettings() {
 
             <div className="col-span-6 sm:col-span-3">
               <label htmlFor="licenseNumber" className="block text-sm font-medium text-neutral-700">
-                License Number
+                License or certification number <span className="text-neutral-400">(Optional)</span>
               </label>
               <input
                 type="text"
@@ -1577,6 +1606,7 @@ export default function ProfileSettings() {
                 onChange={handleInputChange}
                 className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
               />
+              <p className="mt-1 text-xs text-neutral-500">Visible to CareLinkAI admins only. Not shown publicly and not a verification.</p>
               {errors.licenseNumber && (
                 <p className="mt-1 text-sm text-error-600">{errors.licenseNumber}</p>
               )}
@@ -1604,7 +1634,7 @@ export default function ProfileSettings() {
             <div className="col-span-6 mt-6">
               <h3 className="text-lg font-medium text-neutral-800">Coverage Area</h3>
               <p className="mt-1 text-sm text-neutral-500">
-                Specify the geographic areas where you provide services. Enter comma-separated values.
+                Optional. The cities and ZIP codes you serve, comma-separated.
               </p>
             </div>
 

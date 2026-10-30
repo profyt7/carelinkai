@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
 import { UserRole } from "@prisma/client";
 import Link from "next/link";
+import { DELIVERY_MODES, serviceLabels } from "@/lib/providers/categories";
 import {
   FiCheckCircle,
   FiXCircle,
@@ -44,6 +45,7 @@ type ProviderDetail = {
   isVerified: boolean;
   isActive: boolean;
   serviceTypes: string[];
+  deliveryModes?: string[];
   coverageArea: {
     cities: string[];
     states: string[];
@@ -304,15 +306,21 @@ export default function AdminProviderDetailPage() {
                     Services Offered
                   </h3>
                   <div className="flex flex-wrap gap-2">
-                    {provider.serviceTypes.map((service) => (
+                    {serviceLabels(provider.serviceTypes).map((label) => (
                       <span
-                        key={service}
+                        key={label}
                         className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-800"
                       >
-                        {service}
+                        {label}
                       </span>
                     ))}
                   </div>
+                  <p className="mt-2 text-xs text-neutral-500">Stored: {provider.serviceTypes.join(", ") || "none"}</p>
+                  {(provider.deliveryModes ?? []).length > 0 && (
+                    <p className="mt-2 text-sm text-neutral-600">
+                      Delivery: {DELIVERY_MODES.filter((m) => provider.deliveryModes!.includes(m.value)).map((m) => m.label).join(" · ")}
+                    </p>
+                  )}
                 </div>
 
                 {/* Coverage Area */}
@@ -391,7 +399,7 @@ export default function AdminProviderDetailPage() {
                       {provider.licenseNumber && (
                         <div>
                           <h4 className="text-sm font-medium text-neutral-700">
-                            License Number
+                            License / certification number (self-reported, not verified)
                           </h4>
                           <p className="text-neutral-600">{provider.licenseNumber}</p>
                         </div>

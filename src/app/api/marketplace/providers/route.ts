@@ -8,12 +8,15 @@ import { Prisma } from '@prisma/client';
 import { isMockModeEnabled } from '@/lib/mockMode';
 import { isMockViewerAllowed } from '@/lib/mockMode.server';
 import { generateMockProviders, filterMockProviders } from '@/lib/mock/providers';
+import { isPaidFeatureEnabled } from '@/lib/billing/paid-features';
+import { boostedWhere, isBoosted, notBoostedWhere, twoTierPage } from '@/lib/providers/boost';
+import { parseCategoryParam, storedValuesFor } from '@/lib/providers/categories';
 
 /**
  * GET /api/marketplace/providers
  * 
  * Fetches providers with optional filters
- * Supports filtering by: q, serviceType, city, state, verified
+ * Supports filtering by: q, serviceTypes (csv of launch categories; serviceType/services still read), city, state, verified
  * Supports pagination with page and pageSize parameters
  * 
  * Mock Mode Support:
@@ -32,7 +35,7 @@ export async function GET(request: Request) {
     if (useMockData) {
       // Extract filter parameters for mock data filtering
       const q = searchParams.get('q') || undefined;
-      const serviceType = searchParams.get('serviceType') || undefined;
+      const serviceType = parseCategoryParam(searchParams).join(',') || undefined;
       const city = searchParams.get('city') || undefined;
       const state = searchParams.get('state') || undefined;
       const verified = searchParams.get('verified') || undefined;
@@ -84,12 +87,9 @@ export async function GET(request: Request) {
     const idsParam = searchParams.get('ids');
     const ids = idsParam ? idsParam.split(',').map((s) => s.trim()).filter(Boolean) : null;
     const q = searchParams.get('q');
-    // Accept both 'serviceType' (single) and 'services' (csv) — normalize to lowercase array
-    const serviceTypeSingle = searchParams.get('serviceType');
-    const serviceTypesRaw = serviceTypeSingle
-      ? [serviceTypeSingle]
-      : (searchParams.get('services')?.split(',').filter(Boolean) || []);
-    const serviceTypeFilters = serviceTypesRaw.map((s) => s.toLowerCase()).filter(Boolean);
+    // `serviceTypes` (csv) is what /marketplace/providers sends; each launch category also matches
+    // its legacy stored values (see src/lib/providers/categories.ts). Old serviceType/services links still work.
+    const serviceTypeFilters = storedValuesFor(parseCategoryParam(searchParams));
     const city = searchParams.get('city');
     const state = searchParams.get('state');
     const verified = searchParams.get('verified');
@@ -100,6 +100,8 @@ export async function GET(request: Request) {
     const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
     const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 20;
     const skip = (page - 1) * pageSize;
+    // Provider Boost (10/29): boosted providers rank first. Off → today's single query, unchanged.
+    const boostOn = isPaidFeatureEnabled('PROVIDER_BOOST');
     
     // If explicit IDs are provided, short-circuit to fetch those providers only
     if (ids && ids.length > 0) {
@@ -159,6 +161,8 @@ export async function GET(request: Request) {
           coverageArea: provider.coverageArea,
           yearsInBusiness: provider.yearsInBusiness,
           isVerified: provider.isVerified,
+          // Boost is visibility only; isVerified above is untouched by it.
+          boosted: boostOn && isBoosted(provider),
           website: provider.website,
           photoUrl,
           credentialCount: provider.credentials.length,
@@ -246,28 +250,35 @@ export async function GET(request: Request) {
     }
     
     // Fetch providers with pagination
-    const [providers, totalCount] = await Promise.all([
-      prisma.provider.findMany({
-        where,
-        include: {
-          user: {
-            select: { id: true, firstName: true, lastName: true, profileImageUrl: true }
-          },
-          credentials: {
-            select: {
-              id: true,
-              type: true,
-              status: true,
-              expiresAt: true,
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: pageSize,
-      }),
-      prisma.provider.count({ where })
-    ]);
+    const providerInclude = {
+      user: {
+        select: { id: true, firstName: true, lastName: true, profileImageUrl: true },
+      },
+      credentials: {
+        select: { id: true, type: true, status: true, expiresAt: true },
+      },
+    } as const;
+    const now = new Date();
+    let providers: any[];
+    let totalCount: number;
+    if (!boostOn) {
+      [providers, totalCount] = await Promise.all([
+        prisma.provider.findMany({ where, include: providerInclude, orderBy: { createdAt: 'desc' }, skip, take: pageSize }),
+        prisma.provider.count({ where }),
+      ]);
+    } else {
+      // Boosted rows fill the page first, then the rest; each tier keeps the newest-first order.
+      const boostedFilter = { AND: [where, boostedWhere(now)] };
+      const restFilter = { AND: [where, notBoostedWhere(now)] };
+      const [boostedTotal, total] = await Promise.all([prisma.provider.count({ where: boostedFilter }), prisma.provider.count({ where })]);
+      const t = twoTierPage(skip, pageSize, boostedTotal);
+      const [boostedRows, restRows] = await Promise.all([
+        t.boostedTake > 0 ? prisma.provider.findMany({ where: boostedFilter, include: providerInclude, orderBy: { createdAt: 'desc' }, skip: t.boostedSkip, take: t.boostedTake }) : Promise.resolve([]),
+        t.restTake > 0 ? prisma.provider.findMany({ where: restFilter, include: providerInclude, orderBy: { createdAt: 'desc' }, skip: t.restSkip, take: t.restTake }) : Promise.resolve([]),
+      ]);
+      providers = [...boostedRows, ...restRows];
+      totalCount = total;
+    }
     
     // Format provider data
     const formattedProviders = providers.map((provider: any) => {
@@ -304,12 +315,14 @@ export async function GET(request: Request) {
         coverageArea: provider.coverageArea,
         yearsInBusiness: provider.yearsInBusiness,
         isVerified: provider.isVerified,
+        boosted: boostOn && isBoosted(provider, now),
         website: provider.website,
         photoUrl,
         credentialCount: provider.credentials.length,
         verifiedCredentialCount: provider.credentials.filter((c: any) => c.status === 'VERIFIED').length,
         ratingAverage: 0,
         reviewCount: 0,
+        deliveryModes: provider.deliveryModes || [],
         // Transport fields
         rideTypes: provider.rideTypes || [],
         wheelchairAccessible: provider.wheelchairAccessible,
