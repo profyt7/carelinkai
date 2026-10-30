@@ -102,7 +102,8 @@ async function getCaregiverById(id: string) {
 
     // Generate badges
     const badges: string[] = [];
-    if (caregiver.backgroundCheckStatus === 'CLEAR') {
+    // OL-186: no "Clear" badge while BACKGROUND_CHECKS is off.
+    if (caregiver.backgroundCheckStatus === 'CLEAR' && isPaidFeatureEnabled('BACKGROUND_CHECKS')) {
       badges.push('Background Check Clear');
     }
     if (caregiver.yearsExperience && caregiver.yearsExperience >= 5) {

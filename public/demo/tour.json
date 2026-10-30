@@ -1,0 +1,141 @@
+{
+  "title": "See CareLinkAI in action",
+  "sampleDataNote": "All names, homes and prices shown are sample data.",
+  "slides": [
+    {
+      "image": "/demo/01.jpg",
+      "width": 1600,
+      "height": 1000,
+      "chapter": "Overview",
+      "caption": "Cleveland assisted living, with every fact clearly labeled. Here's a quick look.",
+      "alt": "Cleveland assisted living, with every fact clearly labeled. Here's a quick look.",
+      "seconds": 5
+    },
+    {
+      "image": "/demo/02.jpg",
+      "width": 1600,
+      "height": 1000,
+      "chapter": "For families",
+      "caption": "Search Cleveland homes. Each card shows when openings were verified and where the price came from.",
+      "alt": "Search Cleveland homes. Each card shows when openings were verified and where the price came from.",
+      "seconds": 6
+    },
+    {
+      "image": "/demo/03.jpg",
+      "width": 1600,
+      "height": 1000,
+      "chapter": "For families",
+      "caption": "Every profile shows open beds with the date we confirmed them, and pricing labeled by source.",
+      "alt": "Every profile shows open beds with the date we confirmed them, and pricing labeled by source.",
+      "seconds": 6
+    },
+    {
+      "image": "/demo/04.jpg",
+      "width": 1600,
+      "height": 1000,
+      "chapter": "For families",
+      "caption": "Ask a question or request a tour in about a minute. Free, with no obligation.",
+      "alt": "Ask a question or request a tour in about a minute. Free, with no obligation.",
+      "seconds": 5
+    },
+    {
+      "image": "/demo/05.jpg",
+      "width": 1600,
+      "height": 1000,
+      "chapter": "For families",
+      "caption": "Saved homes and tour requests stay in one place. The home confirms the time.",
+      "alt": "Saved homes and tour requests stay in one place. The home confirms the time.",
+      "seconds": 5
+    },
+    {
+      "image": "/demo/06.jpg",
+      "width": 1600,
+      "height": 1000,
+      "chapter": "For discharge planners",
+      "caption": "Send a case securely. Patient details stay in the app and are never emailed.",
+      "alt": "Send a case securely. Patient details stay in the app and are never emailed.",
+      "seconds": 6
+    },
+    {
+      "image": "/demo/07.jpg",
+      "width": 1600,
+      "height": 1000,
+      "chapter": "For discharge planners",
+      "caption": "Track every case from submitted to matching to shortlist ready.",
+      "alt": "Track every case from submitted to matching to shortlist ready.",
+      "seconds": 5
+    },
+    {
+      "image": "/demo/08.jpg",
+      "width": 1600,
+      "height": 1000,
+      "chapter": "For discharge planners",
+      "caption": "When the shortlist is ready, it's waiting on your dashboard.",
+      "alt": "When the shortlist is ready, it's waiting on your dashboard.",
+      "seconds": 5
+    },
+    {
+      "image": "/demo/09.jpg",
+      "width": 1240,
+      "height": 940,
+      "chapter": "For care homes",
+      "caption": "Update openings from a text or email link. One tap, no login.",
+      "alt": "Update openings from a text or email link. One tap, no login.",
+      "seconds": 6
+    },
+    {
+      "image": "/demo/10.jpg",
+      "width": 1600,
+      "height": 1000,
+      "chapter": "For care homes",
+      "caption": "Every family inquiry on one board, from new to tour scheduled.",
+      "alt": "Every family inquiry on one board, from new to tour scheduled.",
+      "seconds": 6
+    },
+    {
+      "image": "/demo/11.jpg",
+      "width": 1600,
+      "height": 1000,
+      "chapter": "For care homes",
+      "caption": "Post open shifts and fill them with caregivers from the marketplace.",
+      "alt": "Post open shifts and fill them with caregivers from the marketplace.",
+      "seconds": 5
+    },
+    {
+      "image": "/demo/12.jpg",
+      "width": 1600,
+      "height": 1000,
+      "chapter": "For caregivers",
+      "caption": "Caregivers browse open shifts nearby, then claim or bid.",
+      "alt": "Caregivers browse open shifts nearby, then claim or bid.",
+      "seconds": 5
+    },
+    {
+      "image": "/demo/13.jpg",
+      "width": 1120,
+      "height": 864,
+      "chapter": "For providers",
+      "caption": "Providers list their services free and pick every category that applies.",
+      "alt": "Providers list their services free and pick every category that applies.",
+      "seconds": 6
+    },
+    {
+      "image": "/demo/14.jpg",
+      "width": 1600,
+      "height": 875,
+      "chapter": "For providers",
+      "caption": "Families filter local providers by service, like medical transportation.",
+      "alt": "Families filter local providers by service, like medical transportation.",
+      "seconds": 5
+    },
+    {
+      "image": "/demo/15.jpg",
+      "width": 1600,
+      "height": 1000,
+      "chapter": "Overview",
+      "caption": "Free for families, caregivers and discharge planners. Free to list for care homes and providers.",
+      "alt": "Free for families, caregivers and discharge planners. Free to list for care homes and providers.",
+      "seconds": 7
+    }
+  ]
+}

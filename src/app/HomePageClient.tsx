@@ -23,7 +23,7 @@ const VERIFIED_AVAILABILITY_DAYS = 10;
 import DemoRequestForm from "@/components/marketing/DemoRequestForm";
 import DemoVideoModal from "@/components/marketing/DemoVideoModal";
 import ProductTour from "@/components/marketing/ProductTour";
-import type { TourSlide } from "@/lib/marketing/product-tour";
+import type { Tour } from "@/lib/marketing/product-tour-data";
 import { demoSectionCapabilities } from "@/lib/marketing/demo-section";
 import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/contact";
 import { CONCIERGE_OFFER } from "@/lib/concierge/offer";
@@ -67,7 +67,7 @@ export default function HomePage({
   operatorPlansOn = false,
   complianceKitsOn = false,
   caregiverProOn = false,
-  tourSlides = null,
+  tour = null,
 }: {
   providerListingOn?: boolean;
   providerBoostOn?: boolean;
@@ -77,7 +77,7 @@ export default function HomePage({
   complianceKitsOn?: boolean;
   caregiverProOn?: boolean;
   /** /public/demo/tour.json slides (read on the server); none → no tour. */
-  tourSlides?: TourSlide[] | null;
+  tour?: Tour | null;
 } = {}) {
   // "Now Live" / "Coming Soon" follow the same flags as the product (src/lib/marketing/roadmap.ts).
   const roadmapFlags: RoadmapFlags = { providerListingOn, ridesPaymentsOn, backgroundChecksOn, operatorPlansOn, complianceKitsOn };
@@ -1078,6 +1078,7 @@ export default function HomePage({
                     <p className="text-neutral-500">See costs upfront with no hidden fees. Compare options side-by-side easily.</p>
                   </div>
                 </div>
+                {ridesPaymentsOn && (
                 <div className="flex items-start space-x-4">
                   <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-400 flex items-center justify-center">
                     <FiCalendar className="text-white text-xl" />
@@ -1087,6 +1088,7 @@ export default function HomePage({
                     <p className="text-neutral-500">Find and book NEMT and transportation providers directly on the platform — secure payment, ride confirmation, and day-of reminders handled for you.</p>
                   </div>
                 </div>
+                )}
                 {backgroundChecksOn && (
                 <div className="flex items-start space-x-4">
                   <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-400 flex items-center justify-center">
@@ -1977,7 +1979,7 @@ export default function HomePage({
               See CareLinkAI in action
             </h2>
             <p className="text-neutral-500 text-lg mb-8 max-w-2xl mx-auto">
-              Request a personalized walkthrough. We&apos;ll show families how to find and compare verified communities, and show care homes, caregivers and providers how to manage inquiries, staffing and listings in one place.
+              {tour ? 'Take a 90-second tour, or request a personalized walkthrough.' : 'Request a personalized walkthrough.'} We&apos;ll show families how to find and compare verified communities, and show care homes, caregivers and providers how to manage inquiries, staffing and listings in one place.
             </p>
             {demoVideoId && (
               <button
@@ -2005,7 +2007,7 @@ export default function HomePage({
                   />
                 </div>
               )}
-              <ProductTour slides={tourSlides} />
+              <ProductTour tour={tour} />
               <ul className="space-y-2" data-testid="demo-capabilities">
                 {demoCapabilities.map((item) => (
                   <li key={item} className="flex items-start gap-2.5 text-sm text-neutral-600">

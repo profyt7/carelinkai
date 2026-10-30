@@ -12,6 +12,18 @@
 import { renderToString } from 'react-dom/server';
 import HomePageClient from '@/app/HomePageClient';
 import { comingSoonItems, nowLiveItems, ROADMAP_FLAGS_OFF } from '@/lib/marketing/roadmap';
+import { loadProductTour } from '@/lib/marketing/product-tour';
+import ProviderCard from '@/components/marketplace/ProviderCard';
+import CaregiverCard from '@/components/marketplace/CaregiverCard';
+import BackgroundCheckBadge from '@/components/caregiver/BackgroundCheckBadge';
+
+// Paid-feature flags as the client sees them (/api/paid-features); everything off unless a test turns it on.
+const clientFlags: Record<string, boolean> = {};
+jest.mock('@/hooks/usePaidFeatures', () => ({
+  usePaidFeature: (k: string) => ({ enabled: clientFlags[k] === true, loading: false }),
+  usePaidFeatures: () => ({ loading: false, isEnabled: (k: string) => clientFlags[k] === true }),
+}));
+jest.mock('next/image', () => function Image(p: any) { return require('react').createElement('img', { alt: p.alt, src: typeof p.src === 'string' ? p.src : '', width: p.width, height: p.height }); });
 
 type Props = Parameters<typeof HomePageClient>[0];
 const section = (html: string, id: string) => {
@@ -44,9 +56,8 @@ describe('production flags as they are (paid flags off; provider listing about t
 
       it('Now Live lists only what works today', () => {
         const live = nowLive(r.roadmapHtml);
-        for (const t of ['Caregiver Marketplace', 'Direct Caregiver Hire', 'Caregiver Reliability Score', 'Caregiver Points & Tiers', 'Discharge Planner Portal', 'Provider Marketplace', 'Transport Ride Requests', 'Referral Program']) expect(live).toContain(t);
-        for (const t of ['On-Call', 'Shift Auto-fill', 'Compliance Document Kits', 'background', 'Affiliate Program', '20/25/30', 'verified caregivers', 'bookable']) expect(live).not.toContain(t);
-        expect(live).toContain('Online payment is coming soon');
+        for (const t of ['Caregiver Marketplace', 'Direct Caregiver Hire', 'Caregiver Reliability Score', 'Caregiver Points & Tiers', 'Discharge Planner Portal', 'Provider Marketplace', 'Referral Program']) expect(live).toContain(t);
+        for (const t of ['Transport Ride Requests', 'On-Call', 'Shift Auto-fill', 'Compliance Document Kits', 'background', 'Affiliate Program', '20/25/30', 'verified caregivers', 'bookable']) expect(live).not.toContain(t);
         expect(live).toContain('availability shows as verified with a date, or "contact to confirm"');
       });
 
@@ -96,9 +107,13 @@ describe('cards follow the flags', () => {
   });
 
   it('ride payment and background-check wording appear only with their flags', () => {
-    const rides = (o: boolean) => nowLiveItems({ ...ROADMAP_FLAGS_OFF, ridesPaymentsOn: o }).find((i) => i.key === 'rides')!.desc;
-    expect(rides(false)).toContain('Online payment is coming soon');
-    expect(rides(true)).toContain('paid online');
+    // Family rides (nav + dashboard) are behind RIDES_PAYMENTS, so the card moves with the flag.
+    const live = (o: boolean) => nowLiveItems({ ...ROADMAP_FLAGS_OFF, ridesPaymentsOn: o }).find((i) => i.key === 'rides');
+    const soon = (o: boolean) => comingSoonItems({ ...ROADMAP_FLAGS_OFF, ridesPaymentsOn: o }).find((i) => i.key === 'rides');
+    expect(live(false)).toBeUndefined();
+    expect(soon(false)?.title).toBe('Transport Ride Requests');
+    expect(live(true)?.desc).toContain('paid online');
+    expect(soon(true)).toBeUndefined();
     const market = (o: boolean) => nowLiveItems({ ...ROADMAP_FLAGS_OFF, backgroundChecksOn: o }).find((i) => i.key === 'caregiver-marketplace')!.desc;
     expect(market(false)).not.toMatch(/background/i);
     expect(market(true)).toContain('background-check badges');
@@ -148,5 +163,52 @@ describe('founder UX truth (OL-241): no unsourced figures or callback promises w
     for (const f of ['src/app/HomePageClient.tsx', 'src/lib/contact.ts']) {
       expect(fs.readFileSync(path.join(process.cwd(), f), 'utf8')).not.toMatch(BANNED);
     }
+  });
+});
+
+describe('no background-check UI while BACKGROUND_CHECKS is off (seeded CLEAR rows included)', () => {
+  const BG = /background.?check|check cleared|background clear|Background Checked/i;
+  const provider = { id: 'p1', businessName: 'Comfort Care (sample)', bio: null, city: 'Cleveland', state: 'OH', serviceTypes: ['transportation'], isVerified: true, yearsInBusiness: 12 };
+  const caregiver = { id: 'c1', name: 'Sarah T.', city: 'Cleveland', state: 'OH', hourlyRate: 22, yearsExperience: 6, specialties: [], bio: null, photoUrl: null, backgroundCheckStatus: 'CLEAR', badges: ['Experienced'] };
+  const cards = () => text(renderToString(<>
+    <ProviderCard provider={provider} />
+    <CaregiverCard caregiver={caregiver} />
+    <CaregiverCard caregiver={{ ...caregiver, id: 'c2', backgroundCheckStatus: 'NOT_STARTED' }} />
+    <BackgroundCheckBadge status="CLEAR" />
+  </>));
+  afterEach(() => { delete clientFlags['BACKGROUND_CHECKS']; });
+
+  it('off: no "Run Background Check", no "Check Cleared" / "Background Checked" badge, nothing on the homepage', () => {
+    expect(cards()).not.toMatch(BG);
+    expect(text(renderToString(<HomePageClient />))).not.toMatch(BG);
+  });
+  it('on: the same rows show the button and the badges again', () => {
+    clientFlags['BACKGROUND_CHECKS'] = true;
+    const t = cards();
+    expect(t).toContain('Run Background Check');
+    expect(t).toContain('Check Cleared');
+    expect(t).toContain('Background Checked');
+  });
+});
+
+describe('product tour on the homepage', () => {
+  const demo = (html: string) => text(section(html, 'request-demo'));
+  it('renders when public/demo/tour.json exists, with chapter chips, controls and the sample-data note', () => {
+    const tour = loadProductTour();
+    expect(tour).not.toBeNull();
+    const html = renderToString(<HomePageClient tour={tour} />);
+    expect(html).toContain('data-testid="product-tour"');
+    const t = demo(html);
+    for (const c of ['For families', 'For discharge planners', 'For care homes', 'For caregivers', 'For providers', 'Back', 'Play', 'Next']) expect(t).toContain(c);
+    expect(t).toContain('All names, homes and prices shown are sample data.');
+    expect(t).toContain('Take a 90-second tour, or request a personalized walkthrough.');
+    // alt = caption, size from the JSON.
+    expect(html).toContain(`alt="${tour!.slides[0]!.caption.replace(/'/g, '&#x27;')}"`);
+    expect(html).toContain(`width="${tour!.slides[0]!.width}"`);
+  });
+  it('no tour.json → no tour and no "90-second" claim', () => {
+    const html = renderToString(<HomePageClient tour={null} />);
+    expect(html).not.toContain('data-testid="product-tour"');
+    expect(demo(html)).not.toContain('90-second');
   });
 });

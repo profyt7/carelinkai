@@ -111,8 +111,12 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
-    // Calculate occupancy rate
+    // Occupancy rate = beds reported occupied on the operator's listings / their capacity
+    // (AssistedLivingHome.currentOccupancy / capacity). It is NOT derived from resident
+    // records, so it can be 88% while "residents in CareLinkAI" is 0; the dashboard labels both.
     let occupancyRate = 0;
+    let occupiedBeds = 0;
+    let licensedBeds = 0;
     try {
       const capacityAgg = await prisma.assistedLivingHome.aggregate({
         where: homeFilter,
@@ -122,6 +126,8 @@ export async function GET(request: NextRequest) {
       const totalCapacity = Number(capacityAgg._sum.capacity || 0);
       const totalOccupancy = Number(capacityAgg._sum.currentOccupancy || 0);
       
+      occupiedBeds = totalOccupancy;
+      licensedBeds = totalCapacity;
       if (totalCapacity > 0) {
         occupancyRate = Math.round((totalOccupancy / totalCapacity) * 100);
       }
@@ -135,6 +141,8 @@ export async function GET(request: NextRequest) {
       inquiries,
       activeResidents,
       occupancyRate,
+      occupiedBeds,
+      licensedBeds,
       recentInquiries,
       expiringLicenses,
       newInquiriesCount,

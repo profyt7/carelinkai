@@ -9,6 +9,8 @@ import { authOptions } from '@/lib/auth';
 import { Prisma } from '@prisma/client';
 import { rateLimitAsync, getClientIp, buildRateLimitHeaders } from '@/lib/rateLimit';
 import { isMockModeEnabled } from '@/lib/mockMode';
+// OL-186: no "Background Check Clear" badge while BACKGROUND_CHECKS is off (seeded CLEAR rows).
+import { isPaidFeatureEnabled } from '@/lib/billing/paid-features';
 import { isMockViewerAllowed } from '@/lib/mockMode.server';
 
 /**
@@ -105,7 +107,7 @@ export async function GET(request: Request) {
 
       const deriveBadges = (avg: number, count: number, yearsExp: number | null, bgStatus: string) => {
         const badges: string[] = [];
-        if (bgStatus === 'CLEAR') badges.push('Background Check Clear');
+        if (bgStatus === 'CLEAR' && isPaidFeatureEnabled('BACKGROUND_CHECKS')) badges.push('Background Check Clear');
         if (yearsExp !== null && yearsExp >= 5) badges.push('Experienced');
         if (count >= 5 && avg >= 4.5) badges.push('Top Rated');
         return badges;
@@ -380,7 +382,7 @@ export async function GET(request: Request) {
     // helper to derive badges
     const deriveBadges = (avg: number, count: number, yearsExp: number | null, bgStatus: string) => {
       const badges: string[] = [];
-      if (bgStatus === 'CLEAR') badges.push('Background Check Clear');
+      if (bgStatus === 'CLEAR' && isPaidFeatureEnabled('BACKGROUND_CHECKS')) badges.push('Background Check Clear');
       if (yearsExp !== null && yearsExp >= 5) badges.push('Experienced');
       if (count >= 5 && avg >= 4.5) badges.push('Top Rated');
       return badges;
@@ -610,7 +612,7 @@ export function generateMockCaregivers(
       const reviewCount = Math.floor(Math.random() * 50) + 5; // 5-54
       const ratingAverage = parseFloat((Math.random() * 1.5 + 3.5).toFixed(1)); // 3.5-5.0
       const badges: string[] = [];
-      if (backgroundCheckStatus === 'CLEAR') badges.push('Background Check Clear');
+      if (backgroundCheckStatus === 'CLEAR' && isPaidFeatureEnabled('BACKGROUND_CHECKS')) badges.push('Background Check Clear');
       if (yearsExperience >= 5) badges.push('Experienced');
       if (reviewCount >= 5 && ratingAverage >= 4.5) badges.push('Top Rated');
     

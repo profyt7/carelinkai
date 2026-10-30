@@ -1,8 +1,11 @@
+'use client';
+
 import React from 'react';
 import Image from 'next/image';
 import { getBlurDataURL } from '@/lib/imageBlur';
 import { FiUser, FiMapPin, FiCheckCircle, FiClock, FiDollarSign, FiShield } from 'react-icons/fi';
 import Link from 'next/link';
+import { usePaidFeature } from '@/hooks/usePaidFeatures';
 
 interface CaregiverCardProps {
   caregiver: {
@@ -56,6 +59,8 @@ const CaregiverCard: React.FC<CaregiverCardProps> = ({ caregiver }) => {
   };
 
   const bgCheck = getBgCheckBadge(caregiver.backgroundCheckStatus);
+  // OL-186: check status and the order link only while BACKGROUND_CHECKS is on.
+  const { enabled: bgChecksOn } = usePaidFeature('BACKGROUND_CHECKS');
   const visibleSpecialties = caregiver.specialties.slice(0, 3);
   const hiddenSpecialtiesCount = Math.max(0, caregiver.specialties.length - 3);
   const additionalBadges = caregiver.badges ?? [];
@@ -114,10 +119,12 @@ const CaregiverCard: React.FC<CaregiverCardProps> = ({ caregiver }) => {
               ★ Pro
             </span>
           )}
-          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${bgCheck.color}`}>
-            {bgCheck.icon ? <FiShield size={11} /> : <FiCheckCircle size={11} />}
-            {bgCheck.label}
-          </span>
+          {bgChecksOn && (
+            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${bgCheck.color}`}>
+              {bgCheck.icon ? <FiShield size={11} /> : <FiCheckCircle size={11} />}
+              {bgCheck.label}
+            </span>
+          )}
           {caregiver.yearsExperience && (
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
               <FiClock className="mr-1" size={12} />
@@ -187,7 +194,7 @@ const CaregiverCard: React.FC<CaregiverCardProps> = ({ caregiver }) => {
             </Link>
           )}
         </div>
-        {caregiver.backgroundCheckStatus !== 'CLEAR' && (
+        {bgChecksOn && caregiver.backgroundCheckStatus !== 'CLEAR' && (
           <Link
             href={`/marketplace/caregivers/${caregiver.id}`}
             className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-md border border-primary-200 bg-primary-50 py-1.5 text-xs font-medium text-primary-700 hover:bg-primary-100 transition-colors"

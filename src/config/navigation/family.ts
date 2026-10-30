@@ -16,5 +16,6 @@ export const FAMILY_NAV: NavItem[] = [
   messages,
   { ...learn, name: 'Care Resources', shortLabel: 'Resources' },
   { ...settings, name: 'Account' },
-  moreGroup([rides, backgroundChecks, family, calendar, help]),
+  // Rides for families follow RIDES_PAYMENTS (no other switch turns them on); providers keep /rides (dispatch).
+  moreGroup([{ ...rides, paidFeature: 'RIDES_PAYMENTS' }, backgroundChecks, family, calendar, help]),
 ];

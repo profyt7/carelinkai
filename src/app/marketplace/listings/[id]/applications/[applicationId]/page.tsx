@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { isPaidFeatureEnabled } from "@/lib/billing/paid-features";
 import { getServerSession } from "next-auth/next";
 import authOptions from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -118,7 +119,9 @@ export default async function ApplicationDetailPage({
   };
   
   // Helper function to get background check status badge
+  // OL-186: no background-check status (least of all "Clear") while BACKGROUND_CHECKS is off.
   const getBackgroundCheckBadge = (status: string) => {
+    if (!isPaidFeatureEnabled('BACKGROUND_CHECKS')) return null;
     switch (status) {
       case 'CLEAR':
         return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success-100 text-success-800">Background Clear</span>;

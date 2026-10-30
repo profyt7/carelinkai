@@ -3,10 +3,21 @@
 import { useState, useEffect } from "react";
 import { FiShield, FiCheck, FiClock, FiAlertCircle, FiLoader } from "react-icons/fi";
 import Link from "next/link";
+import { PaidFeatureGate } from "@/hooks/usePaidFeatures";
 
 type Status = "NOT_STARTED" | "PENDING" | "CLEAR" | "CONSIDER" | "FAILED" | "EXPIRED";
 
+// OL-186: the whole page (status, "Background Check Cleared", how it works) exists only
+// while BACKGROUND_CHECKS is on; otherwise the plain "not available yet" panel.
 export default function CaregiverVerificationPage() {
+  return (
+    <PaidFeatureGate feature="BACKGROUND_CHECKS" title="Background checks" message="Background checks are not available yet.">
+      <CaregiverVerification />
+    </PaidFeatureGate>
+  );
+}
+
+function CaregiverVerification() {
   const [status, setStatus] = useState<Status | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);

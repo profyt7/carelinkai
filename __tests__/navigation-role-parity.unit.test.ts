@@ -9,7 +9,7 @@
 import { flattenNav, getMobileTabIds, getNavForRole, getToneForRole, NAV_ROLES } from '@/config/navigation';
 import { LEGACY_NAV_ITEMS, type LegacyNavItem } from '@/config/navigation/__fixtures__/legacy-nav-items';
 
-const PAID = ['BACKGROUND_CHECKS', 'COMPLIANCE_KITS', 'OPERATOR_PLANS', 'PROVIDER_LISTING', 'CAREGIVER_PRO'] as const;
+const PAID = ['BACKGROUND_CHECKS', 'COMPLIANCE_KITS', 'OPERATOR_PLANS', 'PROVIDER_LISTING', 'CAREGIVER_PRO', 'RIDES_PAYMENTS'] as const;
 
 type Opts = { paid: boolean; marketplace: boolean };
 const COMBOS: Opts[] = [
@@ -80,6 +80,9 @@ const newPairs = (role: string, o: Opts) => new Set(flattenNav(getNavForRole(rol
 // OL-226 adds /admin/analytics/funnel (Conversion Funnel) to the Admin group.
 const ADDED = new Set(['ADMIN /admin/caregivers', 'ADMIN /admin/analytics/funnel']);
 const NEW_ADMIN_HREFS = ['/admin/analytics/funnel'];
+// OL-243: family rides now follow RIDES_PAYMENTS (the old menu showed /rides to FAMILY unconditionally).
+// With the paid flags off, FAMILY loses /rides by design; providers keep it.
+const GATED_WHEN_PAID_OFF = new Set(['FAMILY /rides']);
 
 describe('OL-206 role navigation parity', () => {
   it('covers all 8 roles', () => {
@@ -92,7 +95,7 @@ describe('OL-206 role navigation parity', () => {
         it(`${role}: same {href, role} pairs as the old menu`, () => {
           const before = legacyPairs(role, o);
           const after = newPairs(role, o);
-          const lost = [...before].filter((p) => !after.has(p));
+          const lost = [...before].filter((p) => !after.has(p) && (o.paid || !GATED_WHEN_PAID_OFF.has(p)));
           const added = [...after].filter((p) => !before.has(p) && !ADDED.has(p));
           expect(lost).toEqual([]);
           expect(added).toEqual([]);
