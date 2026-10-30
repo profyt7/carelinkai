@@ -2690,3 +2690,30 @@
 - **New risks/blockers:** the `#features` "LIVE TODAY" section and two stats still overclaim (OL-240 follow-up).
 - **Recommended next step:** Chris reviews and merges. Then do a second pass on `#features`, the social-proof stats and the Benefits tabs with the same flag helpers.
 
+### 2026-10-30 (later) — OL-240 folded into #26: whole-homepage truth pass
+- **Objective:**
+  - Remove the remaining homepage overclaims with the same flag helpers.
+  - Change the How It Works subtitle.
+  - Report what a founding operator gets with OPERATOR_PLANS off.
+  - Full CI, screenshots, squash-merge and prod-verify.
+- **Work completed:**
+  - Rewrote the features block, persona row, benefits tabs, stats, FAQ and demo copy.
+  - Gated flag-off prices (plans, Caregiver Pro, background checks, kits, affiliate rates).
+  - Added the "Care Homes List Free" pricing card.
+  - New whole-page render test.
+  - The sweep's leftovers are listed in OL-240.
+- **Files changed:** `src/app/HomePageClient.tsx`, `src/app/page.tsx`, `__tests__/homepage-truth.unit.test.tsx`, `__tests__/homepage-truth-full.render.test.tsx` (new), `context/*`.
+- **Commands run:**
+  - tsc, eslint, jest (165 suites, 1923 tests);
+  - `next build` with flags off and with `PROVIDER_LISTING_ENABLED=1`;
+  - Playwright screenshots at 390/1280.
+- **Tests/build status:** green locally; CI on #26.
+- **Deployment impact:** copy and layout only. No flags, env, Stripe or schema changes.
+- **New risks/blockers:**
+  - `freeAccessUntil` (founder 6 months) is stored but never read.
+  - `planHasFeature(null, …)` is false for every tier.
+  - Operators see On-Call and auto-fill UI the API rejects.
+- **Recommended next step:**
+  - Chris decides whether founders get Professional during the free period. Options: honour `freeAccessUntil` in the gates, or set the plan on claim.
+  - Hide the On-Call / auto-fill UI while it can't be used.
+

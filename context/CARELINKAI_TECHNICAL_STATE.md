@@ -8,7 +8,13 @@ _Last updated: 2026-10-29 (late night, 2) — **OL-233 PR** `fix/inbound-alerts-
   - Care homes "free to list / claim".
   - The DP concierge steps are honest.
 - **Guarded by** `__tests__/homepage-truth.unit.test.tsx`.
-- **Still overclaiming (OL-240 follow-up):** the `#features` "LIVE TODAY" block, the "< 15 min" social-proof stat and the Benefits tab On-Call line.
+- **Whole homepage (folded in later on 10/30):**
+  - Features, persona row, benefits tabs, stats, FAQ and demo copy have no unsourced numbers.
+  - Prices for flag-off products render only with their flags: OPERATOR_PLANS, CAREGIVER_PRO, BACKGROUND_CHECKS, COMPLIANCE_KITS, and affiliate rates via OPERATOR_PLANS.
+  - The pricing section shows "Care Homes List Free" until plans are on.
+  - The Family Concierge ($399) stays: it's a live offer in request mode.
+  - Guarded by `__tests__/homepage-truth-full.render.test.tsx`, which opens every tab and FAQ.
+- **OL-241:** founding operators' `freeAccessUntil` grants no plan tier, because nothing reads it.
 
 ## Main (2026-10-30) — pre-launch batch merged in order: #20 `f0b5acbe` (homepage, OL-234) → #21 `ab265851` (profile polish + first phone screen, OL-235) → #19 `1045d5e5` (provider pricing + launch taxonomy, OL-236) → #22 (leftovers, OL-237; this PR). prod-verify runs on the final SHA after #22.
 - **Provider flags stay OFF:** `PROVIDER_LISTING_ENABLED`, `PROVIDER_BOOST_ENABLED`, `PROVIDER_COMMISSION_ENABLED` (stub), and also `FEATURED_LISTING_ENABLED`. So there's no Providers persona card and no Boost copy on the live homepage. No Stripe prices were created and no env was set.
