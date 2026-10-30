@@ -2667,3 +2667,53 @@
   - Decide on the header/widget overlap fixes.
   - When ready to launch providers: create the Boost price, set `STRIPE_PRICE_PROVIDER_BOOST`, flip the flags.
 
+### 2026-10-30 — Homepage truth audit (How It Works, Now Live, Coming Soon)
+- **Objective:** Every homepage card in How It Works, Now Live and Coming Soon says only what a real user can do today with production flags as they are (paid/booking off, PROVIDER_LISTING about to be on, no outbound SMS, Checkr not live, rides/Care Wallet payments attorney-gated).
+- **Work completed:**
+  - Truth table per card (in the PR).
+  - `roadmap.ts` builds the flag-driven card lists.
+  - Moved On-Call / Auto-fill / Compliance Kits to Coming Soon and reworded rides, hire, DP portal and the referral program.
+  - New Coming Soon roadmap.
+  - Providers card behind `PROVIDER_LISTING_ENABLED`.
+  - Free-listing care homes footer.
+  - DP concierge steps.
+  - Truth unit test.
+- **Files changed:** `src/lib/marketing/roadmap.ts` (new), `src/app/HomePageClient.tsx`, `src/app/page.tsx`, `__tests__/homepage-truth.unit.test.tsx` (new), `context/*`.
+- **Commands run:**
+  - `tsc`, eslint, jest (164 suites);
+  - `next build` twice (flags off; `PROVIDER_LISTING_ENABLED=1`);
+  - Playwright screenshots at 390/820/1280.
+- **Tests/build status:** green locally; CI on the PR.
+- **Deployment impact:**
+  - Copy and layout only. No flags, env, Stripe or schema changes.
+  - When `PROVIDER_LISTING_ENABLED` is set in Render (already done), the next deploy shows the Providers card and the "providers list for free" line.
+- **New risks/blockers:** the `#features` "LIVE TODAY" section and two stats still overclaim (OL-240 follow-up).
+- **Recommended next step:** Chris reviews and merges. Then do a second pass on `#features`, the social-proof stats and the Benefits tabs with the same flag helpers.
+
+### 2026-10-30 (later) — OL-240 folded into #26: whole-homepage truth pass
+- **Objective:**
+  - Remove the remaining homepage overclaims with the same flag helpers.
+  - Change the How It Works subtitle.
+  - Report what a founding operator gets with OPERATOR_PLANS off.
+  - Full CI, screenshots, squash-merge and prod-verify.
+- **Work completed:**
+  - Rewrote the features block, persona row, benefits tabs, stats, FAQ and demo copy.
+  - Gated flag-off prices (plans, Caregiver Pro, background checks, kits, affiliate rates).
+  - Added the "Care Homes List Free" pricing card.
+  - New whole-page render test.
+  - The sweep's leftovers are listed in OL-240.
+- **Files changed:** `src/app/HomePageClient.tsx`, `src/app/page.tsx`, `__tests__/homepage-truth.unit.test.tsx`, `__tests__/homepage-truth-full.render.test.tsx` (new), `context/*`.
+- **Commands run:**
+  - tsc, eslint, jest (165 suites, 1923 tests);
+  - `next build` with flags off and with `PROVIDER_LISTING_ENABLED=1`;
+  - Playwright screenshots at 390/1280.
+- **Tests/build status:** green locally; CI on #26.
+- **Deployment impact:** copy and layout only. No flags, env, Stripe or schema changes.
+- **New risks/blockers:**
+  - `freeAccessUntil` (founder 6 months) is stored but never read.
+  - `planHasFeature(null, …)` is false for every tier.
+  - Operators see On-Call and auto-fill UI the API rejects.
+- **Recommended next step:**
+  - Chris decides whether founders get Professional during the free period. Options: honour `freeAccessUntil` in the gates, or set the plan on claim.
+  - Hide the On-Call / auto-fill UI while it can't be used.
+

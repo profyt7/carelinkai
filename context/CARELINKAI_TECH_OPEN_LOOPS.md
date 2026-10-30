@@ -1,11 +1,76 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-10-29 (late night, 4) — OL-233 PR `fix/inbound-alerts-all-lanes` (every inbound front-desk call emails Chris; facility QA items too). Prior: 2026-10-29 (late night, 3) — OL-231 ✅ MERGED #12 `66d9ba11` (prod-verified); OL-232 logged (AuditLog review item: event types, access, per-type retention; nothing scheduled). Prior: 2026-10-29 (late night, 2) — PR #10 ✅ MERGED `8e67e7d2`; OL-231 PR open (auth logs outcome codes only). Prior: 2026-10-29 (late night) — PR #10 privacy round: Meta Pixel, Clarity, GTM and gtag removed (OL-228/229 ✅ code side); GA4 server-side via Measurement Protocol; PII logs removed + log guard (OL-230 ✅); Sentry URL/error scrubbing, Replay removed; OL-231 added (auth logs emails). Prior: 2026-10-29 (night) — OL-226 PR open (conversion measurement: allowlisted funnel events, privacy guard, consent-gated first-party aggregate, /admin/analytics/funnel). OL-228, OL-229 and OL-230 added from its audit (Meta Pixel decision, Clarity/GTM/GA settings, PII in browser console logs). OL-227 hotfix ✅ MERGED #11 `8ad5a347` (gallery overflow on phones; closed OL-222). Prior: 2026-10-29 (late) — OL-217 ✅ MERGED #8 (squash) `9294a7d8`. Follow-ups OL-222 (gallery counter over caption), OL-223 (two "all photos" buttons), OL-224 (compact limited-data states on mobile) and OL-225 (one mobile support control, not scheduled). Prior: OL-217 PR open (facility profile /homes/[id] on the Direction D standard: one inquiry pathway, CTA bar, claim demoted). Prior: OL-216 ✅ MERGED #6 (squash) `57d5e21e`, closing OL-208. Follow-ups OL-218…OL-221 logged (directory placeholder tile, /search a11y leftovers, Search Tips copy, waiver data in /api/search). OL-217 (`/homes/[id]` restructure) is reserved for the next batch. Prior: 2026-10-28 (night) — OL-215 added (Render crons were inactive until 10/28; Monthly Reset unverified until its Nov 1 run); `.github/workflows-disabled/` removed; #3 CI shard-check fix, #4 render.yaml cron record merged. Prior: OL-207 ✅ MERGED #1 (squash) `d965c008`; OL-205 and OL-209 closed with it. Repo moved to a fresh public `profyt7/carelinkai` (one squashed commit); old repo archived private as `carelinkai-archive`. Prior: 2026-10-28 — OL-212 PR open (demo passwords from DEMO_ACCOUNT_PASSWORD); OL-213 added (credentials in git history / tracked PDFs — founder rotation). Prior: 2026-10-27 — OL-210 PR open (remove the CI migrate-deploy job). OL-206 ✅ MERGED #807 `1977ff6a`, prod-verified; #808 (CI runs once per PR) ✅ MERGED `0d553dfb`. Earlier the same day: OL-208 added (Care Advisor bubble covers mobile "More"); OL-209 added (header/sidebar user block duplicated); OL-202 ✅ MERGED #806 `24537cee`. Prior: 2026-10-24 — OL-177 + OL-178 PR open (unclaimed inquiries → inbound queue; MapTiler); OL-176 ✅ MERGED #783 `3af16f2c`; OL-175 ✅ MERGED #782 `3c08889d`; OL-171…OL-174 ✅ MERGED (#777 `ba7d9ba3` · #778 `972c8b63` · #779 `83367965` · #780 `3c29ad10`). Prior: 2026-10-22 — OL-153 #774 `b3a6b298` + OL-169 #775 `caff286b` ✅ MERGED. Prior: 2026-10-21 (W2 batch merged) — OL-167 a–d + OL-168 ✅ MERGED (#768 `0f1b2ba8` · #771 `481a463d` · #772 `fcdeebf3` · #770 `5d5fb05d` · #769 `2a2eba26`). Prior: OL-166 a–d ✅ MERGED (#762–#765); OL-165 residuals closed. Prior: 10/20 batch MERGED (#749, #761, #750–#759; see DEV_SESSION_SUMMARIES 2026-10-20/21); OL-163 a–e, OL-159, OL-160, OL-161, OL-162, OL-165 now ✅ MERGED (residuals noted inline); OL-166 follow-ups in flight. Prior: 2026-10-17 — sprint W5 batch: six stacked PRs open (#743–#748); OL-155…OL-158 added; OL-148 (W4), OL-140 (W3), OL-146 (font flake), OL-154 (decline flake, #743) closed; OL-141/OL-150 residuals folded into OL-155/#748. Prior: 2026-10-13 (evening) — sprint W4 batch: six more PRs open (#733–#738), OL-148…OL-153 added; OL-142 and OL-143 built (decision residuals only), OL-144 half-closed (Beachwood/Lakewood shipped). Earlier same day — sprint W3 batch: six PRs open (#726–#731), OL-140…OL-147 added; OL-125/OL-129 residuals carried. Previous rebuild 2026-10-05 — **rebuilt from the repo** (sprint W2 item 7). Sources: the 56 open PRs on GitHub, `grep TODO|FIXME` over `src/`, every `test.skip`/`fixme` in `__tests__/`, `tests/`, `e2e/`, the CI workflows, and the previous version of this file (all 115 prior OL ids carried forward below with their last known status). Each entry: **OL id · one-line status · file path**. Triage: **SHIP NOW** = this week, **LATER** = backlog, **FOUNDER** = needs Chris (settings, money, legal), **CLOSED** = verified done (kept for id continuity)._
+_Last updated: 2026-10-30 (later) — OL-240 folded the whole homepage into #26; OL-241 logged (founder free period grants no plan tier). Prior: 2026-10-30 — OL-240 PR `fix/homepage-truth-audit` (homepage How It Works / Now Live / Coming Soon follow the flags; truth test). Prior: 2026-10-29 (late night, 4) — OL-233 PR `fix/inbound-alerts-all-lanes` (every inbound front-desk call emails Chris; facility QA items too). Prior: 2026-10-29 (late night, 3) — OL-231 ✅ MERGED #12 `66d9ba11` (prod-verified); OL-232 logged (AuditLog review item: event types, access, per-type retention; nothing scheduled). Prior: 2026-10-29 (late night, 2) — PR #10 ✅ MERGED `8e67e7d2`; OL-231 PR open (auth logs outcome codes only). Prior: 2026-10-29 (late night) — PR #10 privacy round: Meta Pixel, Clarity, GTM and gtag removed (OL-228/229 ✅ code side); GA4 server-side via Measurement Protocol; PII logs removed + log guard (OL-230 ✅); Sentry URL/error scrubbing, Replay removed; OL-231 added (auth logs emails). Prior: 2026-10-29 (night) — OL-226 PR open (conversion measurement: allowlisted funnel events, privacy guard, consent-gated first-party aggregate, /admin/analytics/funnel). OL-228, OL-229 and OL-230 added from its audit (Meta Pixel decision, Clarity/GTM/GA settings, PII in browser console logs). OL-227 hotfix ✅ MERGED #11 `8ad5a347` (gallery overflow on phones; closed OL-222). Prior: 2026-10-29 (late) — OL-217 ✅ MERGED #8 (squash) `9294a7d8`. Follow-ups OL-222 (gallery counter over caption), OL-223 (two "all photos" buttons), OL-224 (compact limited-data states on mobile) and OL-225 (one mobile support control, not scheduled). Prior: OL-217 PR open (facility profile /homes/[id] on the Direction D standard: one inquiry pathway, CTA bar, claim demoted). Prior: OL-216 ✅ MERGED #6 (squash) `57d5e21e`, closing OL-208. Follow-ups OL-218…OL-221 logged (directory placeholder tile, /search a11y leftovers, Search Tips copy, waiver data in /api/search). OL-217 (`/homes/[id]` restructure) is reserved for the next batch. Prior: 2026-10-28 (night) — OL-215 added (Render crons were inactive until 10/28; Monthly Reset unverified until its Nov 1 run); `.github/workflows-disabled/` removed; #3 CI shard-check fix, #4 render.yaml cron record merged. Prior: OL-207 ✅ MERGED #1 (squash) `d965c008`; OL-205 and OL-209 closed with it. Repo moved to a fresh public `profyt7/carelinkai` (one squashed commit); old repo archived private as `carelinkai-archive`. Prior: 2026-10-28 — OL-212 PR open (demo passwords from DEMO_ACCOUNT_PASSWORD); OL-213 added (credentials in git history / tracked PDFs — founder rotation). Prior: 2026-10-27 — OL-210 PR open (remove the CI migrate-deploy job). OL-206 ✅ MERGED #807 `1977ff6a`, prod-verified; #808 (CI runs once per PR) ✅ MERGED `0d553dfb`. Earlier the same day: OL-208 added (Care Advisor bubble covers mobile "More"); OL-209 added (header/sidebar user block duplicated); OL-202 ✅ MERGED #806 `24537cee`. Prior: 2026-10-24 — OL-177 + OL-178 PR open (unclaimed inquiries → inbound queue; MapTiler); OL-176 ✅ MERGED #783 `3af16f2c`; OL-175 ✅ MERGED #782 `3c08889d`; OL-171…OL-174 ✅ MERGED (#777 `ba7d9ba3` · #778 `972c8b63` · #779 `83367965` · #780 `3c29ad10`). Prior: 2026-10-22 — OL-153 #774 `b3a6b298` + OL-169 #775 `caff286b` ✅ MERGED. Prior: 2026-10-21 (W2 batch merged) — OL-167 a–d + OL-168 ✅ MERGED (#768 `0f1b2ba8` · #771 `481a463d` · #772 `fcdeebf3` · #770 `5d5fb05d` · #769 `2a2eba26`). Prior: OL-166 a–d ✅ MERGED (#762–#765); OL-165 residuals closed. Prior: 10/20 batch MERGED (#749, #761, #750–#759; see DEV_SESSION_SUMMARIES 2026-10-20/21); OL-163 a–e, OL-159, OL-160, OL-161, OL-162, OL-165 now ✅ MERGED (residuals noted inline); OL-166 follow-ups in flight. Prior: 2026-10-17 — sprint W5 batch: six stacked PRs open (#743–#748); OL-155…OL-158 added; OL-148 (W4), OL-140 (W3), OL-146 (font flake), OL-154 (decline flake, #743) closed; OL-141/OL-150 residuals folded into OL-155/#748. Prior: 2026-10-13 (evening) — sprint W4 batch: six more PRs open (#733–#738), OL-148…OL-153 added; OL-142 and OL-143 built (decision residuals only), OL-144 half-closed (Beachwood/Lakewood shipped). Earlier same day — sprint W3 batch: six PRs open (#726–#731), OL-140…OL-147 added; OL-125/OL-129 residuals carried. Previous rebuild 2026-10-05 — **rebuilt from the repo** (sprint W2 item 7). Sources: the 56 open PRs on GitHub, `grep TODO|FIXME` over `src/`, every `test.skip`/`fixme` in `__tests__/`, `tests/`, `e2e/`, the CI workflows, and the previous version of this file (all 115 prior OL ids carried forward below with their last known status). Each entry: **OL id · one-line status · file path**. Triage: **SHIP NOW** = this week, **LATER** = backlog, **FOUNDER** = needs Chris (settings, money, legal), **CLOSED** = verified done (kept for id continuity)._
 
 _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified after each via the new `prod-verify.yml` workflow): **#723** ops tooling `870a65f` · **#721** OL-124 gate `0df4b18` · **#714** public routes `4f95aec` · **#718** Sentry 401 noise `b402dd5` · **#717** isDemo filter `189dd8d` · **#716** closed as superseded by #721 · **#720** this file `b81fc9f` · **#715** memory restarts `b0b4078` · **#719** Prisma warm-up `97e6583` · **#724** workflow fix `87df579`. All eight sprint PRs are on main and verified live._
 
 ---
 
 ## 🔴 SHIP NOW (this week)
+
+### OL-241: Founding operators get no Professional tier during their free period
+- **Status:** 🔵 Decision needed (Chris). Found in the OL-240 report; nothing changed.
+- **What:**
+  - Claim and registration set `clevelandFounder` and `freeAccessUntil` (+6 months). Nothing reads them, and `subscriptionPlan` stays null.
+  - With OPERATOR_PLANS off, operators get everything that isn't gated. That includes the AI profile generator, AI inquiry replies, analytics, residents, tours and the marketplace hire.
+  - They are locked out of the three PROFESSIONAL checks: shift auto-fill, On-Call start, and the hire-fee waiver.
+  - Two loose ends:
+    - `planHasFeature(null, …)` returns false even for STARTER.
+    - The On-Call nav item and the auto-fill panel show to every operator, but the API returns 403.
+- **Options:**
+  1. Honour `freeAccessUntil > now` as PROFESSIONAL in `planHasFeature`.
+  2. Set the plan on claim.
+  3. Leave it, and hide the On-Call / auto-fill UI until plans launch.
+- **Path:** `src/lib/subscription.ts`, `src/app/api/operator/claim/route.ts`, `src/app/api/auth/register/route.ts`, `src/config/navigation/professional.ts`, `src/app/operator/shifts/page.tsx`.
+
+### OL-240: Homepage truth audit — How It Works, Now Live, Coming Soon (10/30)
+- **Status:** 🟡 PR open, branch `fix/homepage-truth-audit` (Chris reviews; not merged).
+- **What:**
+  1. "Now Live" and "Coming Soon" come from `src/lib/marketing/roadmap.ts`, driven by the same paid-feature flags as the product (`page.tsx` passes them in at build time). Now Live keeps only what a real user can do with production flags as they are.
+     - **Moved to Coming Soon:**
+       - On-Call AI Shift Coverage: SMS-only, and A2P isn't approved. It's reworded as "Text-message shift coverage" and stays in Coming Soon whatever the flags say.
+       - AI Shift Auto-fill: needs a Professional operator plan, and plans are off.
+       - Compliance Document Kits: `COMPLIANCE_KITS` is off.
+     - **Reworded:**
+       - Rides: request, then the provider confirms and sets the fare. "Online payment is coming soon" until `RIDES_PAYMENTS` is on.
+       - Direct Caregiver Hire: no "employment record" wording.
+       - Discharge Planner portal: availability is "verified with a date, or contact to confirm", not "live".
+       - Background-check wording appears only with `BACKGROUND_CHECKS`.
+       - "Affiliate Program 20/25/30%" is now "Referral Program", because there's no tier or payout logic.
+     - **Coming Soon replacements:** secure in-app payments; family-reported pricing and reviews; more provider categories; weekly availability check-ins. No dates.
+  2. **How It Works:**
+     - A Providers card renders only with `PROVIDER_LISTING_ENABLED`. Layout: 4 cards go 4-up; 5 cards go 2+2+1 at md and 3+2 centered at lg and above (`max-w-7xl` is too narrow for 5-up).
+     - The care homes footer now reads "Free to list. Claim your community's listing or add a new one." It used to say "Plans from $99/mo · 14-day free trial".
+     - The discharge-planner steps now follow the real concierge flow, with no "instantly" or "in minutes".
+     - The subtitle no longer says "fast".
+     - Families step 3 says "Request a visit; the home confirms the time". Tours are requests the operator confirms, not instant bookings.
+  3. `__tests__/homepage-truth.unit.test.tsx` (13 tests):
+     - overclaim and price regexes over both sections;
+     - listing flag off and on;
+     - flag-driven moves between Now Live and Coming Soon.
+  4. **Folded in (Chris, 10/30): the rest of the homepage.**
+     - **LIVE TODAY features:**
+       - Each card describes what the feature does.
+       - On-Call is removed.
+       - No unsourced numbers: < 15 min, 50+, 60% faster, 5+ hours, 3 clicks.
+       - No "employment record", SMS/IVR or Stripe-payment wording.
+     - **Persona row, benefits tabs, stats, FAQ and demo copy:** fixed the same way.
+     - **Prices hidden until their flags are on:**
+       - operator plan prices;
+       - Caregiver Pro;
+       - background-check bundles;
+       - compliance-kit prices;
+       - affiliate commission rates.
+       Until then the pricing section says "Care Homes List Free". The old FAQ line "Care homes pay for their listings" was false and is gone.
+     - **How It Works subtitle:** "Free for families, caregivers and discharge planners. Free to list for care homes (and providers when listing is on)."
+     - **Test:** `__tests__/homepage-truth-full.render.test.tsx` renders the whole page, opens every benefits tab and every FAQ answer, and checks speed, plumbing, price and rate patterns.
+- **Left as is (flagged for Chris, not changed):**
+  - The Family Concierge offer: "$5,000 mistake" headline, $399, 2-business-day refund guarantee. It's a live, founder-run offer (request mode).
+  - The FAQ phone answer: "a person calls you back within one business hour".
+  - "24/7 CareBot" (an always-on AI chat).
+  - "Real-time notifications" (SSE).
+  - Affiliate tiers aren't implemented in code even with OPERATOR_PLANS on.
+  - Founder `freeAccessUntil` is never read: founding operators get no Professional tier. Report in the PR.
+- **Path:** `src/lib/marketing/roadmap.ts`, `src/app/HomePageClient.tsx`, `src/app/page.tsx`, `__tests__/homepage-truth.unit.test.tsx`.
 
 ### OL-239: Pre-launch polish 2 (10/30)
 - **Status:** 🟡 PR open, branch `fix/prelaunch-polish-2` (Chris reviews; not merged).

@@ -9,10 +9,11 @@ import { usePaidFeature } from "@/hooks/usePaidFeatures";
 import { 
   FiArrowRight, FiCheck, FiShield, FiUsers, FiHeart, FiActivity,
   FiSearch, FiStar, FiZap, FiBriefcase, FiMessageCircle, FiCalendar,
-  FiFileText, FiClock, FiTarget, FiTrendingUp, FiAward, FiSmartphone,
-  FiVideo, FiGlobe, FiBarChart, FiChevronDown, FiPhone, FiMail, FiMapPin,
-  FiMenu, FiX, FiPlay, FiTruck
+  FiFileText, FiClock, FiTarget, FiTrendingUp, FiAward, FiHome,
+  FiGlobe, FiBarChart, FiChevronDown, FiPhone, FiMail, FiMapPin,
+  FiMenu, FiX, FiPlay, FiTruck, FiCreditCard, FiLayers, FiRefreshCw
 } from "react-icons/fi";
+import { nowLiveItems, comingSoonItems, type RoadmapFlags, type RoadmapIcon } from "@/lib/marketing/roadmap";
 import { BOOST_PROMO_LINE } from "@/lib/providers/boost";
 import { PROVIDER_CATEGORIES, PROVIDER_CATEGORY_SUMMARY } from "@/lib/providers/categories";
 import { prefersReducedMotion, durations, easings } from "@/lib/animations";
@@ -49,7 +50,31 @@ const cardHover = {
  *   providerBoostOn   → Boost price copy ($39/mo).
  * Both off → the page renders exactly as before, except the retired $99 listing price.
  */
-export default function HomePage({ providerListingOn = false, providerBoostOn = false }: { providerListingOn?: boolean; providerBoostOn?: boolean } = {}) {
+const ROADMAP_ICONS: Record<RoadmapIcon, React.ReactNode> = {
+  briefcase: <FiBriefcase />, users: <FiUsers />, award: <FiAward />, activity: <FiActivity />, trending: <FiTrendingUp />,
+  shield: <FiShield />, globe: <FiGlobe />, calendar: <FiCalendar />, zap: <FiZap />, chart: <FiBarChart />,
+  wallet: <FiCreditCard />, star: <FiStar />, layers: <FiLayers />, refresh: <FiRefreshCw />,
+};
+
+export default function HomePage({
+  providerListingOn = false,
+  providerBoostOn = false,
+  ridesPaymentsOn = false,
+  backgroundChecksOn = false,
+  operatorPlansOn = false,
+  complianceKitsOn = false,
+  caregiverProOn = false,
+}: {
+  providerListingOn?: boolean;
+  providerBoostOn?: boolean;
+  ridesPaymentsOn?: boolean;
+  backgroundChecksOn?: boolean;
+  operatorPlansOn?: boolean;
+  complianceKitsOn?: boolean;
+  caregiverProOn?: boolean;
+} = {}) {
+  // "Now Live" / "Coming Soon" follow the same flags as the product (src/lib/marketing/roadmap.ts).
+  const roadmapFlags: RoadmapFlags = { providerListingOn, ridesPaymentsOn, backgroundChecksOn, operatorPlansOn, complianceKitsOn };
   const { enabled: kitsEnabled } = usePaidFeature('COMPLIANCE_KITS');
   const [activeBenefitTab, setActiveBenefitTab] = useState('families');
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
@@ -275,7 +300,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                 </div>
                 <div className="flex items-center">
                   <FiZap className="text-secondary-500 mr-2 flex-shrink-0" />
-                  <span>Instant matches</span>
+                  <span>Free AI matching</span>
                 </div>
                 <div className="flex items-center font-semibold text-success-700 bg-success-50 border border-success-200 rounded-full px-3 py-1">
                   <FiHeart className="mr-1.5 flex-shrink-0" />
@@ -404,7 +429,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                 </li>
                 <li className="flex items-start">
                   <FiCheck className="text-primary-500 mt-1 mr-2 flex-shrink-0" />
-                  <span className="text-sm text-neutral-500">Run background checks from search — Basic free</span>
+                  <span className="text-sm text-neutral-500">{backgroundChecksOn ? 'Run background checks from search — Basic free' : 'Every fact labeled verified or not, with the date'}</span>
                 </li>
                 <li className="flex items-start">
                   <FiCheck className="text-primary-500 mt-1 mr-2 flex-shrink-0" />
@@ -428,7 +453,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                 </li>
                 <li className="flex items-start">
                   <FiCheck className="text-secondary-500 mt-1 mr-2 flex-shrink-0" />
-                  <span className="text-sm text-neutral-500">On-Call AI fills open shifts in under 15 min</span>
+                  <span className="text-sm text-neutral-500">Post open shifts and review caregiver bids</span>
                 </li>
                 <li className="flex items-start">
                   <FiCheck className="text-secondary-500 mt-1 mr-2 flex-shrink-0" />
@@ -447,7 +472,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
               </div>
               <h3 className="text-2xl font-bold text-neutral-900 mb-3">For Healthcare Pros</h3>
               <p className="text-neutral-500 mb-4">
-                Discharge planners and case managers can place patients quickly and efficiently.
+                Discharge planners and case managers can send one placement request to several matching homes.
               </p>
               <ul className="space-y-2">
                 <li className="flex items-start">
@@ -487,7 +512,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                 </li>
                 <li className="flex items-start">
                   <FiCheck className="text-success-500 mt-1 mr-2 flex-shrink-0" />
-                  <span className="text-sm text-neutral-500">Instant shift notifications</span>
+                  <span className="text-sm text-neutral-500">In-app shift notifications</span>
                 </li>
                 <li className="flex items-start">
                   <FiCheck className="text-success-500 mt-1 mr-2 flex-shrink-0" />
@@ -548,7 +573,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
             </p>
           </div>
           
-          {/* 8 Features Grid */}
+          {/* 8 features: only what an operator, family or planner can use today */}
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Feature 1 */}
             <div className="group bg-white p-6 rounded-xl shadow-lg border-2 border-transparent hover:border-primary-500 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl">
@@ -559,7 +584,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                 AI Resident Matching Engine
               </h3>
               <p className="text-sm text-neutral-500 mb-3">
-                Analyzes 50+ data points including medical needs, preferences, location, and budget to find perfect matches.
+                Scores each home on budget, health needs, care level, location and amenities.
               </p>
               <p className="text-xs font-semibold text-primary-500">
                 ✓ Multi-factor AI match scoring
@@ -575,10 +600,10 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                 AI Home Profile Generator
               </h3>
               <p className="text-sm text-neutral-500 mb-3">
-                Automatically creates compelling facility profiles with optimized descriptions, amenities, and care specialties.
+                Drafts your facility description, amenities and care specialties from what you tell it.
               </p>
               <p className="text-xs font-semibold text-secondary-500">
-                ✓ Saves 5+ hours per profile
+                ✓ Free with your listing
               </p>
             </div>
             
@@ -591,10 +616,10 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                 AI Tour Scheduling
               </h3>
               <p className="text-sm text-neutral-500 mb-3">
-                Smart scheduling that finds optimal times for families and facilities, with automated reminders and confirmations.
+                Suggests tour times from the home&apos;s availability. Families request a time, the home confirms, and both get a confirmation email.
               </p>
               <p className="text-xs font-semibold text-primary-500">
-                ✓ 60% faster booking
+                ✓ Email confirmations
               </p>
             </div>
             
@@ -607,29 +632,13 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                 AI Inquiry Response System
               </h3>
               <p className="text-sm text-neutral-500 mb-3">
-                Intelligent automated responses to family inquiries with personalized information and instant follow-ups.
+                AI drafts a personalized reply to each family inquiry. You review it and send it by email.
               </p>
               <p className="text-xs font-semibold text-secondary-500">
-                ✓ Responds in seconds
+                ✓ You approve every reply
               </p>
             </div>
             
-            {/* Feature 5 */}
-            <div className="group bg-white p-6 rounded-xl shadow-lg border-2 border-transparent hover:border-primary-500 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl">
-              <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary-500 to-primary-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <FiZap className="text-white text-2xl" />
-              </div>
-              <h3 className="text-lg font-bold text-neutral-900 mb-2">
-                On-Call AI Shift Coverage
-              </h3>
-              <p className="text-sm text-neutral-500 mb-3">
-                When a caregiver calls out, AI instantly reaches the nearest available staff via SMS and IVR — filling the shift in minutes, not hours.
-              </p>
-              <p className="text-xs font-semibold text-primary-500">
-                ✓ Average fill time under 15 min
-              </p>
-            </div>
-
             {/* Feature 6 */}
             <div className="group bg-white p-6 rounded-xl shadow-lg border-2 border-transparent hover:border-secondary-500 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl">
               <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-secondary-500 to-secondary-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -639,10 +648,10 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                 Direct Caregiver Hire
               </h3>
               <p className="text-sm text-neutral-500 mb-3">
-                Operators browse the marketplace and hire caregivers directly — employment records created instantly, caregiver notified in real time.
+                Operators browse the marketplace and hire caregivers directly, with no job posting. The caregiver gets an in-app notification.
               </p>
               <p className="text-xs font-semibold text-secondary-500">
-                ✓ Hire in 3 clicks
+                ✓ No job posting needed
               </p>
             </div>
             
@@ -655,7 +664,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                 CareBot for Families
               </h3>
               <p className="text-sm text-neutral-500 mb-3">
-                24/7 AI chatbot that answers questions, provides guidance, and connects families with the right resources instantly.
+                AI chatbot that answers questions and points families to the right resources, any time of day.
               </p>
               <p className="text-xs font-semibold text-primary-500">
                 ✓ Always available
@@ -671,10 +680,10 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                 AI for Discharge Planners
               </h3>
               <p className="text-sm text-neutral-500 mb-3">
-                Specialized AI that helps healthcare professionals quickly place patients with matching availability and care level criteria.
+                Search homes by care level and payer. Availability is marked verified, with the date, or not verified.
               </p>
               <p className="text-xs font-semibold text-secondary-500">
-                ✓ Place patients faster
+                ✓ Free for discharge planners
               </p>
             </div>
 
@@ -705,11 +714,20 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
               How It Works
             </h2>
             <p className="text-xl text-neutral-500 max-w-3xl mx-auto">
-              Simple, fast, and effective for everyone
+              {providerListingOn
+                ? 'Free for families, caregivers and discharge planners. Free to list for care homes and providers.'
+                : 'Free for families, caregivers and discharge planners. Free to list for care homes.'}
             </p>
           </div>
           
-          <div className="grid lg:grid-cols-4 gap-8">
+          {/* 4 cards: 2×2 at md, 4-up at lg. 5 (Providers on): 2+2+1 at md, 3+2 from lg (max-w-7xl is too narrow for 5-up); rows centered, no card stretched alone. */}
+          <div
+            data-testid="how-it-works-cards"
+            data-cards={providerListingOn ? 5 : 4}
+            className={`flex flex-wrap justify-center gap-8 [&>*]:w-full md:[&>*]:w-[calc((100%-2rem)/2)] ${
+              providerListingOn ? 'lg:[&>*]:w-[calc((100%-4rem)/3)]' : 'lg:[&>*]:w-[calc((100%-6rem)/4)]'
+            }`}
+          >
             {/* For Families */}
             <div className="bg-gradient-to-br from-primary-50 to-white p-6 rounded-2xl border border-primary-500/20">
               <div className="text-center mb-6">
@@ -746,7 +764,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                   </div>
                   <div>
                     <h4 className="font-semibold text-neutral-900">Schedule Tours</h4>
-                    <p className="text-sm text-neutral-500">Book visits and find the perfect fit</p>
+                    <p className="text-sm text-neutral-500">Request a visit; the home confirms the time</p>
                   </div>
                 </div>
               </div>
@@ -790,8 +808,8 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-neutral-200">
-                <p className="text-xs text-neutral-400 text-center">
-                  Plans from <span className="font-semibold text-neutral-600">$99/mo</span> · 14-day free trial
+                <p className="text-xs text-neutral-500 text-center" data-testid="how-care-homes-footer">
+                  Free to list. Claim your community&apos;s listing or add a new one.
                 </p>
               </div>
             </div>
@@ -855,8 +873,8 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                     1
                   </div>
                   <div>
-                    <h4 className="font-semibold text-neutral-900">Enter Patient Info</h4>
-                    <p className="text-sm text-neutral-500">Describe care level and needs</p>
+                    <h4 className="font-semibold text-neutral-900">Send a Case Securely</h4>
+                    <p className="text-sm text-neutral-500">Care level, payer and timing through the portal</p>
                   </div>
                 </div>
                 <div className="flex items-start">
@@ -864,8 +882,8 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                     2
                   </div>
                   <div>
-                    <h4 className="font-semibold text-neutral-900">AI Finds Matches</h4>
-                    <p className="text-sm text-neutral-500">Get available facilities instantly</p>
+                    <h4 className="font-semibold text-neutral-900">Get Verified Options</h4>
+                    <p className="text-sm text-neutral-500">Homes that match the care level and payer</p>
                   </div>
                 </div>
                 <div className="flex items-start">
@@ -873,8 +891,8 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                     3
                   </div>
                   <div>
-                    <h4 className="font-semibold text-neutral-900">Place Patient</h4>
-                    <p className="text-sm text-neutral-500">Secure placement in minutes — no phone tag</p>
+                    <h4 className="font-semibold text-neutral-900">See What&apos;s Confirmed</h4>
+                    <p className="text-sm text-neutral-500">Each opening and price shows when it was confirmed</p>
                   </div>
                 </div>
               </div>
@@ -882,6 +900,38 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                 Always free — no card required.
               </div>
             </div>
+
+            {/* For Providers — only while PROVIDER_LISTING_ENABLED is on (same flag as the free listing). */}
+            {providerListingOn && (
+              <div data-testid="how-providers" className="bg-gradient-to-br from-warning-50 to-white p-6 rounded-2xl border border-warning-500/20">
+                <div className="text-center mb-6">
+                  <div className="inline-flex h-16 w-16 rounded-full bg-gradient-to-br from-warning-500 to-warning-400 items-center justify-center mb-4">
+                    <FiTruck className="text-white text-2xl" />
+                  </div>
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    <h3 className="text-xl font-bold text-neutral-900">For Providers</h3>
+                    <span className="text-xs font-bold bg-success-100 text-success-700 border border-success-200 rounded-full px-2.5 py-1 uppercase tracking-wide">Free</span>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  {[
+                    ['List your services free', 'Home health, personal care, therapy, rides, meals or equipment'],
+                    ['Get found by families and care homes', 'In your area, by the services you offer'],
+                    ['Respond to inquiries', 'Requests arrive on your dashboard'],
+                  ].map(([t, d], i) => (
+                    <div key={t} className="flex items-start">
+                      <div className="flex-shrink-0 h-8 w-8 rounded-full bg-warning-500 text-white flex items-center justify-center font-bold mr-3">
+                        {i + 1}
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-neutral-900">{t}</h4>
+                        <p className="text-sm text-neutral-500">{d}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -980,7 +1030,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                   </div>
                   <div>
                     <h4 className="text-lg font-bold text-neutral-900 mb-2">Perfect Matches</h4>
-                    <p className="text-neutral-500">AI analyzes 50+ factors to find ideal care homes that meet your specific needs and budget.</p>
+                    <p className="text-neutral-500">AI matches homes to your budget, health needs, care level, location and preferred amenities.</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-4">
@@ -989,7 +1039,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                   </div>
                   <div>
                     <h4 className="text-lg font-bold text-neutral-900 mb-2">Save Time</h4>
-                    <p className="text-neutral-500">Find the right care in days, not months. Our AI does the heavy lifting for you.</p>
+                    <p className="text-neutral-500">Search, compare and contact homes in one place, with every fact labeled verified or not.</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-4">
@@ -1028,6 +1078,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                     <p className="text-neutral-500">Find and book NEMT and transportation providers directly on the platform — secure payment, ride confirmation, and day-of reminders handled for you.</p>
                   </div>
                 </div>
+                {backgroundChecksOn && (
                 <div className="flex items-start space-x-4">
                   <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-400 flex items-center justify-center">
                     <FiShield className="text-white text-xl" />
@@ -1037,6 +1088,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                     <p className="text-neutral-500">Run Checkr-powered checks on any caregiver or provider directly from search results — no waiting for an invite. Basic is free; Enhanced, Motor Vehicle, and Premium bundles available from $19.99.</p>
                   </div>
                 </div>
+                )}
                 <div className="flex items-start space-x-4">
                   <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-400 flex items-center justify-center">
                     <FiCalendar className="text-white text-xl" />
@@ -1055,18 +1107,17 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                 <div className="grid md:grid-cols-3 gap-6 mb-8">
                   {[
                     { icon: <FiTrendingUp />, title: 'Inquiry Pipeline', desc: 'Manage every inquiry from first contact to move-in. AI ranks leads by urgency and fit.' },
-                    { icon: <FiZap />, title: 'AI Inquiry Responses', desc: 'Generate professional, personalized email responses in one click — sent directly to families.' },
+                    { icon: <FiZap />, title: 'AI Inquiry Responses', desc: 'AI drafts a personalized email reply to each inquiry. Review it, then send it to the family.' },
                     { icon: <FiActivity />, title: 'Resident Management', desc: 'Track health, medications, assessments, documents, and family communication in one place.' },
-                    { icon: <FiUsers />, title: 'Caregiver Staffing', desc: 'Post shifts, manage applications, track timesheets, and process caregiver payments.' },
-                    { icon: <FiCalendar />, title: 'Tour Scheduling', desc: 'AI-optimized tour scheduling. Families book online; your calendar stays organized.' },
+                    { icon: <FiUsers />, title: 'Caregiver Staffing', desc: 'Post shifts, manage applications and bids, and track timesheets.' },
+                    { icon: <FiCalendar />, title: 'Tour Scheduling', desc: 'AI-suggested tour times. Families request a visit online and you confirm it.' },
                     { icon: <FiBarChart />, title: 'Analytics & Reporting', desc: 'Occupancy trends, inquiry conversion rates, revenue tracking, and compliance reports.' },
                     { icon: <FiFileText />, title: 'Document Management', desc: 'Store and classify resident documents with AI. No more lost paperwork.' },
-                    { icon: <FiShield />, title: 'Compliance Tracking', desc: 'Track certifications, background checks, and regulatory requirements automatically.' },
+                    { icon: <FiShield />, title: 'Compliance Tracking', desc: backgroundChecksOn ? 'Track certifications, background checks and regulatory requirements.' : 'Track certifications, licenses and regulatory requirements.' },
                     { icon: <FiMessageCircle />, title: 'Messaging & Notifications', desc: 'In-platform messaging with families. Real-time notifications for new inquiries and tours.' },
-                    { icon: <FiSmartphone />, title: 'On-Call AI Shift Coverage', desc: 'Automatically contacts available caregivers via SMS when a shift opens. Average fill time under 15 minutes.' },
-                    { icon: <FiZap />, title: 'AI Shift Auto-fill', desc: 'Describe a shift in plain text — AI instantly finds the best-matched available caregivers and ranks them.' },
-                    { icon: <FiAward />, title: 'Direct Caregiver Hire', desc: 'Browse the marketplace and hire caregivers to your facility in 3 clicks — no job posting required.' },
-                    { icon: <FiCalendar />, title: 'Resident Transport Booking', desc: 'Book NEMT and transport rides for residents directly from the platform. Provider confirms, Stripe handles payment — zero phone calls.' },
+                    ...(operatorPlansOn ? [{ icon: <FiZap />, title: 'AI Shift Auto-fill', desc: 'Describe a shift in plain words and get matching available caregivers, ranked (Professional plan).' }] : []),
+                    { icon: <FiAward />, title: 'Direct Caregiver Hire', desc: 'Browse the marketplace and hire caregivers to your facility, with no job posting required.' },
+                    { icon: <FiCalendar />, title: 'Resident Transport Requests', desc: ridesPaymentsOn ? 'Request NEMT and transport rides for residents. The provider confirms and sets the fare, and the ride is paid online.' : 'Request NEMT and transport rides for residents. The provider confirms and sets the fare; online payment is coming soon.' },
                   ].map((item, i) => (
                     <div key={i} className="flex items-start space-x-3">
                       <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-gradient-to-br from-secondary-500 to-secondary-400 flex items-center justify-center text-white">
@@ -1081,11 +1132,11 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                 </div>
                 <div className="bg-gradient-to-r from-secondary-500/10 to-primary-500/10 rounded-xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4 border border-secondary-500/20">
                   <div>
-                    <div className="font-bold text-neutral-900 text-lg">Plans from $99/mo · 14-day free trial</div>
-                    <div className="text-sm text-neutral-500 mt-1">No credit card required to start. Cancel anytime.</div>
+                    <div className="font-bold text-neutral-900 text-lg">{operatorPlansOn ? 'Plans from $99/mo · 14-day free trial' : 'Free to list your community'}</div>
+                    <div className="text-sm text-neutral-500 mt-1">{operatorPlansOn ? 'No credit card required to start. Cancel anytime.' : 'Claim your listing or add a new one. No credit card required.'}</div>
                   </div>
                   <Link href="/auth/register?role=operator" className="bg-gradient-to-r from-secondary-500 to-primary-500 text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity whitespace-nowrap shadow-lg">
-                    Start Free Trial →
+                    {operatorPlansOn ? "Start Free Trial →" : "List Your Community Free →"}
                   </Link>
                 </div>
               </div>
@@ -1097,7 +1148,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                 <FiCheck className="text-success-600 flex-shrink-0 text-xl mt-0.5" />
                 <div>
                   <span className="font-bold text-success-800 text-base">Free to join — create your profile, apply for jobs, and get hired at no cost.</span>
-                  <span className="text-success-700 ml-2 text-sm">Build your reputation, earn points, and grow your career. Optional: upgrade to Pro ($19/mo) for boosted search placement, a Pro badge, and unlimited applications.</span>
+                  <span className="text-success-700 ml-2 text-sm">{caregiverProOn ? 'Build your reputation, earn points, and grow your career. Optional: upgrade to Pro ($19/mo) for boosted search placement, a Pro badge, and unlimited applications.' : 'Build your reputation, earn points, and grow your career.'}</span>
                 </div>
               </div>
               <div className="grid md:grid-cols-2 gap-8">
@@ -1167,8 +1218,8 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                     <FiZap className="text-white text-xl" />
                   </div>
                   <div>
-                    <h4 className="text-lg font-bold text-neutral-900 mb-2">Fast Placements</h4>
-                    <p className="text-neutral-500">Place patients in hours instead of days with instant AI-powered facility matching.</p>
+                    <h4 className="text-lg font-bold text-neutral-900 mb-2">Concierge Placement Help</h4>
+                    <p className="text-neutral-500">Send a case securely and get options that match the care level and payer, with what&apos;s confirmed and when.</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-4">
@@ -1310,10 +1361,11 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                   <div>
                     <div className="font-semibold text-neutral-900">Earn by Referring Care Homes and Families</div>
                     <p className="text-sm text-neutral-500 mt-1">
-                      Senior care advocates, social workers, geriatric care managers, and community organizations can earn recurring commissions by referring operators and families to CareLinkAI.
+                      Senior care advocates, social workers, geriatric care managers, and community organizations {operatorPlansOn ? 'can earn recurring commissions by referring operators and families to CareLinkAI.' : 'can refer families and care homes to CareLinkAI with their own link and track every referral.'}
                     </p>
                   </div>
                 </div>
+                {operatorPlansOn && (
                 <div className="mb-6 grid grid-cols-3 gap-4">
                   {[
                     { tier: 'STANDARD', rate: '20%', desc: 'New affiliates', color: 'border-neutral-300 bg-neutral-50' },
@@ -1327,14 +1379,15 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                     </div>
                   ))}
                 </div>
+                )}
                 <div className="grid md:grid-cols-2 gap-8 mb-8">
                   <div className="flex items-start space-x-4">
                     <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-secondary-500 to-primary-500 flex items-center justify-center">
                       <FiTrendingUp className="text-white text-xl" />
                     </div>
                     <div>
-                      <h4 className="text-lg font-bold text-neutral-900 mb-2">Tiered Recurring Commissions</h4>
-                      <p className="text-neutral-500">Earn 20–30% of every subscription payment from operators and families you refer. Rates increase automatically as you grow your referral network.</p>
+                      <h4 className="text-lg font-bold text-neutral-900 mb-2">{operatorPlansOn ? 'Tiered Recurring Commissions' : 'Referral Tracking'}</h4>
+                      <p className="text-neutral-500">{operatorPlansOn ? 'Earn 20–30% of every subscription payment from operators and families you refer. Rates increase automatically as you grow your referral network.' : 'Every family and care home that signs up through your link is credited to you.'}</p>
                     </div>
                   </div>
                   <div className="flex items-start space-x-4">
@@ -1343,7 +1396,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                     </div>
                     <div>
                       <h4 className="text-lg font-bold text-neutral-900 mb-2">Affiliate Dashboard</h4>
-                      <p className="text-neutral-500">Track your referrals, conversions, and earnings in real time. See exactly what you've earned and when you'll be paid.</p>
+                      <p className="text-neutral-500">Track your referrals and conversions in one dashboard.</p>
                     </div>
                   </div>
                   <div className="flex items-start space-x-4">
@@ -1385,13 +1438,18 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
         <div className="max-w-7xl mx-auto px-4 md:px-6">
           <div className="text-center mb-10">
             <div className="inline-flex items-center bg-success-100 text-success-800 rounded-full px-4 py-2 mb-6 text-sm font-semibold">
-              <FiCheck className="mr-2" /> 14-day free trial · No credit card required
+              <FiCheck className="mr-2" /> {operatorPlansOn ? '14-day free trial · No credit card required' : 'No credit card required'}
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-neutral-900 mb-4">
               Simple, Transparent Pricing
             </h2>
             <p className="text-xl text-neutral-500 max-w-3xl mx-auto">
-              Families and discharge planners are always free. Caregivers are free to start, Pro optional. Operators and providers subscribe.
+              {[
+                'Families, caregivers and discharge planners are free.',
+                caregiverProOn ? 'Caregiver Pro is optional.' : '',
+                operatorPlansOn ? 'Care home operators subscribe.' : 'Care homes list free.',
+                providerListingOn ? 'Providers list free.' : '',
+              ].filter(Boolean).join(' ')}
             </p>
           </div>
 
@@ -1405,11 +1463,11 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                   </div>
                   <div>
                     <div className="flex items-center gap-3 mb-1">
-                      <h3 className="text-xl font-bold text-success-900">Families Always Free · Caregivers Free to Start</h3>
+                      <h3 className="text-xl font-bold text-success-900">{caregiverProOn ? 'Families Always Free · Caregivers Free to Start' : 'Families & Caregivers Always Free'}</h3>
                       <span className="bg-success-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">$0 to Join</span>
                     </div>
                     <p className="text-success-800 text-sm leading-relaxed max-w-xl">
-                      Families search, book tours, and connect at no cost — forever. Caregivers create profiles, apply for jobs, and get hired free. Caregivers can optionally upgrade to Pro ($19/mo) for boosted search placement and unlimited applications.
+                      Families search, request tours, and connect at no cost — forever. Caregivers create profiles, apply for jobs, and get hired free.{caregiverProOn ? ' Caregivers can optionally upgrade to Pro ($19/mo) for boosted search placement and unlimited applications.' : ''}
                     </p>
                   </div>
                 </div>
@@ -1425,6 +1483,9 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
             </div>
           </div>
 
+          {/* Operator plan prices show only with OPERATOR_PLANS; until then homes list free (homepage truth audit). */}
+          {operatorPlansOn ? (
+          <>
           <div className="text-center mb-8">
             <div className="inline-flex items-center gap-2 text-neutral-500 text-sm">
               <div className="h-px w-16 bg-neutral-200"></div>
@@ -1464,7 +1525,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                 <div className="text-sm text-neutral-500 mt-1">Up to 3 homes · Billed monthly</div>
               </div>
               <ul className="space-y-3 mb-8 flex-1">
-                {['Everything in Starter', 'AI inquiry responses', 'On-Call AI shift coverage', 'AI shift auto-fill', 'Tour scheduling', 'Analytics dashboard', 'Priority support'].map((f) => (
+                {['Everything in Starter', 'AI inquiry responses', 'AI shift auto-fill', 'Tour scheduling', 'Analytics dashboard', 'Priority support'].map((f) => (
                   <li key={f} className="flex items-center gap-2 text-sm text-neutral-500">
                     <FiCheck className="text-secondary-500 flex-shrink-0" /> {f}
                   </li>
@@ -1520,9 +1581,30 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
               <a href="mailto:hello@getcarelinkai.com" className="text-primary-500 font-semibold hover:underline">Contact us for Enterprise pricing.</a>
             </p>
             <p className="text-sm text-neutral-500 mt-3">
-              Families always free. Caregivers free to start — Pro optional at $19/mo.
+              {caregiverProOn ? 'Families always free. Caregivers free to start — Pro optional at $19/mo.' : 'Families and caregivers always free.'}
             </p>
           </div>
+          </>
+          ) : (
+          <div data-testid="pricing-care-homes-free" className="max-w-6xl mx-auto">
+            <div className="border-2 border-primary-200 bg-gradient-to-r from-primary-50 to-white rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 h-14 w-14 rounded-xl bg-primary-500 flex items-center justify-center shadow-lg">
+                  <FiHome className="text-white text-2xl" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-neutral-900 mb-1">Care Homes List Free</h3>
+                  <p className="text-neutral-600 text-sm leading-relaxed max-w-xl">
+                    Claim your community&apos;s listing or add a new one. Manage inquiries, tour requests and residents from your operator dashboard. Homes never pay to be listed.
+                  </p>
+                </div>
+              </div>
+              <Link href="/auth/register?role=operator" className="bg-gradient-to-r from-primary-500 to-secondary-500 text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity whitespace-nowrap shadow-lg">
+                List Your Community Free
+              </Link>
+            </div>
+          </div>
+          )}
 
           {/* Discharge planners & case managers — FREE */}
           <div className="max-w-2xl mx-auto mt-14">
@@ -1555,7 +1637,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
               What We've Shipped &amp; What's Next
             </h2>
             <p className="text-xl text-neutral-500 max-w-3xl mx-auto">
-              We ship fast. Here's what's live today and what's coming next.
+              What you can use today, and what we&apos;re building next.
             </p>
           </div>
           
@@ -1566,21 +1648,10 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                 <FiCheck /> Now Live
               </div>
             </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {[
-                { icon: <FiZap />, title: 'On-Call AI Shift Coverage', desc: 'Auto-dispatches available staff via SMS/IVR when a caregiver calls out' },
-                { icon: <FiCalendar />, title: 'AI Shift Auto-fill', desc: 'Claude AI matches free-text shift descriptions to available caregivers instantly' },
-                { icon: <FiBriefcase />, title: 'Direct Caregiver Hire', desc: 'Operators hire from the marketplace in 3 clicks — employment record created instantly' },
-                { icon: <FiUsers />, title: 'Caregiver Reliability Score', desc: '0–100 score computed from reviews, shifts, background check, and call-off history' },
-                { icon: <FiAward />, title: 'Caregiver Points & Tiers', desc: 'Bronze → Platinum gamification with points for reliability, reviews, and consistency' },
-                { icon: <FiActivity />, title: 'Discharge Planner Portal', desc: 'Free AI placement search for hospital social workers & case managers — multi-facility requests and live bed availability' },
-                { icon: <FiBarChart />, title: 'Compliance Document Kits', desc: 'Ohio ALF compliance kits ($149–$199) — one-click purchase, instant access' },
-                { icon: <FiTrendingUp />, title: 'Affiliate Program', desc: 'Tiered commissions (20/25/30%) with family referral tracking and live dashboard' },
-                { icon: <FiShield />, title: 'Caregiver Marketplace', desc: 'Browse, shortlist, and hire verified caregivers with background check badges and reviews' },
-                { icon: <FiGlobe />, title: 'Provider Marketplace', desc: 'Transportation, meal services, housekeeping, and more — listed and bookable by care homes and families' },
-                { icon: <FiCalendar />, title: 'Transport Ride Booking', desc: 'End-to-end NEMT booking — families and operators book, provider confirms + sets fare, Stripe collects payment, day-of reminders sent automatically' },
-              ].map((item) => (
-                <div key={item.title} className="bg-white p-5 rounded-xl border border-neutral-200 shadow-sm flex items-start gap-4">
+            {/* Only what a real user can do today with production flags as they are. */}
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5" data-testid="roadmap-now-live">
+              {nowLiveItems(roadmapFlags).map((item) => ({ ...item, icon: ROADMAP_ICONS[item.icon] })).map((item) => (
+                <div key={item.key} className="bg-white p-5 rounded-xl border border-neutral-200 shadow-sm flex items-start gap-4">
                   <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-success-50 text-success-600 flex items-center justify-center text-lg">
                     {item.icon}
                   </div>
@@ -1600,14 +1671,10 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                 <FiTrendingUp /> Coming Soon
               </div>
             </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {[
-                { icon: <FiSmartphone />, title: 'Mobile App', desc: 'iOS & Android native apps for operators and families' },
-                { icon: <FiVideo />, title: 'Video Tours', desc: 'Live-streamed virtual facility tours from home' },
-                { icon: <FiGlobe />, title: 'Multi-Language', desc: 'Spanish, Chinese, and additional language support' },
-                { icon: <FiActivity />, title: 'EHR Integrations', desc: 'Connect with major electronic health record systems' },
-              ].map((item) => (
-                <div key={item.title} className="bg-white p-5 rounded-xl border border-neutral-200 border-dashed shadow-sm flex items-start gap-4 opacity-80">
+            {/* Real roadmap items, no dates; plus anything whose flag is off. */}
+            <div className="flex flex-wrap justify-center gap-5 [&>*]:w-full sm:[&>*]:w-[calc((100%-1.25rem)/2)] lg:[&>*]:w-[calc((100%-3.75rem)/4)]" data-testid="roadmap-coming-soon">
+              {comingSoonItems(roadmapFlags).map((item) => ({ ...item, icon: ROADMAP_ICONS[item.icon] })).map((item) => (
+                <div key={item.key} className="bg-white p-5 rounded-xl border border-neutral-200 border-dashed shadow-sm flex items-start gap-4 opacity-80">
                   <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-neutral-100 text-neutral-500 flex items-center justify-center text-lg">
                     {item.icon}
                   </div>
@@ -1637,12 +1704,12 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
           {/* Trust Statistics */}
           <div className="grid md:grid-cols-4 gap-8 mb-16">
             <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200 text-center">
-              <div className="text-4xl font-bold text-primary-500 mb-2">&lt; 15 min</div>
-              <p className="text-neutral-500 font-medium">On-Call AI Shift Fill</p>
+              <div className="text-4xl font-bold text-primary-500 mb-2">Free</div>
+              <p className="text-neutral-500 font-medium">To List Your Community</p>
             </div>
             <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200 text-center">
-              <div className="text-4xl font-bold text-secondary-500 mb-2">50+</div>
-              <p className="text-neutral-500 font-medium">AI Match Data Points</p>
+              <div className="text-4xl font-bold text-secondary-500 mb-2">Dated</div>
+              <p className="text-neutral-500 font-medium">Every Verified Fact Shows When</p>
             </div>
             <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200 text-center">
               <div className="text-4xl font-bold text-primary-500 mb-2">6</div>
@@ -1745,7 +1812,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
               <AnimatePresence>
                 {openFaqIndex === 2 && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-                    <div className="px-6 pb-5 text-neutral-500"><p>Nothing, for families and hospital discharge planners. Searching every Cleveland-area community, seeing starting prices and open beds (marked verified or not), waiver status and inspection history is free. Care homes pay for their listings and tools, which is how the directory stays free for the people using it. One optional service costs money: our Family Concierge, $399 flat, for families paying privately who want a verified shortlist and a person on the phone through the move. If you’re paying with Medicaid, Medicare or the VA, our help is always free. No hidden fees, ever.</p></div>
+                    <div className="px-6 pb-5 text-neutral-500"><p>Nothing, for families and hospital discharge planners. Searching every Cleveland-area community, seeing starting prices and open beds (marked verified or not), waiver status and inspection history is free. Care homes list free too. One optional service costs money: our Family Concierge, $399 flat, for families paying privately who want a verified shortlist and a person on the phone through the move. If you’re paying with Medicaid, Medicare or the VA, our help is always free. No hidden fees, ever.</p></div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1760,7 +1827,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
               <AnimatePresence>
                 {openFaqIndex === 3 && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-                    <div className="px-6 pb-5 text-neutral-500"><p>Most families have a verified shortlist within two business days. If a discharge is already scheduled, tell us the date and we work backward from it. Our directory marks which communities have confirmed open beds, and when, so you’re not calling homes that are full.</p></div>
+                    <div className="px-6 pb-5 text-neutral-500"><p>With the Family Concierge you get a verified shortlist within two business days, or a full refund. If a discharge is already scheduled, tell us the date and we work backward from it. Our directory marks which communities have confirmed open beds, and when, so you’re not calling homes that are full.</p></div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1835,7 +1902,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
               <AnimatePresence>
                 {openFaqIndex === 8 && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-                    <div className="px-6 pb-5 text-neutral-500"><p>Yes! Our AI-powered tour scheduling finds optimal times for both families and facilities. Families book directly from the listing page, and both parties receive automated reminders and confirmations via email and SMS.</p></div>
+                    <div className="px-6 pb-5 text-neutral-500"><p>Yes. Families request a tour from the listing page, with suggested times based on the home&apos;s availability. The home confirms the time, and both of you get a confirmation email.</p></div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1850,7 +1917,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
               <AnimatePresence>
                 {openFaqIndex === 9 && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-                    <div className="px-6 pb-5 text-neutral-500"><p>Yes. Operators on any plan can browse caregiver profiles in the marketplace and hire directly with one click — no job posting or application process required. The caregiver is notified instantly, an employment record is created, and the hire is logged for compliance. Professional and Growth plan operators pay no per-hire marketplace fee.</p></div>
+                    <div className="px-6 pb-5 text-neutral-500"><p>Yes. Operators can browse caregiver profiles in the marketplace and hire directly, with no job posting or application process. The caregiver gets an in-app notification and the hire is logged.</p></div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1865,7 +1932,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
               <AnimatePresence>
                 {openFaqIndex === 10 && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-                    <div className="px-6 pb-5 text-neutral-500"><p>Affiliates get a unique referral link and earn recurring commissions on every operator or family subscription they refer. New affiliates start at 20% commission; reaching 5 active referrals unlocks SILVER tier (25%); 15+ referrals unlocks GOLD tier (30%). Commissions are tracked in real time in your affiliate dashboard and paid monthly.</p></div>
+                    <div className="px-6 pb-5 text-neutral-500"><p>{operatorPlansOn ? 'Affiliates get a unique referral link and earn recurring commissions on every operator or family subscription they refer. New affiliates start at 20% commission; reaching 5 active referrals unlocks SILVER tier (25%); 15+ referrals unlocks GOLD tier (30%). Commissions are tracked in your affiliate dashboard and paid monthly.' : 'Affiliates get a unique referral link and a dashboard that tracks the families and care homes they refer.'}</p></div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1880,7 +1947,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
               <AnimatePresence>
                 {openFaqIndex === 11 && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-                    <div className="px-6 pb-5 text-neutral-500"><p>Yes. We offer three downloadable Ohio Assisted Living Facility compliance document kits ($149–$199 one-time purchase) covering state licensing requirements, resident rights, and medication management. Available in your operator portal under Compliance Kits, or from the footer of this page. More states coming soon.</p></div>
+                    <div className="px-6 pb-5 text-neutral-500"><p>{complianceKitsOn ? 'Yes. We offer three downloadable Ohio Assisted Living Facility compliance document kits ($149–$199 one-time purchase) covering state licensing requirements, resident rights, and medication management. Available in your operator portal under Compliance Kits, or from the footer of this page. More states coming soon.' : 'Ohio assisted-living compliance document kits (state licensing, resident rights and medication management) are coming soon. Until then, operators can track certifications and licenses in the operator portal.'}</p></div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1902,7 +1969,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
               See CareLinkAI in action
             </h2>
             <p className="text-neutral-500 text-lg mb-8 max-w-2xl mx-auto">
-              Watch our 5-minute overview or request a personalized walkthrough. We'll show you exactly how operators fill shifts faster, reduce no-shows, and manage residents — all in one platform.
+              Watch the overview or request a personalized walkthrough. We&apos;ll show you how operators manage inquiries, staffing and residents in one platform.
             </p>
             <button
               onClick={() => setDemoVideoOpen(true)}
@@ -1911,7 +1978,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
               <span className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
                 <FiPlay className="ml-0.5" />
               </span>
-              Watch Demo (5 min)
+              Watch Demo
             </button>
           </div>
 
@@ -1938,7 +2005,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                     <div className="h-16 w-16 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-4 group-hover:bg-white/30 transition-colors">
                       <FiPlay size={28} className="text-white ml-1" />
                     </div>
-                    <p className="text-white font-semibold text-lg">Watch the 5-min overview</p>
+                    <p className="text-white font-semibold text-lg">Watch the overview</p>
                     <p className="text-white/70 text-sm mt-1">See every feature in action</p>
                   </div>
                 </button>
@@ -1946,7 +2013,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
               <ul className="mt-5 space-y-2">
                 {[
                   "Operator dashboard: shifts, residents, billing, analytics",
-                  "On-Call AI auto-fill — texts caregivers within minutes",
+                  "Inquiry pipeline with AI-drafted replies",
                   "Marketplace: applications, direct hire, per-diem shifts",
                   "Family portal: placement search, documents, messaging",
                 ].map((item) => (
@@ -2007,7 +2074,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
             </div>
             <div className="flex items-center">
               <FiCheck className="mr-2" />
-              <span>Setup in 5 minutes</span>
+              <span>Free to list your community</span>
             </div>
             <div className="flex items-center">
               <FiCheck className="mr-2" />
