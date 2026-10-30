@@ -10,9 +10,10 @@ import {
   FiArrowRight, FiCheck, FiShield, FiUsers, FiHeart, FiActivity,
   FiSearch, FiStar, FiZap, FiBriefcase, FiMessageCircle, FiCalendar,
   FiFileText, FiClock, FiTarget, FiTrendingUp, FiAward, FiSmartphone,
-  FiVideo, FiGlobe, FiBarChart, FiChevronDown, FiPhone, FiMail, FiMapPin,
-  FiMenu, FiX, FiPlay, FiTruck
+  FiGlobe, FiBarChart, FiChevronDown, FiPhone, FiMail, FiMapPin,
+  FiMenu, FiX, FiPlay, FiTruck, FiCreditCard, FiLayers, FiRefreshCw
 } from "react-icons/fi";
+import { nowLiveItems, comingSoonItems, type RoadmapFlags, type RoadmapIcon } from "@/lib/marketing/roadmap";
 import { BOOST_PROMO_LINE } from "@/lib/providers/boost";
 import { PROVIDER_CATEGORIES, PROVIDER_CATEGORY_SUMMARY } from "@/lib/providers/categories";
 import { prefersReducedMotion, durations, easings } from "@/lib/animations";
@@ -49,7 +50,29 @@ const cardHover = {
  *   providerBoostOn   → Boost price copy ($39/mo).
  * Both off → the page renders exactly as before, except the retired $99 listing price.
  */
-export default function HomePage({ providerListingOn = false, providerBoostOn = false }: { providerListingOn?: boolean; providerBoostOn?: boolean } = {}) {
+const ROADMAP_ICONS: Record<RoadmapIcon, React.ReactNode> = {
+  briefcase: <FiBriefcase />, users: <FiUsers />, award: <FiAward />, activity: <FiActivity />, trending: <FiTrendingUp />,
+  shield: <FiShield />, globe: <FiGlobe />, calendar: <FiCalendar />, zap: <FiZap />, chart: <FiBarChart />,
+  wallet: <FiCreditCard />, star: <FiStar />, layers: <FiLayers />, refresh: <FiRefreshCw />,
+};
+
+export default function HomePage({
+  providerListingOn = false,
+  providerBoostOn = false,
+  ridesPaymentsOn = false,
+  backgroundChecksOn = false,
+  operatorPlansOn = false,
+  complianceKitsOn = false,
+}: {
+  providerListingOn?: boolean;
+  providerBoostOn?: boolean;
+  ridesPaymentsOn?: boolean;
+  backgroundChecksOn?: boolean;
+  operatorPlansOn?: boolean;
+  complianceKitsOn?: boolean;
+} = {}) {
+  // "Now Live" / "Coming Soon" follow the same flags as the product (src/lib/marketing/roadmap.ts).
+  const roadmapFlags: RoadmapFlags = { providerListingOn, ridesPaymentsOn, backgroundChecksOn, operatorPlansOn, complianceKitsOn };
   const { enabled: kitsEnabled } = usePaidFeature('COMPLIANCE_KITS');
   const [activeBenefitTab, setActiveBenefitTab] = useState('families');
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
@@ -705,11 +728,18 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
               How It Works
             </h2>
             <p className="text-xl text-neutral-500 max-w-3xl mx-auto">
-              Simple, fast, and effective for everyone
+              Simple, and free to start for everyone
             </p>
           </div>
           
-          <div className="grid lg:grid-cols-4 gap-8">
+          {/* 4 cards: 2×2 at md, 4-up at lg. 5 (Providers on): 2+2+1 at md, 3+2 from lg (max-w-7xl is too narrow for 5-up); rows centered, no card stretched alone. */}
+          <div
+            data-testid="how-it-works-cards"
+            data-cards={providerListingOn ? 5 : 4}
+            className={`flex flex-wrap justify-center gap-8 [&>*]:w-full md:[&>*]:w-[calc((100%-2rem)/2)] ${
+              providerListingOn ? 'lg:[&>*]:w-[calc((100%-4rem)/3)]' : 'lg:[&>*]:w-[calc((100%-6rem)/4)]'
+            }`}
+          >
             {/* For Families */}
             <div className="bg-gradient-to-br from-primary-50 to-white p-6 rounded-2xl border border-primary-500/20">
               <div className="text-center mb-6">
@@ -790,8 +820,8 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-neutral-200">
-                <p className="text-xs text-neutral-400 text-center">
-                  Plans from <span className="font-semibold text-neutral-600">$99/mo</span> · 14-day free trial
+                <p className="text-xs text-neutral-500 text-center" data-testid="how-care-homes-footer">
+                  Free to list. Claim your community&apos;s listing or add a new one.
                 </p>
               </div>
             </div>
@@ -855,8 +885,8 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                     1
                   </div>
                   <div>
-                    <h4 className="font-semibold text-neutral-900">Enter Patient Info</h4>
-                    <p className="text-sm text-neutral-500">Describe care level and needs</p>
+                    <h4 className="font-semibold text-neutral-900">Send a Case Securely</h4>
+                    <p className="text-sm text-neutral-500">Care level, payer and timing through the portal</p>
                   </div>
                 </div>
                 <div className="flex items-start">
@@ -864,8 +894,8 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                     2
                   </div>
                   <div>
-                    <h4 className="font-semibold text-neutral-900">AI Finds Matches</h4>
-                    <p className="text-sm text-neutral-500">Get available facilities instantly</p>
+                    <h4 className="font-semibold text-neutral-900">Get Verified Options</h4>
+                    <p className="text-sm text-neutral-500">Homes that match the care level and payer</p>
                   </div>
                 </div>
                 <div className="flex items-start">
@@ -873,8 +903,8 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                     3
                   </div>
                   <div>
-                    <h4 className="font-semibold text-neutral-900">Place Patient</h4>
-                    <p className="text-sm text-neutral-500">Secure placement in minutes — no phone tag</p>
+                    <h4 className="font-semibold text-neutral-900">See What&apos;s Confirmed</h4>
+                    <p className="text-sm text-neutral-500">Each opening and price shows when it was confirmed</p>
                   </div>
                 </div>
               </div>
@@ -882,6 +912,38 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                 Always free — no card required.
               </div>
             </div>
+
+            {/* For Providers — only while PROVIDER_LISTING_ENABLED is on (same flag as the free listing). */}
+            {providerListingOn && (
+              <div data-testid="how-providers" className="bg-gradient-to-br from-warning-50 to-white p-6 rounded-2xl border border-warning-500/20">
+                <div className="text-center mb-6">
+                  <div className="inline-flex h-16 w-16 rounded-full bg-gradient-to-br from-warning-500 to-warning-400 items-center justify-center mb-4">
+                    <FiTruck className="text-white text-2xl" />
+                  </div>
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    <h3 className="text-xl font-bold text-neutral-900">For Providers</h3>
+                    <span className="text-xs font-bold bg-success-100 text-success-700 border border-success-200 rounded-full px-2.5 py-1 uppercase tracking-wide">Free</span>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  {[
+                    ['List your services free', 'Home health, personal care, therapy, rides, meals or equipment'],
+                    ['Get found by families and care homes', 'In your area, by the services you offer'],
+                    ['Respond to inquiries', 'Requests arrive on your dashboard'],
+                  ].map(([t, d], i) => (
+                    <div key={t} className="flex items-start">
+                      <div className="flex-shrink-0 h-8 w-8 rounded-full bg-warning-500 text-white flex items-center justify-center font-bold mr-3">
+                        {i + 1}
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-neutral-900">{t}</h4>
+                        <p className="text-sm text-neutral-500">{d}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -1555,7 +1617,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
               What We've Shipped &amp; What's Next
             </h2>
             <p className="text-xl text-neutral-500 max-w-3xl mx-auto">
-              We ship fast. Here's what's live today and what's coming next.
+              What you can use today, and what we&apos;re building next.
             </p>
           </div>
           
@@ -1566,21 +1628,10 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                 <FiCheck /> Now Live
               </div>
             </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {[
-                { icon: <FiZap />, title: 'On-Call AI Shift Coverage', desc: 'Auto-dispatches available staff via SMS/IVR when a caregiver calls out' },
-                { icon: <FiCalendar />, title: 'AI Shift Auto-fill', desc: 'Claude AI matches free-text shift descriptions to available caregivers instantly' },
-                { icon: <FiBriefcase />, title: 'Direct Caregiver Hire', desc: 'Operators hire from the marketplace in 3 clicks — employment record created instantly' },
-                { icon: <FiUsers />, title: 'Caregiver Reliability Score', desc: '0–100 score computed from reviews, shifts, background check, and call-off history' },
-                { icon: <FiAward />, title: 'Caregiver Points & Tiers', desc: 'Bronze → Platinum gamification with points for reliability, reviews, and consistency' },
-                { icon: <FiActivity />, title: 'Discharge Planner Portal', desc: 'Free AI placement search for hospital social workers & case managers — multi-facility requests and live bed availability' },
-                { icon: <FiBarChart />, title: 'Compliance Document Kits', desc: 'Ohio ALF compliance kits ($149–$199) — one-click purchase, instant access' },
-                { icon: <FiTrendingUp />, title: 'Affiliate Program', desc: 'Tiered commissions (20/25/30%) with family referral tracking and live dashboard' },
-                { icon: <FiShield />, title: 'Caregiver Marketplace', desc: 'Browse, shortlist, and hire verified caregivers with background check badges and reviews' },
-                { icon: <FiGlobe />, title: 'Provider Marketplace', desc: 'Transportation, meal services, housekeeping, and more — listed and bookable by care homes and families' },
-                { icon: <FiCalendar />, title: 'Transport Ride Booking', desc: 'End-to-end NEMT booking — families and operators book, provider confirms + sets fare, Stripe collects payment, day-of reminders sent automatically' },
-              ].map((item) => (
-                <div key={item.title} className="bg-white p-5 rounded-xl border border-neutral-200 shadow-sm flex items-start gap-4">
+            {/* Only what a real user can do today with production flags as they are. */}
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5" data-testid="roadmap-now-live">
+              {nowLiveItems(roadmapFlags).map((item) => ({ ...item, icon: ROADMAP_ICONS[item.icon] })).map((item) => (
+                <div key={item.key} className="bg-white p-5 rounded-xl border border-neutral-200 shadow-sm flex items-start gap-4">
                   <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-success-50 text-success-600 flex items-center justify-center text-lg">
                     {item.icon}
                   </div>
@@ -1600,14 +1651,10 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                 <FiTrendingUp /> Coming Soon
               </div>
             </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {[
-                { icon: <FiSmartphone />, title: 'Mobile App', desc: 'iOS & Android native apps for operators and families' },
-                { icon: <FiVideo />, title: 'Video Tours', desc: 'Live-streamed virtual facility tours from home' },
-                { icon: <FiGlobe />, title: 'Multi-Language', desc: 'Spanish, Chinese, and additional language support' },
-                { icon: <FiActivity />, title: 'EHR Integrations', desc: 'Connect with major electronic health record systems' },
-              ].map((item) => (
-                <div key={item.title} className="bg-white p-5 rounded-xl border border-neutral-200 border-dashed shadow-sm flex items-start gap-4 opacity-80">
+            {/* Real roadmap items, no dates; plus anything whose flag is off. */}
+            <div className="flex flex-wrap justify-center gap-5 [&>*]:w-full sm:[&>*]:w-[calc((100%-1.25rem)/2)] lg:[&>*]:w-[calc((100%-3.75rem)/4)]" data-testid="roadmap-coming-soon">
+              {comingSoonItems(roadmapFlags).map((item) => ({ ...item, icon: ROADMAP_ICONS[item.icon] })).map((item) => (
+                <div key={item.key} className="bg-white p-5 rounded-xl border border-neutral-200 border-dashed shadow-sm flex items-start gap-4 opacity-80">
                   <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-neutral-100 text-neutral-500 flex items-center justify-center text-lg">
                     {item.icon}
                   </div>

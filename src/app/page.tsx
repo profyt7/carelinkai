@@ -39,6 +39,11 @@ export default function HomePage() {
     <HomePageClient
       providerListingOn={isPaidFeatureEnabled('PROVIDER_LISTING')}
       providerBoostOn={isPaidFeatureEnabled('PROVIDER_BOOST')}
+      // Homepage truth audit: "Now Live" / "Coming Soon" cards follow the product's own flags.
+      ridesPaymentsOn={isPaidFeatureEnabled('RIDES_PAYMENTS')}
+      backgroundChecksOn={isPaidFeatureEnabled('BACKGROUND_CHECKS')}
+      operatorPlansOn={isPaidFeatureEnabled('OPERATOR_PLANS')}
+      complianceKitsOn={isPaidFeatureEnabled('COMPLIANCE_KITS')}
     />
   );
 }
