@@ -20,7 +20,15 @@ const hero = (html: string) => html.slice(Math.max(0, html.indexOf('data-testid=
 describe('homepage hero', () => {
   const html = renderToString(<HomePageClient />);
 
-  it('has no stock photo and no made-up match card', () => {
+  it('the hero photo shows no faces (people walking away), has real alt text and carries the trust panel', () => {
+    const src = read('src/app/HomePageClient.tsx');
+    const visual = src.slice(src.indexOf('data-testid="hero-visual"'), src.indexOf('</aside>', src.indexOf('data-testid="hero-visual"')));
+    expect(visual).toContain('src="/images/hero-bg.jpg"');
+    expect(visual).toMatch(/alt="Two older men walking side by side on a sunlit park path, one using a walker"/);
+    expect(visual).toContain('data-testid="hero-trust-panel"');
+  });
+
+  it('has no stock photo of faces and no made-up match card', () => {
     expect(read('src/app/HomePageClient.tsx')).not.toContain('/images/hero-bg2.jpg');
     for (const fake of ['Perfect Match Found', 'Sunshine Valley', '5★', 'AI Matched', 'HIPAA Secure']) expect(html).not.toContain(fake);
   });

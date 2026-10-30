@@ -192,7 +192,8 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
 
       {/* 1. HERO SECTION - Enhanced */}
       <section className="relative py-20 md:py-28 overflow-hidden bg-gradient-to-br from-white via-white to-primary-50">
-        {/* Pre-launch: no stock photo of faces behind the hero; the brand gradient and blobs carry it. */}
+        {/* No stock faces and no made-up listing card in the hero: the photo (right) shows two people walking
+            away from the camera, and the "What we verify" panel sits on it. */}
 
         {/* Subtle decorative blobs on top of image */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -274,7 +275,19 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
             {/* What we verify — an editorial trust panel (pre-launch). Every line is a qualified claim
                 the product backs: ODH license where matched, ODH inspection facts, and "Verified"
                 availability only within VERIFIED_AVAILABILITY_DAYS (= AVAILABILITY_FRESH_DAYS) of the community confirming it. */}
-            <aside aria-labelledby="hero-trust-heading" data-testid="hero-trust-panel" className="rounded-2xl border border-neutral-200 bg-white/90 p-6 shadow-sm md:p-8 lg:ml-auto lg:max-w-md">
+            <div className="relative w-full lg:ml-auto lg:max-w-lg" data-testid="hero-visual">
+              <div className="relative aspect-[16/10] overflow-hidden rounded-2xl shadow-lg md:aspect-[16/9] lg:aspect-[4/3]">
+                <Image
+                  src="/images/hero-bg.jpg"
+                  alt="Two older men walking side by side on a sunlit park path, one using a walker"
+                  fill
+                  priority
+                  sizes="(min-width: 1024px) 512px, (min-width: 768px) 720px, 100vw"
+                  className="object-cover object-[50%_60%]"
+                  data-testid="hero-photo"
+                />
+              </div>
+            <aside aria-labelledby="hero-trust-heading" data-testid="hero-trust-panel" className="relative mx-3 -mt-12 rounded-2xl border border-neutral-200 bg-white/95 p-6 shadow-md backdrop-blur-sm sm:mx-6 sm:-mt-20 md:p-8">
               <p id="hero-trust-heading" className="text-xs font-semibold uppercase tracking-widest text-neutral-500">What we verify</p>
               <ul className="mt-5 space-y-6">
                 <li className="flex gap-4">
@@ -300,6 +313,7 @@ export default function HomePage({ providerListingOn = false, providerBoostOn = 
                 </li>
               </ul>
             </aside>
+            </div>
           </div>
         </div>
       </section>
