@@ -746,6 +746,7 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
   - Icon rail: hover/focus tooltips (fixed-positioned, aria-hidden).
   - CareCredit "Apply" contrast fixed (axe 0 on the listing).
 - **Found (not fixed):** at 390 the Leaflet attribution draws over the sticky site header when scrolled.
+- **First phone screen (390×844):** the CTA bar now shows whenever the panel's availability + price aren't on screen (before reaching it, too), so name, location, care types, verified availability and known price are all on the first screen. Covered by `e2e/public/directory/listing-first-screen.spec.ts`.
 - **Path:** `src/app/homes/[id]/page.tsx`, `src/components/homes/HomeImagePlaceholder.tsx`, `src/components/dashboard/OperatorDashboardContent.tsx`, `src/components/layout/SidebarShell.tsx`, `__tests__/profile-polish.unit.test.tsx`
 
 ### OL-232: AuditLog — classify event types, purpose, access and retention (review item)

@@ -163,9 +163,13 @@ test.describe('@critical OL-217 facility profile — one inquiry pathway', () =>
     await expect(page.getByTestId('listing-inspection-tile')).toHaveCount(0);
     await expect(page.getByTestId('listing-key-stats')).not.toContainText(/\b0 (inspections?|citations?)\b/i);
 
-    // One inquiry form instance; while the inline panel is on screen the bar is hidden + inert.
+    // One inquiry form instance. First screen: the panel's availability + price are below the fold, so the bar
+    // carries them; once the panel's facts are on screen the bar is hidden + inert.
     await expect(exposedPanels(page)).toHaveCount(1);
     const bar = page.getByTestId('listing-cta-bar');
+    await expect(bar).toHaveAttribute('data-hidden', 'false');
+    await expect(bar.getByTestId('cta-bar-facts')).toBeVisible();
+    await page.locator('[data-panel-facts]').evaluate((el) => el.scrollIntoView({ block: 'center' }));
     await expect(bar).toHaveAttribute('data-hidden', 'true');
     await expect(page.getByRole('button', { name: 'Send Inquiry' })).toHaveCount(1);
 

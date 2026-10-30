@@ -220,7 +220,8 @@ export default function HomeDetailPage() {
     });
   }, [realHome, inspectionChecked, inspection]);
 
-  // < lg the panel sits inline; once it scrolls out of view a sticky bottom bar carries the same two actions.
+  // < lg the panel sits inline. Whenever its availability + price aren't on screen (not reached yet, or scrolled
+  // past), a sticky bottom bar carries them with the same two actions, so a phone sees both on the first screen.
   const [compact, setCompact] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 1023.98px)");
@@ -232,15 +233,25 @@ export default function HomeDetailPage() {
   const [panelInView, setPanelInView] = useState(true);
   useEffect(() => {
     if (!compact || !panelEl) { setPanelInView(true); return; }
-    // "Out of view" = scrolled past (above the visible top); before the reader reaches the panel there is no bar.
+    // "In view" = the panel's facts block (availability + price) sits wholly inside the visible area, below the
+    // sticky header. Without that block (inquiry form open, Concierge) it falls back to "panel not scrolled past".
     // A scroll check, not an IntersectionObserver: a jump from below the fold to past it (End key, anchor link,
     // reduced motion) never crosses an intersection threshold, so an observer would not fire.
     const scroller = panelEl.closest("main");
     let raf = 0;
     const check = () => {
       raf = 0;
-      const top = scroller && scroller.scrollHeight > scroller.clientHeight ? Math.max(0, scroller.getBoundingClientRect().top) : 0;
-      setPanelInView(panelEl.getBoundingClientRect().bottom > top);
+      const inMain = Boolean(scroller && scroller.scrollHeight > scroller.clientHeight);
+      const header = document.querySelector<HTMLElement>('[data-testid="site-header"]');
+      const top = inMain ? Math.max(0, scroller!.getBoundingClientRect().top) : header && getComputedStyle(header).position === "sticky" ? Math.max(0, header.getBoundingClientRect().bottom) : 0;
+      const bottom = inMain ? scroller!.getBoundingClientRect().bottom : window.innerHeight;
+      const facts = panelEl.querySelector<HTMLElement>("[data-panel-facts]");
+      if (facts) {
+        const r = facts.getBoundingClientRect();
+        setPanelInView(r.top >= top - 1 && r.bottom <= bottom + 1);
+      } else {
+        setPanelInView(panelEl.getBoundingClientRect().bottom > top);
+      }
     };
     const schedule = () => { if (!raf) raf = requestAnimationFrame(check); };
     check();
@@ -305,9 +316,13 @@ export default function HomeDetailPage() {
     check();
     document.addEventListener("scroll", schedule, { capture: true, passive: true });
     window.addEventListener("resize", schedule);
+    // The bar slides in (200 ms): measured mid-slide it reads as off-screen, so measure again once it settles
+    // (it can now appear on the first screen, with no scroll to trigger a re-check).
+    ctaEl.addEventListener("transitionend", schedule);
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(retry);
+      ctaEl.removeEventListener("transitionend", schedule);
       document.removeEventListener("scroll", schedule, { capture: true });
       window.removeEventListener("resize", schedule);
       setBottomStackHeight("listing-cta-bar", 0);
@@ -651,7 +666,7 @@ export default function HomeDetailPage() {
                             : 'You’re acting on a patient’s behalf via CareLinkAI Concierge — request a tour and our care team coordinates it for you.'}
                         </div>
                       ) : (
-                        <div className="mt-3 space-y-2">
+                        <div className="mt-3 space-y-2" data-panel-facts>
                           {/* The badge is the visual; screen readers get the same fact once, as text. */}
                           <p className="sr-only" data-testid="sidebar-availability">{facts.availability.line}.</p>
                           <div aria-hidden="true"><AvailabilityBadge availability={availability} /></div>

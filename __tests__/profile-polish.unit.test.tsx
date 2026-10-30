@@ -3,7 +3,8 @@
  *
  * Pre-launch profile polish (PR B). These fail if:
  *   - the listing page repeats availability / price outside the point of inquiry (stat tiles,
- *     About quick facts), or drops them from the inquiry panel or the < lg CTA bar;
+ *     About quick facts), or drops them from the inquiry panel or the < lg CTA bar, or the bar stops covering
+ *     the first phone screen (it shows until the panel's own facts are on screen);
  *   - the no-photo placeholder starts to look like a photograph (uses a photo, a building) or
  *     loses its accessible label;
  *   - the operator metric grid goes back to fixed columns (empty slot with 5 tiles);
@@ -38,6 +39,12 @@ describe('listing: price and availability live at the point of inquiry', () => {
     expect(bar).toContain('data-testid="cta-bar-facts"');
     expect(bar).toContain('<AvailabilityBadge availability={availability} />');
     expect(bar).toContain('<PriceLine pricing={realHome.pricing} />');
+  });
+
+  it('the bar shows until the panel facts block (availability + price) is on screen, not only once scrolled past', () => {
+    expect(page).toContain('<div className="mt-3 space-y-2" data-panel-facts>');
+    expect(page).toContain('panelEl.querySelector<HTMLElement>("[data-panel-facts]")');
+    expect(page).toContain('setPanelInView(r.top >= top - 1 && r.bottom <= bottom + 1)');
   });
 
   it('the Pricing section (detail, source note, what it includes) stays', () => {
