@@ -59,14 +59,16 @@ test.describe('@critical Family Concierge — homepage, dashboard cards, terms',
     expect((await r.json()).orderStatus).toBe('REQUESTED_UNPAID');
   });
 
-  test('homepage section renders logged-out: the mistake headline, one line + the guarantee, CTA and free-lane line', async ({ request }) => {
+  test('homepage section renders logged-out: the verified-shortlist headline, one line + the guarantee, CTA and free-lane line', async ({ request }) => {
     const res = await request.get('/');
     expect(res.status()).toBe(200);
     const html = await res.text();
     expect(html).toContain('data-testid="home-concierge-section"');
     // React separates adjacent text expressions with <!-- --> — strip them before text assertions.
     const section = html.slice(html.indexOf('data-testid="home-concierge-section"'), html.indexOf('Why CareLinkAI?')).replace(/<!--\s*-->/g, '');
-    expect(section).toContain('We keep you from making the $5,000 mistake under pressure.');
+    // OL-241: the homepage headline leads with the verified shortlist; /concierge keeps CONCIERGE_OFFER.headline.
+    expect(section).toContain('Get a verified shortlist before you commit to a home.');
+    expect(section).not.toContain('$5,000');
     expect(section).toContain('A verified shortlist in 2 business days — or you pay nothing.');
     expect(section).toContain('No verified shortlist within 2 business days → full refund.');
     expect(section).toContain('$399 flat, one time');
