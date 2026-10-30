@@ -2736,3 +2736,13 @@
 - **Deployment impact:** homepage and /help show the tour on deploy. No env changes.
 - **New risks/blockers:** slides 08, 11 and 14 show claims the app now hides (re-capture). Provider-page ride requests and the caregiver background-check start API aren't flag-gated.
 - **Recommended next step:** re-capture slides 08 / 11 / 14; decide on provider-page ride requests while Rides is hidden.
+
+### 2026-10-30 — OL-243 merged; OL-244 rides + Checkr-start gates
+- **Objective:** close the two API gaps left by OL-243.
+- **Work completed:** OL-243 squash-merged `a8e1d473`, prod-verify green. OL-244: family ride requests rejected (403) and the provider-page button hidden unless `RIDES_PAYMENTS` (families only, Chris's call); Checkr start → 404 unless `BACKGROUND_CHECKS`. Each new test fails on main and passes here.
+- **Files changed:** `src/app/api/rides/route.ts`, `src/app/api/caregiver/background-checks/start/route.ts`, `src/app/marketplace/providers/[id]/page.tsx`, `__tests__/paid-features.unit.test.ts`, `__tests__/background_checks.api.test.ts`, context files.
+- **Commands run:** `npm run type-check`, `next lint` (changed files), `npm test -- --ci` (169 suites, 1958 passed).
+- **Tests/build status:** local green; build left to CI.
+- **Deployment impact:** families can no longer request rides while `RIDES_PAYMENTS` is off. No env changes.
+- **New risks/blockers:** none.
+- **Recommended next step:** re-capture tour slides 08 / 11 / 14.

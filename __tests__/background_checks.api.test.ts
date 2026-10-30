@@ -148,6 +148,37 @@ describe('Background Check API', () => {
   };
 
   describe('POST /api/caregiver/background-checks/start', () => {
+    // The route only exists while BACKGROUND_CHECKS is on (OL-186); the flow tests below run with it on.
+    const ORIGINAL_FLAG = process.env.BACKGROUND_CHECKS_ENABLED;
+    beforeEach(() => { process.env.BACKGROUND_CHECKS_ENABLED = 'true'; });
+    afterAll(() => {
+      if (ORIGINAL_FLAG === undefined) delete process.env.BACKGROUND_CHECKS_ENABLED;
+      else process.env.BACKGROUND_CHECKS_ENABLED = ORIGINAL_FLAG;
+    });
+
+    test('flag off: 404, and nothing reaches auth, the database or Checkr', async () => {
+      delete process.env.BACKGROUND_CHECKS_ENABLED;
+      (getServerSession as jest.Mock).mockClear();
+      (prisma.caregiver.findUnique as jest.Mock).mockClear();
+      (createCandidate as jest.Mock).mockClear();
+      (createReport as jest.Mock).mockClear();
+
+      const response = await startBackgroundCheck(createMockRequest());
+
+      expect(response.status).toBe(404);
+      expect(getServerSession).not.toHaveBeenCalled();
+      expect(prisma.caregiver.findUnique).not.toHaveBeenCalled();
+      expect(createCandidate).not.toHaveBeenCalled();
+      expect(createReport).not.toHaveBeenCalled();
+    });
+
+    test('flag on: the request goes through to auth (401 without a session)', async () => {
+      (getServerSession as jest.Mock).mockResolvedValueOnce(null);
+      const response = await startBackgroundCheck(createMockRequest());
+      expect(response.status).toBe(401);
+      expect(getServerSession).toHaveBeenCalled();
+    });
+
     test('returns 401 when user is not authenticated', async () => {
       (getServerSession as jest.Mock).mockResolvedValueOnce(null);
 

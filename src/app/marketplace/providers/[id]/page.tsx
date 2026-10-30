@@ -5,6 +5,7 @@ import BoostedBadge from '@/components/providers/BoostedBadge';
 import { DELIVERY_MODES, serviceLabels } from '@/lib/providers/categories';
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { usePaidFeature } from "@/hooks/usePaidFeatures";
 import Link from "next/link";
 import {
   FiMapPin,
@@ -87,6 +88,8 @@ export default function ProviderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showRideModal, setShowRideModal] = useState(false);
+  // Families book rides only while RIDES_PAYMENTS is on (same switch as their nav); operators / staff always.
+  const { enabled: familyRidesOn } = usePaidFeature("RIDES_PAYMENTS");
   
   // Favorite state
   const PR_FAV_KEY = 'marketplace:provider-favorites:v1';
@@ -495,7 +498,7 @@ export default function ProviderDetailPage() {
                   </div>
                 )}
 
-                {status === "authenticated" && (session?.user?.role === "FAMILY" || session?.user?.role === "OPERATOR" || session?.user?.role === "STAFF") && (
+                {status === "authenticated" && ((session?.user?.role === "FAMILY" && familyRidesOn) || session?.user?.role === "OPERATOR" || session?.user?.role === "STAFF") && (
                   <button
                     onClick={() => setShowRideModal(true)}
                     className="mt-5 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 transition-colors"
