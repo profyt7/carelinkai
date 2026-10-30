@@ -12,6 +12,22 @@ import { isPaidFeatureEnabled } from '@/lib/billing/paid-features';
 import { boostedWhere, isBoosted, notBoostedWhere, twoTierPage } from '@/lib/providers/boost';
 import { parseCategoryParam, storedValuesFor } from '@/lib/providers/categories';
 
+/** Public review average + count per provider (cards hide stars until a provider has a real review). */
+async function reviewStats(ids: string[]): Promise<Map<string, { avg: number; count: number }>> {
+  if (ids.length === 0) return new Map();
+  try {
+    const rows = await prisma.providerReview.groupBy({
+      by: ['providerId'],
+      where: { providerId: { in: ids }, isPublic: true },
+      _avg: { rating: true },
+      _count: { _all: true },
+    });
+    return new Map(rows.map((r) => [r.providerId, { avg: r._avg.rating ?? 0, count: r._count._all }]));
+  } catch {
+    return new Map(); // never fail a search over review stats
+  }
+}
+
 /**
  * GET /api/marketplace/providers
  * 
@@ -127,6 +143,7 @@ export async function GET(request: Request) {
         },
       });
 
+      const idStats = await reviewStats(providers.map((p: any) => p.id));
       const formattedProviders = providers.map((provider: any) => {
         let photoUrl = null as string | null;
         if (provider.user.profileImageUrl) {
@@ -167,8 +184,8 @@ export async function GET(request: Request) {
           photoUrl,
           credentialCount: provider.credentials.length,
           verifiedCredentialCount: provider.credentials.filter((c: any) => c.status === 'VERIFIED').length,
-          ratingAverage: 0, // Placeholder - TODO: calculate from reviews
-          reviewCount: 0, // Placeholder - TODO: count from reviews
+          ratingAverage: idStats.get(provider.id)?.avg ?? 0,
+          reviewCount: idStats.get(provider.id)?.count ?? 0,
         };
       });
 
@@ -197,13 +214,16 @@ export async function GET(request: Request) {
     };
 
 
-    // Text search in bio, business name, or contact name
+    // Text search in bio, business name, or contact name. Every filter is its own AND clause, so
+    // text search + city/state narrow together (they used to share one OR and widened each other).
     if (q) {
-      where.OR = [
-        { bio: { contains: q, mode: 'insensitive' } },
-        { businessName: { contains: q, mode: 'insensitive' } },
-        { contactName: { contains: q, mode: 'insensitive' } }
-      ];
+      where.AND.push({
+        OR: [
+          { bio: { contains: q, mode: 'insensitive' } },
+          { businessName: { contains: q, mode: 'insensitive' } },
+          { contactName: { contains: q, mode: 'insensitive' } },
+        ],
+      });
     }
 
     // Service type filter — supports multiple selected services (any match)
@@ -224,30 +244,8 @@ export async function GET(request: Request) {
     
     // Location filters using coverageArea JSON
     // Note: This is a simplified version. For production, you might want to use proper GIS queries
-    if (city || state) {
-      // Use JSON path queries for PostgreSQL
-      const locationFilters = [];
-      if (city) {
-        locationFilters.push({
-          coverageArea: {
-            path: ['cities'],
-            array_contains: city
-          }
-        });
-      }
-      if (state) {
-        locationFilters.push({
-          coverageArea: {
-            path: ['states'],
-            array_contains: state
-          }
-        });
-      }
-      
-      if (locationFilters.length > 0) {
-        where.OR = [...(where.OR || []), ...locationFilters];
-      }
-    }
+    if (city) where.AND.push({ coverageArea: { path: ['cities'], array_contains: city } });
+    if (state) where.AND.push({ coverageArea: { path: ['states'], array_contains: state } });
     
     // Fetch providers with pagination
     const providerInclude = {
@@ -258,12 +256,18 @@ export async function GET(request: Request) {
         select: { id: true, type: true, status: true, expiresAt: true },
       },
     } as const;
+    // Default order: verified providers first, then by name (there is no real rating to sort by yet).
+    // "Most recent" keeps the old newest-first order; every other legacy sort value falls back to the default.
+    const orderBy: Prisma.ProviderOrderByWithRelationInput[] =
+      searchParams.get('sortBy') === 'recency'
+        ? [{ createdAt: 'desc' }]
+        : [{ isVerified: 'desc' }, { businessName: 'asc' }, { id: 'asc' }];
     const now = new Date();
     let providers: any[];
     let totalCount: number;
     if (!boostOn) {
       [providers, totalCount] = await Promise.all([
-        prisma.provider.findMany({ where, include: providerInclude, orderBy: { createdAt: 'desc' }, skip, take: pageSize }),
+        prisma.provider.findMany({ where, include: providerInclude, orderBy, skip, take: pageSize }),
         prisma.provider.count({ where }),
       ]);
     } else {
@@ -273,14 +277,15 @@ export async function GET(request: Request) {
       const [boostedTotal, total] = await Promise.all([prisma.provider.count({ where: boostedFilter }), prisma.provider.count({ where })]);
       const t = twoTierPage(skip, pageSize, boostedTotal);
       const [boostedRows, restRows] = await Promise.all([
-        t.boostedTake > 0 ? prisma.provider.findMany({ where: boostedFilter, include: providerInclude, orderBy: { createdAt: 'desc' }, skip: t.boostedSkip, take: t.boostedTake }) : Promise.resolve([]),
-        t.restTake > 0 ? prisma.provider.findMany({ where: restFilter, include: providerInclude, orderBy: { createdAt: 'desc' }, skip: t.restSkip, take: t.restTake }) : Promise.resolve([]),
+        t.boostedTake > 0 ? prisma.provider.findMany({ where: boostedFilter, include: providerInclude, orderBy, skip: t.boostedSkip, take: t.boostedTake }) : Promise.resolve([]),
+        t.restTake > 0 ? prisma.provider.findMany({ where: restFilter, include: providerInclude, orderBy, skip: t.restSkip, take: t.restTake }) : Promise.resolve([]),
       ]);
       providers = [...boostedRows, ...restRows];
       totalCount = total;
     }
     
     // Format provider data
+    const stats = await reviewStats(providers.map((p: any) => p.id));
     const formattedProviders = providers.map((provider: any) => {
       let photoUrl = null as string | null;
       if (provider.user.profileImageUrl) {
@@ -320,8 +325,8 @@ export async function GET(request: Request) {
         photoUrl,
         credentialCount: provider.credentials.length,
         verifiedCredentialCount: provider.credentials.filter((c: any) => c.status === 'VERIFIED').length,
-        ratingAverage: 0,
-        reviewCount: 0,
+        ratingAverage: stats.get(provider.id)?.avg ?? 0,
+        reviewCount: stats.get(provider.id)?.count ?? 0,
         deliveryModes: provider.deliveryModes || [],
         // Transport fields
         rideTypes: provider.rideTypes || [],

@@ -304,7 +304,7 @@ export function buildOrganizationJsonLd(opts: { includeFeeModel?: boolean } = {}
       hoursAvailable: 'Front desk 24/7; callbacks Mon–Fri 08:00–18:00 America/New_York',
     },
     description:
-      'A Cleveland-built senior care directory: licensed assisted living, memory care, independent living and nursing homes with Ohio Department of Health inspection facts, verified availability and published pricing. Families contact homes directly; no broker fees.',
+      'A Cleveland-built senior care directory: licensed assisted living, memory care, independent living and nursing homes with Ohio Department of Health inspection facts, and open beds and pricing we are confirming with each home (marked verified only with a date). Families contact homes directly; no broker fees.',
     foundingLocation: { '@type': 'Place', name: 'Cleveland, Ohio' },
     founder: { '@type': 'Person', name: 'Chris Tolliver' },
     address: {

@@ -11,5 +11,5 @@ export default async function Image({ params }: { params: Promise<{ suburb: stri
   const { suburb } = await params;
   const s = findSuburb(suburb);
   if (!s) notFound();
-  return renderOgImage({ kind: 'suburb', title: `Assisted living in ${s.name}, OH`, subtitle: `${s.county} County · licensed homes, inspection facts, open beds confirmed` });
+  return renderOgImage({ kind: 'suburb', title: `Assisted living in ${s.name}, OH`, subtitle: `${s.county} County · licensed homes, inspection facts, what’s verified and when` });
 }

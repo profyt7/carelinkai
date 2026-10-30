@@ -7,6 +7,32 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
 
 ## 🔴 SHIP NOW (this week)
 
+### OL-239: Pre-launch polish 2 (10/30)
+- **Status:** 🟡 PR open, branch `fix/prelaunch-polish-2` (Chris reviews; not merged).
+- **What:**
+  1. Homepage, meta/OG, JSON-LD and /cleveland copy no longer claims availability is already confirmed. It now says "we're confirming…" and "what's verified and when".
+  2. Homepage header is one row at 390: smaller logo below sm, CTA `whitespace-nowrap`, 44px menu button.
+  3. A single `SupportDock` replaces the two floating buttons (Care Advisor + Report Bug).
+     - It's one launcher with a menu, and it steps aside while a link, button, field or heading is under it.
+     - Positioning stays central (`--bottom-stack-offset`, `data-floating-widget`).
+  4. Provider search: text search, city and state are separate AND clauses (they used to OR).
+  5. The "Rating" sort is gone. The default is verified first, then name. Cards show stars only with real public reviews (now counted from `ProviderReview`).
+  6. Provider card names reserve space for the heart (`pr-10`, `line-clamp-2`, full-name tooltip).
+- **Path:** `src/components/support/SupportDock.tsx`, `src/components/CareConcierge.tsx`, `src/app/layout.tsx`, `src/app/HomePageClient.tsx`, `src/app/page.tsx`, `src/lib/seo/{page-meta,jsonld}.ts`, `src/lib/directory/suburbs.ts`, `src/app/cleveland/assisted-living/**/{opengraph,twitter}-image.tsx`, `src/app/api/marketplace/providers/route.ts`, `src/app/marketplace/providers/page.tsx`, `src/components/marketplace/ProviderCard.tsx`, tests and e2e.
+
+### OL-238: Category-specific provider verification rules (separate project)
+- **Status:** 🔲 open (no code). Logged 10/30.
+- **What:** today a provider's categories are self-reported, and "Verified" means reviewed credentials, the same for every category. Each launch category needs its own rule, for example:
+  - **Home Health Care (skilled):** an Ohio home health / ODH license number checked against the state record.
+  - **Physical & Rehabilitation Therapy:** an individual Ohio OT/PT board license lookup.
+  - **Personal Care & Home Assistance (non-medical):** a business registration, insurance and a background-check policy, with no clinical license required.
+  - **Medical Transportation:** vehicle insurance, a wheelchair-van inspection, and a Medicaid NEMT enrollment where claimed.
+  - **Meal Delivery & Nutrition:** a food-service license or health-department inspection.
+  - **Medical Equipment & Supplies:** DME supplier accreditation, and a Medicare supplier number where claimed.
+- **Decide:** what each badge means per category, who checks it (manual admin vs. a lookup), re-check cadence, and how a lapsed check shows.
+  - Until then, "Verified" stays category-agnostic and categories stay self-reported (see `docs/PROVIDER_TAXONOMY.md`).
+- **Related:** OL-236 (taxonomy), and the admin-only `licenseNumber`.
+
 ### OL-237: Pre-launch leftovers (10/29)
 - **Status:** ✅ #22 (merges last in the 10/30 batch).
 - **What:**

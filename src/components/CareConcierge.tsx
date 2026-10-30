@@ -15,8 +15,11 @@ const STARTERS = [
   'What questions should I ask on a tour?',
 ];
 
-export default function CareConcierge() {
-  const [open, setOpen] = useState(false);
+/**
+ * The Care Advisor chat panel. Opened from the shared support launcher (SupportDock), which owns the one
+ * floating control; this component no longer renders a floating button of its own.
+ */
+export default function CareConcierge({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -56,20 +59,9 @@ export default function CareConcierge() {
 
   return (
     <>
-      {/* Floating button */}
-      <button
-        onClick={() => setOpen(true)}
-        className={`fixed bottom-[calc(var(--bottom-stack-offset,0px)+1.5rem)] right-6 z-50 flex items-center gap-2 px-4 py-3 bg-primary-600 text-white rounded-full shadow-lg hover:bg-primary-700 transition-all ${open ? 'hidden' : ''}`}
-        aria-label="Ask a Care Advisor"
-        data-floating-widget
-      >
-        <FiMessageCircle size={20} />
-        <span className="text-sm font-medium">Ask a Care Advisor</span>
-      </button>
-
       {/* Chat panel */}
       {open && (
-        <div className="fixed bottom-[calc(var(--bottom-stack-offset,0px)+1.5rem)] right-6 z-50 w-96 max-w-[calc(100vw-1.5rem)] max-h-[calc(100dvh-var(--bottom-stack-offset,0px)-3rem)] flex flex-col bg-white rounded-2xl shadow-2xl border border-neutral-200 overflow-hidden" style={{ height: '520px' }}>
+        <div role="dialog" aria-label="Care Advisor" data-testid="care-advisor-panel" className="fixed bottom-[calc(var(--bottom-stack-offset,0px)+1rem)] right-4 md:right-6 z-50 w-96 max-w-[calc(100vw-1.5rem)] max-h-[calc(100dvh-var(--bottom-stack-offset,0px)-3rem)] flex flex-col bg-white rounded-2xl shadow-2xl border border-neutral-200 overflow-hidden" style={{ height: '520px' }}>
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-primary-600 text-white flex-shrink-0">
             <div className="flex items-center gap-2">
@@ -81,7 +73,7 @@ export default function CareConcierge() {
                 <p className="text-xs text-primary-200">CareLinkAI · Always available</p>
               </div>
             </div>
-            <button onClick={() => setOpen(false)} className="text-white/70 hover:text-white p-1">
+            <button onClick={onClose} className="text-white/70 hover:text-white p-1" aria-label="Close Care Advisor">
               <FiX size={18} />
             </button>
           </div>

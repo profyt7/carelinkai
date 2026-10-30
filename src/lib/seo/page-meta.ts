@@ -85,25 +85,25 @@ export const PAGE_META = {
     path: '/cleveland',
     title: 'Senior Care in Cleveland, OH: Licensed Homes',
     description:
-      'Find assisted living, memory care and nursing homes across Greater Cleveland: licensed homes, Ohio inspection facts and open beds confirmed with each home.',
+      'Find assisted living, memory care and nursing homes across Greater Cleveland: licensed homes, Ohio inspection facts, and open beds labeled verified or not.',
   },
   assistedLiving: {
     path: '/cleveland/assisted-living',
     title: 'Assisted Living in Cleveland, OH',
     description:
-      'Licensed assisted living homes across Greater Cleveland with Ohio Department of Health inspection facts, Medicaid waiver status and availability confirmed.',
+      'Licensed assisted living homes across Greater Cleveland with Ohio Department of Health inspection facts, waiver status and beds labeled verified or not.',
   },
   memoryCare: {
     path: '/cleveland/memory-care',
     title: 'Memory Care in Cleveland, OH: Licensed Homes',
     description:
-      'Licensed memory care homes in Greater Cleveland for Alzheimer’s and dementia, with Ohio inspection facts, Medicaid waiver status and open beds confirmed.',
+      'Licensed memory care homes in Greater Cleveland for Alzheimer’s and dementia, with Ohio inspection facts, waiver status and beds labeled verified or not.',
   },
   independentLiving: {
     path: '/cleveland/independent-living',
     title: 'Independent Living in Cleveland, OH',
     description:
-      'Independent living options in Greater Cleveland, and the licensed homes in our directory that offer it, with Ohio inspection facts and open beds confirmed.',
+      'Independent living in Greater Cleveland, plus the licensed homes in our directory that offer it, with Ohio inspection facts and labeled availability.',
   },
   nursingHomes: {
     path: '/cleveland/nursing-homes',

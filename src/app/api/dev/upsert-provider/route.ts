@@ -22,6 +22,8 @@ export async function POST(request: NextRequest) {
     const businessName = (body.businessName as string) || 'E2E Provider';
     const serviceTypes = Array.isArray(body.serviceTypes) ? (body.serviceTypes as string[]).map(String) : [];
     const deliveryModes = Array.isArray(body.deliveryModes) ? (body.deliveryModes as string[]).map(String) : [];
+    const coverageArea = body.coverageArea && typeof body.coverageArea === 'object' ? body.coverageArea : {};
+    const isVerified = body.isVerified === true;
     // Search-only fixture: nobody signs in as it, so an unusable random password (no DEMO_ACCOUNT_PASSWORD needed).
     const passwordHash = await bcrypt.hash(randomBytes(24).toString('hex'), 10);
 
@@ -34,8 +36,8 @@ export async function POST(request: NextRequest) {
 
     const provider = await prisma.provider.upsert({
       where: { userId: user.id },
-      update: { businessName, serviceTypes, deliveryModes, isActive: true },
-      create: { userId: user.id, businessName, contactName: businessName, contactEmail: email, serviceTypes, deliveryModes, isActive: true },
+      update: { businessName, serviceTypes, deliveryModes, coverageArea, isVerified, isActive: true },
+      create: { userId: user.id, businessName, contactName: businessName, contactEmail: email, serviceTypes, deliveryModes, coverageArea, isVerified, isActive: true },
       select: { id: true },
     });
 
