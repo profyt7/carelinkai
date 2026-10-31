@@ -1,17 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { FiArrowRight } from "react-icons/fi";
 import DemoVideoModal from "@/components/marketing/DemoVideoModal";
-import type { TourVideo as TourVideoData } from "@/lib/marketing/product-tour-data";
+import { TOUR_DURATION, TOUR_POSTER_SIZE, TOUR_POSTER_SRC, type TourVideo as TourVideoData } from "@/lib/marketing/product-tour-data";
 import { GET_STARTED_ANCHOR, getStartedLinks } from "@/lib/marketing/get-started-links";
 import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/contact";
 
 /**
  * OL-248 h — "Get started on your own": replaces the homepage demo-request form. The 90-second tour is
- * the one primary action (the existing self-hosted /demo/tour.mp4 in the existing dialog; it starts from
- * the beginning and focus comes back to the button on close). Role links sit underneath as a compact
+ * the one primary action: a clickable thumbnail (the poster, with a CSS play button and a "1:32" chip) that
+ * opens the existing self-hosted /demo/tour.mp4 dialog; it starts from the beginning and focus comes back
+ * to the thumbnail on close. Role links sit underneath as a compact
  * secondary set — stacked on phones, a small grid on desktop. No form, nothing collected.
  */
 export default function GetStartedPanel({ tourVideo = null, providerListingOn = false }: { tourVideo?: TourVideoData | null; providerListingOn?: boolean }) {
@@ -32,11 +34,32 @@ export default function GetStartedPanel({ tourVideo = null, providerListingOn = 
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="inline-flex items-center bg-primary-600 hover:bg-primary-700 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-300"
+            aria-label={`Watch the 90-second product tour (${TOUR_DURATION.spoken})`}
+            className="group mx-auto block w-full max-w-[720px] rounded-xl text-left focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-300 focus-visible:ring-offset-4"
             data-testid="get-started-watch-tour"
           >
-            <span>
-              <span aria-hidden="true">▶ </span>Watch the 90-second tour
+            <span className="relative block aspect-video overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100 shadow-md transition duration-200 motion-safe:group-hover:-translate-y-1 group-hover:shadow-xl">
+              <Image
+                src={TOUR_POSTER_SRC}
+                width={TOUR_POSTER_SIZE.width}
+                height={TOUR_POSTER_SIZE.height}
+                alt=""
+                sizes="(min-width: 768px) 720px, 100vw"
+                className="h-full w-full object-cover"
+                data-testid="get-started-tour-thumbnail"
+              />
+              {/* Overlay drawn in CSS (nothing baked into the image): a round play button and the length. */}
+              <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center">
+                <span className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-600/90 shadow-lg ring-4 ring-white/80 transition-transform duration-200 motion-safe:group-hover:scale-105 sm:h-20 sm:w-20" data-testid="get-started-tour-play">
+                  <span className="ml-1 h-0 w-0 border-y-[11px] border-l-[18px] border-y-transparent border-l-white sm:border-y-[13px] sm:border-l-[22px]" />
+                </span>
+              </span>
+              <span aria-hidden="true" className="absolute bottom-2 right-2 rounded-md bg-black/75 px-2 py-0.5 text-xs font-semibold tabular-nums text-white sm:bottom-3 sm:right-3 sm:text-sm" data-testid="get-started-tour-duration">
+                {TOUR_DURATION.label}
+              </span>
+            </span>
+            <span aria-hidden="true" className="mt-3 block text-center text-sm font-semibold text-neutral-700 group-hover:text-primary-700" data-testid="get-started-tour-label">
+              Watch the 90-second tour
             </span>
           </button>
         )}

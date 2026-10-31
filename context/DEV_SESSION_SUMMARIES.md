@@ -2826,3 +2826,11 @@
 - **New risks/blockers:** No self-serve claim-with-context page (care homes go to the directory first).
 - **Recommended next step:** Chris reviews PR #32; consider a follow-up to carry the home id through register for claims.
 
+### 2026-10-31 — OL-249 homepage tour thumbnail
+- **Objective:** replace the blue "▶ Watch the 90-second tour" button with a clickable video thumbnail.
+- **Work completed:** cherry-picked the real-product poster (`chore/tour-poster` 2e34954). Thumbnail button in `GetStartedPanel` (next/image, 16:9, rounded, border + shadow, hover lift; CSS play button and "1:32" chip; caption label; aria-label with the spoken length). Same modal; Enter / Space / Escape / focus return checked in Chromium. Poster constant shared with every `<video poster>`. Role cards, guides link and contact line untouched. Confirmed #31's post-merge prod-verify (with trackers) had already run green on 25e2d2a and 0fe189b.
+- **Files changed:** `src/components/marketing/GetStartedPanel.tsx`, `src/lib/marketing/{product-tour,product-tour-data}.ts`, `public/demo/tour-poster.jpg`, `__tests__/get-started-panel.unit.test.tsx`, context files.
+- **Commands run:** `npm run type-check`, `next lint`, `npm test -- --ci` (173 suites, 2019 passed), `next dev` + Playwright (before / after at 390, 820, 1280; keyboard check).
+- **Tests/build status:** local green; build left to CI.
+- **Deployment impact:** homepage panel visual only. No env changes.
+- **Recommended next step:** Chris reviews the screenshots and merges.

@@ -8,7 +8,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseTour, type Tour, type TourVideo } from './product-tour-data';
+import { parseTour, TOUR_POSTER_SRC, type Tour, type TourVideo } from './product-tour-data';
 
 export * from './product-tour-data';
 
@@ -33,7 +33,7 @@ export function loadTourVideo(cwd: string = process.cwd()): TourVideo | null {
   if (!has('tour.mp4')) return null;
   return {
     src: '/demo/tour.mp4',
-    poster: has('tour-poster.jpg') ? '/demo/tour-poster.jpg' : null,
+    poster: has('tour-poster.jpg') ? TOUR_POSTER_SRC : null,
     captions: has('tour.vtt') ? '/demo/tour.vtt' : null,
   };
 }
