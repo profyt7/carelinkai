@@ -1,6 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
+import PendingClaimsBanner from "@/components/operator/PendingClaimsBanner";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -104,6 +105,7 @@ export default function OperatorDashboardPage() {
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
+        <PendingClaimsBanner />
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <div className="flex flex-col items-center space-y-4">

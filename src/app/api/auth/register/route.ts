@@ -14,6 +14,8 @@
 export const dynamic = 'force-dynamic';
 
 import { founderUpdateFromClaim } from '@/lib/claim-founder';
+import { verifyClaimIntent } from '@/lib/claims/claim-intent';
+import { submitSelfServeClaim } from '@/lib/claims/self-serve';
 import { NextRequest, NextResponse } from "next/server";
 import { UserRole, UserStatus, AuditAction } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -58,6 +60,7 @@ const registrationSchema = z.object({
   preferredContactMethod: z.enum(["EMAIL", "PHONE", "BOTH"]).optional(),
   referredByCode: z.string().max(20).optional(), // affiliate ?ref= code captured from URL
   claimToken: z.string().optional(), // Cleveland founder claim token
+  claimIntent: z.string().max(600).optional(), // self-serve "Claim this listing" (signed home id, fix/self-serve-claim)
   // PROVIDER only: launch categories picked at signup (optional; more can be added on the profile)
   serviceTypes: z.array(z.string()).max(6).optional()
     .refine((v) => !v || v.every((s) => PROVIDER_CATEGORY_VALUES.includes(s)), { message: "Unknown service category" }),
@@ -170,6 +173,7 @@ export async function POST(request: NextRequest) {
       preferredContactMethod,
       referredByCode,
       claimToken,
+      claimIntent,
       serviceTypes,
     } = validationResult.data;
     
@@ -391,6 +395,21 @@ export async function POST(request: NextRequest) {
     });
     console.log('[REGISTER API] Transaction committed');
 
+    // Self-serve claim: the operator signed up from "Claim this listing". File a PENDING_REVIEW claim for an
+    // admin to verify; nothing changes hands here, and a bad or expired intent never fails registration.
+    let claim: { submitted: boolean; reason?: string } | undefined;
+    if (role === 'OPERATOR' && claimIntent) {
+      const intent = verifyClaimIntent(claimIntent, process.env['NEXTAUTH_SECRET'] ?? '');
+      if (!intent) claim = { submitted: false, reason: 'expired' };
+      else {
+        const r = await submitSelfServeClaim({ homeId: intent.homeId, userId: result.id, source: 'signup' }).catch((e) => {
+          console.error('[REGISTER API] self-serve claim failed:', errorSummary(e));
+          return null;
+        });
+        claim = r?.ok ? { submitted: true } : { submitted: false, reason: r && !r.ok ? r.reason : 'error' };
+      }
+    }
+
     // OL-184: SMS opt-in from the registration checkbox (raw body — the zod
     // schema strips unknown keys). A row only when checked and a phone given.
     await recordSmsConsent({
@@ -466,7 +485,8 @@ export async function POST(request: NextRequest) {
         role: result.role,
         status: result.status,
         createdAt: result.createdAt
-      }
+      },
+      ...(claim ? { claim } : {}),
     }, { status: 201 });
     
   } catch (error: any) {

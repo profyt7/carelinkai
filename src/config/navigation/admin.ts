@@ -23,6 +23,7 @@ export const ADMIN_NAV: NavItem[] = [
       a('operators', 'Operators', FiHome, '/admin/operators'),
       a('caregivers', 'Caregivers', FiUsers, '/admin/caregivers'),
       a('homes', 'Homes', FiHome, '/admin/homes'),
+      a('home-claims', 'Listing Claims', FiHome, '/admin/home-claims'),
       a('inquiries', 'Inquiries', FiFileText, '/admin/inquiries'),
       a('affiliates', 'Affiliates', FiUsers, '/admin/affiliates'),
       a('discharge-planners', 'Discharge Planners', FiFileText, '/admin/discharge-planners'),

@@ -78,8 +78,8 @@ const newPairs = (role: string, o: Opts) => new Set(flattenNav(getNavForRole(rol
  * page it names. ADMIN keeps /operator/caregivers under Communities.
  */
 // OL-226 adds /admin/analytics/funnel (Conversion Funnel) to the Admin group.
-const ADDED = new Set(['ADMIN /admin/caregivers', 'ADMIN /admin/analytics/funnel']);
-const NEW_ADMIN_HREFS = ['/admin/analytics/funnel'];
+const ADDED = new Set(['ADMIN /admin/caregivers', 'ADMIN /admin/analytics/funnel', 'ADMIN /admin/home-claims']); // home-claims: fix/self-serve-claim
+const NEW_ADMIN_HREFS = ['/admin/analytics/funnel', '/admin/home-claims'];
 // OL-243: family rides now follow RIDES_PAYMENTS (the old menu showed /rides to FAMILY unconditionally).
 // With the paid flags off, FAMILY loses /rides by design; providers keep it.
 const GATED_WHEN_PAID_OFF = new Set(['FAMILY /rides']);

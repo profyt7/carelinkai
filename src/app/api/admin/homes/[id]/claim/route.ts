@@ -2,11 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { recordEvent } from '@/lib/events/record-event';
 import { z } from 'zod';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { AuditAction } from '@prisma/client';
-import { sendOperatorClaimNotification } from '@/lib/email';
+import { assignHomeToOperator } from '@/lib/claims/assign-home';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,58 +65,11 @@ export async function POST(
       return NextResponse.json({ error: 'Home not found' }, { status: 404 });
     }
 
-    const previousOperatorId = home.operatorId;
-    // Idempotency guard for the claim notification: only notify when the home is
-    // actually transitioning INTO PENDING_REVIEW. Re-running an admin claim on a
-    // home that's already PENDING_REVIEW (e.g. reassigning operators) is a no-op
-    // for the founder alert and must not double-send (OL-079).
-    const wasAlreadyPendingReview = home.status === 'PENDING_REVIEW';
-
-    // Reassign the listing to the operator and queue it for review
-    const updatedHome = await prisma.$transaction(async (tx) => {
-      // History: admin reassigned the listing (sprint W5-1).
-      await recordEvent(tx, {
-        entityType: 'LISTING_CLAIM',
-        entityId: id,
-        eventType: 'claim.assigned',
-        field: 'operatorId',
-        oldValue: { operatorId: home.operatorId, status: home.status },
-        newValue: { operatorId: operator.id, status: 'PENDING_REVIEW' },
-        source: 'ADMIN',
-        actor: { userId: session.user?.id ?? null, role: 'ADMIN' },
-      });
-      return tx.assistedLivingHome.update({
-      where: { id },
-      data: {
-        operatorId: operator.id,
-        status: 'PENDING_REVIEW',
-      },
-      include: {
-        operator: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                email: true,
-                firstName: true,
-                lastName: true,
-              },
-            },
-          },
-        },
-      },
-    });
-    });
-
-    // Notify the operator that the listing is now theirs
-    await prisma.notification.create({
-      data: {
-        userId: operator.userId,
-        type: 'SYSTEM',
-        title: 'Listing assigned to you',
-        message: `The listing "${home.name}" has been assigned to your account. Add your photos, pricing, and availability, then it will be reviewed and published.`,
-        link: `/operator/homes/${home.id}`,
-      },
+    // Reassign the listing to the operator and queue it for review (shared with self-serve claim approval).
+    const { updatedHome, previousOperatorId } = await assignHomeToOperator({
+      home,
+      operator,
+      actor: { userId: session.user?.id ?? null, role: 'ADMIN' },
     });
 
     // Audit log
@@ -135,19 +87,6 @@ export async function POST(
         newStatus: 'PENDING_REVIEW',
       }
     );
-
-    // Surface the claim to the founder/admin in real time (non-blocking, OL-079).
-    // Skip if the home was already PENDING_REVIEW — no real claim transition.
-    if (!wasAlreadyPendingReview) {
-      void sendOperatorClaimNotification({
-        facilityName: home.name,
-        operatorEmail: operator.user?.email ?? 'unknown',
-        operatorName:
-          [operator.user?.firstName, operator.user?.lastName].filter(Boolean).join(' ') || undefined,
-        homeId: home.id,
-        status: 'PENDING_REVIEW',
-      }).catch((e) => console.error('[admin claim] founder notification failed', e));
-    }
 
     return NextResponse.json({
       success: true,

@@ -3,6 +3,17 @@ _Last updated: 2026-10-30 (night) — **OL-245 PR** `chore/tour-recapture` (self
 
 
 
+## Active Branch (2026-11-01) — OL-250 `fix/self-serve-claim` (PR open; base main `0fe189b2`)
+- **Main:** #32 merged `0fe189b2` and prod-verified (`check_trackers` on).
+- **Self-serve claim:**
+  - New `HomeClaim` table (`PENDING_REVIEW` / `APPROVED` / `REJECTED`; one pending per home via a partial unique index).
+  - `src/lib/claims/{claim-intent,self-serve,assign-home}.ts`.
+  - Routes: `POST /api/homes/[id]/claim-request` (operator), `GET /api/operator/home-claims`, `GET /api/admin/home-claims`, `PATCH /api/admin/home-claims/[id]`.
+  - Pages: `/homes/[id]/claim` and `/admin/home-claims`.
+  - The register API accepts `claimIntent`.
+  - `/api/homes/[id]` returns `claimState` (open / pending / claimed).
+- **Also open:** #33 `fix/concierge-zero-amount-test` (a $0 full-discount checkout counts as paid, logged as a test).
+
 ## Active Branch (2026-10-31, later) — OL-248 `fix/ol-246-founder-truth` (PR open; base main `e334476a`)
 - **Main:** #31 `25e2d2a8` and #29 `e334476a` merged and prod-verified (`check_trackers` on).
 - **Concierge phase 2 (pay when ready only):**
