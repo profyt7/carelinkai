@@ -45,6 +45,17 @@ describe('normalizeEmail', () => {
   });
 });
 
+describe('transactional vs marketing (feat/email-design)', () => {
+  it('a marketing "unsubscribe" does not block a transactional email; bounces and complaints still do', async () => {
+    findMany.mockResolvedValue([{ email: 'unsub@x.com', reason: 'unsubscribe' }, { email: 'bounce@x.com', reason: 'bounce' }] as never);
+    const tx = await filterSuppressed(['unsub@x.com', 'bounce@x.com', 'ok@x.com'], { ignoreReasons: ['unsubscribe'] });
+    expect(tx.allowed.sort()).toEqual(['ok@x.com', 'unsub@x.com']);
+    expect(tx.suppressed).toEqual(['bounce@x.com']);
+    const mk = await filterSuppressed(['unsub@x.com', 'bounce@x.com', 'ok@x.com']);
+    expect(mk.allowed).toEqual(['ok@x.com']);
+  });
+});
+
 describe('filterSuppressed', () => {
   it('partitions allowed vs suppressed, de-duped + normalized', async () => {
     findMany.mockResolvedValue([{ email: 'bad@x.com' }] as never);

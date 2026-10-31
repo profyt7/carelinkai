@@ -25,6 +25,16 @@ export function emailAppUrl(): string {
   return (process.env['NEXT_PUBLIC_APP_URL'] || process.env['NEXTAUTH_URL'] || 'https://getcarelinkai.com').replace(/\/$/, '');
 }
 
+/** Images must be absolute https on our domain (Gmail's image proxy and Outlook block anything else). */
+export function emailAssetBase(): string {
+  const app = emailAppUrl();
+  return /^https:\/\//i.test(app) ? app : 'https://getcarelinkai.com';
+}
+
+/** Logo PNGs are 912×214; rendered at 148×35 with explicit width/height so clients reserve the space. */
+const LOGO_W = 148;
+const LOGO_H = 35;
+
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 /**
@@ -68,6 +78,7 @@ export function isWrapped(html: string): boolean {
 export function renderEmailLayout(opts: { html: string; preheader?: string }): string {
   if (isWrapped(opts.html)) return opts.html;
   const app = emailAppUrl();
+  const assets = emailAssetBase();
   const pre = opts.preheader
     ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">${esc(opts.preheader)}</div>`
     : '';
@@ -105,8 +116,8 @@ ${pre}
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px">
   <tr><td align="left" style="padding:4px 4px 16px">
     <a href="${app}" style="text-decoration:none">
-      <img src="${app}/images/logo.png" width="148" alt="CareLinkAI" class="clk-logo-light" style="display:inline-block;border:0;height:auto;max-width:148px;font-family:${FONT};font-size:18px;font-weight:700;color:${TEXT}">
-      <img src="${app}/images/logo-on-dark.png" width="148" alt="CareLinkAI" class="clk-logo-dark" style="display:none;border:0;height:auto;max-width:148px;font-family:${FONT};font-size:18px;font-weight:700;color:#ffffff">
+      <img src="${assets}/images/logo.png" width="${LOGO_W}" height="${LOGO_H}" alt="CareLinkAI" class="clk-logo-light" style="display:inline-block;border:0;width:${LOGO_W}px;height:${LOGO_H}px;font-family:${FONT};font-size:18px;font-weight:700;color:${TEXT}">
+      <img src="${assets}/images/logo-on-dark.png" width="${LOGO_W}" height="${LOGO_H}" alt="CareLinkAI" class="clk-logo-dark" style="display:none;border:0;width:${LOGO_W}px;height:${LOGO_H}px;font-family:${FONT};font-size:18px;font-weight:700;color:#ffffff">
     </a>
   </td></tr>
   <tr><td class="clk-card clk-card-pad" style="background:#ffffff;border:1px solid ${CARD_BORDER};border-radius:12px;padding:32px;font-family:${FONT};font-size:16px;line-height:24px;color:${TEXT}">

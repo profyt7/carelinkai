@@ -59,16 +59,19 @@ export async function suppressionReasonFor(email: string | null | undefined): Pr
  */
 export async function filterSuppressed(
   emails: Array<string | null | undefined>,
+  /** Suppression reasons that do NOT block this send (e.g. a marketing 'unsubscribe' for a transactional email). */
+  opts: { ignoreReasons?: string[] } = {},
 ): Promise<{ allowed: string[]; suppressed: string[] }> {
   const normalized = Array.from(new Set(emails.map(normalizeEmail).filter(Boolean)));
   if (normalized.length === 0) return { allowed: [], suppressed: [] };
   let suppressedSet = new Set<string>();
+  const ignore = new Set(opts.ignoreReasons ?? []);
   try {
     const rows = await prisma.emailSuppression.findMany({
       where: { email: { in: normalized } },
-      select: { email: true },
+      select: { email: true, reason: true },
     });
-    suppressedSet = new Set(rows.map((r) => r.email));
+    suppressedSet = new Set(rows.filter((r) => !ignore.has(r.reason ?? '')).map((r) => r.email));
   } catch (error) {
     // Fail OPEN: on a lookup error, treat nothing as suppressed rather than
     // silently dropping legitimate transactional mail. The webhook keeps the

@@ -71,7 +71,11 @@ export async function guardedResendSend(
   args: ResendSendArgs,
 ): Promise<{ data: { id: string } | null; error: { message?: string; name?: string } | null }> {
   const toList = Array.isArray(args.to) ? args.to : args.to ? [args.to] : [];
-  const { allowed, suppressed } = await filterSuppressed(toList);
+  // Transactional mail (no List-Unsubscribe header) is not marketing: a marketing 'unsubscribe' must not block
+  // it. Bounces, complaints and invalid addresses still block every send.
+  const headers = (args as { headers?: Record<string, string> }).headers ?? {};
+  const isMarketing = Object.keys(headers).some((h) => h.toLowerCase() === 'list-unsubscribe');
+  const { allowed, suppressed } = await filterSuppressed(toList, isMarketing ? {} : { ignoreReasons: ['unsubscribe'] });
   if (suppressed.length > 0) {
     console.warn(`[Resend] suppression: dropped ${suppressed.length} recipient(s) from "${String(args.subject ?? '')}"`);
   }
@@ -487,16 +491,18 @@ export async function sendHomeClaimDecisionEmail(args: { to: string; firstName?:
   const hi = args.firstName?.trim() ? `Hi ${args.firstName.trim()},` : 'Hi,';
   const approved = args.decision === 'approved';
   const subject = approved ? `Your claim for ${args.homeName} is approved` : `About your claim for ${args.homeName}`;
+  const listingUrl = `${appUrl}/operator/homes/${args.homeId}`;
+  // The "Open your listing" button is the single action in the HTML; the plain-text version carries the link.
   const body = approved
-    ? [hi, `Thanks for claiming ${args.homeName} on CareLinkAI. We verified it and the listing is now yours.`, `Add your photos, pricing and availability here: ${appUrl}/operator/homes/${args.homeId}`, `Questions? Call (216) 245-9482 or reply to this email.`]
+    ? [hi, `Thanks for claiming ${args.homeName} on CareLinkAI. We confirmed your claim. The listing is now yours.`, `Questions? Call (216) 245-9482 or reply to this email.`]
     : [hi, `Thanks for your interest in managing ${args.homeName} on CareLinkAI. We weren't able to verify this claim, so the listing hasn't been transferred.`, `If you manage this community, we'd be glad to help. Call (216) 245-9482 or send us a message: ${appUrl}/contact`, `Thank you for your understanding.`];
   try {
     const { error } = await guardedResendSend({
       from: `${APP_NAME} <${FROM_EMAIL}>`,
       to: [args.to],
       subject,
-      text: body.join('\n\n') + '\n\nCareLinkAI · Cleveland, OH\n',
-      html: body.map((p) => `<p>${escapeHtml(p)}</p>`).join('') + (approved ? emailButton('Open your listing', `${appUrl}/operator/homes/${args.homeId}`) : ''),
+      text: (approved ? [body[0], body[1], `Open your listing: ${listingUrl}`, ...body.slice(2)] : body).join('\n\n') + '\n\nCareLinkAI · Cleveland, OH\n',
+      html: body.map((p) => `<p>${escapeHtml(p)}</p>`).join('') + (approved ? emailButton('Open your listing', listingUrl) : ''),
       tags: [{ name: 'category', value: `home-claim-${args.decision}` }],
     });
     if (error) throw error instanceof Error ? error : new Error(String((error as { message?: string })?.message ?? error));

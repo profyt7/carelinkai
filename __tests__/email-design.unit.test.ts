@@ -9,7 +9,8 @@
  */
 const sent: any[] = [];
 jest.mock('resend', () => ({ Resend: jest.fn().mockImplementation(() => ({ emails: { send: jest.fn(async (args: any) => { sent.push(args); return { data: { id: 'em_1' }, error: null }; }) } })) }));
-jest.mock('@/lib/email/suppression', () => ({ filterSuppressed: jest.fn(async (to: string[]) => ({ allowed: to, suppressed: [] })) }));
+const filterSuppressed = jest.fn(async (to: string[], _opts?: unknown) => ({ allowed: to, suppressed: [] as string[] }));
+jest.mock('@/lib/email/suppression', () => ({ filterSuppressed: (to: string[], opts?: unknown) => filterSuppressed(to, opts) }));
 jest.mock('@/lib/sentry', () => ({ captureError: jest.fn() }));
 
 import * as email from '@/lib/email';
@@ -25,7 +26,7 @@ beforeAll(() => {
   process.env.NEXT_PUBLIC_APP_URL = 'https://getcarelinkai.com';
   process.env.ADMIN_NOTIFY_EMAIL = 'admin@example.test';
 });
-beforeEach(() => { sent.length = 0; });
+beforeEach(() => { sent.length = 0; filterSuppressed.mockClear(); });
 
 async function capture(fn: () => Promise<unknown>) {
   await fn();
@@ -33,7 +34,7 @@ async function capture(fn: () => Promise<unknown>) {
   return sent[0];
 }
 
-const CASES: { name: string; run: () => Promise<unknown>; cta: string | null }[] = [
+const CASES: { name: string; run: () => Promise<unknown>; cta: string | null; marketing?: boolean }[] = [
   { name: 'concierge confirmation (family)', cta: null, run: () => email.sendConciergeFamilyEmail({ toEmail: 'fam@example.test', email: conciergeConfirmationEmail({ waitlisted: false }), kind: 'confirmation' } as any) },
   { name: 'payment link (family)', cta: 'Pay $399 securely', run: () => email.sendConciergeFamilyEmail({ toEmail: 'fam@example.test', email: conciergePaymentLinkEmail({ paymentLinkUrl: 'https://buy.stripe.com/test_x?client_reference_id=ord1' }), kind: 'payment_link' } as any) },
   { name: 'payment reminder (family)', cta: 'Pay $399 securely', run: () => email.sendConciergeFamilyEmail({ toEmail: 'fam@example.test', email: conciergePaymentReminderEmail({ paymentLinkUrl: 'https://buy.stripe.com/test_x' }), kind: 'payment_reminder' } as any) },
@@ -47,7 +48,7 @@ const CASES: { name: string; run: () => Promise<unknown>; cta: string | null }[]
   { name: 'shortlist ready (DP)', cta: null, run: () => email.sendConciergeShortlistReadyEmail({ toEmail: 'dp@example.test', count: 3 }) },
   { name: 'concierge admin notice', cta: null, run: () => email.sendConciergeAdminNotice({ subject: 'Order expired (unpaid 14 days)', text: 'Order ord1 expired.', requestId: 'ps-1' }) },
   { name: 'new tour lead (operator)', cta: null, run: () => email.sendNewLeadOperatorEmail({ facilityName: 'Maple Grove', toEmail: 'op@example.test', operatorFirstName: 'Pat', leadType: 'tour', ctaUrl: 'https://getcarelinkai.com/operator/tours' }) },
-  { name: 'facility accept/decline request', cta: null, run: () => email.sendFacilityResponseRequestEmail({ toEmail: 'home@example.test', facilityName: 'Maple Grove', summary: { careLevel: 'Memory care', payerLane: 'Private pay', feeLane: 'FEE_ELIGIBLE', timeline: 'Within 2 weeks' }, token: 'tok', appUrl: 'https://getcarelinkai.com', postalAddress: '123 Test St, Cleveland, OH', unsubscribeUrl: 'https://getcarelinkai.com/u' }) },
+  { name: 'facility accept/decline request', cta: null, marketing: true, run: () => email.sendFacilityResponseRequestEmail({ toEmail: 'home@example.test', facilityName: 'Maple Grove', summary: { careLevel: 'Memory care', payerLane: 'Private pay', feeLane: 'FEE_ELIGIBLE', timeline: 'Within 2 weeks' }, token: 'tok', appUrl: 'https://getcarelinkai.com', postalAddress: '123 Test St, Cleveland, OH', unsubscribeUrl: 'https://getcarelinkai.com/u' }) },
   { name: 'verification', cta: null, run: () => email.sendVerificationEmail('pat@example.test', 'Pat', 'verify-token') },
   { name: 'password reset', cta: null, run: () => email.sendPasswordResetEmail('pat@example.test', 'Pat', 'reset-token') },
 ];
@@ -67,6 +68,11 @@ describe('every email: layout, one CTA, no emoji in subject/headings, plain text
     expect(ctaCount(html)).toBeLessThanOrEqual(1);
     if (c.cta) {
       expect(ctaCount(html)).toBe(1);
+      // (b) the button (VML + HTML) and its fallback link all point to the same URL
+      const block = html.slice(html.indexOf('data-cta="primary"'));
+      const hrefs = [...block.slice(0, block.indexOf('</p>')).matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
+      expect(hrefs.length).toBe(3);
+      expect(new Set(hrefs).size).toBe(1);
       expect(html).toContain(c.cta.replace('&', '&amp;'));
       expect(html).toContain('Or open this link:');
     }
@@ -74,12 +80,50 @@ describe('every email: layout, one CTA, no emoji in subject/headings, plain text
     for (const h of html.match(/<h[1-3][^>]*>[\s\S]*?<\/h[1-3]>/gi) ?? []) expect(h).not.toMatch(EMOJI);
     expect(typeof msg.text).toBe('string');
     expect(msg.text).not.toContain('<table');
-    for (const phi of PHI) expect(html + msg.text).not.toContain(phi);
+    // (d) no care details in the subject, any preview text, the body, the plain text or any URL
+    for (const phi of PHI) expect(`${msg.subject}\n${html}\n${msg.text}`).not.toContain(phi);
+    expect(html).not.toMatch(/display:none;max-height:0/); // no hidden preheader text is added
+    // (e) transactional: a marketing 'unsubscribe' never blocks it, and there is no unsubscribe/marketing language
+    if (!c.marketing) {
+      expect(filterSuppressed).toHaveBeenCalledWith(expect.any(Array), { ignoreReasons: ['unsubscribe'] });
+      expect(html).not.toMatch(/unsubscribe|marketing|opt.?out|email preferences/i);
+    } else {
+      expect(filterSuppressed).toHaveBeenCalledWith(expect.any(Array), {});
+    }
     const stable = html
       .replace(/https:\/\/buy\.stripe\.com[^"<\s]*/g, 'STRIPE')
       .replace(/\w+day, \w+ \d{1,2}, \d{4} at \d{1,2}:\d{2} [AP]M ET/g, 'DATE') // "claimed at" timestamps
       .replace(/\s+/g, ' ');
     expect(stable).toMatchSnapshot();
+  });
+});
+
+describe('(c) multi-action emails keep every link', () => {
+  it('availability ping: all one-tap replies (0–5, other, STOP) and the unsubscribe link survive; no primary button is added', async () => {
+    const msg = await capture(() => email.sendAvailabilityPingEmail({ toEmail: 'home@example.test', contactName: 'Ann Lee', facilityName: 'Maple Grove', token: 'tok123', appUrl: 'https://getcarelinkai.com', postalAddress: '123 Test St, Cleveland, OH' }));
+    const links = [...msg.html.matchAll(/href="([^"]+)"/g)].map((m: RegExpMatchArray) => m[1]!.replace(/&amp;/g, '&'));
+    for (const n of ['0', '1', '2', '3', '4', '5', 'STOP']) expect(links.some((l: string) => l.includes('token=tok123') && l.includes(`reply=${n}`))).toBe(true);
+    expect(links.some((l: string) => /unsubscribe/i.test(l))).toBe(true);
+    expect(ctaCount(msg.html)).toBe(0);
+    expect(filterSuppressed).toHaveBeenCalledWith(expect.any(Array), {}); // marketing: a marketing unsubscribe still blocks it
+  });
+
+  it('facility accept/decline request keeps both actions', async () => {
+    const msg = await capture(() => email.sendFacilityResponseRequestEmail({ toEmail: 'home@example.test', facilityName: 'Maple Grove', summary: { careLevel: 'Memory care', payerLane: 'Private pay', feeLane: 'FEE_ELIGIBLE', timeline: 'Within 2 weeks' }, token: 'tokFR', appUrl: 'https://getcarelinkai.com', postalAddress: '123 Test St', unsubscribeUrl: 'https://getcarelinkai.com/u' }));
+    const links = [...msg.html.matchAll(/href="([^"]+)"/g)].map((m: RegExpMatchArray) => m[1]!);
+    expect(links.filter((l: string) => l.includes('tokFR')).length).toBeGreaterThanOrEqual(1);
+    expect(links).toContain('https://getcarelinkai.com/u');
+  });
+});
+
+describe('claim approved copy', () => {
+  it('"We confirmed your claim. The listing is now yours." and the button is the single action (no inline "here: {url}")', async () => {
+    const msg = await capture(() => email.sendHomeClaimDecisionEmail({ to: 'op@example.test', firstName: 'Pat', homeName: 'Maple Grove', decision: 'approved', homeId: 'h-1' }));
+    expect(msg.html).toContain('We confirmed your claim. The listing is now yours.');
+    expect(msg.html).not.toContain('We verified it');
+    expect(msg.html).not.toMatch(/availability here:/);
+    expect(msg.html.match(/\/operator\/homes\/h-1/g)).toHaveLength(4); // VML href, button href, fallback href + its visible text — nothing else
+    expect(msg.text).toContain('Open your listing: https://getcarelinkai.com/operator/homes/h-1');
   });
 });
 
