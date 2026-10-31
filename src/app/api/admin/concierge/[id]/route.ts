@@ -10,10 +10,15 @@
  *                                                            emailed to the facility — W4-2)
  *   { action: 'admitted', homeId }                      → admin confirms the move-in
  *                                                          (ACCEPTED → ADMITTED)
+ *   { action: 'suggest' }                               → run matching on demand when no
+ *                                                          matches are stored (family requests)
+ *                                                          and store them like a DP search
  *
- * curatedHomes in: [{ homeId, note?, confirmedAvailability? }] — the server
- * enriches each with the home's current name + address before storing, so the
- * DP-facing shortlist is self-contained.
+ * curatedHomes in: [{ homeId, note?, confirmedAvailability?, availabilityLabel? }] — in the admin's order.
+ * The server enriches each with the home's current name + address before storing, so the shortlist is
+ * self-contained. Any public home can be added (not only stored matches). availabilityLabel is what the
+ * family sees: 'verified' (our team verified it) or 'unconfirmed' (ask the home); when omitted it defaults
+ * to unconfirmed unless the home's current availability is verified.
  */
 
 export const dynamic = 'force-dynamic';
@@ -30,6 +35,7 @@ import { createFacilityResponsesForShortlist, markAdmitted, FACILITY_RESPONSE_SE
 import { captureError } from '@/lib/sentry';
 import { CONCIERGE_PAGE_SOURCE } from '@/lib/concierge/intake';
 import { configuredPaymentLink } from '@/lib/concierge/pay-when-ready';
+import { defaultAvailabilityLabel, openingsVerifiedOn, suggestHomesForRequest } from '@/lib/concierge/manual-shortlist';
 
 function authErr(error: any): NextResponse | null {
   if (error?.name === 'UnauthenticatedError') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -49,6 +55,8 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
         searchResults: true,
         patientInfo: true,
         payerSource: true,
+        intakeZip: true,
+        careLevel: true,
         source: true,
         isConcierge: true,
         conciergeStatus: true,
@@ -87,10 +95,12 @@ const curatedSchema = z.object({
   homeId: z.string().min(1),
   note: z.string().optional(),
   confirmedAvailability: z.string().optional(),
+  availabilityLabel: z.enum(['verified', 'unconfirmed']).optional(),
 });
 const patchSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('matching') }),
   z.object({ action: z.literal('admitted'), homeId: z.string().min(1) }),
+  z.object({ action: z.literal('suggest') }),
   z.object({
     action: z.literal('respond'),
     curatedHomes: z.array(curatedSchema).min(1, 'Add at least one home to the shortlist'),
@@ -130,11 +140,17 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       return NextResponse.json({ ok: true, status: 'ADMITTED', homeId: parsed.homeId });
     }
 
+    if (parsed.action === 'suggest') {
+      const r = await suggestHomesForRequest(params.id, { userId: admin.id, role: admin.role });
+      if (!r.ok) return NextResponse.json({ error: r.reason === 'has_matches' ? 'Matches are already stored for this request.' : 'Concierge request not found' }, { status: r.reason === 'has_matches' ? 409 : 404 });
+      return NextResponse.json({ ok: true, count: r.count, near: r.near });
+    }
+
     // action === 'respond' — enrich curated homes with current name/address.
     const homeIds = parsed.curatedHomes.map((h) => h.homeId);
     const homes = await prisma.assistedLivingHome.findMany({
       where: { id: { in: homeIds } },
-      select: { id: true, name: true, address: { select: { street: true, city: true, state: true, zipCode: true } } },
+      select: { id: true, name: true, availabilityCount: true, availabilityVerifiedAt: true, availabilitySource: true, address: { select: { street: true, city: true, state: true, zipCode: true } } },
     });
     const byId = new Map(homes.map((h) => [h.id, h]));
 
@@ -150,6 +166,10 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
           address,
           note: h.note?.trim() || '',
           confirmedAvailability: h.confirmedAvailability?.trim() || '',
+          ...(() => {
+            const availabilityLabel = h.availabilityLabel ?? defaultAvailabilityLabel(home);
+            return { availabilityLabel, availabilityVerifiedOn: availabilityLabel === 'verified' ? openingsVerifiedOn(home) : null };
+          })(),
         };
       });
 

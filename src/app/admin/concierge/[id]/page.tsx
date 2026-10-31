@@ -21,7 +21,13 @@ type Match = {
   startingPrice?: number;
   contactEmail?: string;
   contactPhone?: string;
+  availability?: { fresh?: boolean; label?: string };
 };
+
+type AvailabilityLabel = 'verified' | 'unconfirmed';
+/** One shortlisted home, in the admin's order (fix/concierge-manual-shortlist). */
+type Pick = { homeId: string; homeName: string; address: string; note: string; confirmedAvailability: string; availabilityLabel: AvailabilityLabel };
+type SearchHit = { homeId: string; homeName: string; address: string; availability: string; defaultAvailabilityLabel: AvailabilityLabel };
 
 type PatientInfo = {
   patientName?: string;
@@ -43,11 +49,12 @@ type Detail = {
   id: string;
   queryText: string;
   parsedCriteria: any;
-  searchResults: { matches?: Match[] } | null;
+  searchResults: { matches?: Match[]; suggestedNear?: string } | null;
+  intakeZip?: string | null;
   patientInfo: PatientInfo | null;
   payerSource?: string | null;
   conciergeStatus: string | null;
-  curatedHomes: { homeId: string; note?: string; confirmedAvailability?: string; tourStatus?: 'REQUESTED'; tourRequestedAt?: string }[] | null;
+  curatedHomes: { homeId: string; name?: string; address?: string; note?: string; confirmedAvailability?: string; availabilityLabel?: AvailabilityLabel; tourStatus?: 'REQUESTED'; tourRequestedAt?: string }[] | null;
   conciergeNote: string | null;
   conciergeSubmittedAt: string | null;
   conciergeRespondedAt: string | null;
@@ -101,7 +108,6 @@ const DECLINE_LABEL: Record<string, string> = {
 };
 const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : '—');
 
-type Selection = { included: boolean; note: string; confirmedAvailability: string };
 
 export default function AdminConciergeCuratePage() {
   const params = useParams();
@@ -111,7 +117,10 @@ export default function AdminConciergeCuratePage() {
   const [detail, setDetail] = useState<Detail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [sel, setSel] = useState<Record<string, Selection>>({});
+  const [picks, setPicks] = useState<Pick[]>([]);
+  const [query, setQuery] = useState('');
+  const [hits, setHits] = useState<SearchHit[]>([]);
+  const [searching, setSearching] = useState(false);
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState<string | null>(null);
   const [paymentLinkConfigured, setPaymentLinkConfigured] = useState(false);
@@ -126,18 +135,16 @@ export default function AdminConciergeCuratePage() {
       setDetail(d);
       setPaymentLinkConfigured(data.paymentLinkConfigured === true);
       setNote(d.conciergeNote ?? '');
-      // Seed selections from a prior shortlist if present.
-      const prior = new Map((d.curatedHomes ?? []).map((c) => [c.homeId, c]));
-      const seed: Record<string, Selection> = {};
-      (d.searchResults?.matches ?? []).forEach((m) => {
-        const p = prior.get(m.homeId);
-        seed[m.homeId] = {
-          included: !!p,
-          note: p?.note ?? '',
-          confirmedAvailability: p?.confirmedAvailability ?? '',
-        };
-      });
-      setSel(seed);
+      // Seed the shortlist from a prior save, in its saved order (homes added by hand included).
+      const byId = new Map((d.searchResults?.matches ?? []).map((m) => [m.homeId, m]));
+      setPicks((d.curatedHomes ?? []).map((c) => ({
+        homeId: c.homeId,
+        homeName: c.name ?? byId.get(c.homeId)?.homeName ?? c.homeId,
+        address: c.address ?? byId.get(c.homeId)?.address ?? '',
+        note: c.note ?? '',
+        confirmedAvailability: c.confirmedAvailability ?? '',
+        availabilityLabel: c.availabilityLabel ?? (c.confirmedAvailability ? 'verified' : 'unconfirmed'),
+      })));
     } catch (e: any) {
       setError(e?.message || 'Failed to load');
     } finally {
@@ -147,8 +154,55 @@ export default function AdminConciergeCuratePage() {
 
   useEffect(() => { if (id) load(); }, [id, load]);
 
-  const update = (homeId: string, patch: Partial<Selection>) =>
-    setSel((prev) => ({ ...prev, [homeId]: { ...prev[homeId], ...patch } }));
+  const update = (homeId: string, patch: Partial<Pick>) =>
+    setPicks((prev) => prev.map((p) => (p.homeId === homeId ? { ...p, ...patch } : p)));
+  const addPick = (p: Omit<Pick, 'note' | 'confirmedAvailability'>) =>
+    setPicks((prev) => (prev.some((x) => x.homeId === p.homeId) ? prev : [...prev, { ...p, note: '', confirmedAvailability: '' }]));
+  const removePick = (homeId: string) => setPicks((prev) => prev.filter((p) => p.homeId !== homeId));
+  const move = (homeId: string, dir: -1 | 1) =>
+    setPicks((prev) => {
+      const i = prev.findIndex((p) => p.homeId === homeId);
+      const j = i + dir;
+      if (i < 0 || j < 0 || j >= prev.length) return prev;
+      const next = [...prev];
+      [next[i], next[j]] = [next[j]!, next[i]!];
+      return next;
+    });
+
+  // "Add a home": public homes by name, city or ZIP (top 10).
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) { setHits([]); return; }
+    const t = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await fetch(`/api/admin/concierge/homes?q=${encodeURIComponent(q)}`, { cache: 'no-store' });
+        const data = await res.json().catch(() => ({}));
+        setHits(Array.isArray(data?.homes) ? data.homes : []);
+      } finally {
+        setSearching(false);
+      }
+    }, 250);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const suggest = async () => {
+    setSaving('suggest');
+    try {
+      const res = await fetch(`/api/admin/concierge/${id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'suggest' }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || 'Failed');
+      toast.success(data.count > 0 ? `${data.count} homes suggested near ${data.near}` : `No public homes found near ${data.near} — add one by hand`);
+      load();
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed');
+    } finally {
+      setSaving(null);
+    }
+  };
 
   const markMatching = async () => {
     setSaving('matching');
@@ -186,9 +240,7 @@ export default function AdminConciergeCuratePage() {
   };
 
   const sendShortlist = async () => {
-    const curatedHomes = Object.entries(sel)
-      .filter(([, s]) => s.included)
-      .map(([homeId, s]) => ({ homeId, note: s.note, confirmedAvailability: s.confirmedAvailability }));
+    const curatedHomes = picks.map((p) => ({ homeId: p.homeId, note: p.note, confirmedAvailability: p.confirmedAvailability, availabilityLabel: p.availabilityLabel }));
     if (curatedHomes.length === 0) {
       toast.error('Select at least one home for the shortlist');
       return;
@@ -231,7 +283,10 @@ export default function AdminConciergeCuratePage() {
   const matches = detail.searchResults?.matches ?? [];
   const tourRequestedHomeIds = new Set((detail.curatedHomes ?? []).filter((h) => h.tourStatus === 'REQUESTED').map((h) => h.homeId));
   const dpName = [detail.user?.firstName, detail.user?.lastName].filter(Boolean).join(' ') || detail.user?.email || 'Discharge planner';
-  const selectedCount = Object.values(sel).filter((s) => s.included).length;
+  const selectedCount = picks.length;
+  const picked = new Set(picks.map((x) => x.homeId));
+  const near = detail.intakeZip || p.location || 'the request area';
+  const matchLabel = (m: Match): AvailabilityLabel => (m.availability?.fresh ? 'verified' : 'unconfirmed');
   const isReady = detail.conciergeStatus === 'SHORTLIST_READY';
 
   return (
@@ -291,7 +346,7 @@ export default function AdminConciergeCuratePage() {
           </p>
           <ul className="divide-y divide-neutral-100">
             {(detail.facilityResponses ?? []).map((fr) => {
-              const name = matches.find((m) => m.homeId === fr.homeId)?.homeName ?? fr.homeId;
+              const name = matches.find((m) => m.homeId === fr.homeId)?.homeName ?? detail.curatedHomes?.find((c) => c.homeId === fr.homeId)?.name ?? fr.homeId;
               return (
                 <li key={fr.id} className="py-3 flex flex-wrap items-start justify-between gap-3" data-testid="facility-response-row" data-home-id={fr.homeId} data-status={fr.status}>
                   <div className="min-w-0">
@@ -332,60 +387,143 @@ export default function AdminConciergeCuratePage() {
           <span className="text-sm text-neutral-500">{selectedCount} selected</span>
         </div>
 
-        {matches.length === 0 ? (
-          <p className="text-sm text-neutral-500">No AI candidate matches were stored for this search.</p>
-        ) : (
-          <div className="space-y-3">
-            {matches.map((m) => {
-              const s = sel[m.homeId] ?? { included: false, note: '', confirmedAvailability: '' };
-              return (
-                <div key={m.homeId} className={`border rounded-xl p-4 transition-colors ${s.included ? 'border-primary-300 bg-primary-50/40' : 'border-neutral-200'}`}>
-                  <div className="flex items-start gap-3">
-                    <input
-                      type="checkbox" checked={s.included}
-                      onChange={(e) => update(m.homeId, { included: e.target.checked })}
-                      className="mt-1.5 h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
-                    />
-                    <div className="flex-1 min-w-0">
+        {/* Shortlist, in the order the family will see it */}
+        <div data-testid="curate-shortlist">
+          <h3 className="text-sm font-semibold text-neutral-700 mb-2">Shortlist {detail.source === 'concierge_page' ? '(hidden from the family until paid and released)' : ''}</h3>
+          {picks.length === 0 ? (
+            <p className="text-sm text-neutral-500 rounded-lg border border-dashed border-neutral-300 p-3" data-testid="curate-shortlist-empty">No homes yet. Pick from the candidates below or add a home by name, city or ZIP.</p>
+          ) : (
+            <ol className="space-y-3">
+              {picks.map((pk, i) => (
+                <li key={pk.homeId} className="border border-primary-300 bg-primary-50/40 rounded-xl p-4" data-testid="curate-pick" data-home-id={pk.homeId}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-neutral-900">{m.homeName}</span>
-                        {typeof m.score === 'number' && (
-                          <span className="inline-flex items-center gap-1 bg-primary-100 text-primary-800 px-2 py-0.5 rounded-full text-xs font-medium"><Star className="h-3 w-3 fill-current" /> {m.score}</span>
-                        )}
-                        {tourRequestedHomeIds.has(m.homeId) && (
-                          <span className="inline-flex items-center gap-1 bg-success-100 text-success-800 px-2 py-0.5 rounded-full text-xs font-medium">🗓️ Tour requested</span>
-                        )}
-                        <Link href={`/homes/${m.homeId}`} target="_blank" className="text-xs text-primary-600 underline">view</Link>
+                        <span className="font-semibold text-neutral-900">{i + 1}. {pk.homeName}</span>
+                        {tourRequestedHomeIds.has(pk.homeId) && <span className="inline-flex items-center gap-1 bg-success-100 text-success-800 px-2 py-0.5 rounded-full text-xs font-medium">🗓️ Tour requested</span>}
+                        <Link href={`/homes/${pk.homeId}`} target="_blank" className="text-xs text-primary-600 underline">view</Link>
                       </div>
-                      <div className="text-xs text-neutral-500 flex items-center gap-3 mt-0.5 flex-wrap">
-                        {m.address && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {m.address}</span>}
-                        {typeof m.availableBeds === 'number' && <span className="inline-flex items-center gap-1"><Bed className="h-3 w-3" /> {m.availableBeds} beds</span>}
-                      </div>
-                      {m.reasoning && <p className="text-sm text-neutral-600 mt-2">{m.reasoning}</p>}
-
-                      {s.included && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-                          <input
-                            value={s.confirmedAvailability}
-                            onChange={(e) => update(m.homeId, { confirmedAvailability: e.target.value })}
-                            placeholder="Confirmed availability (e.g., 2 beds, ready now)"
-                            className="px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                          />
-                          <input
-                            value={s.note}
-                            onChange={(e) => update(m.homeId, { note: e.target.value })}
-                            placeholder="Note to the DP about this home"
-                            className="px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                          />
-                        </div>
-                      )}
+                      {pk.address && <div className="text-xs text-neutral-500 mt-0.5 inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {pk.address}</div>}
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <button type="button" onClick={() => move(pk.homeId, -1)} disabled={i === 0} className="rounded border border-neutral-300 px-2 py-1 text-xs disabled:opacity-40" aria-label={`Move ${pk.homeName} up`} data-testid="curate-pick-up">↑</button>
+                      <button type="button" onClick={() => move(pk.homeId, 1)} disabled={i === picks.length - 1} className="rounded border border-neutral-300 px-2 py-1 text-xs disabled:opacity-40" aria-label={`Move ${pk.homeName} down`} data-testid="curate-pick-down">↓</button>
+                      <button type="button" onClick={() => removePick(pk.homeId)} className="rounded border border-error-300 px-2 py-1 text-xs text-error-700" aria-label={`Remove ${pk.homeName}`} data-testid="curate-pick-remove">Remove</button>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+                    <label className="text-xs text-neutral-600">
+                      Openings shown to the family
+                      <select
+                        value={pk.availabilityLabel}
+                        onChange={(e) => update(pk.homeId, { availabilityLabel: e.target.value as AvailabilityLabel })}
+                        className="mt-1 block w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm"
+                        data-testid="curate-pick-availability"
+                      >
+                        <option value="unconfirmed">Openings unconfirmed — ask the home</option>
+                        <option value="verified">Openings verified by our team</option>
+                      </select>
+                    </label>
+                    <input
+                      value={pk.confirmedAvailability}
+                      onChange={(e) => update(pk.homeId, { confirmedAvailability: e.target.value })}
+                      placeholder="Openings details (e.g., 2 beds, ready now)"
+                      className="sm:mt-5 px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
+                    <input
+                      value={pk.note}
+                      onChange={(e) => update(pk.homeId, { note: e.target.value })}
+                      placeholder={detail.source === 'concierge_page' ? 'Note to the family about this home' : 'Note to the DP about this home'}
+                      className="sm:mt-5 px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
+                  </div>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+
+        {/* Add a home: any public listing, by name, city or ZIP */}
+        <div className="mt-5" data-testid="curate-add-home">
+          <label htmlFor="curate-search" className="block text-sm font-semibold text-neutral-700 mb-2">Add a home</label>
+          <input
+            id="curate-search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search public homes by name, city or ZIP"
+            className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            data-testid="curate-search"
+          />
+          {searching && <p className="mt-1 text-xs text-neutral-500">Searching…</p>}
+          {hits.length > 0 && (
+            <ul className="mt-2 divide-y divide-neutral-100 rounded-lg border border-neutral-200" data-testid="curate-search-results">
+              {hits.map((h) => (
+                <li key={h.homeId} className="flex items-center justify-between gap-3 px-3 py-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-neutral-900">{h.homeName}</p>
+                    <p className="text-xs text-neutral-500">{h.address} · {h.availability}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => addPick({ homeId: h.homeId, homeName: h.homeName, address: h.address, availabilityLabel: h.defaultAvailabilityLabel })}
+                    disabled={picked.has(h.homeId)}
+                    className="shrink-0 rounded-lg border border-primary-600 px-3 py-1.5 text-xs font-semibold text-primary-700 hover:bg-primary-50 disabled:opacity-40"
+                    data-testid="curate-search-add"
+                  >
+                    {picked.has(h.homeId) ? 'Added' : 'Add'}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {query.trim().length >= 2 && !searching && hits.length === 0 && <p className="mt-1 text-xs text-neutral-500">No public homes match.</p>}
+        </div>
+
+        {/* Candidates: stored matches, or run the matching on demand */}
+        <div className="mt-6" data-testid="curate-candidates">
+          <h3 className="text-sm font-semibold text-neutral-700 mb-2">Candidates</h3>
+          {matches.length === 0 ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-sm text-neutral-500">No candidate matches are stored for this request.</p>
+              <button type="button" onClick={suggest} disabled={!!saving} className="px-3 py-2 rounded-lg border border-primary-600 text-sm font-medium text-primary-700 hover:bg-primary-50 disabled:opacity-50 inline-flex items-center gap-2" data-testid="curate-suggest">
+                {saving === 'suggest' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Star className="h-4 w-4" />} Suggest homes near {near}
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {matches.map((m) => {
+                const on = picked.has(m.homeId);
+                return (
+                  <div key={m.homeId} className={`border rounded-xl p-4 transition-colors ${on ? 'border-primary-300 bg-primary-50/40' : 'border-neutral-200'}`} data-testid="curate-candidate">
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="checkbox" checked={on}
+                        onChange={(e) => (e.target.checked ? addPick({ homeId: m.homeId, homeName: m.homeName, address: m.address ?? '', availabilityLabel: matchLabel(m) }) : removePick(m.homeId))}
+                        className="mt-1.5 h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                        aria-label={`Shortlist ${m.homeName}`}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-neutral-900">{m.homeName}</span>
+                          {typeof m.score === 'number' && (
+                            <span className="inline-flex items-center gap-1 bg-primary-100 text-primary-800 px-2 py-0.5 rounded-full text-xs font-medium"><Star className="h-3 w-3 fill-current" /> {m.score}</span>
+                          )}
+                          <Link href={`/homes/${m.homeId}`} target="_blank" className="text-xs text-primary-600 underline">view</Link>
+                        </div>
+                        <div className="text-xs text-neutral-500 flex items-center gap-3 mt-0.5 flex-wrap">
+                          {m.address && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {m.address}</span>}
+                          {typeof m.availableBeds === 'number' && <span className="inline-flex items-center gap-1"><Bed className="h-3 w-3" /> {m.availableBeds} beds</span>}
+                          {m.availability?.label && <span>{m.availability.label}</span>}
+                        </div>
+                        {m.reasoning && <p className="text-sm text-neutral-600 mt-2">{m.reasoning}</p>}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
         <div className="mt-5">
           <label className="block text-sm font-semibold text-neutral-700 mb-2">{detail.source === 'concierge_page' ? 'Message to the family — shown with their shortlist once paid and released (optional)' : 'Message to the discharge planner (optional)'}</label>
