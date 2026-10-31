@@ -5,7 +5,8 @@ import { loginAs } from './_helpers';
  * Cleveland founder CLAIM FLOW regression guard.
  *
  * Mirrors the manual production smoke test run before founder outreach:
- *   - Founder card + "Free for 6 months · No credit card required" display
+ *   - Founding Operator card: "Founding Operator — Free listing. No credit card required." and the verified
+ *     tool list — no fixed free duration, "unlimited", "full access" or "priority support" (OL-248)
  *   - Completing onboarding lands on the BAA/DPA gate (NOT a Stripe checkout)
  *   - Claiming the admin-seeded home transfers ownership and activates it
  *
@@ -201,11 +202,14 @@ test.describe.fixme('@critical Cleveland founder claim flow (post-redemption)', 
     await loginAs(page, founderEmail);
     await page.goto('/operator/onboarding/4', { waitUntil: 'domcontentloaded' });
 
-    // Free founder card and its hallmark copy.
-    await expect(page.getByText(/Cleveland Founder Program/i)).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText(/Free for 6 months/i)).toBeVisible();
-    await expect(page.getByText(/No credit card required/i)).toBeVisible();
-    await expect(page.getByText(/Your founder access is active/i)).toBeVisible();
+    // OL-248: the Founding Operator card promises only what works today.
+    const card = page.getByTestId('founding-operator-card');
+    await expect(card).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId('founding-operator-headline')).toHaveText('Founding Operator — Free listing. No credit card required.');
+    await expect(card).toContainText('Direct founder support');
+    await expect(card).not.toContainText(/6 months|unlimited|full platform|full access|priority support|discount/i);
+    await expect(page.getByText(/Your founding operator listing is ready/i)).toBeVisible();
+    await expect(page.getByText(/14-day free trial/i)).toHaveCount(0);
 
     // The paid-plan / Stripe path must NOT be offered to founders.
     await expect(page.getByRole('button', { name: /start with/i })).toHaveCount(0);
