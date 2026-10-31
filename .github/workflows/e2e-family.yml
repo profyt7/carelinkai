@@ -490,7 +490,7 @@ jobs:
           # operator-availability-contact.spec.ts (W5-5): the operator portal's
           # availability-contact card → admin pings page lists the home as eligible.
           # operator-featured-listing.spec.ts (OL-190): standalone featured checkout + webhook fulfilment.
-          npx playwright test --config=playwright.e2e.config.ts e2e/operator-claim-flow.spec.ts e2e/operator-availability-contact.spec.ts e2e/operator-featured-listing.spec.ts --workers=1 --reporter=line
+          npx playwright test --config=playwright.e2e.config.ts e2e/operator-claim-flow.spec.ts e2e/operator-availability-contact.spec.ts e2e/operator-featured-listing.spec.ts e2e/self-serve-claim.spec.ts --workers=1 --reporter=line
 
       - name: Upload Playwright test artifacts (Operator claim flow) (always)
         if: always()

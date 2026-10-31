@@ -174,6 +174,8 @@ export default function RegisterPage() {
   const roleFromUrl =
     rawRoleParam && VALID_ROLES.includes(rawRoleParam) ? rawRoleParam : null;
   const claimTokenFromUrl = searchParams?.get("claimToken") ?? null;
+  // Self-serve "Claim this listing" (fix/self-serve-claim): signed home id, redeemed by the register API.
+  const claimIntentFromUrl = roleFromUrl === "OPERATOR" ? searchParams?.get("claimIntent") ?? null : null;
 
   // OL-117: record that the claim link was opened (durable visit evidence for
   // outreach follow-ups). Token is verified server-side; fire-and-forget.
@@ -192,6 +194,7 @@ export default function RegisterPage() {
   const [smsConsent, setSmsConsent] = useState<SmsConsentPayload>(emptySmsConsent());
   const [success, setSuccess] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
+  const [claimOutcome, setClaimOutcome] = useState<{ submitted: boolean; reason?: string } | null>(null);
   const [step, setStep] = useState(1);
   const [reducedMotion, setReducedMotion] = useState(false);
 
@@ -301,10 +304,12 @@ export default function RegisterPage() {
         // Pass claimToken in the body so the register API redeems it at signup
         // time — this survives the email-verification redirect
         claimToken: claimTokenFromUrl ?? undefined,
+        claimIntent: data.role === "OPERATOR" ? claimIntentFromUrl ?? undefined : undefined,
         smsConsent,
       };
 
-      await axios.post("/api/auth/register", cleanedData);
+      const res = await axios.post("/api/auth/register", cleanedData);
+      setClaimOutcome(res?.data?.claim ?? null);
       setRegisteredEmail(data.email);
       setSuccess(true);
 
@@ -396,6 +401,17 @@ export default function RegisterPage() {
               <strong className="text-neutral-800">{registeredEmail || "your email"}</strong> — please
               verify your email, then sign in. Taking you to sign-in…
             </p>
+            {claimOutcome && (
+              <p className="mt-3 rounded-lg bg-primary-50 px-3 py-2 text-sm font-medium text-primary-900" data-testid="register-claim-outcome">
+                {claimOutcome.submitted
+                  ? "Claim submitted — we’ll verify and email you."
+                  : claimOutcome.reason === "pending_exists"
+                    ? "A claim for this listing is already under review. Questions? Call (216) 245-9482."
+                    : claimOutcome.reason === "already_claimed"
+                      ? "This listing is managed by its community. Questions? Call (216) 245-9482."
+                      : "We couldn’t file your claim automatically. After you sign in, open the listing and choose “Claim this listing.”"}
+              </p>
+            )}
           </div>
         </div>
       </div>

@@ -3,6 +3,16 @@ _Last updated: 2026-10-31 — **OL-249 PR** `feat/tour-thumbnail` (tour thumbnai
 
 
 
+## Active Branch (2026-11-01) — OL-250 `fix/self-serve-claim` (PR open; base main `0fe189b2`)
+- **Main:** #32 merged `0fe189b2` and prod-verified (`check_trackers` on).
+- **Self-serve claim:**
+  - New `HomeClaim` table (`PENDING_REVIEW` / `APPROVED` / `REJECTED`; one pending per home via a partial unique index).
+  - `src/lib/claims/{claim-intent,self-serve,assign-home}.ts`.
+  - Routes: `POST /api/homes/[id]/claim-request` (operator), `GET /api/operator/home-claims`, `GET /api/admin/home-claims`, `PATCH /api/admin/home-claims/[id]`.
+  - Pages: `/homes/[id]/claim` and `/admin/home-claims`.
+  - The register API accepts `claimIntent`.
+  - `/api/homes/[id]` returns `claimState` (open / pending / claimed).
+- **Also open:** #33 `fix/concierge-zero-amount-test` (a $0 full-discount checkout counts as paid, logged as a test).
 
 ## Active Branch (2026-10-31) — OL-249 `feat/tour-thumbnail` (PR open; Chris merges)
 - `GetStartedPanel`: the tour action is a poster thumbnail button (next/image `/demo/tour-poster.jpg` 1600×900, CSS play overlay + "1:32" chip) opening the existing `DemoVideoModal`. Poster / duration constants live in `src/lib/marketing/product-tour-data.ts`.

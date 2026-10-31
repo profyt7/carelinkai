@@ -61,6 +61,7 @@ import type { PricingEstimate } from "@/components/homes/PricingCalculator";
 import { getCloudinaryAvatar, isCloudinaryUrl } from "@/lib/cloudinaryUrl";
 import { buildInquiryPayload } from "@/lib/inquiries/payload";
 import { useSession } from "next-auth/react";
+import ListingClaim, { ClaimListingButton } from "@/components/homes/ListingClaim";
 import toast from "react-hot-toast";
 import { toggleFavorite as toggleFavoriteApi } from "@/lib/favoritesService";
 import { listingFacts } from "@/lib/homes/listing-facts";
@@ -1010,18 +1011,18 @@ export default function HomeDetailPage() {
             {/* Operators / staff keep the full claim driver (OL-083). Families and guests get the footer line. */}
             {isStaff && (
               <div>
-              {realHome.unclaimed && (
+              {realHome.unclaimed && realHome.claimState === 'pending' && (
+                <div className="mb-4 rounded-lg border border-neutral-200 bg-neutral-50 p-4" data-testid="listing-claim-pending-staff">
+                  <p className="text-sm text-neutral-700">A claim for this listing is under review.</p>
+                </div>
+              )}
+              {realHome.unclaimed && realHome.claimState !== 'pending' && (
                 realHome.pendingInquiryCount > 0 ? (
                   <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary-200 bg-primary-50 p-4">
                     <p className="text-sm font-medium text-primary-900">
                       📩 {realHome.pendingInquiryCount} {realHome.pendingInquiryCount === 1 ? 'family has' : 'families have'} inquired about this community — claim the listing to view &amp; respond securely{photos.length === 0 ? ', and add your photos' : ''}.
                     </p>
-                    <a
-                      href="/auth/register?role=OPERATOR"
-                      className="shrink-0 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
-                    >
-                      Claim this listing
-                    </a>
+                    <ClaimListingButton homeId={realHome.id} role={role} className="shrink-0" />
                   </div>
                 ) : (
                   <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
@@ -1030,12 +1031,7 @@ export default function HomeDetailPage() {
                         ? 'Are you the operator of this community? Claim your free listing to add your photos, showcase & respond to reviews, manage it, and respond to families.'
                         : 'Are you the operator of this community? Claim your free listing to showcase & respond to reviews, manage it, and respond to families.'}
                     </p>
-                    <a
-                      href="/auth/register?role=OPERATOR"
-                      className="shrink-0 rounded-lg border border-primary-600 px-4 py-2 text-sm font-semibold text-primary-700 hover:bg-primary-50"
-                    >
-                      {photos.length === 0 ? 'Claim & add photos' : 'Claim this listing'}
-                    </a>
+                    <ClaimListingButton homeId={realHome.id} role={role} className="shrink-0" label={photos.length === 0 ? 'Claim & add photos' : 'Claim this listing'} />
                   </div>
                 )
               )}
@@ -1126,9 +1122,9 @@ export default function HomeDetailPage() {
                       {careLevelPhrase(realHome.careLevel)} typically provide assistance with daily living,
                       meals, housekeeping, and social activities — though offerings vary by community.
                     </p>
-                    {realHome.unclaimed && isStaff && (
+                    {realHome.unclaimed && isStaff && realHome.claimState !== 'pending' && (
                       <a
-                        href="/auth/register?role=OPERATOR"
+                        href={`/homes/${realHome.id}/claim`}
                         className="mt-3 inline-flex items-center rounded-md border border-primary-600 px-3 py-1.5 text-sm font-semibold text-primary-700 hover:bg-primary-50"
                       >
                         Claim this listing to add verified amenities
@@ -1178,9 +1174,9 @@ export default function HomeDetailPage() {
                         ? " Operators can add current pricing by claiming this free listing."
                         : " Contact the community for a current quote."}
                     </p>
-                    {realHome.unclaimed && isStaff && (
+                    {realHome.unclaimed && isStaff && realHome.claimState !== 'pending' && (
                       <a
-                        href="/auth/register?role=OPERATOR"
+                        href={`/homes/${realHome.id}/claim`}
                         className="mt-3 inline-flex items-center rounded-md border border-primary-600 px-3 py-1.5 text-sm font-semibold text-primary-700 hover:bg-primary-50"
                       >
                         Claim this listing to add pricing
@@ -1305,16 +1301,13 @@ export default function HomeDetailPage() {
           </div>
         </div>
 
-        {/* Claim, demoted to a quiet footer line for guests and families (§6). */}
-        {realHome.unclaimed && !isStaff && (
+        {/* Claim (fix/self-serve-claim): the obvious next step for an operator on an unclaimed listing; staff on an
+            unclaimed listing already get the banner above. Claimed listings say who manages them. */}
+        {(realHome.claimState === 'claimed' || (realHome.claimState && !(realHome.unclaimed && isStaff))) && (
           <div className="border-t border-line bg-surface-raised" data-testid="listing-claim-footer">
-            <p className="container mx-auto px-4 py-4 text-sm text-neutral-700">
-              Operate this community?{' '}
-              <a href="/auth/register?role=OPERATOR" className="font-medium text-primary-700 underline hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
-                Claim this listing
-              </a>{' '}
-              to add photos and keep availability current.
-            </p>
+            <div className="container mx-auto px-4 py-4">
+              <ListingClaim homeId={realHome.id} claimState={realHome.claimState} role={role} />
+            </div>
           </div>
         )}
 

@@ -2834,3 +2834,32 @@
 - **Tests/build status:** local green; build left to CI.
 - **Deployment impact:** homepage panel visual only. No env changes.
 - **Recommended next step:** Chris reviews the screenshots and merges.
+### 2026-11-01 — Merged #32; concierge $0 test fix (#33); self-serve listing claim (OL-250)
+- **Objective:**
+  - Merge #32 and run prod-verify.
+  - Prepare the live concierge acceptance test.
+  - Build the self-serve listing claim (PR only).
+- **Work completed:**
+  - **#32:** merged `0fe189b2`; prod-verify passed.
+  - **#33** (`fix/concierge-zero-amount-test`): the webhook accepts a $0 checkout only when a discount covers the full price. CI green.
+  - **OL-250** (`fix/self-serve-claim`): see the open-loops entry.
+- **Files changed:**
+  - prisma schema + migration `20261101010000_home_claims`;
+  - `src/lib/claims/*`, `src/lib/email.ts`;
+  - the admin claim route (refactored onto `assign-home`);
+  - the claim-request, operator and admin home-claims APIs;
+  - the register API and page;
+  - `/homes/[id]` + `/homes/[id]/claim`, `ListingClaim`, `PendingClaimsBanner`, the operator dashboard;
+  - `/admin/home-claims` + nav;
+  - tests (unit, register, e2e `self-serve-claim.spec.ts`, added to the e2e-operator-claim CI job).
+- **Commands run:** tsc, eslint, jest (175 suites, 2032 passed), `next build`, Playwright `e2e/self-serve-claim.spec.ts` (7 passed locally), screenshots.
+- **Tests/build status:** green locally.
+- **Deployment impact:**
+  - Additive migration.
+  - New public page `/homes/[id]/claim`.
+  - Listing claim buttons now file reviewed claims instead of linking to a generic signup.
+- **New risks/blockers:**
+  - The live concierge test needs Chris's browser (this session can't reach getcarelinkai.com or the production DB).
+  - None for the claim flow: per Chris, approval transfers ownership only, and the listing's status is unchanged.
+- **Recommended next step:** Chris merges #33, runs the concierge acceptance test, and reviews the OL-250 PR.
+

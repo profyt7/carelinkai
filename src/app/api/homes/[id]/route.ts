@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma';
 import { formatCurrency } from '@/lib/utils';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { isUnclaimedHome } from '@/lib/claim-engine/inquiry-claim-notification';
+import { listingClaimState } from '@/lib/claims/self-serve';
 import { availabilityView } from '@/lib/availability/availability';
 import { pricingView, computeFamilyAvg } from '@/lib/pricing/pricing';
 import { medicaidWaiverPublicView } from '@/lib/medicaid/waiver';
@@ -245,6 +246,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const pendingInquiryCount = unclaimed
       ? await prisma.inquiry.count({ where: { homeId: home.id, status: 'NEW' } })
       : 0;
+    // Self-serve claim (fix/self-serve-claim): open / under review / managed by its community. No claimant details.
+    const claimState = await listingClaimState({ id: home.id, operatorEmail: home.operator?.user?.email });
 
     // Choose primary image with fallback
     const primary = sanitizeImageUrl(home.photos?.find((p) => p.isPrimary)?.url ?? null);
@@ -345,6 +348,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       isFavorited,
       viewerIsOwner,
       unclaimed,
+      claimState,
       // OL-191: active featured window → "Featured" badge on the listing page.
       featured: isFeaturedActive(home),
       // Google aggregate rating (trust badge) — rating + count + place id only, no review text.

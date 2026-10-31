@@ -33,7 +33,7 @@ model User {
   /// scripts/backfill-demo-flags.ts.
   isDemo                    Boolean                  @default(false)
   timezone                  String                   @default("UTC")
-  preferredContactMethod    String?                  // EMAIL, PHONE, BOTH
+  preferredContactMethod    String? // EMAIL, PHONE, BOTH
   createdAt                 DateTime                 @default(now())
   updatedAt                 DateTime                 @updatedAt
   lastLoginAt               DateTime?
@@ -109,88 +109,89 @@ model Session {
 }
 
 model Family {
-  id                      String                @id @default(cuid())
-  userId                  String                @unique
-  emergencyContact        String?
-  emergencyPhone          String?
-  createdAt               DateTime              @default(now())
-  updatedAt               DateTime              @updatedAt
-  careNotes               String?
-  mobilityLevel           String?
-  phone                   String?
-  primaryContactName      String?
-  primaryDiagnosis        String?
-  recipientAge            Int?
-  relationshipToRecipient String?
-  referredByCode          String?               // affiliate ?ref= code captured at registration
+  id                         String                @id @default(cuid())
+  userId                     String                @unique
+  emergencyContact           String?
+  emergencyPhone             String?
+  createdAt                  DateTime              @default(now())
+  updatedAt                  DateTime              @updatedAt
+  careNotes                  String?
+  mobilityLevel              String?
+  phone                      String?
+  primaryContactName         String?
+  primaryDiagnosis           String?
+  recipientAge               Int?
+  relationshipToRecipient    String?
+  referredByCode             String? // affiliate ?ref= code captured at registration
   // CareLinkAI Plus subscription ($19/mo)
-  stripeCustomerId        String?               @unique
-  stripeSubscriptionId    String?               @unique
-  plusStatus              SubscriptionStatus?
-  plusPeriodEndsAt        DateTime?
-  isPlus                  Boolean               @default(false)
+  stripeCustomerId           String?               @unique
+  stripeSubscriptionId       String?               @unique
+  plusStatus                 SubscriptionStatus?
+  plusPeriodEndsAt           DateTime?
+  isPlus                     Boolean               @default(false)
   /// Family dashboard concierge upsell card dismissed (hidden for 30 days) — sprint W5-3.
   conciergeUpsellDismissedAt DateTime?
-  activities              ActivityFeedItem[]
-  bookings                Booking[]
-  emergencyPreferences    EmergencyPreference[]
-  user                    User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  documents               FamilyDocument[]
-  members                 FamilyMember[]
-  notes                   FamilyNote[]
-  wallet                  FamilyWallet?
-  caregiverShortlists     FavoriteCaregiver[]
-  favorites               FavoriteHome[]
-  providerShortlists      FavoriteProvider[]
-  inquiries               Inquiry[]
-  leads                   Lead[]
-  matchRequests           MatchRequest[]
-  residents               Resident[]
-  galleries               SharedGallery[]
-  tourRequests            TourRequest[]
-  waitlistEntries         WaitlistEntry[]
-  rides                   Ride[]
+  activities                 ActivityFeedItem[]
+  bookings                   Booking[]
+  emergencyPreferences       EmergencyPreference[]
+  user                       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents                  FamilyDocument[]
+  members                    FamilyMember[]
+  notes                      FamilyNote[]
+  wallet                     FamilyWallet?
+  caregiverShortlists        FavoriteCaregiver[]
+  favorites                  FavoriteHome[]
+  providerShortlists         FavoriteProvider[]
+  inquiries                  Inquiry[]
+  leads                      Lead[]
+  matchRequests              MatchRequest[]
+  residents                  Resident[]
+  galleries                  SharedGallery[]
+  tourRequests               TourRequest[]
+  waitlistEntries            WaitlistEntry[]
+  rides                      Ride[]
 
   @@index([userId])
 }
 
 model Operator {
-  id                   String              @id @default(cuid())
-  userId               String              @unique
-  companyName          String
-  taxId                String?
-  businessLicense      String?
-  preferences          Json?
-  stripeCustomerId     String?             @unique
-  stripeSubscriptionId String?             @unique
-  subscriptionPlan     SubscriptionPlan?
-  subscriptionStatus   SubscriptionStatus?
-  trialEndsAt          DateTime?
-  currentPeriodEndsAt  DateTime?
+  id                     String                  @id @default(cuid())
+  userId                 String                  @unique
+  companyName            String
+  taxId                  String?
+  businessLicense        String?
+  preferences            Json?
+  stripeCustomerId       String?                 @unique
+  stripeSubscriptionId   String?                 @unique
+  subscriptionPlan       SubscriptionPlan?
+  subscriptionStatus     SubscriptionStatus?
+  trialEndsAt            DateTime?
+  currentPeriodEndsAt    DateTime?
   // HIPAA BAA + DPA acceptance — nullable so existing operators are not broken
-  baaTemplateVersion   String?
-  baaAcceptedAt        DateTime?
-  baaAcceptedIp        String?
-  baaAcceptedUserAgent String?
-  dpaTemplateVersion   String?
-  dpaAcceptedAt        DateTime?
-  dpaAcceptedIp        String?
-  dpaAcceptedUserAgent String?
+  baaTemplateVersion     String?
+  baaAcceptedAt          DateTime?
+  baaAcceptedIp          String?
+  baaAcceptedUserAgent   String?
+  dpaTemplateVersion     String?
+  dpaAcceptedAt          DateTime?
+  dpaAcceptedIp          String?
+  dpaAcceptedUserAgent   String?
   // Onboarding & Cleveland founder gating
-  onboardingCompletedAt DateTime?
-  clevelandFounder     Boolean             @default(false)
-  freeAccessUntil      DateTime?
-  accessTier           AccessTier          @default(FULL)
-  seededHomeId         String?
-  createdAt            DateTime            @default(now())
-  updatedAt            DateTime            @updatedAt
-  homes                    AssistedLivingHome[]
-  caregivers               CaregiverEmployment[]
-  user                     User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tourRequests             TourRequest[]
-  invoices                 Invoice[]
-  complianceKitPurchases   ComplianceKitPurchase[]
-  rides                    Ride[]
+  onboardingCompletedAt  DateTime?
+  clevelandFounder       Boolean                 @default(false)
+  freeAccessUntil        DateTime?
+  accessTier             AccessTier              @default(FULL)
+  seededHomeId           String?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  homes                  AssistedLivingHome[]
+  caregivers             CaregiverEmployment[]
+  user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tourRequests           TourRequest[]
+  invoices               Invoice[]
+  complianceKitPurchases ComplianceKitPurchase[]
+  rides                  Ride[]
+  homeClaims             HomeClaim[]
 
   @@index([userId])
   @@index([companyName])
@@ -305,23 +306,24 @@ model BackgroundCheckOrder {
 }
 
 enum BackgroundCheckPackage {
-  BASIC      // Free — SSN trace, national criminal, sex offender, watchlist
-  ENHANCED   // $19.99 — adds county criminal (7yr), federal criminal
-  MVR        // $9.99 — motor vehicle report (driving history)
-  PREMIUM    // $39.99 — Enhanced + MVR + employment verification
+  BASIC // Free — SSN trace, national criminal, sex offender, watchlist
+  ENHANCED // $19.99 — adds county criminal (7yr), federal criminal
+  MVR // $9.99 — motor vehicle report (driving history)
+  PREMIUM // $39.99 — Enhanced + MVR + employment verification
 }
+
 model Affiliate {
-  id              String              @id @default(cuid())
-  userId          String              @unique
-  affiliateCode   String              @unique
-  organization    String?
-  commissionRate  Decimal?            @db.Decimal(5, 2)
-  commissionTier  CommissionTier      @default(STANDARD)
-  paymentDetails  Json?
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  referrals       AffiliateReferral[]
+  id             String              @id @default(cuid())
+  userId         String              @unique
+  affiliateCode  String              @unique
+  organization   String?
+  commissionRate Decimal?            @db.Decimal(5, 2)
+  commissionTier CommissionTier      @default(STANDARD)
+  paymentDetails Json?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  referrals      AffiliateReferral[]
 
   @@index([userId])
   @@index([affiliateCode])
@@ -332,9 +334,9 @@ model AffiliateMaterial {
   id          String   @id @default(cuid())
   title       String
   description String?
-  category    String   // e.g. "flyer", "email_template", "social_media", "banner"
-  fileUrl     String   // Cloudinary URL
-  fileType    String   // "pdf", "png", "jpg", "docx"
+  category    String // e.g. "flyer", "email_template", "social_media", "banner"
+  fileUrl     String // Cloudinary URL
+  fileType    String // "pdf", "png", "jpg", "docx"
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -342,11 +344,13 @@ model AffiliateMaterial {
   @@index([category])
   @@index([isActive])
 }
+
 enum CommissionTier {
-  STANDARD  // 20%
-  SILVER    // 25%
-  GOLD      // 30%
+  STANDARD // 20%
+  SILVER // 25%
+  GOLD // 30%
 }
+
 model CaregiverCertification {
   id                  String              @id @default(cuid())
   caregiverId         String
@@ -414,54 +418,54 @@ model CaregiverDocument {
 }
 
 model Provider {
-  id                    String               @id @default(cuid())
-  userId                String               @unique
-  businessName          String
-  contactName           String
-  contactEmail          String
-  contactPhone          String?
-  bio                   String?
-  website               String?
-  insuranceInfo         String?
-  licenseNumber         String?              // license/certification number: self-reported, admin-only
-  yearsInBusiness       Int?
-  isVerified            Boolean              @default(false)
-  isActive              Boolean              @default(true)
-  serviceTypes          String[]             // launch categories, several allowed (src/lib/providers/categories.ts); legacy values kept as-is
-  deliveryModes         String[]             @default([]) // in-home | facility | remote (optional)
-  coverageArea          Json?                // { cities, states, zipCodes }
+  id                            String                         @id @default(cuid())
+  userId                        String                         @unique
+  businessName                  String
+  contactName                   String
+  contactEmail                  String
+  contactPhone                  String?
+  bio                           String?
+  website                       String?
+  insuranceInfo                 String?
+  licenseNumber                 String? // license/certification number: self-reported, admin-only
+  yearsInBusiness               Int?
+  isVerified                    Boolean                        @default(false)
+  isActive                      Boolean                        @default(true)
+  serviceTypes                  String[] // launch categories, several allowed (src/lib/providers/categories.ts); legacy values kept as-is
+  deliveryModes                 String[]                       @default([]) // in-home | facility | remote (optional)
+  coverageArea                  Json? // { cities, states, zipCodes }
   // Transport-specific fields (Phase 1)
-  rideTypes             String[]             // STANDARD | WHEELCHAIR | STRETCHER | ESCORT
-  wheelchairAccessible  Boolean              @default(false)
-  acceptsMedicaid       Boolean              @default(false)
-  serviceRadius         Int?                 // miles
-  allowsRecurring       Boolean              @default(false)
+  rideTypes                     String[] // STANDARD | WHEELCHAIR | STRETCHER | ESCORT
+  wheelchairAccessible          Boolean                        @default(false)
+  acceptsMedicaid               Boolean                        @default(false)
+  serviceRadius                 Int? // miles
+  allowsRecurring               Boolean                        @default(false)
   // Pricing (enables instant booking)
-  rateBaseFare          Decimal?             @db.Decimal(10, 2) // flat base charge per ride
-  ratePerMile           Decimal?             @db.Decimal(10, 2) // per-mile rate
-  rateWaitPerHour       Decimal?             @db.Decimal(10, 2) // hourly wait rate
-  instantBook           Boolean              @default(false)    // skip confirm step, family pays at booking
-  vehicleCapacity       Int                  @default(4)        // max passengers per vehicle
+  rateBaseFare                  Decimal?                       @db.Decimal(10, 2) // flat base charge per ride
+  ratePerMile                   Decimal?                       @db.Decimal(10, 2) // per-mile rate
+  rateWaitPerHour               Decimal?                       @db.Decimal(10, 2) // hourly wait rate
+  instantBook                   Boolean                        @default(false) // skip confirm step, family pays at booking
+  vehicleCapacity               Int                            @default(4) // max passengers per vehicle
   // Legacy paid-listing subscription. The listing is free since the 10/29 provider
   // pricing change (PROVIDER_LISTING_ENABLED); these stay for any old subscriber.
-  stripeCustomerId      String?              @unique
-  stripeSubscriptionId  String?              @unique
-  listingStatus         SubscriptionStatus?
-  listingPeriodEndsAt   DateTime?
+  stripeCustomerId              String?                        @unique
+  stripeSubscriptionId          String?                        @unique
+  listingStatus                 SubscriptionStatus?
+  listingPeriodEndsAt           DateTime?
   // Provider Boost ($39/mo, PROVIDER_BOOST_ENABLED): visibility only, never verification.
-  boostStatus               SubscriptionStatus?
-  boostStripeSubscriptionId String?              @unique
-  boostPeriodEndsAt         DateTime?
+  boostStatus                   SubscriptionStatus?
+  boostStripeSubscriptionId     String?                        @unique
+  boostPeriodEndsAt             DateTime?
   // Founding-provider offer: first 25 get Boost free for 90 days. No card, no auto-charge;
   // it lapses at founderBoostEndsAt unless they subscribe.
-  founderBoostStartedAt     DateTime?
-  founderBoostEndsAt        DateTime?
-  createdAt             DateTime             @default(now())
-  updatedAt             DateTime             @updatedAt
+  founderBoostStartedAt         DateTime?
+  founderBoostEndsAt            DateTime?
+  createdAt                     DateTime                       @default(now())
+  updatedAt                     DateTime                       @updatedAt
   shortlistedByFamilies         FavoriteProvider[]
-  leads                         Lead[]               @relation("LeadToProvider")
+  leads                         Lead[]                         @relation("LeadToProvider")
   rides                         Ride[]
-  user                          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                          User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
   credentials                   ProviderCredential[]
   reviews                       ProviderReview[]
   checkrCandidateId             String?
@@ -495,21 +499,21 @@ model ProviderReview {
 }
 
 model ProviderCredential {
-  id              String           @id @default(cuid())
-  providerId      String
-  type            String
-  documentUrl     String?
-  status          CredentialStatus @default(PENDING)
-  verifiedAt      DateTime?
-  verifiedBy      String?
-  expiresAt       DateTime?
-  notes           String?
-  aiReviewStatus  String?          // APPROVED | FLAGGED | NEEDS_REVIEW | SKIPPED
-  aiReviewNotes   String?
-  checkrReportId  String?          @unique
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  provider        Provider         @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  id             String           @id @default(cuid())
+  providerId     String
+  type           String
+  documentUrl    String?
+  status         CredentialStatus @default(PENDING)
+  verifiedAt     DateTime?
+  verifiedBy     String?
+  expiresAt      DateTime?
+  notes          String?
+  aiReviewStatus String? // APPROVED | FLAGGED | NEEDS_REVIEW | SKIPPED
+  aiReviewNotes  String?
+  checkrReportId String?          @unique
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  provider       Provider         @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
   @@index([providerId])
   @@index([type])
@@ -519,111 +523,111 @@ model ProviderCredential {
 }
 
 model AssistedLivingHome {
-  id                     String           @id @default(cuid())
-  operatorId             String
-  name                   String
-  description            String
-  status                 HomeStatus       @default(DRAFT)
-  careLevel              CareLevel[]
-  capacity               Int
-  currentOccupancy       Int              @default(0)
-  genderRestriction      String?
-  priceMin               Decimal?         @db.Decimal(10, 2)
-  priceMax               Decimal?         @db.Decimal(10, 2)
-  amenities              String[]
-  createdAt              DateTime         @default(now())
-  updatedAt              DateTime         @updatedAt
-  aiGeneratedDescription  String?
-  highlights              String[]         @default([])
-  lastProfileGenerated    DateTime?
-  slug                    String?          @unique
-  isFeatured              Boolean          @default(false)
-  featuredUntil           DateTime?
-  websiteUrl              String?
-  autoPopulatedAt         DateTime?
-  autoPopulatedFromUrl    String?
-  autoPopulatedVersion    Int?             @default(0)
-  preFilledFields         Json?
-  aiPopulationConfidence  String?
+  id                                String                    @id @default(cuid())
+  operatorId                        String
+  name                              String
+  description                       String
+  status                            HomeStatus                @default(DRAFT)
+  careLevel                         CareLevel[]
+  capacity                          Int
+  currentOccupancy                  Int                       @default(0)
+  genderRestriction                 String?
+  priceMin                          Decimal?                  @db.Decimal(10, 2)
+  priceMax                          Decimal?                  @db.Decimal(10, 2)
+  amenities                         String[]
+  createdAt                         DateTime                  @default(now())
+  updatedAt                         DateTime                  @updatedAt
+  aiGeneratedDescription            String?
+  highlights                        String[]                  @default([])
+  lastProfileGenerated              DateTime?
+  slug                              String?                   @unique
+  isFeatured                        Boolean                   @default(false)
+  featuredUntil                     DateTime?
+  websiteUrl                        String?
+  autoPopulatedAt                   DateTime?
+  autoPopulatedFromUrl              String?
+  autoPopulatedVersion              Int?                      @default(0)
+  preFilledFields                   Json?
+  aiPopulationConfidence            String?
   // Google Places aggregate rating for a "See reviews on Google" trust badge.
   // Rating + review count + place id ONLY — NO review text is stored (Maps ToS).
   // Populated by scripts/backfill-google-ratings.ts; badge hidden when null.
-  googleRating            Float?
-  googleRatingCount       Int?
-  googlePlaceId           String?
-  googleRatingUpdatedAt   DateTime?
+  googleRating                      Float?
+  googleRatingCount                 Int?
+  googlePlaceId                     String?
+  googleRatingUpdatedAt             DateTime?
   // Public listing contact + marketing fields populated by the enrich pipeline
   // (OL-080). Distinct from outreachEmail/outreachPhone below, which are the
   // unclaimed-listing nudge channel, not public display.
-  phone                   String?
-  contactEmail            String?
-  tagline                 String?
-  imageRightsAcknowledgedAt DateTime?
-  enrichmentStatus        EnrichmentStatus @default(NONE)
-  enrichmentStartedAt     DateTime?
-  enrichmentError         String?
+  phone                             String?
+  contactEmail                      String?
+  tagline                           String?
+  imageRightsAcknowledgedAt         DateTime?
+  enrichmentStatus                  EnrichmentStatus          @default(NONE)
+  enrichmentStartedAt               DateTime?
+  enrichmentError                   String?
   // Best-effort operator contact for UNCLAIMED/directory listings (from outreach
   // research) — used by the inquiry→claim "pull" engine (OL-083) to nudge the
   // operator to claim. Null on most listings; the public waiting-leads counter is
   // the fallback when no contact is known.
-  outreachEmail           String?
-  outreachPhone           String?
-  claimNudgeLastSentAt    DateTime?
+  outreachEmail                     String?
+  outreachPhone                     String?
+  claimNudgeLastSentAt              DateTime?
   // Per-facility claim drip (email-only): one active sequence per home, started on
   // the first lead, advanced by the claim-drip cron. step = touches sent (0-4);
   // stoppedReason = claimed | unsubscribed | bounce | exhausted | no_email.
-  claimDripStartedAt      DateTime?
-  claimDripStep           Int       @default(0)
-  claimDripNextAt         DateTime?
-  claimDripStoppedReason  String?
+  claimDripStartedAt                DateTime?
+  claimDripStep                     Int                       @default(0)
+  claimDripNextAt                   DateTime?
+  claimDripStoppedReason            String?
   // Live-ish AVAILABILITY freshness (verify-on-request; never store stale "live").
   // Populated by the freshness cascade (SMS poll / email magic-link / AI voice /
   // concierge confirm) — see src/lib/availability/. Business data only, never PHI.
-  availabilityCount       Int?
-  availabilityVerifiedAt  DateTime?
-  availabilitySource      AvailabilitySource?
-  contactMobile           String?   // best mobile for the SMS poll (collected with consent)
-  availabilityOptIn       Boolean   @default(false) // TCPA consent to availability-update texts/calls
-  availabilityContact     AvailabilityContact?
-  availabilityPings       AvailabilityPing[]
+  availabilityCount                 Int?
+  availabilityVerifiedAt            DateTime?
+  availabilitySource                AvailabilitySource?
+  contactMobile                     String? // best mobile for the SMS poll (collected with consent)
+  availabilityOptIn                 Boolean                   @default(false) // TCPA consent to availability-update texts/calls
+  availabilityContact               AvailabilityContact?
+  availabilityPings                 AvailabilityPing[]
   /// OL-163: AI availability-call observations (one per call; QA'd by an admin).
-  availabilityObservations AvailabilityObservation[]
+  availabilityObservations          AvailabilityObservation[]
   /// OL-163e: the home asked not to be called. Honored by the AI agent list, the
   /// weekly ping and the VA call-list export. Set from the QA queue or a call.
-  doNotCall               Boolean   @default(false)
-  doNotCallAt             DateTime?
-  doNotCallSource         String?   // 'AI_CALL' | 'ADMIN' | 'OPERATOR'
+  doNotCall                         Boolean                   @default(false)
+  doNotCallAt                       DateTime?
+  doNotCallSource                   String? // 'AI_CALL' | 'ADMIN' | 'OPERATOR'
   // PRICING capture (OL-111): honest "starting around $X" ranges from multiple
   // sources, always source-labeled + "contact for exact quote". Slow-changing +
   // commercially sensitive — NOT API-synced, never presented as an official quote.
   // Monthly dollars (whole). Distinct from priceMin/priceMax (legacy Decimal range).
-  startingPriceMonthly    Int?
-  priceRangeLow           Int?
-  priceRangeHigh          Int?
-  priceSource             PriceSource?
-  priceUpdatedAt          DateTime?
-  quoteReports            FacilityQuoteReport[]
+  startingPriceMonthly              Int?
+  priceRangeLow                     Int?
+  priceRangeHigh                    Int?
+  priceSource                       PriceSource?
+  priceUpdatedAt                    DateTime?
+  quoteReports                      FacilityQuoteReport[]
   // ODH RCF license number (format NNNNR, e.g. "2318R") — the stable key for
   // matching state inspection records to this listing (OL-113). Backfilled from
   // seed data / ODH directory; set by the ingest pipeline on a confirmed match.
-  odhLicenseNumber        String?
-  facilityInspections     FacilityInspection[]
+  odhLicenseNumber                  String?
+  facilityInspections               FacilityInspection[]
   /// Sprint W4-2: decline reasons from concierge shortlists, rolled up as
   /// "acceptance criteria (observed)" — {version, declines:{REASON:{count,lastAt}},
   /// totalDeclines, totalAccepts, lastDeclinedAt, lastAcceptedAt}. Written ONLY
   /// by the facility-response engine; never overwrites operator-entered fields
   /// (acceptsMedicaid, careLevel, …).
-  observedAcceptanceCriteria Json?
+  observedAcceptanceCriteria        Json?
   /// Sprint W5-2 (G3 + G4): Ohio Medicaid Assisted Living Waiver participation
   /// + acceptance facts collected on calls. Every write goes through recordEvent.
   /// medicaidWaiverSource is a free string: a protected value (VA_CALL / OPERATOR /
   /// ADMIN) is never overwritten by the WRAAA import, which writes the list name.
-  medicaidWaiverStatus              MedicaidWaiverStatus @default(UNKNOWN)
+  medicaidWaiverStatus              MedicaidWaiverStatus      @default(UNKNOWN)
   medicaidWaiverSource              String?
   medicaidWaiverVerifiedAt          DateTime?
   /// Accepts a resident while the Medicaid application is still pending.
   medicaidPendingAccepted           Boolean?
-  medicaidPendingAcceptedSource     String?   // VA_CALL | OPERATOR | ADMIN | IMPORT
+  medicaidPendingAcceptedSource     String? // VA_CALL | OPERATOR | ADMIN | IMPORT
   medicaidPendingAcceptedVerifiedAt DateTime?
   /// {twoPersonAssist, wandering, oxygen, insulin, bariatric, behavioral, hospiceInPlace}: true/false/null
   acuityCeiling                     Json?
@@ -636,26 +640,27 @@ model AssistedLivingHome {
   /// OL-112: demo/tutorial fixture marker. Demo rows are RETAINED (tutorials
   /// need them) but FILTERED from admin metrics + public directory. Backfilled
   /// by scripts/backfill-demo-flags.ts from the demo-account conventions.
-  isDemo                  Boolean          @default(false)
-  address                Address?
-  operator               Operator         @relation(fields: [operatorId], references: [id], onDelete: Cascade)
-  bookings               Booking[]
-  caregiverShifts        CaregiverShift[]
-  favorites              FavoriteHome[]
-  photos                 HomePhoto[]
-  reviews                HomeReview[]
-  inquiries              Inquiry[]
-  inspections            Inspection[]
-  licenses               License[]
-  matchFeedback          MatchFeedback[]
-  matchResults           MatchResult[]
-  residents              Resident[]
-  tourRequests           TourRequest[]
-  tourSlots              TourSlot[]
-  placementRequests      PlacementRequest[]
-  facilityResponses      FacilityResponse[]
-  waitlistEntries        WaitlistEntry[]
-  shiftNeeds             ShiftNeed[]
+  isDemo                            Boolean                   @default(false)
+  address                           Address?
+  operator                          Operator                  @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  bookings                          Booking[]
+  caregiverShifts                   CaregiverShift[]
+  favorites                         FavoriteHome[]
+  photos                            HomePhoto[]
+  reviews                           HomeReview[]
+  inquiries                         Inquiry[]
+  homeClaims                        HomeClaim[]
+  inspections                       Inspection[]
+  licenses                          License[]
+  matchFeedback                     MatchFeedback[]
+  matchResults                      MatchResult[]
+  residents                         Resident[]
+  tourRequests                      TourRequest[]
+  tourSlots                         TourSlot[]
+  placementRequests                 PlacementRequest[]
+  facilityResponses                 FacilityResponse[]
+  waitlistEntries                   WaitlistEntry[]
+  shiftNeeds                        ShiftNeed[]
 
   @@index([operatorId])
   @@index([status])
@@ -688,10 +693,10 @@ model HomePhoto {
 
 // Lifecycle of on-claim website enrichment (scrape + AI extract + photos).
 enum EnrichmentStatus {
-  NONE     // not started (no website on file, or not yet triggered)
-  RUNNING  // enrichment in progress (background task)
-  READY    // completed successfully
-  FAILED   // completed with an error (operator falls back to manual entry)
+  NONE // not started (no website on file, or not yet triggered)
+  RUNNING // enrichment in progress (background task)
+  READY // completed successfully
+  FAILED // completed with an error (operator falls back to manual entry)
 }
 
 model Address {
@@ -778,9 +783,9 @@ model ResidentDocument {
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
   classification DataClassification   @default(PHI)
-  storage        String?              // 's3' | 'cloudinary' — null for pre-Phase-1 rows
-  resident     Resident             @relation(fields: [residentId], references: [id], onDelete: Cascade)
-  uploadedBy   User                 @relation("ResidentDocumentUploader", fields: [uploadedById], references: [id])
+  storage        String? // 's3' | 'cloudinary' — null for pre-Phase-1 rows
+  resident       Resident             @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  uploadedBy     User                 @relation("ResidentDocumentUploader", fields: [uploadedById], references: [id])
 
   @@index([residentId])
   @@index([documentType])
@@ -973,7 +978,7 @@ model Inquiry {
   payerSource            PayerSource?
   preferredContactMethod ContactMethod?     @default(EMAIL)
   assignedToId           String?
-  affiliateCode          String?            // referral code of the affiliate who referred this inquiry
+  affiliateCode          String? // referral code of the affiliate who referred this inquiry
   booking                Booking?
   uploadedDocuments      Document[]         @relation("uploadedDocuments")
   followUps              FollowUp[]
@@ -1012,9 +1017,9 @@ model InquiryDocument {
   uploadedById   String
   uploadedAt     DateTime           @default(now())
   classification DataClassification @default(PHI)
-  storage        String?            // 's3' | 'cloudinary' — null for pre-Phase-1 rows
-  inquiry      Inquiry  @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
-  uploadedBy   User     @relation("InquiryDocumentUploader", fields: [uploadedById], references: [id])
+  storage        String? // 's3' | 'cloudinary' — null for pre-Phase-1 rows
+  inquiry        Inquiry            @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  uploadedBy     User               @relation("InquiryDocumentUploader", fields: [uploadedById], references: [id])
 
   @@index([inquiryId])
   @@index([uploadedById])
@@ -1105,67 +1110,67 @@ model Lead {
 }
 
 model Ride {
-  id                      String      @id @default(cuid())
-  familyId                String?     // null when operator books
-  operatorId              String?     // set when operator books for a resident
+  id                      String     @id @default(cuid())
+  familyId                String? // null when operator books
+  operatorId              String? // set when operator books for a resident
   providerId              String
   leadId                  String?
-  residentName            String?     // name of resident being transported (operator bookings)
-  residentId              String?     // optional link to Resident record
-  bookedByRole            String      @default("FAMILY") // FAMILY | OPERATOR
+  residentName            String? // name of resident being transported (operator bookings)
+  residentId              String? // optional link to Resident record
+  bookedByRole            String     @default("FAMILY") // FAMILY | OPERATOR
   pickupAddress           String
   dropoffAddress          String
   scheduledAt             DateTime
   tripPurpose             String?
   mobilityNeeds           String?
-  passengerCount          Int         @default(1)
+  passengerCount          Int        @default(1)
   specialRequests         String?
-  status                  RideStatus  @default(REQUESTED)
-  baseFare                Decimal?    @db.Decimal(10, 2)
-  platformFeePercent      Decimal     @default(12) @db.Decimal(5, 2)
-  platformFee             Decimal?    @db.Decimal(10, 2)
-  totalAmount             Decimal?    @db.Decimal(10, 2)
+  status                  RideStatus @default(REQUESTED)
+  baseFare                Decimal?   @db.Decimal(10, 2)
+  platformFeePercent      Decimal    @default(12) @db.Decimal(5, 2)
+  platformFee             Decimal?   @db.Decimal(10, 2)
+  totalAmount             Decimal?   @db.Decimal(10, 2)
   stripePaymentIntentId   String?
   stripeCheckoutSessionId String?
   canceledBy              String?
   cancelReason            String?
   // Instant pricing
-  estimatedMiles          Decimal?    @db.Decimal(8, 2)
-  estimatedFare           Decimal?    @db.Decimal(10, 2)
+  estimatedMiles          Decimal?   @db.Decimal(8, 2)
+  estimatedFare           Decimal?   @db.Decimal(10, 2)
   // Passenger needs
-  mobilityLevel           String?                        // AMBULATORY | ASSISTED | WHEELCHAIR | STRETCHER | BARIATRIC
-  doorToDoorLevel         String?                        // CURB_TO_CURB | DOOR_TO_DOOR | DOOR_THROUGH_DOOR | BED_TO_BED
-  needsOxygen             Boolean     @default(false)    // passenger uses portable oxygen
-  hasCompanion            Boolean     @default(false)    // companion/escort riding along
-  cognitionNote           Boolean     @default(false)    // memory condition — needs patient/supervised driver
-  hasServiceAnimal        Boolean     @default(false)
+  mobilityLevel           String? // AMBULATORY | ASSISTED | WHEELCHAIR | STRETCHER | BARIATRIC
+  doorToDoorLevel         String? // CURB_TO_CURB | DOOR_TO_DOOR | DOOR_THROUGH_DOOR | BED_TO_BED
+  needsOxygen             Boolean    @default(false) // passenger uses portable oxygen
+  hasCompanion            Boolean    @default(false) // companion/escort riding along
+  cognitionNote           Boolean    @default(false) // memory condition — needs patient/supervised driver
+  hasServiceAnimal        Boolean    @default(false)
   // Ride options
-  waitTimeMinutes         Int?                           // driver wait time at destination
-  waitFare                Decimal?    @db.Decimal(10, 2) // fare for waiting
+  waitTimeMinutes         Int? // driver wait time at destination
+  waitFare                Decimal?   @db.Decimal(10, 2) // fare for waiting
   // Return trip
-  needsReturn             Boolean     @default(false)
-  returnScheduledAt       DateTime?                      // when driver picks up for return
-  returnRideId            String?     @unique
-  parentRideId            String?                        // set on return rides
+  needsReturn             Boolean    @default(false)
+  returnScheduledAt       DateTime? // when driver picks up for return
+  returnRideId            String?    @unique
+  parentRideId            String? // set on return rides
   // Recurring
-  isRecurring             Boolean     @default(false)
-  recurringFrequency      String?                        // DAILY | WEEKLY | BIWEEKLY | MONTHLY
+  isRecurring             Boolean    @default(false)
+  recurringFrequency      String? // DAILY | WEEKLY | BIWEEKLY | MONTHLY
   recurringEndDate        DateTime?
   // Shared / batched rides
-  isSharedRide            Boolean     @default(false)    // provider batches multiple passengers in one vehicle
-  sharedRideGroupId       String?                        // groups rides sharing the same vehicle run
+  isSharedRide            Boolean    @default(false) // provider batches multiple passengers in one vehicle
+  sharedRideGroupId       String? // groups rides sharing the same vehicle run
   // Trip verification (anti-fraud)
-  actualPickupAt          DateTime?                      // timestamped when driver checks in at pickup
-  actualDropoffAt         DateTime?                      // timestamped when driver marks dropoff complete
+  actualPickupAt          DateTime? // timestamped when driver checks in at pickup
+  actualDropoffAt         DateTime? // timestamped when driver marks dropoff complete
   // Accountability
-  noShowCausedBy          String?                        // PROVIDER | RIDER | FACILITY | WEATHER | OTHER
+  noShowCausedBy          String? // PROVIDER | RIDER | FACILITY | WEATHER | OTHER
   // Recurring series
-  recurringRootId         String?                        // null on seed ride; set to seed id on all spawned rides
-  createdAt               DateTime    @default(now())
-  updatedAt               DateTime    @updatedAt
-  family                  Family?     @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  operator                Operator?   @relation(fields: [operatorId], references: [id], onDelete: Cascade)
-  provider                Provider    @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  recurringRootId         String? // null on seed ride; set to seed id on all spawned rides
+  createdAt               DateTime   @default(now())
+  updatedAt               DateTime   @updatedAt
+  family                  Family?    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  operator                Operator?  @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  provider                Provider   @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
   @@index([familyId])
   @@index([operatorId])
@@ -1289,21 +1294,21 @@ model Timesheet {
 }
 
 model HomeReview {
-  id         String             @id @default(cuid())
-  homeId     String
-  reviewerId String
-  rating     Int
-  title      String?
-  content    String?
-  isPublic   Boolean            @default(true)
-  isVerified Boolean            @default(false)
+  id                  String             @id @default(cuid())
+  homeId              String
+  reviewerId          String
+  rating              Int
+  title               String?
+  content             String?
+  isPublic            Boolean            @default(true)
+  isVerified          Boolean            @default(false)
   // Operator's public reply to a review — available once the operator has claimed
   // the listing. A claim incentive ("showcase & respond to reviews").
   operatorResponse    String?
   operatorRespondedAt DateTime?
-  createdAt  DateTime           @default(now())
-  updatedAt  DateTime           @updatedAt
-  home       AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  home                AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
 
   @@index([homeId])
   @@index([rating])
@@ -1398,14 +1403,14 @@ model Message {
 }
 
 model Broadcast {
-  id           String     @id @default(cuid())
-  senderId     String
-  subject      String
-  content      String
-  targetRole   UserRole?
-  recipientCount Int      @default(0)
-  createdAt    DateTime   @default(now())
-  messages     Message[]
+  id             String    @id @default(cuid())
+  senderId       String
+  subject        String
+  content        String
+  targetRole     UserRole?
+  recipientCount Int       @default(0)
+  createdAt      DateTime  @default(now())
+  messages       Message[]
 
   @@index([senderId])
   @@index([targetRole])
@@ -1841,11 +1846,11 @@ model FamilyDocument {
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
   classification DataClassification @default(PHI)
-  storage        String?            // 's3' | 'cloudinary' — null for pre-Phase-1 rows
-  comments    DocumentComment[]
-  family      Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  resident    Resident?          @relation(fields: [residentId], references: [id])
-  uploader    User               @relation("DocumentUploader", fields: [uploaderId], references: [id])
+  storage        String? // 's3' | 'cloudinary' — null for pre-Phase-1 rows
+  comments       DocumentComment[]
+  family         Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  resident       Resident?          @relation(fields: [residentId], references: [id])
+  uploader       User               @relation("DocumentUploader", fields: [uploaderId], references: [id])
 
   @@index([familyId])
   @@index([uploaderId])
@@ -1950,9 +1955,9 @@ model GalleryPhoto {
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
   classification DataClassification @default(PHI)
-  storage        String?            // 's3' | 'cloudinary' — null for pre-Phase-1 rows
-  gallery      SharedGallery @relation(fields: [galleryId], references: [id], onDelete: Cascade)
-  uploader     User          @relation("PhotoUploader", fields: [uploaderId], references: [id])
+  storage        String? // 's3' | 'cloudinary' — null for pre-Phase-1 rows
+  gallery        SharedGallery      @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  uploader       User               @relation("PhotoUploader", fields: [uploaderId], references: [id])
 
   @@index([galleryId])
   @@index([uploaderId])
@@ -2066,18 +2071,18 @@ model MarketplaceApplication {
 }
 
 model MarketplaceHire {
-  id            String                  @id @default(cuid())
-  listingId     String?
-  caregiverId   String
-  applicationId String?                 @unique
-  shiftId       String?                 @unique
-  acceptedAt    DateTime                @default(now())
-  createdAt     DateTime                @default(now())
-  application   MarketplaceApplication? @relation("ApplicationHire", fields: [applicationId], references: [id])
-  caregiver     Caregiver               @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
-  listing       MarketplaceListing?     @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  shift          CaregiverShift?         @relation("ShiftHire", fields: [shiftId], references: [id])
-  payment        Payment?
+  id              String                  @id @default(cuid())
+  listingId       String?
+  caregiverId     String
+  applicationId   String?                 @unique
+  shiftId         String?                 @unique
+  acceptedAt      DateTime                @default(now())
+  createdAt       DateTime                @default(now())
+  application     MarketplaceApplication? @relation("ApplicationHire", fields: [applicationId], references: [id])
+  caregiver       Caregiver               @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  listing         MarketplaceListing?     @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  shift           CaregiverShift?         @relation("ShiftHire", fields: [shiftId], references: [id])
+  payment         Payment?
   householdShifts HouseholdShift[]
 
   @@index([listingId])
@@ -2303,7 +2308,7 @@ model TourSlot {
 }
 
 model Document {
-  id                       String           @id @default(cuid())
+  id                       String             @id @default(cuid())
   residentId               String?
   type                     DocumentType
   title                    String
@@ -2311,38 +2316,38 @@ model Document {
   fileUrl                  String
   fileType                 String
   fileSize                 Int
-  isEncrypted              Boolean          @default(true)
-  createdAt                DateTime         @default(now())
-  updatedAt                DateTime         @updatedAt
+  isEncrypted              Boolean            @default(true)
+  createdAt                DateTime           @default(now())
+  updatedAt                DateTime           @updatedAt
   category                 String?
   fileName                 String?
   mimeType                 String?
   extractedText            String?
   extractedData            Json?
-  extractionStatus         ExtractionStatus @default(PENDING)
+  extractionStatus         ExtractionStatus   @default(PENDING)
   extractionError          String?
-  isRequired               Boolean?         @default(false)
+  isRequired               Boolean?           @default(false)
   expirationDate           DateTime?
-  complianceStatus         ComplianceStatus @default(PENDING)
+  complianceStatus         ComplianceStatus   @default(PENDING)
   inquiryId                String?
   uploadedById             String?
-  tags                     String[]         @default([])
+  tags                     String[]           @default([])
   notes                    String?
-  version                  Int?             @default(1)
+  version                  Int?               @default(1)
   classification           DataClassification @default(PHI)
   storage                  String?
   classificationConfidence Float?
   classificationReasoning  String?
-  autoClassified           Boolean          @default(false)
-  validationStatus         ValidationStatus @default(PENDING)
+  autoClassified           Boolean            @default(false)
+  validationStatus         ValidationStatus   @default(PENDING)
   validationErrors         Json?
-  reviewStatus             ReviewStatus     @default(NOT_REQUIRED)
+  reviewStatus             ReviewStatus       @default(NOT_REQUIRED)
   reviewedById             String?
   reviewedAt               DateTime?
-  inquiry                  Inquiry?         @relation("uploadedDocuments", fields: [inquiryId], references: [id], onDelete: Cascade)
-  resident                 Resident?        @relation(fields: [residentId], references: [id])
-  reviewedBy               User?            @relation("DocumentReviewer", fields: [reviewedById], references: [id])
-  uploadedBy               User?            @relation("UploadedDocuments", fields: [uploadedById], references: [id], onDelete: Restrict)
+  inquiry                  Inquiry?           @relation("uploadedDocuments", fields: [inquiryId], references: [id], onDelete: Cascade)
+  resident                 Resident?          @relation(fields: [residentId], references: [id])
+  reviewedBy               User?              @relation("DocumentReviewer", fields: [reviewedById], references: [id])
+  uploadedBy               User?              @relation("UploadedDocuments", fields: [uploadedById], references: [id], onDelete: Restrict)
 
   @@index([residentId])
   @@index([inquiryId])
@@ -2374,39 +2379,39 @@ model DocumentTemplate {
 
 /// Discharge planner AI placement search
 model PlacementSearch {
-  id                 String             @id @default(cuid())
-  userId             String
-  queryText          String             // Natural language query from social worker
-  parsedCriteria     Json               // AI-extracted criteria
-  searchResults      Json               // Matched homes with scores
-  status             PlacementStatus    @default(SEARCHING)
+  id                   String             @id @default(cuid())
+  userId               String
+  queryText            String // Natural language query from social worker
+  parsedCriteria       Json // AI-extracted criteria
+  searchResults        Json // Matched homes with scores
+  status               PlacementStatus    @default(SEARCHING)
   // Concierge (Wizard-of-Oz) placement: the DP submits a patient's needs IN THE APP
   // and CareLinkAI (admin) curates a shortlist by hand, then sends it back IN THE APP.
   // No PHI ever leaves the app — patientInfo stays here and is never emailed.
-  isConcierge          Boolean          @default(false)
-  conciergeStatus      String?          // SUBMITTED | MATCHING | SHORTLIST_READY
-  patientInfo          Json?            // minimum-necessary intake; in-app storage only
+  isConcierge          Boolean            @default(false)
+  conciergeStatus      String? // SUBMITTED | MATCHING | SHORTLIST_READY
+  patientInfo          Json? // minimum-necessary intake; in-app storage only
   /// Payer-source screener (OL-114): structured payer tag from the concierge/DP
   /// intake (patientInfo.paymentType stays as legacy free text). TAGS ONLY.
   payerSource          PayerSource?
   /// First-class intake facts (sprint W5-1, Δ14/G2): derived at intake time from the
   /// screener / request — never guessed after the fact (nullable, no backfill).
-  payerLane            String?          // FEE_ELIGIBLE | FREE_LANE | UNKNOWN
-  intakeZip            String?          // 5-digit ZIP of the search area when given
-  careLevel            String?          // "Memory care" | "Assisted living" | … (plain label)
-  curatedHomes         Json?            // [{ homeId, name, address, note, confirmedAvailability }]
-  conciergeNote        String?          // overall care-team message to the DP
+  payerLane            String? // FEE_ELIGIBLE | FREE_LANE | UNKNOWN
+  intakeZip            String? // 5-digit ZIP of the search area when given
+  careLevel            String? // "Memory care" | "Assisted living" | … (plain label)
+  curatedHomes         Json? // [{ homeId, name, address, note, confirmedAvailability }]
+  conciergeNote        String? // overall care-team message to the DP
   conciergeSubmittedAt DateTime?
   conciergeRespondedAt DateTime?
   /// Where the request came from (sprint W4 0a): null/'dp_app' = a discharge
   /// planner in the app; 'concierge_page' = a private-pay family via /concierge.
-  source             String?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  placementRequests  PlacementRequest[]
-  facilityResponses  FacilityResponse[]
-  conciergeOrders    ConciergeOrder[]
+  source               String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  placementRequests    PlacementRequest[]
+  facilityResponses    FacilityResponse[]
+  conciergeOrders      ConciergeOrder[]
 
   @@index([userId])
   @@index([status])
@@ -2418,13 +2423,13 @@ model PlacementSearch {
 /// lane only. Every status change is recorded via recordEvent (source STRIPE for
 /// webhook-driven changes, FAMILY for the family's own request).
 enum ConciergeOrderStatus {
-  PENDING_PAYMENT   // Stripe Checkout Session created, not yet paid
-  PAID              // checkout.session.completed received
-  WAITLIST          // monthly capacity reached; same intake, no payment
-  REQUESTED_UNPAID  // CONCIERGE_CHECKOUT_ENABLED unset → today's "request" behaviour
-  REFUNDED          // charge.refunded received
-  CANCELED          // checkout expired / canceled before payment
-  EXPIRED           // pay when ready: still unpaid 14 days after "Shortlist ready" (an admin can reopen)
+  PENDING_PAYMENT // Stripe Checkout Session created, not yet paid
+  PAID // checkout.session.completed received
+  WAITLIST // monthly capacity reached; same intake, no payment
+  REQUESTED_UNPAID // CONCIERGE_CHECKOUT_ENABLED unset → today's "request" behaviour
+  REFUNDED // charge.refunded received
+  CANCELED // checkout expired / canceled before payment
+  EXPIRED // pay when ready: still unpaid 14 days after "Shortlist ready" (an admin can reopen)
 }
 
 model ConciergeOrder {
@@ -2468,9 +2473,9 @@ model StripeWebhookEvent {
 /// Placement request sent to homes
 /// Facility accept / decline inside the DP concierge flow (sprint W4-2).
 enum FacilityResponseStatus {
-  PENDING  // row created with the shortlist; no deliverable contact yet
-  SENT     // tokenized link emailed to the facility contact
-  OPENED   // link opened
+  PENDING // row created with the shortlist; no deliverable contact yet
+  SENT // tokenized link emailed to the facility contact
+  OPENED // link opened
   ACCEPTED
   DECLINED
   ADMITTED // admin confirmed the move-in after an accept
@@ -2528,7 +2533,7 @@ model PlacementRequest {
   id                  String             @id @default(cuid())
   searchId            String
   homeId              String
-  patientInfo         Json               // Patient details, needs, timeline
+  patientInfo         Json // Patient details, needs, timeline
   status              RequestStatus      @default(PENDING)
   emailSentAt         DateTime?
   emailDeliveryStatus String?
@@ -2547,25 +2552,25 @@ model PlacementRequest {
 }
 
 model BugReport {
-  id                String      @id @default(cuid())
-  userId            String?
-  userEmail         String
-  userName          String
-  userType          UserRole?
-  title             String
-  description       String
-  stepsToReproduce  String?
-  severity          BugSeverity @default(MEDIUM)
-  pageUrl           String
-  browserInfo       String
-  deviceInfo        String?
-  screenshotUrl     String?
-  status            BugStatus   @default(NEW)
-  assignedTo        String?
-  adminNotes        String?
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
-  resolvedAt        DateTime?
+  id               String      @id @default(cuid())
+  userId           String?
+  userEmail        String
+  userName         String
+  userType         UserRole?
+  title            String
+  description      String
+  stepsToReproduce String?
+  severity         BugSeverity @default(MEDIUM)
+  pageUrl          String
+  browserInfo      String
+  deviceInfo       String?
+  screenshotUrl    String?
+  status           BugStatus   @default(NEW)
+  assignedTo       String?
+  adminNotes       String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  resolvedAt       DateTime?
 
   @@index([status])
   @@index([severity])
@@ -2575,23 +2580,22 @@ model BugReport {
 }
 
 model ImpersonationSession {
-  id            String    @id @default(cuid())
-  adminId       String
-  targetUserId  String
-  startedAt     DateTime  @default(now())
-  endedAt       DateTime?
-  expiresAt     DateTime
-  ipAddress     String?
-  userAgent     String?
-  reason        String?
-  admin         User      @relation("AdminImpersonations", fields: [adminId], references: [id], onDelete: Cascade)
-  targetUser    User      @relation("ImpersonatedSessions", fields: [targetUserId], references: [id], onDelete: Cascade)
+  id           String    @id @default(cuid())
+  adminId      String
+  targetUserId String
+  startedAt    DateTime  @default(now())
+  endedAt      DateTime?
+  expiresAt    DateTime
+  ipAddress    String?
+  userAgent    String?
+  reason       String?
+  admin        User      @relation("AdminImpersonations", fields: [adminId], references: [id], onDelete: Cascade)
+  targetUser   User      @relation("ImpersonatedSessions", fields: [targetUserId], references: [id], onDelete: Cascade)
 
   @@index([adminId])
   @@index([targetUserId])
   @@index([expiresAt])
 }
-
 
 enum UserRole {
   FAMILY
@@ -2724,13 +2728,13 @@ enum HomeStatus {
 
 /// How a home's availabilityCount was last verified (freshness cascade).
 enum AvailabilitySource {
-  OPERATOR  // operator self-serve edit
-  SMS       // weekly SMS poll reply
-  EMAIL     // email magic-link +/- counter
-  VOICE     // AI-voice fallback call result
+  OPERATOR // operator self-serve edit
+  SMS // weekly SMS poll reply
+  EMAIL // email magic-link +/- counter
+  VOICE // AI-voice fallback call result
   CONCIERGE // Anita / care-team confirmed on demand
-  PING      // one-tap weekly availability ping reply (email; SMS stubbed) — sprint W4-1
-  AI_CALL   // QA-approved AI availability call (ElevenLabs agent) — OL-163
+  PING // one-tap weekly availability ping reply (email; SMS stubbed) — sprint W4-1
+  AI_CALL // QA-approved AI availability call (ElevenLabs agent) — OL-163
   AI_CALL_INBOUND // a facility CALLED US on the published line and gave an update (OL-167a); QA-approved like AI_CALL
 }
 
@@ -2743,10 +2747,10 @@ enum AvailabilityPingChannel {
 
 /// How a ping ended. Null = sent, still waiting for a reply.
 enum AvailabilityPingOutcome {
-  UPDATED      // bare integer / "none" / "full" → availability updated, source=PING
-  STOP         // contact opted out
+  UPDATED // bare integer / "none" / "full" → availability updated, source=PING
+  STOP // contact opted out
   ADMIN_REVIEW // anything else → admin queue (raw reply kept)
-  EXPIRED      // no reply within AVAILABILITY_FRESH_DAYS → Verified badge lapses, on the call list
+  EXPIRED // no reply within AVAILABILITY_FRESH_DAYS → Verified badge lapses, on the call list
 }
 
 /// Per-operator "availability contact" (sprint W4-1): the ONE person we ping
@@ -2806,10 +2810,10 @@ model AvailabilityPing {
 /// availability. Business data only (beds, price, waiver answer) — never PHI.
 enum CallOutcome {
   ANSWERED
-  DECLINED      // "no" to the one-minute ask → retry no sooner than 30 days
-  NO_ANSWER     // voicemail / no pickup → retry next cycle
-  WANTS_HUMAN   // asked for a person → Elizabeth queue
-  WRONG_NUMBER  // not the facility → excluded from the list
+  DECLINED // "no" to the one-minute ask → retry no sooner than 30 days
+  NO_ANSWER // voicemail / no pickup → retry next cycle
+  WANTS_HUMAN // asked for a person → Elizabeth queue
+  WRONG_NUMBER // not the facility → excluded from the list
 }
 
 enum CallWaiverStatus {
@@ -2834,12 +2838,12 @@ enum ObservationQaStatus {
 }
 
 model AvailabilityObservation {
-  id               String                @id @default(cuid())
+  id               String                 @id @default(cuid())
   homeId           String
-  home             AssistedLivingHome    @relation(fields: [homeId], references: [id], onDelete: Cascade)
-  source           AvailabilitySource    @default(AI_CALL)
+  home             AssistedLivingHome     @relation(fields: [homeId], references: [id], onDelete: Cascade)
+  source           AvailabilitySource     @default(AI_CALL)
   /// ElevenLabs conversation_id — the idempotency key for the webhook.
-  conversationId   String                @unique
+  conversationId   String                 @unique
   agentId          String?
   calledAt         DateTime
   durationSecs     Int?
@@ -2850,7 +2854,7 @@ model AvailabilityObservation {
   priceUndisclosed Boolean?
   waiverStatus     CallWaiverStatus?
   medicaidPending  MedicaidPendingAnswer?
-  doNotCall        Boolean               @default(false)
+  doNotCall        Boolean                @default(false)
   contactRole      String?
   notes            String?
   transcriptUrl    String?
@@ -2858,7 +2862,7 @@ model AvailabilityObservation {
   /// [{ role: 'agent' | 'user', message, timeSecs? }] — the business call, kept for QA.
   transcript       Json?
   confidence       Float?
-  qaStatus         ObservationQaStatus   @default(PENDING)
+  qaStatus         ObservationQaStatus    @default(PENDING)
   qaByUserId       String?
   qaAt             DateTime?
   qaNote           String?
@@ -2866,8 +2870,8 @@ model AvailabilityObservation {
   corrections      Json?
   /// When the approved values were written to the home.
   appliedAt        DateTime?
-  createdAt        DateTime              @default(now())
-  updatedAt        DateTime              @updatedAt
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
 
   @@index([homeId, calledAt])
   @@index([qaStatus, calledAt])
@@ -2909,35 +2913,35 @@ enum InboundLeadSource {
 /// Business contact details only: `reason` is PHI-guarded (redacted + phiFlag
 /// when it looks like patient detail) and capped at 280 chars.
 model InboundLead {
-  id             String             @id @default(cuid())
+  id             String              @id @default(cuid())
   /// ElevenLabs conversation_id — the idempotency key for the webhook.
-  conversationId String             @unique
+  conversationId String              @unique
   callerType     InboundCallerType
   name           String?
   organization   String?
   /// E.164 (+1XXXXXXXXXX). Always set for calls; optional on web inquiries.
   callbackPhone  String?
   urgency        InboundLeadUrgency?
-  reason         String?            @db.VarChar(280)
+  reason         String?             @db.VarChar(280)
   transcriptUrl  String?
   recordingUrl   String?
   /// Outside Mon–Fri 8–6 ET at the time of the call.
-  afterHours     Boolean            @default(false)
-  status         InboundLeadStatus  @default(NEW)
-  receivedAt     DateTime           @default(now())
+  afterHours     Boolean             @default(false)
+  status         InboundLeadStatus   @default(NEW)
+  receivedAt     DateTime            @default(now())
   contactedAt    DateTime?
   closedAt       DateTime?
-  phiFlag        Boolean            @default(false)
+  phiFlag        Boolean             @default(false)
   /// OL-177: CALL (default) or WEB_INQUIRY. Web rows use conversationId "web-inquiry:<inquiryId>".
-  source         InboundLeadSource  @default(CALL)
+  source         InboundLeadSource   @default(CALL)
   contactEmail   String?
   homeId         String?
   /// The Inquiry row a WEB_INQUIRY lead mirrors (the full message stays there).
-  inquiryId      String?            @unique
+  inquiryId      String?             @unique
   /// OL-179: the TourRequest a logged-in family's WEB_TOUR_REQUEST lead mirrors.
-  tourRequestId  String?            @unique
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  tourRequestId  String?             @unique
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
 
   @@index([status, receivedAt])
   @@index([callerType, receivedAt])
@@ -2947,20 +2951,20 @@ model InboundLead {
 /// Ohio Medicaid Assisted Living Waiver participation (sprint W5-2, G3).
 /// Baseline from the WRAAA facilities list; overridden by calls / operators.
 enum MedicaidWaiverStatus {
-  ACCEPTING_NEW            // on the list, taking new waiver residents
-  CURRENT_RESIDENTS_ONLY   // on the list, waiver slots for existing residents only
-  NOT_ACCEPTING_REFERRALS  // on the list, not taking waiver referrals
-  NOT_ON_LIST              // in a WRAAA county but not on the list
-  UNKNOWN                  // default; outside WRAAA's five counties or never checked
+  ACCEPTING_NEW // on the list, taking new waiver residents
+  CURRENT_RESIDENTS_ONLY // on the list, waiver slots for existing residents only
+  NOT_ACCEPTING_REFERRALS // on the list, not taking waiver referrals
+  NOT_ON_LIST // in a WRAAA county but not on the list
+  UNKNOWN // default; outside WRAAA's five counties or never checked
 }
 
 /// Where a home's "starting around $X" price came from (best-to-supplementary).
 enum PriceSource {
-  OPERATOR    // operator-provided at claim/verify → earns the Transparent Pricing badge
+  OPERATOR // operator-provided at claim/verify → earns the Transparent Pricing badge
   DP_ESTIMATE // discharge-planner network ballpark (labeled "estimated")
-  PUBLIC      // public benchmark / facility's own "starting at" marketing page
-  FAMILY_AVG  // avg of verified family-reported quotes (only when N >= threshold)
-  AI_CALL     // the home told CareLinkAI's calling assistant by phone; QA-approved before it is written (OL-166c)
+  PUBLIC // public benchmark / facility's own "starting at" marketing page
+  FAMILY_AVG // avg of verified family-reported quotes (only when N >= threshold)
+  AI_CALL // the home told CareLinkAI's calling assistant by phone; QA-approved before it is written (OL-166c)
 }
 
 /// Family-reported actual quote after a tour/move-in (the "Glassdoor" moat, Phase 2).
@@ -3332,8 +3336,8 @@ enum ExtractionStatus {
 /// HIPAA data classification — drives upload routing (PHI → S3, PUBLIC/PII → Cloudinary)
 enum DataClassification {
   PUBLIC // facility marketing photos, regulatory docs, public-facing content
-  PII    // personally identifiable info not linked to clinical care (profile photos, caregiver certs)
-  PHI    // protected health info: resident identifier + health information
+  PII // personally identifiable info not linked to clinical care (profile photos, caregiver certs)
+  PHI // protected health info: resident identifier + health information
 }
 
 enum ValidationStatus {
@@ -3391,17 +3395,16 @@ model SystemSettings {
   @@index([key])
 }
 
-
 // Export History Model for tracking data exports
 model ExportHistory {
   id           String       @id @default(cuid())
-  exportType   String       // users, homes, inquiries, caregivers, residents, audit-logs
+  exportType   String // users, homes, inquiries, caregivers, residents, audit-logs
   fileName     String
   recordCount  Int          @default(0)
   status       ExportStatus @default(PENDING)
-  filters      Json?        // Stored filters used for the export
+  filters      Json? // Stored filters used for the export
   format       String       @default("csv") // csv, json
-  downloadUrl  String?      // Optional URL for re-download (if stored)
+  downloadUrl  String? // Optional URL for re-download (if stored)
   completedAt  DateTime?
   createdAt    DateTime     @default(now())
   exportedById String
@@ -3500,20 +3503,20 @@ enum AffiliateReferralType {
 
 /// Families or prospects waiting for a bed at a specific home
 model WaitlistEntry {
-  id          String             @id @default(cuid())
-  homeId      String
-  familyId    String?
-  name        String
-  email       String
-  phone       String?
-  notes       String?
-  priority    Int                @default(0)
-  notified    Boolean            @default(false)
-  notifiedAt  DateTime?
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
-  home        AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
-  family      Family?            @relation(fields: [familyId], references: [id], onDelete: SetNull)
+  id         String             @id @default(cuid())
+  homeId     String
+  familyId   String?
+  name       String
+  email      String
+  phone      String?
+  notes      String?
+  priority   Int                @default(0)
+  notified   Boolean            @default(false)
+  notifiedAt DateTime?
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  home       AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+  family     Family?            @relation(fields: [familyId], references: [id], onDelete: SetNull)
 
   @@index([homeId])
   @@index([familyId])
@@ -3560,24 +3563,24 @@ enum CoverageOutcome {
 
 /// An open shift coverage request that drives the On-Call AI outreach engine
 model ShiftNeed {
-  id                   String           @id @default(cuid())
-  homeId               String
-  shiftId              String?          @unique
-  requiredCerts        String[]         @default([])
-  requiredSkills       String[]         @default([])
-  minExperienceMonths  Int?
-  notes                String?
-  status               ShiftNeedStatus  @default(OPEN)
-  filledByCaregiverId  String?
-  filledAt             DateTime?
-  currentWave          Int              @default(0)
-  createdAt            DateTime         @default(now())
-  updatedAt            DateTime         @updatedAt
+  id                  String          @id @default(cuid())
+  homeId              String
+  shiftId             String?         @unique
+  requiredCerts       String[]        @default([])
+  requiredSkills      String[]        @default([])
+  minExperienceMonths Int?
+  notes               String?
+  status              ShiftNeedStatus @default(OPEN)
+  filledByCaregiverId String?
+  filledAt            DateTime?
+  currentWave         Int             @default(0)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
 
-  home                 AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
-  shift                CaregiverShift?    @relation(fields: [shiftId], references: [id])
-  filledByCaregiver    Caregiver?         @relation("FilledByCaregiver", fields: [filledByCaregiverId], references: [id])
-  attempts             CoverageAttempt[]
+  home              AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+  shift             CaregiverShift?    @relation(fields: [shiftId], references: [id])
+  filledByCaregiver Caregiver?         @relation("FilledByCaregiver", fields: [filledByCaregiverId], references: [id])
+  attempts          CoverageAttempt[]
 
   @@index([homeId])
   @@index([status])
@@ -3597,8 +3600,8 @@ model CoverageAttempt {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
-  shiftNeed   ShiftNeed  @relation(fields: [shiftNeedId], references: [id], onDelete: Cascade)
-  caregiver   Caregiver  @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  shiftNeed ShiftNeed @relation(fields: [shiftNeedId], references: [id], onDelete: Cascade)
+  caregiver Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
 
   @@index([shiftNeedId])
   @@index([caregiverId])
@@ -3648,8 +3651,8 @@ model CallOff {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  caregiver   Caregiver      @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
-  shift       CaregiverShift? @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+  caregiver Caregiver       @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  shift     CaregiverShift? @relation(fields: [shiftId], references: [id], onDelete: SetNull)
 
   @@index([caregiverId])
   @@index([shiftId])
@@ -3717,31 +3720,31 @@ enum RideStatus {
 }
 
 model BackgroundCheckInvitation {
-  id                 String    @id @default(cuid())
-  orderedByUserId    String
-  orderedByRole      String
+  id              String @id @default(cuid())
+  orderedByUserId String
+  orderedByRole   String
 
-  subjectFirstName   String
-  subjectLastName    String
-  subjectEmail       String
-  subjectRole        String?
+  subjectFirstName String
+  subjectLastName  String
+  subjectEmail     String
+  subjectRole      String?
 
-  packageType        String
-  pricePaid          Decimal?  @db.Decimal(10, 2)
-  stripePaymentId    String?
+  packageType     String
+  pricePaid       Decimal? @db.Decimal(10, 2)
+  stripePaymentId String?
 
-  checkrInvitationId String?   @unique
+  checkrInvitationId String? @unique
   checkrCandidateId  String?
-  checkrReportId     String?   @unique
+  checkrReportId     String? @unique
   invitationUrl      String?
 
-  status             String    @default("INVITED")
-  reportUrl          String?
+  status    String  @default("INVITED")
+  reportUrl String?
 
-  expiresAt          DateTime?
-  completedAt        DateTime?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  expiresAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([orderedByUserId])
   @@index([status])
@@ -3852,4 +3855,31 @@ model AnalyticsEvent {
 
   @@index([name, createdAt])
   @@index([createdAt])
+}
+
+/// Self-serve listing claim (fix/self-serve-claim): an operator asks for an unclaimed listing; an admin
+/// approves (the existing admin ownership transfer runs) or rejects. Never transfers on its own.
+/// One PENDING_REVIEW claim per home (partial unique index in the migration).
+enum HomeClaimStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+model HomeClaim {
+  id           String             @id @default(cuid())
+  homeId       String
+  operatorId   String
+  status       HomeClaimStatus    @default(PENDING_REVIEW)
+  /// 'listing_button' (signed-in one click) | 'signup' (claim intent carried through registration)
+  source       String
+  createdAt    DateTime           @default(now())
+  reviewedAt   DateTime?
+  reviewedById String?
+  home         AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+  operator     Operator           @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+
+  @@index([homeId, status])
+  @@index([operatorId, status])
+  @@index([status, createdAt])
 }
