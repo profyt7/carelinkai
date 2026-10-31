@@ -11,6 +11,12 @@
 
 export type TourSlide = { image: string; width: number; height: number; chapter: string; caption: string; seconds: number };
 export type Tour = { title: string; sampleDataNote: string | null; slides: TourSlide[] };
+/** Poster for the tour video: the homepage thumbnail and every <video poster> (1600×900, 16:9). */
+export const TOUR_POSTER_SRC = '/demo/tour-poster.jpg';
+export const TOUR_POSTER_SIZE = { width: 1600, height: 900 } as const;
+/** public/demo/tour.mp4 runs 91.8 s, shown as 1:32. */
+export const TOUR_DURATION = { label: '1:32', spoken: '1 minute 32 seconds' } as const;
+
 /** Self-hosted narrated tour (public/demo/tour.mp4); no third-party player. */
 export type TourVideo = { src: string; poster: string | null; captions: string | null };
 
