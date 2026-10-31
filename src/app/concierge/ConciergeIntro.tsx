@@ -55,8 +55,8 @@ export default function ConciergeIntro() {
               <p className="mt-6 text-lg text-neutral-700 max-w-3xl">
                 A hospital gives you 48 hours. In that window families pick a home that can’t handle the care, sign a
                 contract they haven’t read, or run out of money in a place that won’t keep them. A Cleveland person
-                checks fit, prices and the contract with you before you sign — verified homes only, availability
-                confirmed before you visit, the real price in writing.
+                checks fit, prices and the contract with you before you sign — licensed homes only, availability and
+                pricing labeled as verified or unconfirmed, the real price in writing.
               </p>
               <p className="mt-4 text-neutral-700 max-w-3xl">
                 The concierge is a <strong>private-pay service</strong>. If care will be paid through Medicaid, Medicare

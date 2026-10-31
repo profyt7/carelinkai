@@ -6,8 +6,8 @@
  * Copy rules: every answer is built from what offer.ts and contact.ts already
  * say. No dollar figure anywhere in this file — the cost answer points to the
  * payer question, because Medicaid / Medicare / VA families are never shown a
- * price (OL-165 / OL-166b). The guarantee is quoted verbatim from
- * CONCIERGE_OFFER.guarantee. No outcome or savings promises, no facility fee.
+ * price (OL-165 / OL-166b). The no-charge line is quoted verbatim from
+ * CONCIERGE_OFFER.guarantee. No turnaround, outcome or savings promises, no facility fee.
  */
 
 import { CONCIERGE_OFFER } from '@/lib/concierge/offer';
@@ -17,8 +17,8 @@ export type ConciergeFaqItem = { question: string; answer: string };
 
 /** Short names for the concierge deliverables (the full wording lives in CONCIERGE_OFFER.inclusions). */
 export const CONCIERGE_INCLUDED_SUMMARY = [
-  'A 20-minute intake call within 1 business day',
-  'A verified shortlist of 3–5 homes, availability and price confirmed',
+  'A 20-minute intake call',
+  'A personalized shortlist, with availability and pricing labeled as verified or unconfirmed',
   'A fit check against each home’s acceptance criteria',
   'A Medicaid runway plan',
   'Real prices in writing, plus what to ask for before signing',
@@ -41,8 +41,8 @@ export const CONCIERGE_FAQ: readonly ConciergeFaqItem[] = [
     answer: `Included: ${CONCIERGE_INCLUDED_SUMMARY.join('; ')}; tour scheduling; and check-ins after move-in. Not included: ${CONCIERGE_OFFER.notIncluded.join('; ')}. ${CONCIERGE_OFFER.noOutcomeLine}`,
   },
   {
-    question: 'How fast is the shortlist, and what if it is late?',
-    answer: `${CONCIERGE_OFFER.subhead} The guarantee, word for word: ${CONCIERGE_OFFER.guarantee}`,
+    question: 'When do I pay, and what if the shortlist doesn’t help?',
+    answer: `${CONCIERGE_OFFER.subhead} When your shortlist is ready, we send you a secure payment link, and you get the full shortlist as soon as it’s paid. ${CONCIERGE_OFFER.guarantee} ${CONCIERGE_OFFER.notAPlacementLine}`,
   },
   {
     question: 'We are paying through Medicaid, Medicare or the VA. Can you still help?',

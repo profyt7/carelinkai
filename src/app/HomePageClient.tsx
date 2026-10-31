@@ -361,17 +361,14 @@ export default function HomePage({
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-5 lg:items-center">
             <div className="lg:col-span-3">
               <p className="text-sm font-semibold uppercase tracking-wide text-primary-600">Family Concierge · Greater Cleveland</p>
-              {/* OL-165: the headline is the mistake, not the time saved. One line + the guarantee + the link. */}
+              {/* Pay when ready (10/31): headline, one line, the full terms, the link. */}
               <h2 className="mt-2 text-3xl md:text-4xl font-bold text-neutral-900" data-testid="home-concierge-headline">
-                {/* OL-241: no unsourced dollar figure in the homepage headline. */}
-                Get a verified shortlist before you commit to a home.
+                {CONCIERGE_OFFER.headline}
               </h2>
               <p className="mt-4 text-lg text-neutral-800">{CONCIERGE_OFFER.oneLine}</p>
               <p className="mt-3 flex gap-3 text-neutral-800" data-testid="home-concierge-guarantee">
                 <FiCheck className="mt-1 flex-shrink-0 text-success-600" />
-                <span>
-                  <strong>{CONCIERGE_OFFER.subhead}</strong> {CONCIERGE_OFFER.priceDisplay} flat, one time. {CONCIERGE_OFFER.guarantee}
-                </span>
+                <span data-testid="home-concierge-terms">{CONCIERGE_OFFER.terms}</span>
               </p>
             </div>
             <div className="lg:col-span-2 rounded-2xl border border-primary-200 bg-white p-6 shadow-sm">
@@ -1823,7 +1820,7 @@ export default function HomePage({
               <AnimatePresence>
                 {openFaqIndex === 2 && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-                    <div className="px-6 pb-5 text-neutral-500"><p>Nothing, for families and hospital discharge planners. Searching every Cleveland-area community, seeing starting prices and open beds (marked verified or not), waiver status and inspection history is free. Care homes list free too. One optional service costs money: our Family Concierge, $399 flat, for families paying privately who want a verified shortlist and a person on the phone through the move. If you’re paying with Medicaid, Medicare or the VA, our help is always free. No hidden fees, ever.</p></div>
+                    <div className="px-6 pb-5 text-neutral-500"><p>Nothing, for families and hospital discharge planners. Searching every Cleveland-area community, seeing starting prices and open beds (marked verified or not), waiver status and inspection history is free. Care homes list free too. One optional service costs money: our Family Concierge, $399, for families paying privately who want a personalized shortlist and a person on the phone through the move. We do the research first; you pay only when your shortlist is ready, and nothing if we can&apos;t put together a useful one. If you’re paying with Medicaid, Medicare or the VA, our help is always free. No hidden fees, ever.</p></div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1838,7 +1835,7 @@ export default function HomePage({
               <AnimatePresence>
                 {openFaqIndex === 3 && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-                    <div className="px-6 pb-5 text-neutral-500"><p>With the Family Concierge you get a verified shortlist within two business days, or a full refund. If a discharge is already scheduled, tell us the date and we work backward from it. Our directory marks which communities have confirmed open beds, and when, so you’re not calling homes that are full.</p></div>
+                    <div className="px-6 pb-5 text-neutral-500"><p>With the Family Concierge, we do the research first and send a secure payment link when your shortlist is ready; you get the full shortlist as soon as it&apos;s paid. If a discharge is already scheduled, tell us the date and we work backward from it. Our directory marks which communities have confirmed open beds, and when, so you’re not calling homes that are full.</p></div>
                   </motion.div>
                 )}
               </AnimatePresence>

@@ -92,8 +92,9 @@ export default function ConciergePage() {
             'National placement agencies are paid a commission by the home — often a month’s rent — which is why their “free” shortlist leans toward whoever pays. Our concierge is paid by you, flat, one time.',
             CONCIERGE_OFFER.honestyLine,
             'Every home we shortlist is a licensed Ohio facility with its state inspection history in front of you, facts only.',
-            'Availability is confirmed with the home before you tour — no wasted Saturday drives.',
-            `${CONCIERGE_OFFER.guarantee} That is the whole guarantee: the shortlist, on time, or your money back.`,
+            'Availability and pricing are labeled as verified or unconfirmed, so you know what to double-check before you tour.',
+            `We do the research first and send a payment link only when your shortlist is ready. ${CONCIERGE_OFFER.guarantee}`,
+            CONCIERGE_OFFER.notAPlacementLine,
             'Families paying through Medicaid, Medicare or the VA get the directory, guides and direct home contact free, with no fee attached to the placement, ever.',
           ].map((line) => (
             <li key={line} className="flex gap-3">

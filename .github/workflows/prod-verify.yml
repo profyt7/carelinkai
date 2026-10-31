@@ -251,10 +251,10 @@ jobs:
             fetch GET /llms.txt
             if [ "$CODE" = "200" ] && grep -q 'availabilityVerifiedAt' body.txt; then pass "GET /llms.txt → 200 and names availabilityVerifiedAt"; else fail "GET /llms.txt → $CODE, availabilityVerifiedAt present: $(grep -c availabilityVerifiedAt body.txt)"; fi
             fetch GET /concierge
-            if [ "$CODE" = "200" ] && grep -q 'data-testid="concierge-screener"' body.txt && grep -qF 'making the $5,000 mistake under pressure' body.txt && grep -qF 'or you pay nothing' body.txt; then
-              pass "GET /concierge → 200 with the screener, the v2 headline and the guarantee subhead"
+            if [ "$CODE" = "200" ] && grep -q 'data-testid="concierge-screener"' body.txt && grep -qF 'Get a verified shortlist before you commit to a home.' body.txt && grep -qF 'You pay only when your shortlist is ready' body.txt && ! grep -qF '5,000 mistake' body.txt; then
+              pass "GET /concierge → 200 with the screener, the pay-when-ready headline and subhead (no \$5,000 figure)"
             else
-              fail "GET /concierge → $CODE (screener: $(grep -c 'concierge-screener' body.txt), headline: $(grep -cF 'making the $5,000 mistake' body.txt), subhead: $(grep -cF 'or you pay nothing' body.txt))"
+              fail "GET /concierge → $CODE (screener: $(grep -c 'concierge-screener' body.txt), headline: $(grep -cF 'Get a verified shortlist before you commit' body.txt), subhead: $(grep -cF 'You pay only when your shortlist is ready' body.txt), old \$5,000 headline: $(grep -cF '5,000 mistake' body.txt))"
             fi
           fi
 
@@ -294,7 +294,7 @@ jobs:
           fi
           echo "All production checks passed."
 
-      - name: /concierge renders both lanes with the guarantee text (browser)
+      - name: /concierge renders both lanes with the pay-when-ready terms (browser)
         if: ${{ inputs.check_v1020 }}
         shell: bash
         env:
@@ -308,7 +308,8 @@ jobs:
           cat > check.mjs <<'EOF'
           import { chromium } from 'playwright';
           const BASE = process.env.BASE;
-          const GUARANTEE = 'No verified shortlist within 2 business days → full refund.';
+          // Pay when ready (10/31): the no-charge line inside the full terms.
+          const GUARANTEE = "If we can't put together a useful shortlist, you pay nothing.";
           const out = [];
           let fail = false;
           const pass = (m) => out.push(`- ✅ ${m}`);
@@ -332,7 +333,7 @@ jobs:
             await answer(/Private funds/);
             await page.getByTestId('concierge-offer').waitFor({ state: 'visible', timeout: 30000 });
             const g = await page.getByTestId('concierge-guarantee').innerText();
-            if (g.includes(GUARANTEE)) pass('Private funds → offer lane renders with the guarantee text'); else bad(`guarantee text missing: "${g}"`);
+            if (g.includes(GUARANTEE) && g.includes('secure payment link') && !/business day/.test(g)) pass('Private funds → offer lane renders the pay-when-ready terms (no turnaround promise)'); else bad(`terms text missing or promises a turnaround: "${g}"`);
             const incl = await page.getByTestId('concierge-inclusions').locator('li').count();
             incl === 9 ? pass('offer lists the nine v2 deliverables') : bad(`offer lists ${incl} deliverables, expected 9`);
             await answer(/Not sure yet/);

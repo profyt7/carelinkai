@@ -38,7 +38,7 @@ export const ORG_NAME = 'CareLinkAI';
  * family-paid concierge. No facility move-in fee is mentioned (not active).
  */
 export const FEE_MODEL_LINE =
-  'Free for families to search and contact homes. Homes never pay to be listed or ranked. Optional Family Concierge: $399 flat for private-pay families, refunded if there is no verified shortlist within 2 business days. Families paying through Medicaid, Medicare or the VA always get our help free.';
+  "Free for families to search and contact homes. Homes never pay to be listed or ranked. Optional Family Concierge: $399 for private-pay families, paid only when the shortlist is ready, and nothing if we can't put together a useful one. Families paying through Medicaid, Medicare or the VA always get our help free.";
 
 type Json = Record<string, unknown>;
 

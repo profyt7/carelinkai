@@ -63,7 +63,8 @@ test.describe('@critical /concierge offer + payer screener', () => {
     // Copy honesty (W5-3 d) + v2 framing (OL-165).
     expect(visible).toContain('Homes never pay to be listed, ranked or recommended.');
     expect(visible).not.toContain('homes never pay us to be recommended');
-    expect(visible).toContain('We keep you from making the $5,000 mistake under pressure.');
+    expect(visible).toContain('Get a verified shortlist before you commit to a home.');
+    expect(visible).not.toContain('5,000');
     expect(visible).not.toMatch(/legwork/i);
   });
 
@@ -71,7 +72,7 @@ test.describe('@critical /concierge offer + payer screener', () => {
     expect(await (await request.get('/sitemap.xml')).text()).toContain('https://getcarelinkai.com/concierge');
   });
 
-  test('private funds → paid offer card ($399 + inclusions + guarantee) → "Request the concierge" (flag unset) creates a REQUESTED_UNPAID order in the admin queue', async ({ page, browser, request }) => {
+  test('private funds → paid offer card ($399 + inclusions + guarantee) → "Request your shortlist" (flag unset, terms shown before submit) creates a REQUESTED_UNPAID order in the admin queue', async ({ page, browser, request }) => {
     await answer(page, /Private funds/);
     const offer = page.getByTestId('concierge-offer');
     await expect(offer).toBeVisible();
@@ -80,10 +81,11 @@ test.describe('@critical /concierge offer + payer screener', () => {
     const inclusions = offer.getByTestId('concierge-inclusions').locator('li');
     await expect(inclusions).toHaveCount(9); // v2 items 1–9 (OL-165)
     await expect(inclusions.first()).toContainText('20-minute intake call');
-    await expect(offer.getByTestId('concierge-inclusions')).toContainText('3–5 homes within 2 business days');
+    await expect(offer.getByTestId('concierge-inclusions')).toContainText('availability and pricing labeled as verified or unconfirmed');
     await expect(offer.getByTestId('concierge-inclusions')).toContainText('Medicaid runway plan');
     await expect(offer.getByTestId('concierge-inclusions')).toContainText('contract red-flag review');
-    await expect(offer.getByTestId('concierge-guarantee')).toContainText('full refund');
+    await expect(offer.getByTestId('concierge-guarantee')).toContainText('secure payment link');
+    await expect(offer.getByTestId('concierge-guarantee')).not.toContainText('business day');
     await expect(offer.getByTestId('concierge-not-included')).toContainText('Medicaid application filing');
     await expect(offer.getByTestId('concierge-not-included')).toContainText('negotiating on the family’s behalf');
 
@@ -92,7 +94,7 @@ test.describe('@critical /concierge offer + payer screener', () => {
     // CI has CONCIERGE_CHECKOUT_ENABLED unset → the unpaid request path.
     await expect(form).toHaveAttribute('data-mode-loaded', 'true');
     await expect(form).toHaveAttribute('data-mode', 'request');
-    await expect(form.getByTestId('concierge-request-cta')).toHaveText('Request the concierge');
+    await expect(form.getByTestId('concierge-request-cta')).toHaveText('Request your shortlist');
     const email = `family-${ts}@test.carelinkai.com`;
     await form.locator('input[name="contactName"]').fill('E2E Family');
     await form.locator('input[name="contactEmail"]').fill(email);

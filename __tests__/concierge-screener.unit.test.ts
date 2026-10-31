@@ -43,12 +43,12 @@ describe('routeForPayerSource', () => {
 });
 
 describe('offer (decided W5-3)', () => {
-  it('is $399 flat, one-time, paid by the family, with a 2-business-day refund guarantee', () => {
+  it('is $399, paid by the family only when the shortlist is ready, and nothing without a useful shortlist', () => {
     expect(CONCIERGE_OFFER.priceCents).toBe(39900);
     expect(CONCIERGE_OFFER.priceDisplay).toBe('$399');
     expect(CONCIERGE_OFFER.bookLabel).toBe('Book the concierge — $399');
-    expect(CONCIERGE_OFFER.guarantee).toMatch(/2 business days/);
-    expect(CONCIERGE_OFFER.guarantee).toMatch(/full refund/);
+    expect(CONCIERGE_OFFER.guarantee).toMatch(/you pay nothing/);
+    expect(CONCIERGE_OFFER.terms).toMatch(/secure payment link/);
     expect(CONCIERGE_OFFER.freeLaneLine).toMatch(/Medicaid, Medicare or the VA/);
   });
 

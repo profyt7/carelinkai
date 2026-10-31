@@ -274,12 +274,14 @@ export default function TermsOfServicePage() {
               </h2>
               <p className="text-slate-600 leading-relaxed mb-4">
                 The Family Concierge is an optional, paid search service for families paying for care privately or through
-                long-term care insurance. It costs a flat $399, charged once per family search. Capacity is limited each
-                month. The service includes:
+                long-term care insurance. It costs $399 per family search, and you pay only when your shortlist is ready:
+                we do the research first, send you a secure payment link when the shortlist is ready, and release the full
+                shortlist as soon as it is paid. We do not promise a turnaround time. Capacity is limited each month. The
+                service includes:
               </p>
               <ol className="list-decimal list-inside text-slate-600 space-y-2 ml-4 mb-4" data-testid="terms-concierge-scope">
-                <li>A 20-minute intake call within one business day (care needs, location, timeline, budget and how long it lasts, who in the family decides, hospital or discharge contact).</li>
-                <li>A verified shortlist of three to five homes within two business days, with availability and current price confirmed with each home and Ohio Department of Health inspection history explained in plain English.</li>
+                <li>A 20-minute intake call (care needs, location, timeline, budget and how long it lasts, who in the family decides, hospital or discharge contact).</li>
+                <li>A personalized shortlist of care options, with availability and pricing labeled as verified or unconfirmed, and Ohio Department of Health inspection history explained in plain English.</li>
                 <li>A fit check of each shortlisted home against its own acceptance criteria (two-person assist, wandering or secured unit, oxygen, insulin, bariatric, behavioral, hospice in place).</li>
                 <li>A Medicaid runway estimate (months of private pay at each home’s price) and, when that runway is short, a shortlist that favors homes accepting the Ohio Assisted Living Waiver for current residents. This is an estimate, not financial advice; we refer families to the Western Reserve Area Agency on Aging or an elder-law attorney for the application.</li>
                 <li>A written side-by-side price comparison (base rent, care-level tiers, community fee, recent increases) and, for each home, a list of what to ask for before signing.</li>
@@ -289,13 +291,14 @@ export default function TermsOfServicePage() {
                 <li>A before-you-sign checklist, check-ins at 30, 60 and 90 days after move-in, and one free re-search within 90 days.</li>
               </ol>
               <ul className="list-disc list-inside text-slate-600 space-y-2 ml-4">
-                <li><strong>Guarantee.</strong> If we do not deliver a verified shortlist within two business days of the intake call, we refund the full fee.</li>
+                <li data-testid="terms-concierge-pay-when-ready"><strong>No useful shortlist, no charge.</strong> If we can’t put together a useful shortlist, you pay nothing. Because we ask for payment only once your shortlist is ready, there is nothing to pay or refund in that case.</li>
+                <li data-testid="terms-concierge-not-placement"><strong>Not a placement.</strong> You’re paying for the research and shortlist, not a guaranteed opening or placement.</li>
                 <li data-testid="terms-concierge-not-included"><strong>Not included:</strong> {CONCIERGE_OFFER.notIncluded.join('; ')}.</li>
                 <li><strong>Not advice.</strong> The Family Concierge is not medical, legal or financial advice. We describe what we checked and what you may want to ask a home; decisions about care, contracts and money are yours, made with the professionals you choose.</li>
                 <li data-testid="terms-concierge-no-outcome"><strong>No promised outcome.</strong> We do not promise savings, a particular outcome, or that any home will agree to a request. We prepare you to ask; the answer is the home’s.</li>
                 <li data-testid="terms-concierge-who-pays"><strong>Who pays.</strong> You do. Homes never pay to be listed, ranked or recommended. If a home ever pays CareLinkAI a fee when a resident moves in, we tell you before you tour; it never changes your price or which homes we show you.</li>
                 <li><strong>Free help.</strong> When care is paid through Medicaid, Medicare or the VA, the concierge is not offered and our directory, guides and direct home contact are free.</li>
-                <li><strong>Payments</strong> are processed by Stripe. Refunds are returned to the original payment method.</li>
+                <li><strong>Payments</strong> are processed by Stripe through a secure payment link. Any refund is returned to the original payment method.</li>
               </ul>
             </section>
 

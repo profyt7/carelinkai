@@ -15,8 +15,9 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 
-const SUBHEAD = 'A verified shortlist in 2 business days — or you pay nothing.';
-const GUARANTEE = 'No verified shortlist within 2 business days → full refund.';
+const SUBHEAD = 'We do the research first. You pay only when your shortlist is ready.';
+// Pay when ready (10/31). Apostrophe-free slice of CONCIERGE_OFFER.guarantee (raw HTML encodes ' as &#x27;).
+const GUARANTEE = 'useful shortlist, you pay nothing.';
 const PRICE = /\$\s?(?!5,000\b)\d/;
 
 async function answer(page: Page, label: RegExp) {
