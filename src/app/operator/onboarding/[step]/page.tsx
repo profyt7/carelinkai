@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { FiCheck, FiArrowRight, FiHome, FiUser, FiZap, FiGift, FiX } from "react-icons/fi";
 import SmsConsentCheckbox, { emptySmsConsent } from "@/components/consent/SmsConsentCheckbox";
 import type { SmsConsentPayload } from "@/lib/consent/sms-consent";
+import { FOUNDING_OPERATOR_HEADLINE, FOUNDING_OPERATOR_TOOLS } from "@/lib/operator/founding-offer";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -116,7 +117,7 @@ const STEP_META: Record<StepNum, { label: string; icon: React.ReactNode }> = {
   1: { label: "Company", icon: <FiUser size={16} /> },
   2: { label: "First Home", icon: <FiHome size={16} /> },
   3: { label: "Founder Link", icon: <FiGift size={16} /> },
-  4: { label: "Choose Plan", icon: <FiZap size={16} /> },
+  4: { label: "Finish", icon: <FiZap size={16} /> },
 };
 
 // ─── Step indicator ───────────────────────────────────────────────────────────
@@ -228,6 +229,8 @@ export default function OperatorOnboardingStepPage() {
   const [availablePlans, setAvailablePlans] = useState<string[] | null>(null);
   // OL-186: false until /plans says OPERATOR_PLANS_ENABLED is on.
   const [plansEnabled, setPlansEnabled] = useState(false);
+  // OL-248: plan cards (and any trial / price copy) render only once the server says plans are ON.
+  const [plansLoaded, setPlansLoaded] = useState(false);
 
   // Apply an onboarding-status payload to local state (reused by polling).
   const applyStatus = (d: any) => {
@@ -312,7 +315,8 @@ export default function OperatorOnboardingStepPage() {
         if (Array.isArray(d?.available)) setAvailablePlans(d.available);
         setPlansEnabled(d?.enabled === true);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setPlansLoaded(true));
   }, []);
 
   // Poll the status endpoint while enrichment is running; stop when it resolves.
@@ -918,18 +922,18 @@ export default function OperatorOnboardingStepPage() {
           {step === 3 && (
             <div>
               <h1 className="text-2xl font-bold text-neutral-900 mb-1">
-                Cleveland founder access
+                Founding operator link
               </h1>
               <p className="text-neutral-500 text-sm mb-6">
                 {claimApplied
-                  ? "Your founder access is active — proceed to choose your plan."
-                  : "If you received a CareLinkAI founder claim link, paste it here to unlock 6 months of free access. Otherwise skip to choose a plan."}
+                  ? "Your founding operator status is applied — continue to finish setup."
+                  : "If you received a CareLinkAI founding operator link, paste it here. Otherwise skip this step."}
               </p>
 
               {claimApplied ? (
                 <div className="rounded-lg bg-success-50 border border-success-200 px-4 py-3 text-sm text-success-800 flex items-center gap-2 mb-6">
                   <FiCheck className="w-4 h-4 flex-shrink-0" />
-                  Founder access applied — 6 months free unlocked!
+                  Founding operator status applied.
                 </div>
               ) : (
                 <div className="space-y-3 mb-6">
@@ -956,7 +960,7 @@ export default function OperatorOnboardingStepPage() {
               <div className="flex gap-3">
                 {!claimApplied && (
                   <button onClick={proceedFromStep3} className="btn btn-ghost flex-1">
-                    Skip — choose a plan
+                    {plansLoaded && plansEnabled ? 'Skip — choose a plan' : 'Skip'}
                   </button>
                 )}
                 {claimApplied && (
@@ -964,7 +968,7 @@ export default function OperatorOnboardingStepPage() {
                     onClick={proceedFromStep3}
                     className="btn btn-primary flex-1 flex items-center justify-center gap-2"
                   >
-                    Continue to plan <FiArrowRight />
+                    Continue <FiArrowRight />
                   </button>
                 )}
               </div>
@@ -974,41 +978,34 @@ export default function OperatorOnboardingStepPage() {
           {/* ── Step 4: Choose plan (or free founder card) ── */}
           {step === 4 && (
             <div>
-              <h1 className="text-2xl font-bold text-neutral-900 mb-1">Choose a plan</h1>
+              <h1 className="text-2xl font-bold text-neutral-900 mb-1">{plansLoaded && plansEnabled && !clevelandFounder ? 'Choose a plan' : 'Finish setup'}</h1>
+              {/* OL-248: no trial or price copy unless plans are ON (and loaded) — nothing flashes while loading. */}
               <p className="text-neutral-500 text-sm mb-6">
                 {clevelandFounder
-                  ? "Your founder access is active. Complete setup below."
-                  : !plansEnabled && availablePlans !== null
+                  ? "Your founding operator listing is ready. Complete setup below."
+                  : !plansLoaded
+                  ? "Loading…"
+                  : !plansEnabled
                   ? "Paid plans aren't open yet. Finish setup now — no card needed."
                   : "14-day free trial on all plans. Cancel anytime."}
               </p>
 
               {clevelandFounder ? (
-                /* Cleveland Founder — free card, no Stripe */
-                <div className="rounded-xl border-2 border-success-400 bg-success-50 p-6">
+                /* OL-248: Founding Operator — free listing, no Stripe. Lists only tools verified to work with
+                   production flags as they are (no plan, plans off, no SMS); see FOUNDING_OPERATOR_TOOLS. */
+                <div className="rounded-xl border-2 border-success-400 bg-success-50 p-6" data-testid="founding-operator-card">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-success-500 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-success-500 flex items-center justify-center flex-shrink-0">
                       <FiGift className="text-white" size={20} />
                     </div>
-                    <div>
-                      <div className="font-semibold text-neutral-900">
-                        Cleveland Founder Program
-                      </div>
-                      <div className="text-success-700 font-bold text-lg">
-                        Free for 6 months
-                      </div>
+                    <div className="font-semibold text-neutral-900" data-testid="founding-operator-headline">
+                      {FOUNDING_OPERATOR_HEADLINE}
                     </div>
                   </div>
-                  <ul className="text-sm text-neutral-700 space-y-1.5 mb-5">
-                    {[
-                      "Full platform access",
-                      "Unlimited homes",
-                      "AI-powered matching",
-                      "Priority support",
-                      "No credit card required",
-                    ].map((f) => (
-                      <li key={f} className="flex items-center gap-2">
-                        <FiCheck className="w-4 h-4 text-success-500 flex-shrink-0" />
+                  <ul className="text-sm text-neutral-700 space-y-1.5 mb-5" data-testid="founding-operator-tools">
+                    {FOUNDING_OPERATOR_TOOLS.map((f) => (
+                      <li key={f} className="flex items-start gap-2">
+                        <FiCheck className="w-4 h-4 mt-0.5 text-success-500 flex-shrink-0" />
                         {f}
                       </li>
                     ))}
@@ -1021,7 +1018,9 @@ export default function OperatorOnboardingStepPage() {
                     {saving ? "Setting up…" : <>Complete setup <FiArrowRight /></>}
                   </button>
                 </div>
-              ) : !plansEnabled && availablePlans !== null ? (
+              ) : !plansLoaded ? (
+                <div className="rounded-xl border border-neutral-200 bg-white p-6 text-sm text-neutral-500" data-testid="onboarding-plans-loading">Loading…</div>
+              ) : !plansEnabled ? (
                 /* OL-186: paid plans switched off — finish onboarding without Stripe. */
                 <div className="rounded-xl border border-neutral-200 bg-white p-6" data-testid="onboarding-plans-off">
                   <p className="text-sm text-neutral-700 mb-4">
@@ -1039,9 +1038,7 @@ export default function OperatorOnboardingStepPage() {
                 /* Paid plans — only those actually purchasable (configured Stripe price).
                    Before availability loads, hide AGENCY so a dead-end tier never flashes. */
                 <div className="space-y-3">
-                  {PLANS.filter((plan) =>
-                    availablePlans === null ? plan.key !== "AGENCY" : availablePlans.includes(plan.key)
-                  ).map((plan) => (
+                  {PLANS.filter((plan) => (availablePlans ?? []).includes(plan.key)).map((plan) => (
                     <div
                       key={plan.key}
                       className={`rounded-xl border p-4 ${

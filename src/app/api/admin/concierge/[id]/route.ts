@@ -29,6 +29,7 @@ import { sendConciergeShortlistReadyEmail } from '@/lib/email';
 import { createFacilityResponsesForShortlist, markAdmitted, FACILITY_RESPONSE_SELECT } from '@/lib/concierge/facility-response-engine';
 import { captureError } from '@/lib/sentry';
 import { CONCIERGE_PAGE_SOURCE } from '@/lib/concierge/intake';
+import { configuredPaymentLink } from '@/lib/concierge/pay-when-ready';
 
 function authErr(error: any): NextResponse | null {
   if (error?.name === 'UnauthenticatedError') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -66,13 +67,14 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
         facilityResponses: { select: FACILITY_RESPONSE_SELECT, orderBy: { createdAt: 'asc' } },
         // W5-3: paid concierge order(s) — status, cents, timestamps only.
         // Pay when ready (10/31): payment-link + release state for the order actions.
-        conciergeOrders: { select: { id: true, status: true, amountCents: true, paidAt: true, refundedAt: true, createdAt: true, paymentLinkUrl: true, paymentLinkSentAt: true, shortlistReleasedAt: true }, orderBy: { createdAt: 'desc' } },
+        conciergeOrders: { select: { id: true, status: true, amountCents: true, paidAt: true, refundedAt: true, createdAt: true, paymentLinkUrl: true, paymentLinkSentAt: true, shortlistReleasedAt: true, paymentReminderSentAt: true, expiredAt: true }, orderBy: { createdAt: 'desc' } },
       },
     });
     if (!row || !row.isConcierge) {
       return NextResponse.json({ error: 'Concierge request not found' }, { status: 404 });
     }
-    return NextResponse.json({ request: row });
+    // OL-248: with CONCIERGE_PAYMENT_LINK_URL set, "send payment link" needs no paste (boolean only — never the URL).
+    return NextResponse.json({ request: row, paymentLinkConfigured: !!configuredPaymentLink() });
   } catch (error: any) {
     const a = authErr(error);
     if (a) return a;

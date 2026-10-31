@@ -14,7 +14,7 @@
 import { fireEvent, render } from '@testing-library/react';
 import React from 'react';
 import HomePageClient from '@/app/HomePageClient';
-import { loadProductTour, loadTourVideo } from '@/lib/marketing/product-tour';
+import { loadTourVideo } from '@/lib/marketing/product-tour';
 
 jest.mock('framer-motion', () => {
   const React = require('react');
@@ -24,7 +24,6 @@ jest.mock('framer-motion', () => {
 });
 jest.mock('@/hooks/usePaidFeatures', () => ({ usePaidFeature: () => ({ enabled: false, loading: false }) }));
 jest.mock('next/image', () => function Image(p: any) { return require('react').createElement('img', { alt: p.alt, src: typeof p.src === 'string' ? p.src : '' }); });
-jest.mock('@/components/marketing/DemoRequestForm', () => function DemoRequestForm() { return null; });
 
 beforeAll(() => {
   window.matchMedia = window.matchMedia || ((q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {}, onchange: null, dispatchEvent: () => false }) as any);
@@ -104,61 +103,44 @@ describe('prices come back only with their flags', () => {
   });
 });
 
-describe('"See CareLinkAI in action" section', () => {
-  const demo = () => document.querySelector('#request-demo') as HTMLElement;
+describe('"Get started on your own" panel (OL-248 h)', () => {
+  const panel = () => document.querySelector('#get-started') as HTMLElement;
 
-  it('no tour video: no Watch Demo button, no placeholder tile, no setup text anywhere', () => {
+  it('no tour video: no tour button, no placeholder tile, no setup text, no demo form anywhere', () => {
     const { text } = allText({});
-    for (const t of ['Set NEXT_PUBLIC', 'NEXT_PUBLIC_DEMO_VIDEO_ID', 'Watch Demo', 'Watch the overview', 'Demo video coming soon', 'See every feature in action']) expect(text).not.toContain(t);
-    expect(demo().querySelector('iframe')).toBeNull();
-    expect(demo().querySelector('video')).toBeNull();
-    expect(demo().querySelector('[data-testid="product-tour"]')).toBeNull();
+    for (const t of ['Set NEXT_PUBLIC', 'NEXT_PUBLIC_DEMO_VIDEO_ID', 'Watch Demo', 'Watch the overview', 'Demo video coming soon', 'See every feature in action', 'personalized walkthrough', 'Request a demo', 'Request My Demo']) expect(text).not.toContain(t);
+    expect(panel().querySelector('iframe')).toBeNull();
+    expect(panel().querySelector('video')).toBeNull();
+    expect(panel().querySelector('form')).toBeNull();
+    expect(panel().querySelector('[data-testid="get-started-watch-tour"]')).toBeNull();
+    expect(document.querySelector('#request-demo')).toBeNull();
   });
 
-  it('intro speaks to every audience; bullets are live capabilities only (no billing, analytics)', () => {
-    const { text } = allText({});
-    expect(text).toContain("Request a personalized walkthrough. We'll show families how to find and compare verified communities, and show care homes, caregivers and providers how to manage inquiries, staffing and listings in one place.");
-    expect(text).not.toMatch(/billing, analytics/i);
-    const bullets = Array.from(demo().querySelectorAll('[data-testid="demo-capabilities"] li'), (li) => li.textContent?.replace('✓', '').trim());
-    expect(bullets).toEqual([
-      'Operator dashboard: inquiries, residents, shifts',
-      'Inquiry pipeline with AI-drafted replies',
-      'Marketplace: applications, direct hire, per-diem shifts',
-      'Family portal: search, documents, messaging',
-    ]);
-    // Still true with every paid flag on: billing / analytics never come back here.
-    const on = allText({ operatorPlansOn: true, caregiverProOn: true, backgroundChecksOn: true, complianceKitsOn: true, providerListingOn: true }).text;
-    expect(on).not.toMatch(/billing, analytics/i);
-  });
-
-  it('tour.mp4 present: self-hosted <video> (no autoplay, captions on) + Watch Demo opens the same video; no iframe', () => {
+  it('tour.mp4 present: no inline video; the button opens the dialog with one self-hosted video from the start (captions, no download)', () => {
     const tourVideo = loadTourVideo();
     expect(tourVideo).toEqual({ src: '/demo/tour.mp4', poster: '/demo/tour-poster.jpg', captions: '/demo/tour.vtt' });
     const { container } = render(<HomePageClient tourVideo={tourVideo} />);
-    const section = container.querySelector('#request-demo')!;
-    expect(section.querySelector('iframe')).toBeNull();
-    const video = section.querySelector('video')!;
+    expect(container.querySelector('video')).toBeNull();
+    expect(container.querySelector('iframe')).toBeNull();
+    fireEvent.click(container.querySelector('[data-testid="get-started-watch-tour"]')!);
+    const dialog = container.querySelector('[data-testid="tour-video-modal"]')!;
+    expect(dialog.querySelector('[role="dialog"]')?.getAttribute('aria-modal')).toBe('true');
+    const videos = container.querySelectorAll('video');
+    expect(videos).toHaveLength(1);
+    const video = videos[0]!;
     expect(video.hasAttribute('controls')).toBe(true);
-    expect(video.hasAttribute('autoplay')).toBe(false);
-    expect(video.getAttribute('preload')).toBe('none');
-    expect(video.getAttribute('poster')).toBe('/demo/tour-poster.jpg');
+    expect(video.hasAttribute('autoplay')).toBe(true);
+    expect(video.getAttribute('controlslist')).toBe('nodownload');
     expect(video.querySelector('source')?.getAttribute('src')).toBe('/demo/tour.mp4');
-    expect(video.querySelector('source')?.getAttribute('type')).toBe('video/mp4');
     const track = video.querySelector('track')!;
-    expect([track.getAttribute('kind'), track.getAttribute('src'), track.getAttribute('srclang'), track.getAttribute('label'), track.hasAttribute('default')]).toEqual(['captions', '/demo/tour.vtt', 'en', 'English', true]);
-    fireEvent.click(Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.includes('Watch Demo'))!);
-    expect(container.querySelectorAll('video')).toHaveLength(2);
-    expect(Array.from(container.querySelectorAll('video')).some((v) => v.hasAttribute('autoplay'))).toBe(false);
+    expect([track.getAttribute('kind'), track.getAttribute('src'), track.getAttribute('srclang'), track.hasAttribute('default')]).toEqual(['captions', '/demo/tour.vtt', 'en', true]);
     expect(container.innerHTML).not.toMatch(/youtube(-nocookie)?\.com/);
   });
 
-  it('the committed tour renders in the section, with the 90-second lead and the sample-data note', () => {
-    const tour = loadProductTour();
-    expect(tour).not.toBeNull();
-    const { container } = render(<HomePageClient tour={tour} />);
-    const demo = container.querySelector('#request-demo')!;
-    expect(demo.querySelector('[data-testid="product-tour"]')).not.toBeNull();
-    expect(demo.textContent).toContain("Take a 90-second tour, or request a personalized walkthrough. We'll show families how to find and compare verified communities, and show care homes, caregivers and providers how to manage inquiries, staffing and listings in one place.");
-    expect(demo.textContent).toContain('All names, homes and prices shown are sample data.');
+  it('the final CTA and the footer point at the panel, not a demo request', () => {
+    const { container } = render(<HomePageClient />);
+    const hrefs = Array.from(container.querySelectorAll('a'), (a) => a.getAttribute('href'));
+    expect(hrefs).toContain('#get-started');
+    expect(hrefs).not.toContain('#request-demo');
   });
 });

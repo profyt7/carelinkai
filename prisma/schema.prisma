@@ -2424,6 +2424,7 @@ enum ConciergeOrderStatus {
   REQUESTED_UNPAID  // CONCIERGE_CHECKOUT_ENABLED unset → today's "request" behaviour
   REFUNDED          // charge.refunded received
   CANCELED          // checkout expired / canceled before payment
+  EXPIRED           // pay when ready: still unpaid 14 days after "Shortlist ready" (an admin can reopen)
 }
 
 model ConciergeOrder {
@@ -2444,6 +2445,9 @@ model ConciergeOrder {
   paymentLinkSentAt       DateTime?
   /// When an admin released the shortlist to the family (only after PAID). The family's shortlist page stays hidden until then.
   shortlistReleasedAt     DateTime?
+  /// Phase 2 (OL-248): the single reminder email, 3 days after the payment link went out, and the 14-day expiry.
+  paymentReminderSentAt   DateTime?
+  expiredAt               DateTime?
   placementSearch         PlacementSearch?     @relation(fields: [placementSearchId], references: [id], onDelete: SetNull)
 
   @@index([placementSearchId])

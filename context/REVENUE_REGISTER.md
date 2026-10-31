@@ -6,6 +6,14 @@ _Audit of `main` @ `b4fa357e` · 2026-10-24 · read-only, code-derived. No env v
 - `/admin/checkout-preflight` shows booleans for key mode (`sk_live`), `price_` shape, `whsec_` and the flag.
 - `npx tsx scripts/stripe-golive-setup.ts` runs as a dry run by default and lists which live prices exist.
 
+## Update 2026-10-31 (OL-247 / OL-248, PR #32) — read this before the tables
+
+- **Family Concierge (#1) is pay when ready.** The family requests for free; the shortlist is built first; the admin sends the $399 Stripe Payment Link from `CONCIERGE_PAYMENT_LINK_URL` (a pasted link is the fallback when unset). The Stripe webhook (`checkout.session.completed`, matched on `client_reference_id`) marks the order PAID and releases the shortlist. One reminder after 3 days; unpaid after 14 days → EXPIRED (admin emailed, can reopen). **Upfront checkout is retired:** `CONCIERGE_CHECKOUT_ENABLED` / `STRIPE_PRICE_FAMILY_CONCIERGE` still show on `/admin/checkout-preflight` but no longer turn anything on, and `/api/concierge/checkout` returns 410.
+- **Care-home listing is free forever.** No listing fee, no plan required to be listed or claimed.
+- **Operator plans (#2) arrive Feb 2 2027.** Which tools stay free and which go behind a paid plan is **still to decide**. Until then the plan prices below are coded but not offered (`OPERATOR_PLANS` off).
+- **Provider listing (#6) is free** when `PROVIDER_LISTING_ENABLED` is on (10/29 pricing); only Provider Boost ($39/mo) is paid.
+- **The homepage demo-request form is removed** (OL-248 h). The homepage now has a self-serve "Get started on your own" panel; `/api/demo-request` is deleted. It never carried revenue.
+
 ---
 
 ## 0. Fix before any live money (blocking, code)
@@ -25,7 +33,7 @@ Columns: **Payer** · **Amount as coded** · **UI route** · **Stripe env** · *
 
 | # | Path | Payer | Amount (coded) | UI route | Stripe env | Flag | Prod | Depends on | Legal | Blocker | Effort |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 1 | **Family Concierge** (one-off Checkout) | Family | Whatever the Stripe price holds (intended $399); monthly cap `CONCIERGE_MONTHLY_CAP` default 4 | `/concierge` (SiteHeader/Footer). The form shows checkout, request or waitlist mode | `STRIPE_PRICE_FAMILY_CONCIERGE` | `CONCIERGE_CHECKOUT_ENABLED` | Flag **?**, price **?** (likely test). `ADMIN_NOTIFY_EMAIL` set | Webhook `checkout.session.completed/expired`, `charge.refunded`; preflight requires `sk_live` + `price_` + `whsec_` | None in code (the service is human-delivered advice) | Live price + flag + live key/webhook | **S** |
+| 1 | **Family Concierge** — pay when ready (Stripe Payment Link; upfront checkout retired 10/31) | Family | $399 per order, paid after the shortlist is ready; monthly cap `CONCIERGE_MONTHLY_CAP` default 4 | `/concierge` (request or waitlist mode); admin sends the link from `/admin/concierge/[id]` | `CONCIERGE_PAYMENT_LINK_URL` (a live `buy.stripe.com` link) | — (`CONCIERGE_CHECKOUT_ENABLED` retired) | Link **?** (set it in Render). `ADMIN_NOTIFY_EMAIL` set | Webhook `checkout.session.completed` at `/api/webhooks/stripe` → PAID + shortlist released; cron `/api/cron/concierge-orders` (3-day reminder, 14-day expiry) | None in code (the service is human-delivered advice) | Live Payment Link + live key/webhook | **S** |
 | 2 | **Operator subscriptions** Starter / Professional / Growth | Operator | $99 / $249 / $499 per month (from `stripe-golive-setup.ts`). 14-day trial, or 180 days with a founder code | `/operator/onboarding/[step]` → Checkout; `/operator/billing` (switch plan, portal) | `STRIPE_PRICE_STARTER`, `_PROFESSIONAL`, `_GROWTH` | None (always on if price is set) | **?** (likely test) | Webhook `customer.subscription.*`, `invoice.payment_*`; Stripe coupon `carelinkai_founder_20` + promo code `FOUNDER20` | None | Live prices + live key/webhook + live coupon/promo | **S** |
 | 2a | Founder pricing (6 months free + 20% off forever) | — | Claim/register sets `Operator.freeAccessUntil = now + 6 months` and `clevelandFounder`. FOUNDER20 = 180-day trial + 20% coupon. `FOUNDERS49` is deprecated | same | coupon `carelinkai_founder_20` (`src/lib/billing/founder-code.ts`) | — | Coupon in live mode **?** | — | — | **No separate cohort-start field** (start = `freeAccessUntil` − 6 months). **Signup does not collect a card**; the card is collected only at Stripe Checkout. Nothing auto-converts a founder when `freeAccessUntil` lapses, so a nudge job is needed | **S–M** |
 | 3 | **Agency tier** | Home-care agency (OperatorType) | $799/mo | `/operator/billing` | `STRIPE_PRICE_AGENCY` (**set**, per founder) | — | Set; test or live **?** | Webhook maps the price back to AGENCY via `planForPriceId` (**fixed, OL-187**) | — | Live price + live key/webhook | **S** |
@@ -86,8 +94,8 @@ In live mode, the webhook endpoint in the Stripe dashboard must subscribe to **a
 **Live today:** if the prod key is still `sk_test` (the vault's assumption, not verified), nothing collects real money. Code is already active with no flag for #7 featured listing, #8 hire fee, #10 kits, #11 rides and #13 wallet fee. These will start charging the moment the key flips, so decide on #11 and #13 *before* you flip.
 
 **Needs config only (env + live Stripe objects):**
-1. **Operator subscriptions #2 + founder coupon #2a.** This is the core of MRR. Run `stripe-golive-setup.ts --live`, set the 3 live price ids, and create the `carelinkai_founder_20` coupon + `FOUNDER20` promo in live mode.
-2. **Family Concierge #1.** $399 per order × cap 4/mo. Create the live price, set the env + `CONCIERGE_CHECKOUT_ENABLED`, and confirm `/admin/checkout-preflight` is all green.
+1. **Operator subscriptions #2 + founder coupon #2a** — launching **Feb 2 2027**; the free-vs-paid tool split is still to decide. This is the core of MRR. Run `stripe-golive-setup.ts --live`, set the 3 live price ids, and create the `carelinkai_founder_20` coupon + `FOUNDER20` promo in live mode.
+2. **Family Concierge #1.** $399 per order × cap 4/mo, pay when ready. Create a live $399 Payment Link, set `CONCIERGE_PAYMENT_LINK_URL`, and make sure the live webhook sends `checkout.session.completed` to `/api/webhooks/stripe`. (Upfront checkout is retired; `CONCIERGE_CHECKOUT_ENABLED` does nothing.)
 3. **Compliance kits #10.** No env needed. Confirm the kit deliverables exist.
 4. **Provider listing #6, Pro Caregiver #4.** Each needs one live price. (Plus #5 retired, OL-189.)
 5. **Featured listing #7.** Rides on #2 automatically.

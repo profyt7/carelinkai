@@ -430,6 +430,38 @@ export async function sendConciergeShortlistReadyEmail(args: {
 }
 
 /**
+ * Admin-only Family Concierge notice (phase 2, OL-248), e.g. an order expired unpaid. ONE email to the admin
+ * address (ADMIN_NOTIFY_EMAIL → CLAIM_NOTIFY_EMAIL → chris@). PHI-free: a fixed sentence and the admin link.
+ */
+export async function sendConciergeAdminNotice(args: { subject: string; text: string; requestId: string | null }): Promise<boolean> {
+  const to = process.env.ADMIN_NOTIFY_EMAIL || process.env.CLAIM_NOTIFY_EMAIL || 'chris@getcarelinkai.com';
+  try {
+    if (!process.env.RESEND_API_KEY) {
+      console.error('[Resend] RESEND_API_KEY not configured — skipping concierge admin notice');
+      return false;
+    }
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://getcarelinkai.com').replace(/\/$/, '');
+    const adminLink = args.requestId ? `${appUrl}/admin/concierge/${args.requestId}` : `${appUrl}/admin/concierge`;
+    const { error } = await guardedResendSend({
+      from: `${APP_NAME} <${FROM_EMAIL}>`,
+      to: [to],
+      replyTo: OUTREACH_REPLY_TO,
+      subject: args.subject,
+      text: `${args.text}\n\n${adminLink}\n`,
+      html: `<p>${escapeHtml(args.text)}</p><p><a href="${escapeHtml(adminLink)}">Open the order →</a></p>`,
+    });
+    if (error) {
+      captureError(error instanceof Error ? error : new Error(String((error as { message?: string })?.message ?? error)), { tags: { feature: 'concierge-admin-notice' } });
+      return false;
+    }
+    return true;
+  } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), { tags: { feature: 'concierge-admin-notice' } });
+    return false;
+  }
+}
+
+/**
  * Family Concierge email TO THE FAMILY (pay when ready, 10/31): request confirmation, payment link, or
  * released shortlist. Content comes from the pure builders in src/lib/concierge/family-emails.ts, which
  * never include health or case details. Fire-and-forget; logs + Sentry on failure. `kind` is a tag only.
@@ -437,7 +469,7 @@ export async function sendConciergeShortlistReadyEmail(args: {
 export async function sendConciergeFamilyEmail(args: {
   toEmail: string;
   email: { subject: string; text: string; html: string };
-  kind: 'confirmation' | 'payment_link' | 'shortlist_released';
+  kind: 'confirmation' | 'payment_link' | 'shortlist_released' | 'payment_reminder';
 }): Promise<boolean> {
   const toEmail = args.toEmail?.trim();
   if (!toEmail) return false;

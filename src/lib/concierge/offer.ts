@@ -12,13 +12,11 @@
  */
 
 import { deriveFeeLane, type PayerSource } from '@/lib/payer/payer-source';
-import { checkoutPreflight } from '@/lib/concierge/preflight';
 
 export const CONCIERGE_OFFER = {
   priceCents: 39900,
   priceDisplay: '$399',
   priceLine: '$399 flat, one-time, per family search',
-  bookLabel: 'Book the concierge — $399',
   requestLabel: 'Request your shortlist',
   waitlistLabel: 'Fully booked this month — join the waitlist',
   /**
@@ -141,15 +139,16 @@ export function mayBuyConcierge(payerSource: PayerSource | null | undefined): bo
   return conciergeRouteForLane(payerSource) !== 'free';
 }
 
-export type ConciergeCtaMode = 'checkout' | 'request' | 'waitlist';
+/** Pay when ready is the only path (OL-248): the old upfront "checkout" mode is retired. */
+export type ConciergeCtaMode = 'request' | 'waitlist';
 
 /**
- * The flag alone is not enough (OL-162): checkout also needs a Stripe key of
- * the right mode, the Price id, the webhook secret and the admin email. Any
- * mismatch keeps checkout OFF — see src/lib/concierge/preflight.ts.
+ * RETIRED (OL-248). Upfront Stripe Checkout for the concierge contradicted pay when ready, so it can no
+ * longer be turned on: CONCIERGE_CHECKOUT_ENABLED is ignored and this always returns false. Payment is
+ * the Payment Link sent when the shortlist is ready (src/lib/concierge/pay-when-ready.ts).
  */
-export function isCheckoutEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-  return checkoutPreflight(env).checkoutEnabled;
+export function isCheckoutEnabled(_env: NodeJS.ProcessEnv = process.env): false {
+  return false;
 }
 
 export function monthlyCap(env: NodeJS.ProcessEnv = process.env): number {
@@ -161,16 +160,13 @@ export function isCapReached(committedThisMonth: number, cap: number): boolean {
   return committedThisMonth >= cap;
 }
 
-/** The CTA the offer card renders. Waitlist wins over everything once the cap is hit. */
-export function conciergeCtaMode(args: { checkoutEnabled: boolean; capReached: boolean }): ConciergeCtaMode {
-  if (args.capReached) return 'waitlist';
-  return args.checkoutEnabled ? 'checkout' : 'request';
+/** The CTA the offer card renders: the request (pay when ready), or the waitlist once the cap is hit. */
+export function conciergeCtaMode(args: { capReached: boolean }): ConciergeCtaMode {
+  return args.capReached ? 'waitlist' : 'request';
 }
 
 export function ctaLabelFor(mode: ConciergeCtaMode): string {
   switch (mode) {
-    case 'checkout':
-      return CONCIERGE_OFFER.bookLabel;
     case 'waitlist':
       return CONCIERGE_OFFER.waitlistLabel;
     default:

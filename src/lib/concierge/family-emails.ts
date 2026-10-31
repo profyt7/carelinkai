@@ -66,3 +66,13 @@ export function conciergeShortlistReleasedEmail(opts: { shortlistUrl: string }):
     html: p(intro) + button(opts.shortlistUrl, 'View your shortlist') + p(CONCIERGE_OFFER.notAPlacementLine) + small(phoneLine),
   };
 }
+
+/** Phase 2 (OL-248): the ONE reminder, 3 days after the payment link went out, if still unpaid. */
+export function conciergePaymentReminderEmail(opts: { paymentLinkUrl: string }): FamilyEmail {
+  const pay = `A reminder: your personalized shortlist is ready. Pay ${CONCIERGE_OFFER.priceDisplay} securely through Stripe, and we’ll send you the full shortlist as soon as it’s paid. This is our only reminder.`;
+  return {
+    subject: 'Reminder: your Family Concierge shortlist is ready',
+    text: [pay, `Secure payment link:\n${opts.paymentLinkUrl}`, CONCIERGE_OFFER.notAPlacementLine, phoneLine].join('\n\n'),
+    html: p(pay) + button(opts.paymentLinkUrl, `Pay ${CONCIERGE_OFFER.priceDisplay} securely`) + p(CONCIERGE_OFFER.notAPlacementLine) + small(phoneLine),
+  };
+}

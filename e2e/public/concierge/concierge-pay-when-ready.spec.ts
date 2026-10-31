@@ -103,7 +103,12 @@ test.describe('@critical Family Concierge — pay when ready (admin actions + fa
     await panel.getByTestId('concierge-order-send-link').click();
     await expect(panel.getByTestId('concierge-order-link-sent')).not.toHaveText('—', { timeout: 30_000 });
     const afterLink = await prisma.conciergeOrder.findUniqueOrThrow({ where: { id: orderId } });
-    expect(afterLink.paymentLinkUrl).toBe(LINK);
+    // CONCIERGE_PAYMENT_LINK_URL is unset in CI, so the pasted link is the fallback; the order id and the
+    // family's email ride along so the Stripe webhook can match the payment (OL-248).
+    const stored = new URL(afterLink.paymentLinkUrl!);
+    expect(stored.origin + stored.pathname).toBe(LINK);
+    expect(stored.searchParams.get('client_reference_id')).toBe(orderId);
+    expect(stored.searchParams.get('prefilled_email')).toBe(`pwr-family-${ts}@test.carelinkai.com`);
     expect(afterLink.status).toBe('REQUESTED_UNPAID');
 
     // Still locked for the family.

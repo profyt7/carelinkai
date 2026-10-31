@@ -72,10 +72,10 @@ test.describe('@critical Operator onboarding wizard (4-step)', () => {
 
     // Step 3: Claim link — skip
     await page.waitForURL(/\/operator\/onboarding\/3/, { timeout: 10000 });
-    await expect(page.getByText(/cleveland founder access/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/founding operator link/i)).toBeVisible({ timeout: 10000 });
     await page.getByRole('button', { name: /skip/i }).click();
 
-    // Step 4: All 4 paid tiers visible
+    // Step 4: all 4 paid tiers visible — only with OPERATOR_PLANS_ENABLED on (OL-248: no plan cards otherwise)
     await page.waitForURL(/\/operator\/onboarding\/4/, { timeout: 10000 });
     await expect(page.getByText(/choose a plan/i)).toBeVisible({ timeout: 10000 });
     for (const tier of ['starter', 'professional', 'growth', 'agency']) {

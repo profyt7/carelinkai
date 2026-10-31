@@ -7,6 +7,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { getHowToGuide, HOWTO_GUIDES, AUDIENCE_LABELS, AVAILABLE_HOWTO_IMAGES, type HowToStep } from '../content';
 import { canViewGuide, filterGuidesForRole, type ViewerRole } from '@/lib/howto/access';
 import HowToImage from '../HowToImage';
+import { currentLearnFlags, withLearnFlags } from '@/lib/howto/flags';
 
 /** Group consecutive steps under their optional section heading. */
 function groupSteps(steps: HowToStep[]): { section?: string; steps: HowToStep[] }[] {
@@ -26,8 +27,10 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const guide = getHowToGuide(params.slug);
-  if (!guide) return {};
+  const raw = getHowToGuide(params.slug);
+  if (!raw) return {};
+  // OL-248: copy follows the flags (no On-Call texts/calls or plan prices while they're off).
+  const guide = withLearnFlags(raw, await currentLearnFlags());
   return {
     title: `${guide.title} | How-To Guides`,
     description: guide.summary,
@@ -35,8 +38,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function HowToGuidePage({ params }: Props) {
-  const guide = getHowToGuide(params.slug);
-  if (!guide) notFound();
+  const raw = getHowToGuide(params.slug);
+  if (!raw) notFound();
+  const flags = await currentLearnFlags();
+  const guide = withLearnFlags(raw, flags);
 
   const session = await getServerSession(authOptions);
   const role = (session?.user?.role as ViewerRole) ?? null;
@@ -48,7 +53,7 @@ export default async function HowToGuidePage({ params }: Props) {
   }
 
   const related = filterGuidesForRole(
-    HOWTO_GUIDES.filter((g) => g.slug !== guide.slug),
+    HOWTO_GUIDES.filter((g) => g.slug !== guide.slug).map((g) => withLearnFlags(g, flags)),
     role
   ).slice(0, 4);
 

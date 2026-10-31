@@ -106,7 +106,7 @@ export default function DischargePlannerDashboard() {
       >
         <h1 className="text-3xl font-bold mb-2">Discharge Planning Assistant</h1>
         <p className="text-primary-100 mb-6">
-          AI-powered placement search for senior care facilities. Find the perfect match in seconds.
+          Send a referral and get a shortlist, with each home&apos;s availability clearly labeled.
         </p>
         <button
           onClick={() => router.push("/discharge-planner/search")}

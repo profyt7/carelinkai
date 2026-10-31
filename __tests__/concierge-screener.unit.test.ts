@@ -46,7 +46,7 @@ describe('offer (decided W5-3)', () => {
   it('is $399, paid by the family only when the shortlist is ready, and nothing without a useful shortlist', () => {
     expect(CONCIERGE_OFFER.priceCents).toBe(39900);
     expect(CONCIERGE_OFFER.priceDisplay).toBe('$399');
-    expect(CONCIERGE_OFFER.bookLabel).toBe('Book the concierge — $399');
+    expect((CONCIERGE_OFFER as Record<string, unknown>)['bookLabel']).toBeUndefined(); // upfront booking retired (OL-248)
     expect(CONCIERGE_OFFER.guarantee).toMatch(/you pay nothing/);
     expect(CONCIERGE_OFFER.terms).toMatch(/secure payment link/);
     expect(CONCIERGE_OFFER.freeLaneLine).toMatch(/Medicaid, Medicare or the VA/);

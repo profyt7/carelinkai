@@ -11,7 +11,7 @@ import {
   FiSearch, FiStar, FiZap, FiBriefcase, FiMessageCircle, FiCalendar,
   FiFileText, FiClock, FiTarget, FiTrendingUp, FiAward, FiHome,
   FiGlobe, FiBarChart, FiChevronDown, FiPhone, FiMail, FiMapPin,
-  FiMenu, FiX, FiPlay, FiTruck, FiCreditCard, FiLayers, FiRefreshCw
+  FiMenu, FiX, FiTruck, FiCreditCard, FiLayers, FiRefreshCw
 } from "react-icons/fi";
 import { nowLiveItems, comingSoonItems, type RoadmapFlags, type RoadmapIcon } from "@/lib/marketing/roadmap";
 import { BOOST_PROMO_LINE } from "@/lib/providers/boost";
@@ -20,12 +20,8 @@ import { prefersReducedMotion, durations, easings } from "@/lib/animations";
 
 /** Must equal AVAILABILITY_FRESH_DAYS (src/lib/availability/availability.ts, server-only); pinned by __tests__/homepage-hero.unit.test.tsx. */
 const VERIFIED_AVAILABILITY_DAYS = 10;
-import DemoRequestForm from "@/components/marketing/DemoRequestForm";
-import DemoVideoModal from "@/components/marketing/DemoVideoModal";
-import ProductTour from "@/components/marketing/ProductTour";
-import TourVideo from "@/components/marketing/TourVideo";
-import type { Tour, TourVideo as TourVideoData } from "@/lib/marketing/product-tour-data";
-import { demoSectionCapabilities } from "@/lib/marketing/demo-section";
+import GetStartedPanel from "@/components/marketing/GetStartedPanel";
+import type { TourVideo as TourVideoData } from "@/lib/marketing/product-tour-data";
 import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/contact";
 import { CONCIERGE_OFFER } from "@/lib/concierge/offer";
 
@@ -68,7 +64,6 @@ export default function HomePage({
   operatorPlansOn = false,
   complianceKitsOn = false,
   caregiverProOn = false,
-  tour = null,
   tourVideo = null,
 }: {
   providerListingOn?: boolean;
@@ -78,8 +73,6 @@ export default function HomePage({
   operatorPlansOn?: boolean;
   complianceKitsOn?: boolean;
   caregiverProOn?: boolean;
-  /** /public/demo/tour.json slides (read on the server); none → no tour. */
-  tour?: Tour | null;
   /** Self-hosted narrated tour (public/demo/tour.mp4, read on the server); none → no video, button or modal. */
   tourVideo?: TourVideoData | null;
 } = {}) {
@@ -91,8 +84,6 @@ export default function HomePage({
   const [mounted, setMounted] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [demoVideoOpen, setDemoVideoOpen] = useState(false);
-  const demoCapabilities = demoSectionCapabilities();
 
   useEffect(() => {
     setMounted(true);
@@ -1967,60 +1958,8 @@ export default function HomePage({
         </div>
       </section>
 
-      {/* 9. REQUEST A DEMO SECTION — the video, its button and its modal exist only when public/demo/tour.mp4 does (self-hosted; no YouTube). */}
-      {tourVideo && <DemoVideoModal open={demoVideoOpen} onClose={() => setDemoVideoOpen(false)} video={tourVideo} />}
-      <section id="request-demo" className="py-20 bg-white border-t border-neutral-100">
-        <div className="max-w-5xl mx-auto px-4 md:px-6">
-          <div className="text-center mb-12">
-            <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-primary-100 text-primary-700 mb-4 uppercase tracking-wide">
-              Live Demo
-            </span>
-            <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-4 leading-tight">
-              See CareLinkAI in action
-            </h2>
-            <p className="text-neutral-500 text-lg mb-8 max-w-2xl mx-auto">
-              {tour || tourVideo ? 'Take a 90-second tour, or request a personalized walkthrough.' : 'Request a personalized walkthrough.'} We&apos;ll show families how to find and compare verified communities, and show care homes, caregivers and providers how to manage inquiries, staffing and listings in one place.
-            </p>
-            {tourVideo && (
-              <button
-                onClick={() => setDemoVideoOpen(true)}
-                className="group inline-flex items-center gap-3 bg-primary-600 hover:bg-primary-700 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg transition-all duration-200 hover:-translate-y-0.5"
-              >
-                <span className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
-                  <FiPlay className="ml-0.5" />
-                </span>
-                Watch Demo
-              </button>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-            <div className="space-y-5">
-              {tourVideo && (
-                <div className="rounded-xl overflow-hidden shadow-lg border border-neutral-200">
-                  <TourVideo video={tourVideo} />
-                </div>
-              )}
-              <ProductTour tour={tour} />
-              <ul className="space-y-2" data-testid="demo-capabilities">
-                {demoCapabilities.map((item) => (
-                  <li key={item} className="flex items-start gap-2.5 text-sm text-neutral-600">
-                    <span className="h-5 w-5 rounded-full bg-success-100 text-success-600 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">✓</span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Right — personalized demo request form */}
-            <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-8">
-              <h3 className="text-lg font-semibold text-neutral-900 mb-1">Request a personalized walkthrough</h3>
-              <p className="text-sm text-neutral-400 mb-6">We tailor the demo to your role and facility. Response within one business day.</p>
-              <DemoRequestForm />
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* 9. GET STARTED ON YOUR OWN (OL-248 h) — replaces the demo-request form: the 90-second tour first, then role links. */}
+      <GetStartedPanel tourVideo={tourVideo} providerListingOn={providerListingOn} />
 
       {/* 10. FINAL CTA SECTION */}
       <section className="py-20 bg-gradient-to-br from-primary-500 to-secondary-500 relative overflow-hidden">
@@ -2047,10 +1986,10 @@ export default function HomePage({
               <FiArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link 
-              href="#request-demo"
+              href="#get-started"
               className="bg-transparent hover:bg-white/10 text-white px-10 py-4 rounded-lg font-bold text-lg text-center border-2 border-white transition-all duration-300"
             >
-              Schedule a Demo
+              Watch the 90-second tour
             </Link>
           </div>
           
@@ -2139,7 +2078,7 @@ export default function HomePage({
               <h3 className="text-white font-bold mb-4">Support</h3>
               <ul className="space-y-3">
                 <li><Link href="/help" className="hover:text-white transition-colors">Help Center</Link></li>
-                <li><Link href="#request-demo" className="hover:text-white transition-colors">Request a Demo</Link></li>
+                <li><Link href="#get-started" className="hover:text-white transition-colors">Get started on your own</Link></li>
               </ul>
             </div>
           </div>
