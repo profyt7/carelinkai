@@ -3,6 +3,17 @@ _Last updated: 2026-10-30 (later) — **OL-243 PR** `feat/product-tour-content` 
 
 
 
+## Family Concierge, pay when ready (2026-10-31, same branch / PR #29)
+- **`ConciergeOrder` columns:** `paymentLinkUrl`, `paymentLinkSentAt`, `shortlistReleasedAt` (additive migration).
+- **Admin flow:**
+  - Rules live in `src/lib/concierge/pay-when-ready.ts`.
+  - API: `PATCH /api/admin/concierge/orders/[orderId]` (`send_payment_link` | `mark_paid` | `release_shortlist`).
+  - UI: `ConciergeOrderPanel` on `/admin/concierge/[id]`.
+- **Family side:**
+  - Emails are built in `src/lib/concierge/family-emails.ts` (pure builders) and sent with `sendConciergeFamilyEmail`.
+  - The shortlist page is `/concierge/shortlist/[token]`. It uses an HMAC token signed with NEXTAUTH_SECRET and shows nothing unless the order is PAID and released.
+- **Payments:** Phase 1 is manual. The admin pastes a Stripe Payment Link, confirms the payment in Stripe, then marks the order paid. No checkout flag or Stripe API change.
+
 ## Active Branch (2026-10-30, late) — `fix/founder-ux-truth` (PR open, Chris reviews; base main `a8e1d473`)
 - **Operator capabilities:** `src/lib/operator/capabilities.ts` mirrors the route checks.
   - SHIFT_AUTOFILL = an OPERATOR with `planHasFeature(plan,'PROFESSIONAL')`.

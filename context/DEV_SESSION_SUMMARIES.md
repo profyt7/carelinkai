@@ -2753,3 +2753,24 @@
 - **New risks/blockers:** see OL-244. The founder promises in onboarding, learn copy and the concierge guarantee have no code path.
 - **Recommended next step:** Chris picks the founding-offer definition (PR body); then rewrite the onboarding founder card and the learn copy to match.
 
+### 2026-10-31 — Family Concierge "pay when ready"
+- **Objective:**
+  - Concierge terms everywhere they're offered.
+  - Family confirmation email.
+  - Admin payment-link / mark-paid / release actions, with the shortlist hidden until paid.
+  - New /concierge headline.
+  - Aggregate count of operators with a founder free period.
+- **Work completed:** see OL-245.
+- **Read-only count:** `scripts/report-founder-free-access.ts` prints aggregate counts. The prod DB isn't reachable from the session sandbox, so Chris runs it in the Render shell.
+- **Files changed:** `src/lib/concierge/{offer,faq,family-emails,pay-when-ready,shortlist-token}.ts`, `src/components/concierge/ConciergeTerms.tsx`, `src/components/admin/ConciergeOrderPanel.tsx`, `src/app/concierge/**`, `src/app/api/concierge/request`, `src/app/api/admin/concierge/**`, `src/app/admin/concierge/[id]`, `src/components/dashboard/ConciergeUpsellCard.tsx`, `src/app/HomePageClient.tsx`, `src/app/terms/page.tsx`, `src/lib/seo/{jsonld,page-meta}.ts`, `src/lib/email.ts`, the prisma schema + migration, tests, e2e, `.github/workflows/prod-verify.yml`.
+- **Commands run:** tsc, eslint, jest (171 suites), `next build`, Playwright e2e/public/concierge (45 passed locally), screenshots.
+- **Deployment impact:**
+  - Additive migration runs on deploy.
+  - The payment link is emailed only when an admin sends it.
+  - No flags, env or Stripe changes.
+- **New risks/blockers:**
+  - Payment confirmation is manual (Phase 1).
+  - Checkout mode contradicts pay when ready (off).
+  - Terms §15 needs counsel review.
+- **Recommended next step:** Chris creates the Payment Link in Stripe and runs the count script.
+
