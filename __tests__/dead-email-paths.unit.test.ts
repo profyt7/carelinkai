@@ -1,5 +1,5 @@
 /**
- * OL-181 — the five callers of the old src/lib/email-service.ts (whose
+ * OL-181 — the callers of the old src/lib/email-service.ts (whose
  * EMAIL_PROVIDER=sendgrid fell through to a mock provider that sent nothing)
  * now go through the Resend path (src/lib/email/transactional.ts →
  * guardedResendSend). Resend is mocked; nothing sends.
@@ -8,21 +8,16 @@
 import fs from 'fs';
 import path from 'path';
 import { jest } from '@jest/globals';
-import { NextRequest } from 'next/server';
 
 const guardedResendSend = jest.fn<(...a: any[]) => Promise<any>>();
 jest.mock('@/lib/email', () => ({ guardedResendSend: (...a: unknown[]) => guardedResendSend(...a) }));
 jest.mock('@/lib/logger', () => ({ logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn() } }));
-jest.mock('@/lib/consent/lead-consent', () => ({ recordLeadConsent: jest.fn(async () => undefined) }));
-jest.mock('@/lib/prisma', () => ({ prisma: { demoRequest: { create: jest.fn(async ({ data }: any) => ({ id: 'demo_1', ...data })) } } }));
 
 import { escapeHtml, sendEmail } from '@/lib/email/transactional';
-import { POST as demoRequest } from '@/app/api/demo-request/route';
 
 const root = path.join(__dirname, '..');
 const read = (p: string) => fs.readFileSync(path.join(root, p), 'utf8');
 const CALLERS = [
-  'src/app/api/demo-request/route.ts',
   'src/app/api/marketplace/applications/route.ts',
   'src/app/api/marketplace/applications/[id]/route.ts',
   'src/lib/services/reminders.ts',
@@ -72,27 +67,5 @@ describe('the Resend path the callers now use', () => {
   it('escapeHtml neutralises markup a user typed', () => {
     expect(escapeHtml(`<script>alert("x")</script> & 'y'`)).toBe('&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt; &amp; &#39;y&#39;');
     expect(escapeHtml(null)).toBe('');
-  });
-});
-
-describe('/api/demo-request now emails the admin through Resend', () => {
-  it('sends to ADMIN_NOTIFY_EMAIL with the typed fields escaped', async () => {
-    const res = await demoRequest(
-      new NextRequest('http://localhost/api/demo-request', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ name: 'Pat <b>Bold</b>', email: 'pat@example.com', company: 'Acme & Co', message: '<img src=x onerror=alert(1)>' }),
-      }),
-    );
-    expect(res.status).toBe(200);
-    await new Promise((r) => setTimeout(r, 0)); // the notify is fire-and-forget
-    expect(guardedResendSend).toHaveBeenCalledTimes(1);
-    const sent = guardedResendSend.mock.calls[0]![0];
-    expect(sent.to).toEqual(['alerts@example.com']);
-    expect(sent.tags).toEqual([{ name: 'category', value: 'demo-request' }]);
-    expect(sent.html).toContain('Pat &lt;b&gt;Bold&lt;/b&gt;');
-    expect(sent.html).toContain('Acme &amp; Co');
-    expect(sent.html).toContain('&lt;img src=x onerror=alert(1)&gt;');
-    expect(sent.html).not.toContain('<img src=x');
   });
 });

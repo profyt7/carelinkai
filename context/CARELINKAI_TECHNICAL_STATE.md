@@ -15,6 +15,7 @@ _Last updated: 2026-10-30 (night) — **OL-245 PR** `chore/tour-recapture` (self
   - The Founding Operator card comes from `src/lib/operator/founding-offer.ts`.
   - How-To guides are trimmed per flag by `src/lib/howto/flags.ts`.
   - Claim writes go through `founderUpdateFromClaim` (`src/lib/claim-founder.ts`).
+- **Homepage (OL-248 h):** the demo-request form and `/api/demo-request` are deleted. Section `#get-started` (`GetStartedPanel`) has the tour button (dialog, `/demo/tour.mp4`) and role links from `getStartedLinks()`; the provider link follows `PROVIDER_LISTING_ENABLED`. The homepage no longer renders the slide tour (still on /help). `DemoRequest` table kept, no longer written.
 
 ## Family Concierge, pay when ready (2026-10-31, same branch / PR #29)
 - **`ConciergeOrder` columns:** `paymentLinkUrl`, `paymentLinkSentAt`, `shortlistReleasedAt` (additive migration).

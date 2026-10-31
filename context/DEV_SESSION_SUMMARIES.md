@@ -2811,3 +2811,18 @@
   - The run-cron step calls a new endpoint each hour.
 - **Recommended next step:** Chris reviews and merges, creates the Payment Link, sets the env var, and confirms `checkout.session.completed` is enabled on the webhook.
 
+### 2026-10-31 (latest) — OL-248 h: homepage "Get started on your own" panel
+- **Objective:** Replace the homepage demo-request form with a self-serve panel, in PR #32 (not merged).
+- **Work completed:**
+  - New `GetStartedPanel` + `getStartedLinks()`. The tour dialog now autoplays from 0, blocks download, traps Tab, and returns focus on close.
+  - Deleted the demo form, `/api/demo-request` (only caller was the form), `demo-section.ts` and their tests.
+  - Repointed the homepage final CTA, footer and /help card to `#get-started`.
+  - Banned phrases extended; new `get-started-panel.unit` test (routes exist, provider flag, copy, focus).
+  - `context/REVENUE_REGISTER.md` updated: concierge pay when ready via `CONCIERGE_PAYMENT_LINK_URL`, care-home listing free forever, operator plans Feb 2 2027 (free-vs-paid split TBD), demo form removed.
+- **Files changed:** `src/components/marketing/{GetStartedPanel,DemoVideoModal,TourVideo}.tsx`, `src/lib/marketing/get-started-links.ts`, `src/app/{HomePageClient,page}.tsx`, `src/app/help/HelpPageClient.tsx`, deletions above, tests, context.
+- **Commands run:** tsc, eslint, jest (173 suites, 2016 passed), `next build`, Playwright screenshots + keyboard check at 390/820/1280.
+- **Tests/build status:** all green locally.
+- **Deployment impact:** Homepage section changes; one public API route removed. No env, flag, Stripe or migration changes.
+- **New risks/blockers:** No self-serve claim-with-context page (care homes go to the directory first).
+- **Recommended next step:** Chris reviews PR #32; consider a follow-up to carry the home id through register for claims.
+

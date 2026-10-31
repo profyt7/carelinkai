@@ -122,6 +122,15 @@ describe('e + f. banned phrases on app pages', () => {
     expect(hits).toEqual([]);
   });
 
+  it('no "personalized walkthrough", "Request My Demo", "Request a demo", "Everything\'s free" in any page or component (OL-248 h)', () => {
+    const hits = files.flatMap((f) =>
+      read(f).split('\n').flatMap((line, i) =>
+        /personalized walkthrough|request my demo|request a demo|everything(?:'|’|&apos;|&#39;)?s free/i.test(line) ? [`${f}:${i + 1}`] : [],
+      ),
+    );
+    expect(hits).toEqual([]);
+  });
+
   it('"14-day free trial" appears only on a line gated by the plans flag', () => {
     const ungated = files.flatMap((f) => {
       const lines = read(f).split('\n');

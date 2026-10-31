@@ -147,13 +147,13 @@ export default function HelpPageClient({ tour = null, tourVideo = null }: { tour
           </Link>
 
           <Link
-            href="/#request-demo"
+            href="/#get-started"
             className="flex items-center gap-3 rounded-xl border border-neutral-200 bg-white p-4 hover:border-primary-400 hover:bg-primary-50 transition-all"
           >
             <FiVideo className="h-5 w-5 text-secondary-600 shrink-0" />
             <div>
-              <p className="font-medium text-neutral-900">Request a walkthrough</p>
-              <p className="text-xs text-neutral-500">We tailor it to your role</p>
+              <p className="font-medium text-neutral-900">Get started on your own</p>
+              <p className="text-xs text-neutral-500">Watch the 90-second tour, then jump to your role</p>
             </div>
           </Link>
 

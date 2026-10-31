@@ -1,6 +1,6 @@
 /**
  * API-level tests for lead-consent capture (feat/lead-consent-capture):
- * POST /api/inquiries (public lead form) and POST /api/demo-request write a
+ * POST /api/inquiries (public lead form) writes a
  * LeadConsent evidence row for BOTH consent states, stamp the text version,
  * and never fail or block the submission because of the consent payload.
  */
@@ -35,20 +35,17 @@ jest.mock('@/lib/prisma', () => ({
   prisma: {
     inquiry: { create: jest.fn() },
     family: { findUnique: jest.fn() },
-    demoRequest: { create: jest.fn() },
     leadConsent: { create: jest.fn() },
   },
 }));
 
 import { getServerSession } from 'next-auth';
 import { POST as postInquiry } from '@/app/api/inquiries/route';
-import { POST as postDemoRequest } from '@/app/api/demo-request/route';
 import { CURRENT_LEAD_CONSENT_VERSION } from '@/lib/consent/lead-consent-text';
 import { prisma } from '@/lib/prisma';
 
 const mockedSession = getServerSession as jest.Mock;
 const mockedInquiryCreate = prisma.inquiry.create as jest.Mock;
-const mockedDemoCreate = prisma.demoRequest.create as jest.Mock;
 const mockedConsentCreate = prisma.leadConsent.create as jest.Mock;
 
 const createdInquiry = {
@@ -79,7 +76,6 @@ const makeReq = (url: string, body: unknown) =>
 beforeEach(() => {
   mockedSession.mockResolvedValue(null as never); // anonymous public submission
   mockedInquiryCreate.mockResolvedValue(createdInquiry as never);
-  mockedDemoCreate.mockResolvedValue({ id: 'demo-1' } as never);
   mockedConsentCreate.mockResolvedValue({ id: 'consent-1' } as never);
 });
 afterEach(() => jest.clearAllMocks());
@@ -131,38 +127,5 @@ describe('POST /api/inquiries consent capture', () => {
       makeReq('http://localhost/api/inquiries', inquiryBody({ given: true, textVersion: CURRENT_LEAD_CONSENT_VERSION })),
     );
     expect(res.status).toBe(201);
-  });
-});
-
-describe('POST /api/demo-request consent capture', () => {
-  const demoBody = (consent: unknown) => ({
-    name: 'Jane Doe',
-    email: 'jane@example.com',
-    phone: '555-0100',
-    ...(consent === undefined ? {} : { consent }),
-  });
-
-  it('records granted consent linked to the demo request', async () => {
-    const res = await postDemoRequest(
-      makeReq('http://localhost/api/demo-request', demoBody({ given: true, textVersion: CURRENT_LEAD_CONSENT_VERSION })),
-    );
-    expect(res.status).toBe(200);
-    const data = (mockedConsentCreate.mock.calls[0][0] as any).data;
-    expect(data).toMatchObject({
-      consentGiven: true,
-      sourceForm: 'demo_request',
-      demoRequestId: 'demo-1',
-      contactEmail: 'jane@example.com',
-    });
-    // consent must not leak into the DemoRequest row itself
-    expect((mockedDemoCreate.mock.calls[0][0] as any).data.consent).toBeUndefined();
-  });
-
-  it('records consentGiven=false when the box was left unchecked', async () => {
-    const res = await postDemoRequest(
-      makeReq('http://localhost/api/demo-request', demoBody({ given: false, textVersion: CURRENT_LEAD_CONSENT_VERSION })),
-    );
-    expect(res.status).toBe(200);
-    expect((mockedConsentCreate.mock.calls[0][0] as any).data.consentGiven).toBe(false);
   });
 });
