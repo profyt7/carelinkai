@@ -2397,6 +2397,8 @@ model PlacementSearch {
   /// First-class intake facts (sprint W5-1, Δ14/G2): derived at intake time from the
   /// screener / request — never guessed after the fact (nullable, no backfill).
   payerLane            String? // FEE_ELIGIBLE | FREE_LANE | UNKNOWN
+  /// fix/concierge-outbound-safety: a test request. Never contacts facilities; excluded from metrics and the monthly cap.
+  isTest               Boolean            @default(false)
   intakeZip            String? // 5-digit ZIP of the search area when given
   careLevel            String? // "Memory care" | "Assisted living" | … (plain label)
   curatedHomes         Json? // [{ homeId, name, address, note, confirmedAvailability }]
@@ -2453,6 +2455,8 @@ model ConciergeOrder {
   /// Phase 2 (OL-248): the single reminder email, 3 days after the payment link went out, and the 14-day expiry.
   paymentReminderSentAt   DateTime?
   expiredAt               DateTime?
+  /// fix/concierge-outbound-safety: a test order. Never contacts facilities; excluded from metrics and the monthly cap.
+  isTest                  Boolean              @default(false)
   placementSearch         PlacementSearch?     @relation(fields: [placementSearchId], references: [id], onDelete: SetNull)
 
   @@index([placementSearchId])

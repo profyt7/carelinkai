@@ -23,6 +23,7 @@ import { captureError } from '@/lib/sentry';
 import { sendFacilityResponseRequestEmail } from '@/lib/email';
 import { signUnsubscribeToken } from '@/lib/unsubscribe-token';
 import { createInAppNotification } from '@/lib/services/notifications';
+import { SUPPRESSED_TEST } from '@/lib/concierge/test-orders';
 import {
   buildFacilitySummary,
   rollupObservedAccept,
@@ -68,6 +69,13 @@ export type CreatedFacilityResponse = { responseId: string; homeId: string; stat
  * existing row that already has a response is left alone; a PENDING/SENT row
  * gets a fresh link.
  */
+/**
+ * Email the accept / decline request to shortlisted homes.
+ * fix/concierge-outbound-safety:
+ *  - a TEST request never contacts a facility: each home is skipped and logged as "suppressed (test)";
+ *  - a home that already has a response row (it was notified before) is NEVER emailed again;
+ *  - callers pass only homes the admin confirmed ("This will email N homes … Send").
+ */
 export async function createFacilityResponsesForShortlist(args: {
   searchId: string;
   homeIds: string[];
@@ -77,7 +85,7 @@ export async function createFacilityResponsesForShortlist(args: {
   const search = await prisma.placementSearch.findUnique({
     where: { id: args.searchId },
     select: {
-      id: true, queryText: true, parsedCriteria: true, patientInfo: true, payerSource: true,
+      id: true, queryText: true, parsedCriteria: true, patientInfo: true, payerSource: true, isTest: true,
       user: { select: { dischargePlannerProfile: { select: { organization: true } } } },
     },
   });
@@ -95,16 +103,26 @@ export async function createFacilityResponsesForShortlist(args: {
   const out: CreatedFacilityResponse[] = [];
 
   for (const home of homes) {
+    if (search.isTest) {
+      // Test request: never contact the facility. Logged, nothing stored or sent.
+      console.warn(`[facility-response] ${SUPPRESSED_TEST}: search ${search.id} home ${home.id}`);
+      await recordEvent(prisma, {
+        entityType: 'PLACEMENT_SEARCH', entityId: search.id, eventType: 'facility.contact_suppressed', field: 'facilityResponse',
+        oldValue: null, newValue: { homeId: home.id, reason: SUPPRESSED_TEST },
+        source: 'SYSTEM',
+      });
+      out.push({ responseId: '', homeId: home.id, status: 'PENDING', delivery: SUPPRESSED_TEST });
+      continue;
+    }
     const existing = await prisma.facilityResponse.findUnique({ where: { searchId_homeId: { searchId: search.id, homeId: home.id } } });
-    if (existing && !['PENDING', 'SENT', 'OPENED'].includes(existing.status)) {
-      out.push({ responseId: existing.id, homeId: home.id, status: existing.status, delivery: existing.delivery ?? 'kept' });
+    if (existing) {
+      // Already notified once: never email this home again (updates only add new homes).
+      out.push({ responseId: existing.id, homeId: home.id, status: existing.status, delivery: 'already_notified' });
       continue;
     }
     const contactEmail = pickFacilityContact(home);
     // Create (or refresh) the row first so the token can carry its id.
-    const row = existing
-      ? existing
-      : await prisma.facilityResponse.create({
+    const row = await prisma.facilityResponse.create({
           data: { searchId: search.id, homeId: home.id, status: 'PENDING', token: `pending-${crypto.randomUUID()}`, summary: summary as unknown as Prisma.InputJsonValue, contactEmail },
         });
     const token = sec ? signFacilityResponseToken({ responseId: row.id, searchId: search.id, homeId: home.id }, sec, now.getTime()) : row.token;

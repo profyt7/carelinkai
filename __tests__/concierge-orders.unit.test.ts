@@ -141,7 +141,7 @@ describe('capacity + orders', () => {
   it('counts PAID + REQUESTED_UNPAID this month; cap reached → waitlist', async () => {
     P.conciergeOrder.count.mockResolvedValue(4);
     const s = await capStatus(new Date('2026-10-17T00:00:00Z'));
-    expect(P.conciergeOrder.count).toHaveBeenCalledWith({ where: { status: { in: ['PAID', 'REQUESTED_UNPAID'] }, createdAt: { gte: new Date('2026-10-01T00:00:00.000Z') } } });
+    expect(P.conciergeOrder.count).toHaveBeenCalledWith({ where: { status: { in: ['PAID', 'REQUESTED_UNPAID'] }, createdAt: { gte: new Date('2026-10-01T00:00:00.000Z') }, isTest: false } }); // test orders never count
     expect(s).toMatchObject({ cap: 4, committed: 4, capReached: true, checkoutEnabled: false, mode: 'waitlist' });
   });
   it('upfront checkout is retired (OL-248): request under the cap, whatever CONCIERGE_CHECKOUT_ENABLED and Stripe say', async () => {
