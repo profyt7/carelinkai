@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import HomePageClient from './HomePageClient';
 import { isPaidFeatureEnabled } from '@/lib/billing/paid-features';
-import { loadProductTour } from '@/lib/marketing/product-tour';
+import { loadProductTour, loadTourVideo } from '@/lib/marketing/product-tour';
 
 /**
  * Home page (server shell). The marketing page itself is a large client
@@ -49,6 +49,8 @@ export default function HomePage() {
       caregiverProOn={isPaidFeatureEnabled('CAREGIVER_PRO')}
       // Demo-section product tour: only when /public/demo/tour.json exists.
       tour={loadProductTour()}
+      // Self-hosted narrated tour: shown whenever public/demo/tour.mp4 exists.
+      tourVideo={loadTourVideo()}
     />
   );
 }

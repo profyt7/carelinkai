@@ -9,10 +9,10 @@ import middleware from '@/middleware';
 const run = (p: string) => middleware(new NextRequest(`http://localhost${p}`) as any, {} as any) as Promise<Response> | Response;
 const passes = (r: Response) => r.headers.get('x-middleware-next') === '1';
 
-it.each(['/demo/tour.json', '/demo/01-search.png', '/demo/02.webp', '/demo/a.JPG'])('%s passes straight through', async (p) => {
+it.each(['/demo/tour.json', '/demo/01-search.png', '/demo/02.webp', '/demo/a.JPG', '/demo/tour.mp4', '/demo/tour.vtt', '/demo/tour-poster.jpg'])('%s passes straight through', async (p) => {
   expect(passes(await run(p))).toBe(true);
 });
 
-it.each(['/demo/nested/x.png', '/demo/x.html', '/demo/admin'])('%s is not bypassed', async (p) => {
+it.each(['/demo/nested/x.png', '/demo/nested/tour.mp4', '/demo/x.html', '/demo/admin'])('%s is not bypassed', async (p) => {
   expect(passes(await run(p))).toBe(false);
 });

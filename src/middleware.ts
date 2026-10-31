@@ -49,9 +49,9 @@ function shouldBypassAuth(pathname: string): boolean {
   // Search-engine crawler files must never redirect to login. Cover split
   // sitemaps (/sitemap-0.xml, /sitemap/0.xml) too.
   if (pathname === '/robots.txt' || /^\/sitemap.*\.xml$/.test(pathname)) return true;
-  // Homepage product tour assets (/public/demo/*.png … + tour.json). Flat files only, so the
-  // /demo page and anything routed under it still go through auth.
-  if (/^\/demo\/[\w.-]+\.(?:png|jpe?g|webp|avif|json)$/i.test(pathname)) return true;
+  // Product tour assets (/public/demo/*.jpg … + tour.json, tour.mp4, tour.vtt). Flat files only,
+  // so the /demo page and anything routed under it still go through auth.
+  if (/^\/demo\/[\w.-]+\.(?:png|jpe?g|webp|avif|json|mp4|vtt)$/i.test(pathname)) return true;
   return PUBLIC_PATHS.some(path => {
     if (path.endsWith('/')) {
       return pathname.startsWith(path);

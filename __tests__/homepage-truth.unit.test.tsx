@@ -12,7 +12,7 @@
 import { renderToString } from 'react-dom/server';
 import HomePageClient from '@/app/HomePageClient';
 import { comingSoonItems, nowLiveItems, ROADMAP_FLAGS_OFF } from '@/lib/marketing/roadmap';
-import { loadProductTour } from '@/lib/marketing/product-tour';
+import { loadProductTour, loadTourVideo } from '@/lib/marketing/product-tour';
 import ProviderCard from '@/components/marketplace/ProviderCard';
 import CaregiverCard from '@/components/marketplace/CaregiverCard';
 import BackgroundCheckBadge from '@/components/caregiver/BackgroundCheckBadge';
@@ -191,5 +191,35 @@ describe('product tour on the homepage', () => {
     const html = renderToString(<HomePageClient tour={null} />);
     expect(html).not.toContain('data-testid="product-tour"');
     expect(demo(html)).not.toContain('90-second');
+  });
+});
+
+describe('self-hosted tour video: no third-party video player anywhere on the homepage', () => {
+  const YOUTUBE = /youtube\.com|youtube-nocookie\.com|youtu\.be/i;
+  it('the committed tour.mp4 shows the video (no autoplay) and nothing references YouTube', () => {
+    const tourVideo = loadTourVideo();
+    expect(tourVideo?.src).toBe('/demo/tour.mp4');
+    const html = renderToString(<HomePageClient tour={loadProductTour()} tourVideo={tourVideo} />);
+    expect(html).toContain('<source src="/demo/tour.mp4" type="video/mp4"/>');
+    expect(html).not.toMatch(/<video[^>]*autoplay/i);
+    expect(html).not.toMatch(YOUTUBE);
+    expect(html).not.toMatch(/<iframe/i);
+  });
+  it('without tour.mp4: no video, no Watch Demo, still no YouTube', () => {
+    const html = renderToString(<HomePageClient />);
+    expect(html).not.toContain('<video');
+    expect(text(html)).not.toContain('Watch Demo');
+    expect(html).not.toMatch(YOUTUBE);
+  });
+  it('loadTourVideo: no tour.mp4 → null; captions / poster only when their files exist', () => {
+    const fs = require('node:fs') as typeof import('node:fs');
+    const os = require('node:os') as typeof import('node:os');
+    const path = require('node:path') as typeof import('node:path');
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tourvideo-'));
+    expect(loadTourVideo(dir)).toBeNull();
+    fs.mkdirSync(path.join(dir, 'public', 'demo'), { recursive: true });
+    fs.writeFileSync(path.join(dir, 'public', 'demo', 'tour.mp4'), '');
+    expect(loadTourVideo(dir)).toEqual({ src: '/demo/tour.mp4', poster: null, captions: null });
+    fs.rmSync(dir, { recursive: true, force: true });
   });
 });
