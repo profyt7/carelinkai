@@ -56,7 +56,7 @@ jest.mock('@/lib/prisma', () => {
 
 import { PATCH } from '@/app/api/admin/concierge/[id]/route';
 import { GET as searchHomes } from '@/app/api/admin/concierge/homes/route';
-import { defaultAvailabilityLabel, searchPublicHomes } from '@/lib/concierge/manual-shortlist';
+import { defaultAvailabilityLabel, openingsLine, searchPublicHomes } from '@/lib/concierge/manual-shortlist';
 import { sendPaymentLink } from '@/lib/concierge/pay-when-ready';
 import { isShortlistVisibleToFamily } from '@/lib/concierge/shortlist-token';
 
@@ -105,6 +105,13 @@ describe('Add a home: public homes by name, city or ZIP', () => {
     expect((await res.json()).homes.map((h: any) => h.homeId)).toEqual(['h-maple']);
   });
 
+  it('family-facing copy covers openings only: "Openings verified by our team on {date}" / "Openings unconfirmed — ask the home"', () => {
+    expect(openingsLine('verified', '2026-11-01T15:00:00.000Z')).toBe('Openings verified by our team on November 1, 2026');
+    expect(openingsLine('verified', null)).toBe('Openings verified by our team');
+    expect(openingsLine('unconfirmed', '2026-11-01T15:00:00.000Z')).toBe('Openings unconfirmed — ask the home');
+    for (const line of [openingsLine('verified', new Date()), openingsLine('unconfirmed')]) expect(line).not.toMatch(/pric|availability/i);
+  });
+
   it('defaultAvailabilityLabel: unconfirmed unless current availability is verified', () => {
     expect(defaultAvailabilityLabel({ availabilityVerifiedAt: fresh, availabilityCount: 1 })).toBe('verified');
     expect(defaultAvailabilityLabel({ availabilityVerifiedAt: stale })).toBe('unconfirmed');
@@ -121,9 +128,12 @@ describe('save with zero stored matches', () => {
       ['h-oak', 'Oak Terrace', 'verified'], // currently verified → default verified
       ['h-maple', 'Maple Grove', 'verified'], // the admin verified it by phone
     ]);
+    // The verified date: the home's own fresh verification, else when the admin saved it; unconfirmed has none.
+    expect(db.search.curatedHomes[0].availabilityVerifiedOn).toBe(fresh.toISOString());
+    expect(Date.parse(db.search.curatedHomes[1].availabilityVerifiedOn)).toBeGreaterThan(Date.now() - 60_000);
     res = await patch({ action: 'respond', curatedHomes: [{ homeId: 'h-maple' }] });
     expect(res.status).toBe(200);
-    expect(db.search.curatedHomes).toEqual([expect.objectContaining({ homeId: 'h-maple', availabilityLabel: 'unconfirmed', address: '1 Main St, Lakewood, OH 44107' })]);
+    expect(db.search.curatedHomes).toEqual([expect.objectContaining({ homeId: 'h-maple', availabilityLabel: 'unconfirmed', availabilityVerifiedOn: null, address: '1 Main St, Lakewood, OH 44107' })]);
   });
 
   it('reordering is the order the admin sends', async () => {

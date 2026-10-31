@@ -35,7 +35,7 @@ import { createFacilityResponsesForShortlist, markAdmitted, FACILITY_RESPONSE_SE
 import { captureError } from '@/lib/sentry';
 import { CONCIERGE_PAGE_SOURCE } from '@/lib/concierge/intake';
 import { configuredPaymentLink } from '@/lib/concierge/pay-when-ready';
-import { defaultAvailabilityLabel, suggestHomesForRequest } from '@/lib/concierge/manual-shortlist';
+import { defaultAvailabilityLabel, openingsVerifiedOn, suggestHomesForRequest } from '@/lib/concierge/manual-shortlist';
 
 function authErr(error: any): NextResponse | null {
   if (error?.name === 'UnauthenticatedError') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -166,7 +166,10 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
           address,
           note: h.note?.trim() || '',
           confirmedAvailability: h.confirmedAvailability?.trim() || '',
-          availabilityLabel: h.availabilityLabel ?? defaultAvailabilityLabel(home),
+          ...(() => {
+            const availabilityLabel = h.availabilityLabel ?? defaultAvailabilityLabel(home);
+            return { availabilityLabel, availabilityVerifiedOn: availabilityLabel === 'verified' ? openingsVerifiedOn(home) : null };
+          })(),
         };
       });
 

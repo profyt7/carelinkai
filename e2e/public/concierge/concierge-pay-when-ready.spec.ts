@@ -126,7 +126,8 @@ test.describe('@critical Family Concierge — pay when ready (admin actions + fa
     await expect(panel.getByTestId('concierge-order-released')).not.toHaveText('—', { timeout: 30_000 });
     text = await familySees();
     expect(text).toContain(HOME_NAME);
-    expect(text).toContain('Availability — unconfirmed.');
+    expect(text).toContain('Openings unconfirmed — ask the home');
+    expect(text).not.toMatch(/Availability — verified|Openings verified/);
     expect(text).toContain('not a guaranteed opening or placement');
 
     // A forged token shows nothing.

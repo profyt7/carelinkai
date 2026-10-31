@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { openingsLine } from '@/lib/concierge/manual-shortlist';
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { CONCIERGE_OFFER } from '@/lib/concierge/offer';
@@ -17,7 +18,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-type Curated = { homeId?: string; name?: string; address?: string; note?: string; confirmedAvailability?: string; availabilityLabel?: 'verified' | 'unconfirmed' };
+type Curated = { homeId?: string; name?: string; address?: string; note?: string; confirmedAvailability?: string; availabilityLabel?: 'verified' | 'unconfirmed'; availabilityVerifiedOn?: string | null };
 
 /** fix/concierge-manual-shortlist: the admin's label decides; older shortlists (no label) fall back to "details given". */
 const isVerified = (h: Curated) => (h.availabilityLabel ? h.availabilityLabel === 'verified' : !!h.confirmedAvailability);
@@ -91,11 +92,11 @@ export default async function ConciergeShortlistPage({ params }: { params: Promi
             <p className="mt-2 text-sm" data-testid="concierge-shortlist-availability" data-label={isVerified(h) ? 'verified' : 'unconfirmed'}>
               {isVerified(h) ? (
                 <>
-                  <span className="font-semibold text-success-700">Availability — verified by our team{h.confirmedAvailability ? ':' : '.'}</span> {h.confirmedAvailability}
+                  <span className="font-semibold text-success-700">{openingsLine('verified', h.availabilityVerifiedOn)}{h.confirmedAvailability ? ':' : '.'}</span> {h.confirmedAvailability}
                 </>
               ) : (
                 <>
-                  <span className="font-semibold text-amber-700">Availability — unconfirmed.</span> Ask the home before you visit.
+                  <span className="font-semibold text-amber-700">{openingsLine('unconfirmed')}.</span>
                 </>
               )}
             </p>

@@ -115,9 +115,11 @@ test.describe('@critical concierge — manual shortlist with zero stored matches
     await expect(panel).not.toContainText('Save the shortlist below first', { timeout: 60_000 });
     const saved = await prisma.placementSearch.findUniqueOrThrow({ where: { id: searchId }, select: { conciergeStatus: true, curatedHomes: true } });
     expect(saved.conciergeStatus).toBe('SHORTLIST_READY');
-    const curated = saved.curatedHomes as { name: string; availabilityLabel: string }[];
+    const curated = saved.curatedHomes as { name: string; availabilityLabel: string; availabilityVerifiedOn: string | null }[];
     expect(curated.map((c) => c.name)).toEqual([HOME_B, HOME_A]);
     expect(curated.map((c) => c.availabilityLabel)).toEqual(['unconfirmed', 'verified']);
+    expect(curated[0]!.availabilityVerifiedOn).toBeNull();
+    expect(Date.parse(curated[1]!.availabilityVerifiedOn!)).toBeGreaterThan(Date.now() - 10 * 60_000);
 
     // "Shortlist ready — send payment link" is usable now (paste fallback when the env link is unset).
     const send = panel.getByTestId('concierge-order-send-link');

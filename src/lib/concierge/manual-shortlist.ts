@@ -19,10 +19,23 @@ import { recordEvent, type EventActor } from '@/lib/events/record-event';
 
 export type AvailabilityLabel = 'verified' | 'unconfirmed';
 
-export const AVAILABILITY_LABEL_TEXT: Record<AvailabilityLabel, string> = {
-  verified: 'Availability — verified by our team',
-  unconfirmed: 'Availability — unconfirmed. Ask the home before you visit.',
-};
+/**
+ * The family-facing line. It covers OPENINGS only: pricing keeps its own source label on the listing and
+ * nothing else on the shortlist is called verified.
+ */
+export function openingsLine(label: AvailabilityLabel, verifiedOn?: string | Date | null): string {
+  if (label !== 'verified') return 'Openings unconfirmed — ask the home';
+  const d = verifiedOn ? new Date(verifiedOn) : null;
+  const when = d && !Number.isNaN(d.getTime())
+    ? ` on ${d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' })}`
+    : '';
+  return `Openings verified by our team${when}`;
+}
+
+/** When a 'verified' label was earned: the home's own fresh verification, else the moment the admin saved it. */
+export function openingsVerifiedOn(home: AvailabilityFields, now: Date = new Date()): string {
+  return availabilityView(home, now.getTime()).fresh && home.availabilityVerifiedAt ? new Date(home.availabilityVerifiedAt).toISOString() : now.toISOString();
+}
 
 type AvailabilityFields = { availabilityCount?: number | null; availabilityVerifiedAt?: Date | string | null; availabilitySource?: any };
 

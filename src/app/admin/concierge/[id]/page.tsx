@@ -413,21 +413,21 @@ export default function AdminConciergeCuratePage() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
                     <label className="text-xs text-neutral-600">
-                      Availability shown to the family
+                      Openings shown to the family
                       <select
                         value={pk.availabilityLabel}
                         onChange={(e) => update(pk.homeId, { availabilityLabel: e.target.value as AvailabilityLabel })}
                         className="mt-1 block w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm"
                         data-testid="curate-pick-availability"
                       >
-                        <option value="unconfirmed">Unconfirmed — ask the home</option>
-                        <option value="verified">Verified by our team</option>
+                        <option value="unconfirmed">Openings unconfirmed — ask the home</option>
+                        <option value="verified">Openings verified by our team</option>
                       </select>
                     </label>
                     <input
                       value={pk.confirmedAvailability}
                       onChange={(e) => update(pk.homeId, { confirmedAvailability: e.target.value })}
-                      placeholder="Availability details (e.g., 2 beds, ready now)"
+                      placeholder="Openings details (e.g., 2 beds, ready now)"
                       className="sm:mt-5 px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                     <input
