@@ -151,11 +151,10 @@ describe('concierge form (/api/concierge/request + /checkout)', () => {
     expect(smsRows()).toEqual([]);
   });
 
-  it('checkout: checked → row; unchecked → none', async () => {
-    expect((await postConciergeCheckout(req('/api/concierge/checkout', body(CHECKED)))).status).toBe(201);
-    expect(smsRows()).toEqual([expect.objectContaining({ consentGiven: true, sourceForm: 'sms_concierge_request', leadId: 'ps-1' })]);
-    consentCreate.mockClear();
-    await postConciergeCheckout(req('/api/concierge/checkout', body()));
+  it('checkout is retired (OL-248): 410 { fallback: request }, nothing stored, no consent row', async () => {
+    const res = await postConciergeCheckout(req('/api/concierge/checkout', body(CHECKED)));
+    expect(res.status).toBe(410);
+    expect(await res.json()).toMatchObject({ fallback: 'request' });
     expect(smsRows()).toEqual([]);
   });
 });

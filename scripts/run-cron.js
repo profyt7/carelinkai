@@ -3,7 +3,7 @@
  * CareLinkAI Cron Job Runner
  * 
  * This script invokes the reminder scheduling and processing endpoints
- * for the CareLinkAI application. It's designed to be run as a scheduled
+ * for the CareLinkAI application, plus the Family Concierge order sweep (OL-248). It's designed to be run as a scheduled
  * task (e.g., via cron, systemd timer, or cloud scheduler).
  * 
  * Usage:
@@ -35,8 +35,8 @@ if (!CRON_SECRET) {
  * @param {object} body - The request body
  * @returns {Promise<object>} - The response data
  */
-async function callCronEndpoint(endpoint, body) {
-  const url = `${BASE_URL}/api/cron/reminders/${endpoint}`;
+async function callCronEndpoint(endpoint, body, path = `/api/cron/reminders/${endpoint}`) {
+  const url = `${BASE_URL}${path}`;
   console.log(`📡 Calling ${url}`);
   
   try {
@@ -117,6 +117,16 @@ async function runCronTasks() {
     hasError = true;
   }
   
+  // Step 3 (OL-248): Family Concierge pay-when-ready sweep — one payment reminder at 3 days, expiry at 14.
+  console.log(`\n💳 Concierge orders sweep...`);
+  const conciergeResult = await callCronEndpoint('concierge-orders', {}, '/api/cron/concierge-orders');
+  if (conciergeResult.success) {
+    const { reminded, expired, durationMs } = conciergeResult.data;
+    console.log(`✅ Concierge sweep: ${reminded} reminder(s), ${expired} expired in ${durationMs}ms`);
+  } else {
+    hasError = true;
+  }
+
   // Exit with appropriate code
   if (hasError) {
     console.error('\n❌ Cron job completed with errors');

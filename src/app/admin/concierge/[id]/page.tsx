@@ -114,6 +114,7 @@ export default function AdminConciergeCuratePage() {
   const [sel, setSel] = useState<Record<string, Selection>>({});
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState<string | null>(null);
+  const [paymentLinkConfigured, setPaymentLinkConfigured] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -123,6 +124,7 @@ export default function AdminConciergeCuratePage() {
       if (!res.ok) throw new Error(data?.error || 'Failed to load');
       const d: Detail = data.request;
       setDetail(d);
+      setPaymentLinkConfigured(data.paymentLinkConfigured === true);
       setNote(d.conciergeNote ?? '');
       // Seed selections from a prior shortlist if present.
       const prior = new Map((d.curatedHomes ?? []).map((c) => [c.homeId, c]));
@@ -277,7 +279,7 @@ export default function AdminConciergeCuratePage() {
 
       {/* Pay when ready (10/31): the family's order — payment link, mark paid, release shortlist. */}
       {(detail.conciergeOrders ?? []).slice(0, 1).map((o) => (
-        <ConciergeOrderPanel key={o.id} order={o} shortlistReady={isReady && (detail.curatedHomes?.length ?? 0) > 0} onChanged={load} />
+        <ConciergeOrderPanel key={o.id} order={o} shortlistReady={isReady && (detail.curatedHomes?.length ?? 0) > 0} paymentLinkConfigured={paymentLinkConfigured} onChanged={load} />
       ))}
 
       {/* W4-2: facility accept / decline per shortlisted home */}

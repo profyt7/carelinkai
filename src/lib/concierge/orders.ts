@@ -4,8 +4,9 @@
  *  - `monthlyCommittedCount` → how many slots this calendar month are taken
  *    (PAID + REQUESTED_UNPAID); `capStatus` compares against CONCIERGE_MONTHLY_CAP.
  *  - `createOrder` writes a ConciergeOrder + its EntityEvent in one transaction.
- *  - `createCheckoutSession` builds a one-time Stripe Checkout Session from
- *    STRIPE_PRICE_FAMILY_CONCIERGE (never creates products/prices).
+ *  - (OL-248) the upfront Checkout Session builder is retired: pay when ready is the only path and
+ *    payment arrives through the Payment Link (src/lib/concierge/pay-when-ready.ts). The webhook handlers
+ *    below still process legacy FAMILY_CONCIERGE sessions and refunds, harmlessly.
  *  - `handleConciergeStripeEvent` processes checkout.session.completed /
  *    checkout.session.expired / charge.refunded, idempotent on the Stripe event
  *    id (StripeWebhookEvent primary key). On PAID: the queue row becomes
@@ -24,7 +25,6 @@ import { sendConciergePaidNotification } from '@/lib/email';
 import { createInAppNotification } from '@/lib/services/notifications';
 import {
   CONCIERGE_OFFER,
-  CONCIERGE_THANKS_PATH,
   COMMITTED_ORDER_STATUSES,
   isCapReached,
   isCheckoutEnabled,
@@ -48,8 +48,8 @@ export async function capStatus(now: Date = new Date()): Promise<CapStatus> {
   const cap = monthlyCap();
   const committed = await monthlyCommittedCount(now);
   const capReached = isCapReached(committed, cap);
-  const checkoutEnabled = isCheckoutEnabled();
-  return { checkoutEnabled, cap, committed, capReached, mode: conciergeCtaMode({ checkoutEnabled, capReached }) };
+  const checkoutEnabled = isCheckoutEnabled(); // always false (retired, OL-248)
+  return { checkoutEnabled, cap, committed, capReached, mode: conciergeCtaMode({ capReached }) };
 }
 
 export type CreateOrderInput = {
@@ -91,38 +91,6 @@ export async function createOrder(input: CreateOrderInput, tx?: Prisma.Transacti
   return tx ? run(tx) : prisma.$transaction(run);
 }
 
-function appUrl(): string {
-  return (process.env['NEXT_PUBLIC_APP_URL'] || process.env['NEXTAUTH_URL'] || 'https://getcarelinkai.com').replace(/\/$/, '');
-}
-
-export class CheckoutUnavailable extends Error {
-  constructor(msg: string) {
-    super(msg);
-    this.name = 'CheckoutUnavailable';
-  }
-}
-
-/**
- * One-time Stripe Checkout Session for the $399 concierge. Uses the existing
- * Price (env STRIPE_PRICE_FAMILY_CONCIERGE); never creates products or prices.
- */
-export async function createCheckoutSession(args: { orderId: string; placementSearchId: string; email: string }): Promise<{ id: string; url: string }> {
-  const price = process.env['STRIPE_PRICE_FAMILY_CONCIERGE'];
-  if (!price) throw new CheckoutUnavailable('STRIPE_PRICE_FAMILY_CONCIERGE is not set');
-  const { stripe } = await import('@/lib/stripe');
-  const session = await stripe.checkout.sessions.create({
-    mode: 'payment',
-    line_items: [{ price, quantity: 1 }],
-    customer_email: args.email,
-    client_reference_id: args.orderId,
-    success_url: `${appUrl()}${CONCIERGE_THANKS_PATH}?order=${encodeURIComponent(args.orderId)}`,
-    cancel_url: `${appUrl()}/concierge?canceled=1`,
-    metadata: { type: CONCIERGE_CHECKOUT_METADATA_TYPE, orderId: args.orderId, placementSearchId: args.placementSearchId },
-    payment_intent_data: { metadata: { type: CONCIERGE_CHECKOUT_METADATA_TYPE, orderId: args.orderId } },
-  });
-  if (!session.url) throw new CheckoutUnavailable('Stripe returned no checkout URL');
-  return { id: session.id, url: session.url };
-}
 
 /* ------------------------------- webhooks -------------------------------- */
 

@@ -62,8 +62,9 @@ export default function CheckoutPreflightPage() {
         <div>
           <h1 className="text-2xl font-bold text-neutral-900">Concierge checkout preflight</h1>
           <p className="text-sm text-neutral-600 mt-1">
-            Is the $399 Family Concierge checkout safe to turn on? Booleans only — no secret or id is ever shown here.
-            Checkout refuses to enable until every row is green, even with <code>CONCIERGE_CHECKOUT_ENABLED</code> set.
+            Upfront Family Concierge checkout is <strong>retired</strong> (pay when ready is the only path; families pay
+            through the Payment Link sent when their shortlist is ready). <code>CONCIERGE_CHECKOUT_ENABLED</code> is ignored.
+            The rows below still show whether the Stripe key and webhook secret are set — booleans only.
           </p>
         </div>
         <button onClick={() => void load()} className="inline-flex items-center gap-1 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50">
@@ -84,7 +85,7 @@ export default function CheckoutPreflightPage() {
             data-enabled={data.checkoutEnabled ? 'true' : 'false'}
           >
             <div className="text-lg font-semibold text-neutral-900">
-              {data.checkoutEnabled ? 'Checkout is ON' : data.ready ? 'Ready — set CONCIERGE_CHECKOUT_ENABLED=1 in Render to turn it on' : 'Checkout is OFF — fix the red rows first'}
+              Upfront checkout is retired — it can&apos;t be turned on.
             </div>
             <div className="text-xs text-neutral-600 mt-1">
               Flag requested: {data.flagRequested ? 'yes' : 'no'} · checked {new Date(data.checkedAt).toLocaleString()}
