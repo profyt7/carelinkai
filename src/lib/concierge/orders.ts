@@ -17,6 +17,7 @@
  */
 
 import type Stripe from 'stripe';
+import { isTestContact } from '@/lib/concierge/test-orders';
 import type { ConciergeOrderStatus, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { recordEvent, type EventActor } from '@/lib/events/record-event';
@@ -38,7 +39,8 @@ export const CONCIERGE_CHECKOUT_METADATA_TYPE = 'FAMILY_CONCIERGE';
 
 export async function monthlyCommittedCount(now: Date = new Date()): Promise<number> {
   return prisma.conciergeOrder.count({
-    where: { status: { in: [...COMMITTED_ORDER_STATUSES] }, createdAt: { gte: monthStart(now) } },
+    // Test orders never count toward the monthly cap.
+    where: { status: { in: [...COMMITTED_ORDER_STATUSES] }, createdAt: { gte: monthStart(now) }, isTest: false },
   });
 }
 
@@ -60,6 +62,8 @@ export type CreateOrderInput = {
   stripeCheckoutSessionId?: string | null;
   amountCents?: number;
   actor?: EventActor | null;
+  /** Test order (fix/concierge-outbound-safety); defaults to the email rule. */
+  isTest?: boolean;
 };
 
 /** Create the order and its `order.created` history row together. */
@@ -73,6 +77,8 @@ export async function createOrder(input: CreateOrderInput, tx?: Prisma.Transacti
         status: input.status,
         stripeCheckoutSessionId: input.stripeCheckoutSessionId ?? null,
         amountCents: input.amountCents ?? CONCIERGE_OFFER.priceCents,
+        // A test order follows its request (set from the family's email/name at intake), or the email rule.
+        isTest: input.isTest ?? isTestContact({ email: input.email }),
       },
       select: { id: true, status: true },
     });

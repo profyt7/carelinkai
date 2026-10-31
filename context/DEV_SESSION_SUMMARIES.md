@@ -2880,3 +2880,24 @@
 - **New risks/blockers:** TEST ORDER A/B stay open until OL-252 ships; then Cowork finishes the payment test and runs the cleanup preview.
 - **Recommended next step:** Chris approves the OL-252 merge, then finishes the payment test.
 
+### 2026-11-01 (latest) — #36 merged; stop-ship concierge outbound safety (OL-253)
+- **Objective:**
+  - Merge #36.
+  - After a test shortlist save emailed a real facility, make test orders never contact facilities and require confirmation before any facility email.
+- **Work completed:**
+  - #36 merged `ccad0078`; prod-verify passed.
+  - OL-253 PR (see open loops), including the audit of every concierge email/SMS.
+- **Files changed:**
+  - prisma schema + migration `20261101020000_concierge_is_test`;
+  - `src/lib/concierge/{test-orders,facility-response-engine,intake,orders,metrics-engine}.ts`;
+  - the admin concierge route and page;
+  - the DP tour route and the concierge request route;
+  - tests and e2e.
+- **Commands run:** tsc, eslint, jest (177 suites, 2057 passed), `next build`, Playwright `e2e/public/concierge/` + `concierge-flow` (47 passed).
+- **Tests/build status:** green locally.
+- **Deployment impact:**
+  - Additive migration that backfills isTest.
+  - Shortlist saves no longer email homes unless the admin confirms.
+- **New risks/blockers:** concierge testing is paused until this merges.
+- **Recommended next step:** Chris approves the merge; Cowork resumes the payment test (TEST ORDER A/B are isTest after the migration).
+

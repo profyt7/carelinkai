@@ -177,6 +177,8 @@ test.describe('@critical facility accept / decline in the concierge flow', () =>
       action: 'respond',
       curatedHomes: homes.map((h) => ({ homeId: h.id, note: 'fit', confirmedAvailability: '1 bed' })),
       conciergeNote: 'Two options.',
+      // fix/concierge-outbound-safety: homes are emailed only when the admin confirms them.
+      notifyHomeIds: homes.map((h) => h.id),
     });
     expect(respond.status, JSON.stringify(respond.json)).toBe(200);
     expect(respond.json.facilityResponses).toHaveLength(2);

@@ -111,7 +111,15 @@ test.describe('@critical concierge — manual shortlist with zero stored matches
       await page.screenshot({ path: `${SHOTS}/curate-panel-1280.png`, fullPage: true });
     }
 
+    // fix/concierge-outbound-safety: a real request asks before emailing homes; the safe choice has focus.
     await page.getByRole('button', { name: /Save shortlist/ }).click();
+    const dialog = page.getByTestId('notify-homes-dialog');
+    await expect(dialog).toContainText('This will email 2 homes:');
+    await expect(page.getByTestId('notify-homes-list')).toContainText(HOME_A);
+    await expect(page.getByTestId('notify-homes-list')).toContainText(HOME_B);
+    await expect(page.getByTestId('notify-homes-skip')).toBeFocused();
+    await page.getByTestId('notify-homes-skip').click();
+    await expect(dialog).toHaveCount(0);
     await expect(panel).not.toContainText('Save the shortlist below first', { timeout: 60_000 });
     const saved = await prisma.placementSearch.findUniqueOrThrow({ where: { id: searchId }, select: { conciergeStatus: true, curatedHomes: true } });
     expect(saved.conciergeStatus).toBe('SHORTLIST_READY');
@@ -128,6 +136,9 @@ test.describe('@critical concierge — manual shortlist with zero stored matches
     await expect(send).toBeEnabled();
     await expect(send).toHaveText('Shortlist ready — send payment link');
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/curate-panel-saved-1280.png`, fullPage: true });
+
+    // Saved without notifying: no facility was contacted.
+    expect(await prisma.facilityResponse.count({ where: { searchId } })).toBe(0);
 
     // Still hidden from the family: the order is unpaid.
     const order = await prisma.conciergeOrder.findUniqueOrThrow({ where: { id: orderId }, select: { status: true, shortlistReleasedAt: true } });
