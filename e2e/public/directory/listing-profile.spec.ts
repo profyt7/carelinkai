@@ -190,8 +190,9 @@ test.describe('@critical OL-217 facility profile — one inquiry pathway', () =>
 
     // At max scroll the claim link clears the floating widgets, the CTA bar and the tab bar.
     const claim = page.getByTestId('listing-claim-footer');
+    // fix/self-serve-claim: the claim button goes to the listing's claim page (signup carries the home through).
     const claimLink = claim.getByRole('link', { name: 'Claim this listing' });
-    await expect(claimLink).toHaveAttribute('href', '/auth/register?role=OPERATOR');
+    await expect(claimLink).toHaveAttribute('href', `/homes/${homeId}/claim`);
     await expectTappable(claimLink, 'Claim this listing at max scroll');
     const claimBox = await claim.boundingBox();
     const barNow = await bar.boundingBox();
