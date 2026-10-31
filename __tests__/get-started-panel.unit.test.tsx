@@ -12,6 +12,10 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import GetStartedPanel from '@/components/marketing/GetStartedPanel';
 import { getStartedLinks } from '@/lib/marketing/get-started-links';
 
+jest.mock('next/image', () => function Image(p: any) {
+  return require('react').createElement('img', { alt: p.alt, src: p.src, width: p.width, height: p.height, sizes: p.sizes, className: p.className, 'data-testid': p['data-testid'] });
+});
+
 const root = path.join(__dirname, '..');
 const pageFor = (pathname: string) => path.join(root, 'src/app', pathname, 'page.tsx');
 const registerSrc = fs.readFileSync(pageFor('/auth/register'), 'utf8');
@@ -72,8 +76,42 @@ describe('copy and the tour dialog', () => {
     render(<GetStartedPanel tourVideo={VIDEO} />);
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Get started on your own');
     expect(screen.getByTestId('get-started-subhead').textContent).toBe('Watch the 90-second tour, then jump straight to what you need. Getting started is free.');
-    expect(screen.getByTestId('get-started-watch-tour').textContent).toContain('▶ Watch the 90-second tour');
     expect(screen.getByTestId('get-started-footer').textContent).toBe('Questions? Call (216) 245-9482 or send us a message.');
+  });
+
+  it('the tour is one thumbnail <button>: poster via next/image (16:9), CSS play button + "1:32" chip, label underneath', () => {
+    render(<GetStartedPanel tourVideo={VIDEO} />);
+    const btn = screen.getByRole('button', { name: 'Watch the 90-second product tour (1 minute 32 seconds)' });
+    expect(btn).toBe(screen.getByTestId('get-started-watch-tour'));
+    expect(btn.tagName).toBe('BUTTON');
+    expect(btn.getAttribute('type')).toBe('button');
+    const img = screen.getByTestId('get-started-tour-thumbnail');
+    expect(btn.contains(img)).toBe(true);
+    expect([img.getAttribute('src'), img.getAttribute('width'), img.getAttribute('height')]).toEqual(['/demo/tour-poster.jpg', '1600', '900']);
+    expect(img.getAttribute('alt')).toBe(''); // the button's aria-label names it
+    expect(img.getAttribute('sizes')).toBe('(min-width: 768px) 720px, 100vw');
+    expect(btn.className).toContain('max-w-[720px]');
+    expect(btn.querySelector('.aspect-video')).not.toBeNull();
+    // Overlay is markup + CSS, inside the button, hidden from assistive tech (the label says it).
+    expect(btn.contains(screen.getByTestId('get-started-tour-play'))).toBe(true);
+    expect(screen.getByTestId('get-started-tour-duration').textContent).toBe('1:32');
+    expect(screen.getByTestId('get-started-tour-label').textContent).toBe('Watch the 90-second tour');
+    expect(btn.contains(screen.getByTestId('get-started-tour-label'))).toBe(true);
+    // Exactly one control for the tour; no leftover "▶" text button.
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+    expect(btn.textContent).not.toContain('▶');
+  });
+
+  it('no tour video: no thumbnail', () => {
+    render(<GetStartedPanel />);
+    expect(screen.queryByTestId('get-started-watch-tour')).toBeNull();
+    expect(screen.queryByTestId('get-started-tour-thumbnail')).toBeNull();
+  });
+
+  it('the modal player shows the same poster', () => {
+    render(<GetStartedPanel tourVideo={VIDEO} />);
+    fireEvent.click(screen.getByTestId('get-started-watch-tour'));
+    expect(screen.getByTestId('tour-video').getAttribute('poster')).toBe('/demo/tour-poster.jpg');
   });
 
   it('opens by keyboard-focusable button, closes on Escape, and focus returns to the button', () => {

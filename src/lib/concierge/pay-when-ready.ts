@@ -24,6 +24,7 @@ import type { ConciergeOrderStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { recordEvent, type EventActor } from '@/lib/events/record-event';
 import { captureError } from '@/lib/sentry';
+import { logger } from '@/lib/logger';
 import { sendConciergeAdminNotice, sendConciergeFamilyEmail, sendConciergePaidNotification } from '@/lib/email';
 import { conciergePaymentLinkEmail, conciergePaymentReminderEmail, conciergeShortlistReleasedEmail } from '@/lib/concierge/family-emails';
 import { signShortlistToken, SHORTLIST_PATH_PREFIX } from '@/lib/concierge/shortlist-token';
@@ -223,7 +224,11 @@ export async function handlePaymentLinkCheckoutCompleted(event: Stripe.Event): P
   if (order.status === 'PAID' || order.status === 'REFUNDED' || order.status === 'CANCELED') {
     return { handled: true, orderId: order.id, status: order.status, duplicate: order.status === 'PAID' };
   }
-  if (cs.payment_status && cs.payment_status !== 'paid') {
+  // A live acceptance test pays $0 with a one-time 100%-off promo code: Stripe reports
+  // payment_status 'no_payment_required'. Accept that only when the discount covers the whole subtotal.
+  const testPayment = isFullDiscountTestSession(cs);
+  if (testPayment) logger.info('Concierge payment link: $0 test checkout (100% discount)', { orderId: order.id, sessionId: cs.id });
+  if (!testPayment && cs.payment_status && cs.payment_status !== 'paid') {
     captureError(new Error('Concierge payment link session completed but not paid'), { tags: { feature: 'concierge-pay-when-ready' }, extra: { orderId: order.id, paymentStatus: cs.payment_status } });
     return { handled: true, orderId: order.id, status: order.status };
   }
@@ -234,7 +239,7 @@ export async function handlePaymentLinkCheckoutCompleted(event: Stripe.Event): P
     await tx.conciergeOrder.update({ where: { id: order.id }, data: { status: 'PAID', paidAt, stripeCheckoutSessionId: cs.id, stripePaymentIntentId: pi, amountCents } });
     await recordEvent(tx, {
       entityType: 'CONCIERGE_ORDER', entityId: order.id, eventType: 'order.paid', field: 'status',
-      oldValue: { status: order.status }, newValue: { status: 'PAID', amountCents, source: 'payment_link' },
+      oldValue: { status: order.status }, newValue: { status: 'PAID', amountCents, source: testPayment ? 'payment_link_test' : 'payment_link' },
       source: 'STRIPE', occurredAt: paidAt,
     });
   });
@@ -245,6 +250,13 @@ export async function handlePaymentLinkCheckoutCompleted(event: Stripe.Event): P
     captureError(e instanceof Error ? e : new Error(String(e)), { tags: { feature: 'concierge-pay-when-ready' }, extra: { orderId: order.id } }),
   );
   return { handled: true, orderId: order.id, status: 'PAID', released };
+}
+
+/** $0 because a discount covered the full (non-zero) subtotal — e.g. a one-time 100%-off test code. */
+export function isFullDiscountTestSession(cs: Stripe.Checkout.Session): boolean {
+  const subtotal = typeof cs.amount_subtotal === 'number' ? cs.amount_subtotal : 0;
+  const discount = cs.total_details?.amount_discount ?? 0;
+  return cs.amount_total === 0 && subtotal > 0 && discount >= subtotal && cs.payment_status === 'no_payment_required';
 }
 
 async function notifyAdminPaid(args: { orderId: string; placementSearchId: string | null; amountCents: number; released: boolean }): Promise<void> {
