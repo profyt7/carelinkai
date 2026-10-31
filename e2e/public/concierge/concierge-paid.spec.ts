@@ -74,7 +74,6 @@ test.describe('@critical Family Concierge — homepage, dashboard cards, terms',
     expect(section).toContain('useful shortlist, you pay nothing.');
     expect(section).toContain('not a guaranteed opening or placement.');
     expect(section).not.toMatch(/business day|full refund/);
-    expect(section).toContain('$399 flat, one time');
     expect(section).toContain('Paying with Medicaid, Medicare or the VA? Our help is always free.');
     expect(section).not.toMatch(/legwork/i);
     expect(section).toMatch(/data-testid="home-concierge-cta"[^>]*href="\/concierge"|href="\/concierge"[^>]*data-testid="home-concierge-cta"/);
@@ -129,7 +128,7 @@ test.describe('@critical Family Concierge — homepage, dashboard cards, terms',
     const card = page.getByTestId('concierge-paid-card');
     await expect(card).toBeVisible({ timeout: 30000 });
     // OL-165 c: one line + the guarantee.
-    await expect(card).toContainText('Family Concierge — $399 flat, one time');
+    await expect(card).toContainText('Family Concierge — $399, pay when your shortlist is ready');
     await expect(card).toContainText('checks fit, prices and the contract with you before you sign');
     await expect(card).toContainText("If we can't put together a useful shortlist, you pay nothing.");
     await expect(card).not.toContainText('business day');

@@ -73,6 +73,16 @@ describe('PATCH /api/admin/concierge/[id] — DP notifications on send', () => {
     }
   });
 
+  it('respond on a family (/concierge) request: no DP bell or email — the family gets the payment link via the order actions', async () => {
+    (prisma.placementSearch.findUnique as jest.Mock).mockResolvedValue({
+      id: 'search-1', isConcierge: true, userId: 'system-concierge', source: 'concierge_page', user: { email: 'concierge-page@system.invalid' },
+    });
+    const res = await PATCH(makeReq({ action: 'respond', curatedHomes: [{ homeId: 'h1' }] }), ctx);
+    expect(res.status).toBe(200);
+    expect(createInAppNotification).not.toHaveBeenCalled();
+    expect(sendConciergeShortlistReadyEmail).not.toHaveBeenCalled();
+  });
+
   it('matching: notifies nothing', async () => {
     const res = await PATCH(makeReq({ action: 'matching' }), ctx);
     expect(res.status).toBe(200);

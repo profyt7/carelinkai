@@ -2439,6 +2439,11 @@ model ConciergeOrder {
   createdAt               DateTime             @default(now())
   paidAt                  DateTime?
   refundedAt              DateTime?
+  /// Pay when ready (10/31): the Stripe Payment Link an admin pasted when the shortlist was ready, and when it was emailed.
+  paymentLinkUrl          String?
+  paymentLinkSentAt       DateTime?
+  /// When an admin released the shortlist to the family (only after PAID). The family's shortlist page stays hidden until then.
+  shortlistReleasedAt     DateTime?
   placementSearch         PlacementSearch?     @relation(fields: [placementSearchId], references: [id], onDelete: SetNull)
 
   @@index([placementSearchId])
