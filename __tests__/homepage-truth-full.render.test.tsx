@@ -14,7 +14,7 @@
 import { fireEvent, render } from '@testing-library/react';
 import React from 'react';
 import HomePageClient from '@/app/HomePageClient';
-import { loadProductTour } from '@/lib/marketing/product-tour';
+import { loadProductTour, loadTourVideo } from '@/lib/marketing/product-tour';
 
 jest.mock('framer-motion', () => {
   const React = require('react');
@@ -105,23 +105,17 @@ describe('prices come back only with their flags', () => {
 });
 
 describe('"See CareLinkAI in action" section', () => {
-  const ORIGINAL = process.env.NEXT_PUBLIC_DEMO_VIDEO_ID;
-  afterEach(() => {
-    if (ORIGINAL === undefined) delete process.env.NEXT_PUBLIC_DEMO_VIDEO_ID;
-    else process.env.NEXT_PUBLIC_DEMO_VIDEO_ID = ORIGINAL;
-  });
   const demo = () => document.querySelector('#request-demo') as HTMLElement;
 
-  it('no video id: no Watch Demo button, no placeholder tile, no setup text anywhere', () => {
-    delete process.env.NEXT_PUBLIC_DEMO_VIDEO_ID;
+  it('no tour video: no Watch Demo button, no placeholder tile, no setup text anywhere', () => {
     const { text } = allText({});
     for (const t of ['Set NEXT_PUBLIC', 'NEXT_PUBLIC_DEMO_VIDEO_ID', 'Watch Demo', 'Watch the overview', 'Demo video coming soon', 'See every feature in action']) expect(text).not.toContain(t);
     expect(demo().querySelector('iframe')).toBeNull();
+    expect(demo().querySelector('video')).toBeNull();
     expect(demo().querySelector('[data-testid="product-tour"]')).toBeNull();
   });
 
   it('intro speaks to every audience; bullets are live capabilities only (no billing, analytics)', () => {
-    delete process.env.NEXT_PUBLIC_DEMO_VIDEO_ID;
     const { text } = allText({});
     expect(text).toContain("Request a personalized walkthrough. We'll show families how to find and compare verified communities, and show care homes, caregivers and providers how to manage inquiries, staffing and listings in one place.");
     expect(text).not.toMatch(/billing, analytics/i);
@@ -137,12 +131,25 @@ describe('"See CareLinkAI in action" section', () => {
     expect(on).not.toMatch(/billing, analytics/i);
   });
 
-  it('video id set: Watch Demo + the embed show as before, still no setup text', () => {
-    process.env.NEXT_PUBLIC_DEMO_VIDEO_ID = 'abc123XYZ';
-    const { container } = render(<HomePageClient />);
-    expect(container.textContent).toContain('Watch Demo');
-    expect(container.querySelector('#request-demo iframe')?.getAttribute('src')).toContain('youtube.com/embed/abc123XYZ');
-    expect(container.textContent).not.toContain('Set NEXT_PUBLIC');
+  it('tour.mp4 present: self-hosted <video> (no autoplay, captions on) + Watch Demo opens the same video; no iframe', () => {
+    const tourVideo = loadTourVideo();
+    expect(tourVideo).toEqual({ src: '/demo/tour.mp4', poster: '/demo/tour-poster.jpg', captions: '/demo/tour.vtt' });
+    const { container } = render(<HomePageClient tourVideo={tourVideo} />);
+    const section = container.querySelector('#request-demo')!;
+    expect(section.querySelector('iframe')).toBeNull();
+    const video = section.querySelector('video')!;
+    expect(video.hasAttribute('controls')).toBe(true);
+    expect(video.hasAttribute('autoplay')).toBe(false);
+    expect(video.getAttribute('preload')).toBe('none');
+    expect(video.getAttribute('poster')).toBe('/demo/tour-poster.jpg');
+    expect(video.querySelector('source')?.getAttribute('src')).toBe('/demo/tour.mp4');
+    expect(video.querySelector('source')?.getAttribute('type')).toBe('video/mp4');
+    const track = video.querySelector('track')!;
+    expect([track.getAttribute('kind'), track.getAttribute('src'), track.getAttribute('srclang'), track.getAttribute('label'), track.hasAttribute('default')]).toEqual(['captions', '/demo/tour.vtt', 'en', 'English', true]);
+    fireEvent.click(Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.includes('Watch Demo'))!);
+    expect(container.querySelectorAll('video')).toHaveLength(2);
+    expect(Array.from(container.querySelectorAll('video')).some((v) => v.hasAttribute('autoplay'))).toBe(false);
+    expect(container.innerHTML).not.toMatch(/youtube(-nocookie)?\.com/);
   });
 
   it('the committed tour renders in the section, with the 90-second lead and the sample-data note', () => {

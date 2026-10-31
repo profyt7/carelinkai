@@ -2746,3 +2746,11 @@
 - **Deployment impact:** families can no longer request rides while `RIDES_PAYMENTS` is off. No env changes.
 - **New risks/blockers:** none.
 - **Recommended next step:** re-capture tour slides 08 / 11 / 14.
+
+### 2026-10-30 — OL-245 self-hosted tour video replaces YouTube
+- **Objective:** play the narrated tour from our own server (no YouTube/Google requests), on the homepage and /help.
+- **Work completed:** merged main into `chore/tour-recapture` (re-captured slides + tour.mp4/vtt/poster). `TourVideo` (`<video controls playsInline preload="none" poster>`, mp4 source, default English captions, no autoplay) replaces both youtube.com iframes; shown whenever `public/demo/tour.mp4` exists. `NEXT_PUBLIC_DEMO_VIDEO_ID` removed. /help "Start here" shows the video. Middleware passes `/demo/*.mp4|vtt`. Production standalone build check (Content-Type, Range) pending.
+- **Files changed:** `src/components/marketing/{TourVideo,DemoVideoModal}.tsx`, `src/app/{HomePageClient,page}.tsx`, `src/app/help/{page,HelpPageClient}.tsx`, `src/lib/marketing/{product-tour,product-tour-data}.ts`, `src/middleware.ts`, tests, context files.
+- **Commands run:** `npm run type-check`, `next lint`, `npm test -- --ci` (169 suites, 1965 passed), `next build` (standalone check pending).
+- **Deployment impact:** homepage adds a ~4.4 MB video, fetched only when played (`preload="none"`). No env changes.
+- **Recommended next step:** Chris merges; then prod-verify with `check_trackers`.

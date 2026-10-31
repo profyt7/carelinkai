@@ -6,7 +6,8 @@ import { useSession } from 'next-auth/react';
 import { FiMail, FiBook, FiHelpCircle, FiVideo, FiFileText, FiChevronDown, FiChevronUp, FiCheckCircle, FiArrowRight } from 'react-icons/fi';
 import { ROLE_GUIDES } from '@/lib/help/getting-started';
 import ProductTour from '@/components/marketing/ProductTour';
-import { CHAPTER_HELP_ANCHOR, type Tour } from '@/lib/marketing/product-tour-data';
+import TourVideo from '@/components/marketing/TourVideo';
+import { CHAPTER_HELP_ANCHOR, type Tour, type TourVideo as TourVideoData } from '@/lib/marketing/product-tour-data';
 import { usePaidFeature } from '@/hooks/usePaidFeatures';
 
 /** Role sections the tour's chapter chips link to (ids = CHAPTER_HELP_ANCHOR values). */
@@ -71,7 +72,7 @@ function FAQItem({ q, a }: { q: string; a: string }) {
   );
 }
 
-export default function HelpPageClient({ tour = null }: { tour?: Tour | null }) {
+export default function HelpPageClient({ tour = null, tourVideo = null }: { tour?: Tour | null; tourVideo?: TourVideoData | null }) {
   const { data: session } = useSession();
   const { enabled: bgChecksOn } = usePaidFeature('BACKGROUND_CHECKS');
   const visibleSteps = (steps: { label: string; href: string }[]) => steps.filter((st) => bgChecksOn || st.href !== BACKGROUND_CHECK_HREF);
@@ -88,10 +89,15 @@ export default function HelpPageClient({ tour = null }: { tour?: Tour | null }) 
           <p className="text-neutral-600">Find answers fast or reach the team directly.</p>
         </div>
 
-        {/* Start here: the product tour; its chapter chips jump to that role's section below. */}
-        {tour && (
-          <section id="start-here" className="mb-10" aria-labelledby="start-here-title">
-            <h2 id="start-here-title" className="text-lg font-semibold text-neutral-900 mb-3">Start here</h2>
+        {/* Start here: the narrated video, then the slide tour; its chapter chips jump to that role's section below. */}
+        {(tour || tourVideo) && (
+          <section id="start-here" className="mb-10 space-y-5" aria-labelledby="start-here-title">
+            <h2 id="start-here-title" className="text-lg font-semibold text-neutral-900">Start here</h2>
+            {tourVideo && (
+              <div className="rounded-xl overflow-hidden shadow-lg border border-neutral-200">
+                <TourVideo video={tourVideo} />
+              </div>
+            )}
             <ProductTour tour={tour} chapterHref={(c) => (CHAPTER_HELP_ANCHOR[c] ? `#${CHAPTER_HELP_ANCHOR[c]}` : undefined)} />
           </section>
         )}
