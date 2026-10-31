@@ -2792,3 +2792,22 @@
   - Terms §15 needs counsel review.
 - **Recommended next step:** Chris creates the Payment Link in Stripe and runs the count script.
 
+### 2026-10-31 (later) — Merged #31 + #29; OL-248 founder truth + concierge phase 2
+- **Objective:**
+  - Merge #31 then #29, running prod-verify after each.
+  - Branch `fix/ol-246-founder-truth` for items a–g (PR only).
+- **Work completed:**
+  - **Merges:** #31 merged `25e2d2a8`. #29 merged `e334476a` after bringing main in (context-only conflicts; my OL ids renumbered to OL-247 and OL-248). Both prod-verified with `check_trackers` on.
+  - **OL-248 a–g:** see the open-loops entry.
+- **Files changed:** onboarding page, `src/lib/operator/founding-offer.ts`, `src/lib/howto/flags.ts`, learn pages, `src/lib/claim-founder.ts`, claim and register routes, DP dashboard, `src/lib/concierge/{pay-when-ready,family-emails,offer,orders}.ts`, the concierge checkout/request form/admin routes, `src/app/api/cron/concierge-orders`, the webhook route, `src/lib/email.ts`, `scripts/run-cron.js`, the admin order panel and preflight page, prisma + migration, tests, e2e.
+- **Commands run:**
+  - tsc, eslint, jest (173 suites, 2012 tests);
+  - `next build`;
+  - Playwright e2e/public/concierge (45 passed);
+  - screenshots.
+- **Deployment impact:**
+  - Additive migration.
+  - Nothing new runs until Chris sets `CONCIERGE_PAYMENT_LINK_URL`. Until then the paste fallback works as in #29.
+  - The run-cron step calls a new endpoint each hour.
+- **Recommended next step:** Chris reviews and merges, creates the Payment Link, sets the env var, and confirms `checkout.session.completed` is enabled on the webhook.
+
