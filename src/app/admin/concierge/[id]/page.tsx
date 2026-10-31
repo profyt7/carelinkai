@@ -61,6 +61,7 @@ type Detail = {
   facilityResponses?: FacilityResponse[];
   source?: string | null;
   conciergeOrders?: ConciergeOrderRow[];
+  isTest?: boolean;
   user: {
     firstName: string | null; lastName: string | null; email: string | null; phone: string | null;
     dischargePlannerProfile: { organization: string | null; title: string | null } | null;
@@ -123,6 +124,8 @@ export default function AdminConciergeCuratePage() {
   const [searching, setSearching] = useState(false);
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState<string | null>(null);
+  // fix/concierge-outbound-safety: confirm before any facility email.
+  const [confirmNotify, setConfirmNotify] = useState<Pick[] | null>(null);
   const [paymentLinkConfigured, setPaymentLinkConfigured] = useState(false);
 
   const load = useCallback(async () => {
@@ -239,27 +242,59 @@ export default function AdminConciergeCuratePage() {
     }
   };
 
-  const sendShortlist = async () => {
+  // Homes that already got the accept / decline email are never emailed again.
+  const notifiedHomeIds = new Set((detail?.facilityResponses ?? []).map((fr) => fr.homeId));
+
+  const saveShortlist = async (notifyHomeIds: string[]) => {
     const curatedHomes = picks.map((p) => ({ homeId: p.homeId, note: p.note, confirmedAvailability: p.confirmedAvailability, availabilityLabel: p.availabilityLabel }));
-    if (curatedHomes.length === 0) {
-      toast.error('Select at least one home for the shortlist');
-      return;
-    }
+    setConfirmNotify(null);
     setSaving('respond');
     try {
       const res = await fetch(`/api/admin/concierge/${id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'respond', curatedHomes, conciergeNote: note }),
+        body: JSON.stringify({ action: 'respond', curatedHomes, conciergeNote: note, notifyHomeIds }),
       });
       if (!res.ok) throw new Error((await res.json())?.error || 'Failed');
+      const notified = notifyHomeIds.length > 0 ? ` · ${notifyHomeIds.length} ${notifyHomeIds.length === 1 ? 'home' : 'homes'} emailed` : '';
       // A family request stays here: next step is the payment link (pay when ready). A DP request is done.
       if (detail?.source === 'concierge_page') {
-        toast.success('Shortlist saved — now send the payment link');
+        toast.success(`Shortlist saved${notified} — now send the payment link`);
         load();
       } else {
-        toast.success('Shortlist sent to the discharge planner');
+        toast.success(`Shortlist sent to the discharge planner${notified}`);
         router.push('/admin/concierge');
       }
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed');
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const sendShortlist = () => {
+    if (picks.length === 0) {
+      toast.error('Select at least one home for the shortlist');
+      return;
+    }
+    // TEST requests never contact facilities; nothing to confirm.
+    const newHomes = picks.filter((p) => !notifiedHomeIds.has(p.homeId));
+    if (detail?.isTest || newHomes.length === 0) {
+      void saveShortlist([]);
+      return;
+    }
+    setConfirmNotify(newHomes);
+  };
+
+  const toggleTest = async (isTest: boolean) => {
+    setSaving('test');
+    try {
+      const res = await fetch(`/api/admin/concierge/${id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'set_test', isTest }),
+      });
+      if (!res.ok) throw new Error((await res.json())?.error || 'Failed');
+      toast.success(isTest ? 'Marked as a test — facilities will never be contacted' : 'Marked as a real request');
+      load();
     } catch (e: any) {
       toast.error(e?.message || 'Failed');
     } finally {
@@ -379,6 +414,19 @@ export default function AdminConciergeCuratePage() {
           </ul>
         </div>
       )}
+
+      {/* Test requests never contact facilities (fix/concierge-outbound-safety). */}
+      <div className={`rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 ${detail.isTest ? 'bg-amber-50 border border-amber-300' : 'bg-white shadow'}`} data-testid="concierge-test-flag" data-is-test={detail.isTest ? 'true' : 'false'}>
+        <p className="text-sm text-neutral-800">
+          {detail.isTest
+            ? <><strong>TEST request.</strong> Facilities are never contacted; family and admin emails still go to the test inbox. Excluded from metrics and the monthly cap.</>
+            : 'Real request. Homes are emailed only after you confirm.'}
+        </p>
+        <label className="inline-flex items-center gap-2 text-sm font-medium text-neutral-800">
+          <input type="checkbox" checked={!!detail.isTest} disabled={!!saving} onChange={(e) => toggleTest(e.target.checked)} className="h-4 w-4 rounded border-neutral-300" data-testid="concierge-test-toggle" />
+          Test request
+        </label>
+      </div>
 
       {/* Curate */}
       <div className="bg-white rounded-2xl shadow p-5">
@@ -550,6 +598,29 @@ export default function AdminConciergeCuratePage() {
           </button>
         </div>
       </div>
+
+      {confirmNotify && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="notify-h" data-testid="notify-homes-dialog">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+            <h2 id="notify-h" className="text-base font-semibold text-neutral-900">
+              This will email {confirmNotify.length} {confirmNotify.length === 1 ? 'home' : 'homes'}:
+            </h2>
+            <ul className="mt-2 list-disc pl-5 text-sm text-neutral-700" data-testid="notify-homes-list">
+              {confirmNotify.map((p) => <li key={p.homeId}>{p.homeName}</li>)}
+            </ul>
+            <p className="mt-2 text-xs text-neutral-500">Each gets a one-tap accept / decline request (care level, payer lane and timeline only). Homes already emailed are not emailed again.</p>
+            <div className="mt-4 flex flex-wrap justify-end gap-2">
+              <button type="button" onClick={() => setConfirmNotify(null)} className="px-3 py-2 text-sm text-neutral-600 hover:underline">Cancel</button>
+              <button type="button" autoFocus onClick={() => saveShortlist([])} className="px-4 py-2 rounded-lg border border-neutral-300 text-sm font-semibold text-neutral-800 hover:bg-neutral-50 focus-visible:ring-2 focus-visible:ring-primary-500" data-testid="notify-homes-skip">
+                Save without notifying homes
+              </button>
+              <button type="button" onClick={() => saveShortlist(confirmNotify.map((p) => p.homeId))} className="px-4 py-2 rounded-lg bg-primary-600 text-sm font-semibold text-white hover:bg-primary-700" data-testid="notify-homes-send">
+                Send
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

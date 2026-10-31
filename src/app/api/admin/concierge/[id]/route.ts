@@ -8,6 +8,7 @@
  *                                                          + one FacilityResponse per home
  *                                                            (tokenized accept/decline link
  *                                                            emailed to the facility — W4-2)
+ *   { action: 'set_test', isTest }                      → mark / unmark a TEST request (and its orders)
  *   { action: 'admitted', homeId }                      → admin confirms the move-in
  *                                                          (ACCEPTED → ADMITTED)
  *   { action: 'suggest' }                               → run matching on demand when no
@@ -59,6 +60,7 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
         careLevel: true,
         source: true,
         isConcierge: true,
+        isTest: true,
         conciergeStatus: true,
         curatedHomes: true,
         conciergeNote: true,
@@ -101,10 +103,14 @@ const patchSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('matching') }),
   z.object({ action: z.literal('admitted'), homeId: z.string().min(1) }),
   z.object({ action: z.literal('suggest') }),
+  z.object({ action: z.literal('set_test'), isTest: z.boolean() }),
   z.object({
     action: z.literal('respond'),
     curatedHomes: z.array(curatedSchema).min(1, 'Add at least one home to the shortlist'),
     conciergeNote: z.string().optional(),
+    // fix/concierge-outbound-safety: homes are emailed ONLY when the admin confirmed them by id
+    // ("This will email N homes … Send"). Omitted / empty = save without notifying homes.
+    notifyHomeIds: z.array(z.string().min(1)).optional(),
   }),
 ]);
 
@@ -116,7 +122,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
     const existing = await prisma.placementSearch.findUnique({
       where: { id: params.id },
-      select: { id: true, isConcierge: true, userId: true, conciergeStatus: true, source: true, user: { select: { email: true } } },
+      select: { id: true, isConcierge: true, isTest: true, userId: true, conciergeStatus: true, source: true, user: { select: { email: true } } },
     });
     if (!existing || !existing.isConcierge) {
       return NextResponse.json({ error: 'Concierge request not found' }, { status: 404 });
@@ -138,6 +144,19 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       const r = await markAdmitted({ searchId: params.id, homeId: parsed.homeId, actor: { userId: admin.id, role: admin.role } });
       if (!r.ok) return NextResponse.json({ error: r.error }, { status: 409 });
       return NextResponse.json({ ok: true, status: 'ADMITTED', homeId: parsed.homeId });
+    }
+
+    if (parsed.action === 'set_test') {
+      await prisma.$transaction(async (tx) => {
+        await tx.placementSearch.update({ where: { id: params.id }, data: { isTest: parsed.isTest } });
+        await tx.conciergeOrder.updateMany({ where: { placementSearchId: params.id }, data: { isTest: parsed.isTest } });
+        await recordEvent(tx, {
+          entityType: 'PLACEMENT_SEARCH', entityId: params.id, eventType: 'test_flag.changed', field: 'isTest',
+          oldValue: { status: existing.isTest ? 'test' : 'real' }, newValue: { status: parsed.isTest ? 'test' : 'real' },
+          source: 'ADMIN', actor: { userId: admin.id, role: admin.role },
+        });
+      });
+      return NextResponse.json({ ok: true, isTest: parsed.isTest });
     }
 
     if (parsed.action === 'suggest') {
@@ -212,12 +231,16 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       void sendConciergeShortlistReadyEmail({ toEmail: existing.user.email, count: curated.length });
     }
 
-    // W4-2: one FacilityResponse per shortlisted home + the tokenized accept /
-    // decline link to the facility's admissions contact (PHI-minimal email).
-    // Never blocks the DP send: a failure here is captured, the shortlist still goes.
+    // W4-2: the tokenized accept / decline link to each home's admissions contact (PHI-minimal email).
+    // fix/concierge-outbound-safety: ONLY homes the admin confirmed (notifyHomeIds) and that are on the saved
+    // shortlist; a home notified before is never emailed again; a TEST request never contacts a facility
+    // (every curated home is logged "suppressed (test)" instead). Never blocks the save.
+    const curatedIds = curated.map((h) => h.homeId);
+    const confirmed = new Set(parsed.notifyHomeIds ?? []);
+    const toNotify = existing.isTest ? curatedIds : curatedIds.filter((id) => confirmed.has(id));
     let facilityResponses: Awaited<ReturnType<typeof createFacilityResponsesForShortlist>> = [];
     try {
-      facilityResponses = await createFacilityResponsesForShortlist({ searchId: params.id, homeIds: curated.map((h) => h.homeId) });
+      if (toNotify.length > 0) facilityResponses = await createFacilityResponsesForShortlist({ searchId: params.id, homeIds: toNotify });
     } catch (e) {
       captureError(e instanceof Error ? e : new Error(String(e)), { tags: { feature: 'facility-response' }, extra: { searchId: params.id } });
     }

@@ -3,6 +3,12 @@ _Last updated: 2026-10-31 — **OL-249 PR** `feat/tour-thumbnail` (tour thumbnai
 
 
 
+## Concierge test orders (OL-253, merged #37 `67f6009a`)
+- **Safety control:** the stored `isTest` flag on `PlacementSearch` / `ConciergeOrder`. A test request never contacts a facility (logged "suppressed (test)") and is excluded from metrics and the monthly cap.
+- **Auto-detection is only a convenience:** it sets the flag at intake when the email's +tag contains "test" or the name starts with "TEST".
+- **Admins** see a Test badge on the request page and switch the flag on or off there.
+- **Real requests** email homes only after "This will email N homes … Send"; a notified home is never emailed again.
+
 ## Active Branch (2026-11-01) — OL-250 `fix/self-serve-claim` (PR open; base main `0fe189b2`)
 - **Main:** #32 merged `0fe189b2` and prod-verified (`check_trackers` on).
 - **Self-serve claim:**

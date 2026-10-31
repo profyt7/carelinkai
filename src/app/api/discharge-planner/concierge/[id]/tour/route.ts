@@ -14,6 +14,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { SUPPRESSED_TEST } from '@/lib/concierge/test-orders';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { requireRole } from '@/lib/auth-utils';
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const search = await prisma.placementSearch.findUnique({
       where: { id: params.id },
       select: {
-        id: true, userId: true, isConcierge: true, conciergeStatus: true, curatedHomes: true,
+        id: true, userId: true, isConcierge: true, isTest: true, conciergeStatus: true, curatedHomes: true,
         user: { select: { firstName: true, lastName: true, dischargePlannerProfile: { select: { organization: true } } } },
       },
     });
@@ -78,7 +79,10 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     // Always loop in the care team (Chris) so the tour gets coordinated.
     void sendConciergeTourNotification({ requestId: params.id, facilityName: home.name, claimed, dpName, dpOrganization });
 
-    if (claimed && operatorEmail) {
+    if (search.isTest) {
+      // fix/concierge-outbound-safety: a TEST request never contacts a facility (no operator email, no claim drip).
+      console.warn(`[concierge tour] ${SUPPRESSED_TEST}: search ${params.id} home ${homeId}`);
+    } else if (claimed && operatorEmail) {
       // Operator gets the lead directly (generic copy, no PHI).
       const appUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://getcarelinkai.com').replace(/\/$/, '');
       void sendNewLeadOperatorEmail({

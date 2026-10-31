@@ -23,6 +23,7 @@ import type { PayerSource } from '@/lib/payer/payer-source';
 import { createConciergePageRequest, FreeLaneRefused } from '@/lib/concierge/intake';
 import { freeHelpPathFor } from '@/lib/concierge/screener';
 import { capStatus, createOrder } from '@/lib/concierge/orders';
+import { isTestContact } from '@/lib/concierge/test-orders';
 import { clientIp, conciergeIntakeSchema, sessionUserId } from '@/lib/concierge/intake-schema';
 import { recordSmsConsent } from '@/lib/consent/sms-consent-server';
 import { SMS_CONSENT_FORMS } from '@/lib/consent/sms-consent';
@@ -78,6 +79,7 @@ export async function POST(request: NextRequest) {
       familyUserId,
       email: body.contactEmail,
       status: cap.capReached ? 'WAITLIST' : 'REQUESTED_UNPAID',
+      isTest: isTestContact({ email: body.contactEmail, name: body.contactName }),
     });
     // Pay when ready (10/31): confirm to the family — the terms, what happens next, our phone number.
     // Never their care needs or other case details. Fire-and-forget: a mail hiccup never fails the request.

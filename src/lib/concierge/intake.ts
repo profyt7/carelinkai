@@ -19,6 +19,7 @@
  */
 
 import { prisma } from '@/lib/prisma';
+import { isTestContact } from '@/lib/concierge/test-orders';
 import { recordEvent } from '@/lib/events/record-event';
 import { deriveIntakeFacts } from '@/lib/concierge/intake-facts';
 import { captureError } from '@/lib/sentry';
@@ -108,6 +109,7 @@ export async function createConciergePageRequest(
       intakeZip: facts.intakeZip,
       careLevel: facts.careLevel,
       source: CONCIERGE_PAGE_SOURCE,
+      isTest: isTestContact({ email: i.contactEmail, name: i.contactName }),
       patientInfo: {
         contactName: i.contactName.trim(),
         contactEmail: i.contactEmail.trim().toLowerCase(),

@@ -11,7 +11,7 @@ import { loadPlannerLeadDates } from '@/lib/leads/inbound-lead-admin';
 
 export async function loadConciergeMetricInputs(): Promise<MetricRequest[]> {
   const rows = await prisma.placementSearch.findMany({
-    where: { isConcierge: true, user: { isDemo: false } },
+    where: { isConcierge: true, isTest: false, user: { isDemo: false } },
     select: {
       id: true,
       userId: true,
