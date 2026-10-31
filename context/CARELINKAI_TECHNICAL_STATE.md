@@ -6,7 +6,7 @@ _Last updated: 2026-10-30 (night) — **OL-245 PR** `chore/tour-recapture` (self
 
 
 ## Active Branch (2026-10-30, night) — OL-245 `chore/tour-recapture` (PR open; Chris merges)
-- **Tour video:** `public/demo/tour.mp4` + `tour.vtt` + `tour-poster.jpg`, served by the standalone server from `.next/standalone/public` (copied by `render-build-verbose.sh`); Content-Type / Range check against a local standalone build pending. `loadTourVideo()` (src/lib/marketing/product-tour.ts) → `TourVideo` component on the homepage section, the Watch Demo modal and /help "Start here". No third-party video player; `NEXT_PUBLIC_DEMO_VIDEO_ID` removed.
+- **Tour video:** `public/demo/tour.mp4` + `tour.vtt` + `tour-poster.jpg`, served by the standalone server from `.next/standalone/public` (copied by `render-build-verbose.sh`); checked on a local standalone build: `video/mp4`, `Accept-Ranges: bytes`, Range → 206 with the right `Content-Range`; `tour.vtt` is `text/vtt`. Site-wide `Cache-Control: no-store` (next.config.js) also applies to the video (OL-246). `loadTourVideo()` (src/lib/marketing/product-tour.ts) → `TourVideo` component on the homepage section, the Watch Demo modal and /help "Start here". No third-party video player; `NEXT_PUBLIC_DEMO_VIDEO_ID` removed.
 
 ## OL-244 — MERGED 2026-10-30 #30 `0201b8d7`, prod-verified (was `fix/rides-bgcheck-gates`)
 - **Family rides** are off end to end while `RIDES_PAYMENTS` is off: nav, dashboard tile, provider-page button, and `POST /api/rides` (403 for FAMILY). Operators / staff keep plain resident ride requests.

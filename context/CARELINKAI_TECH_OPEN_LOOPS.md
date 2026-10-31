@@ -7,6 +7,9 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
 
 ## 🔴 SHIP NOW (this week)
 
+### OL-246: Static assets are sent with `Cache-Control: no-store`
+- **Status:** LATER (found in OL-245). `next.config.js` `headers()` sends `no-cache, no-store, must-revalidate` + `Pragma` / `Expires: 0` on `/:path*`, so every play of the 4.4 MB tour video, the slides and `/images/*` re-download. Proposed fix: a later `headers()` rule for `/demo/:file*` (and `/images/:file*`) with `Cache-Control: public, max-age=86400`. Bandwidth only; nothing breaks.
+
 ### OL-245: Self-hosted narrated tour video (no YouTube) + re-captured slides
 - **Status:** PR open on `chore/tour-recapture` (not merged; Chris merges). After merge: prod-verify with `check_trackers`.
 - **What:** slides 08 / 11 / 14 re-captured (no "in seconds", no AI Shift Auto-fill, no Run Background Check). `public/demo/tour.mp4` (1:32, ~4.4 MB) + `tour.vtt` + `tour-poster.jpg`. Homepage section and Watch Demo modal play it in a plain `<video controls playsInline preload="none">` with English captions on by default, no autoplay; shown whenever `tour.mp4` exists (`loadTourVideo()`). `NEXT_PUBLIC_DEMO_VIDEO_ID` and both youtube.com iframes are gone (it was never in `.env.example`). /help "Start here" shows the video above the slides. Middleware passes flat `/demo/*.mp4|vtt`. Truth test: no youtube.com / youtube-nocookie.com / iframe on the homepage.

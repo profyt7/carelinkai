@@ -2749,8 +2749,8 @@
 
 ### 2026-10-30 — OL-245 self-hosted tour video replaces YouTube
 - **Objective:** play the narrated tour from our own server (no YouTube/Google requests), on the homepage and /help.
-- **Work completed:** merged main into `chore/tour-recapture` (re-captured slides + tour.mp4/vtt/poster). `TourVideo` (`<video controls playsInline preload="none" poster>`, mp4 source, default English captions, no autoplay) replaces both youtube.com iframes; shown whenever `public/demo/tour.mp4` exists. `NEXT_PUBLIC_DEMO_VIDEO_ID` removed. /help "Start here" shows the video. Middleware passes `/demo/*.mp4|vtt`. Production standalone build check (Content-Type, Range) pending.
+- **Work completed:** merged main into `chore/tour-recapture` (re-captured slides + tour.mp4/vtt/poster). `TourVideo` (`<video controls playsInline preload="none" poster>`, mp4 source, default English captions, no autoplay) replaces both youtube.com iframes; shown whenever `public/demo/tour.mp4` exists. `NEXT_PUBLIC_DEMO_VIDEO_ID` removed. /help "Start here" shows the video. Middleware passes `/demo/*.mp4|vtt`. Standalone build verified: `video/mp4`, Range → 206, full download byte-identical; in Chromium nothing loads before play, captions show by default, no third-party hosts.
 - **Files changed:** `src/components/marketing/{TourVideo,DemoVideoModal}.tsx`, `src/app/{HomePageClient,page}.tsx`, `src/app/help/{page,HelpPageClient}.tsx`, `src/lib/marketing/{product-tour,product-tour-data}.ts`, `src/middleware.ts`, tests, context files.
-- **Commands run:** `npm run type-check`, `next lint`, `npm test -- --ci` (169 suites, 1965 passed), `next build` (standalone check pending).
+- **Commands run:** `npm run type-check`, `next lint`, `npm test -- --ci` (169 suites, 1965 passed), `next build` + standalone server + curl Range checks, Playwright screenshots 390 / 1280.
 - **Deployment impact:** homepage adds a ~4.4 MB video, fetched only when played (`preload="none"`). No env changes.
 - **Recommended next step:** Chris merges; then prod-verify with `check_trackers`.
