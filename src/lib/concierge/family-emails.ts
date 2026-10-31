@@ -6,6 +6,7 @@
  */
 
 import { CONCIERGE_OFFER } from '@/lib/concierge/offer';
+import { emailButton } from '@/lib/email/layout';
 import { CONTACT_NO_PHI_LINE, CONTACT_PHONE_DISPLAY } from '@/lib/contact';
 
 export type FamilyEmail = { subject: string; text: string; html: string };
@@ -14,8 +15,7 @@ const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 const phoneLine = `Questions? Call us at ${CONTACT_PHONE_DISPLAY}. ${CONTACT_NO_PHI_LINE}`;
 const p = (s: string) => `<p>${esc(s)}</p>`;
 const small = (s: string) => `<p style="color:#6b7280;font-size:13px">${esc(s)}</p>`;
-const button = (href: string, label: string) =>
-  `<p><a href="${esc(href)}" style="display:inline-block;background:#0d9488;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">${esc(label)}</a></p>`;
+const button = (href: string, label: string) => emailButton(label, href);
 
 /** Sent right after a request is submitted. `waitlisted` = the month's capacity was reached. */
 export function conciergeConfirmationEmail(opts: { waitlisted: boolean }): FamilyEmail {

@@ -7,6 +7,19 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
 
 ## 🔴 SHIP NOW (this week)
 
+### OL-254: One branded layout for all transactional emails — PR `feat/email-design`
+- **Status:** 🟡 PR open (not merged).
+- **What:**
+  - `src/lib/email/layout.ts`:
+    - gray page, white 600px card, logo (`/images/logo.png`, white wordmark `/images/logo-on-dark.png` in dark mode);
+    - one bulletproof brand-blue CTA (VML for Outlook) with a plain-link fallback;
+    - footer with phone, site, privacy and terms.
+  - `guardedResendSend` wraps every HTML email once and strips emoji from subjects and headings. The 11 direct `resend.emails.send` calls (rides, crons, register, placement request, stripe webhook, inquiry email service) use the same `brandEmailArgs`.
+  - Bodies without a heading get the subject as H1, and legacy inline buttons take the brand blue.
+  - Key CTAs are now buttons: Review & build the shortlist, Pay $399 securely, View your shortlist, Review claim, Open your listing.
+- **Unchanged:** wording, recipients and timing; plain text is untouched.
+- **Not converted:** the availability ping keeps its 0–5 one-tap links (multiple links by design).
+
 ### OL-252: Concierge shortlist can't be built for family requests — PR `fix/concierge-manual-shortlist`
 - **Status:** 🟡 PR open (Chris approves the merge). Found in the live payment test, and it blocks it: TEST ORDER A/B stay open until this ships.
 - **Problem:** `/admin/concierge/[id]` "Curate the shortlist" only listed stored AI matches, and family requests from `/concierge` have none. So "Save shortlist" and "Send payment link" could never be used, and no real family order could be fulfilled.

@@ -16,6 +16,7 @@ import { captureError } from '@/lib/sentry';
 import { VIDEO_LINK_TEXT, VIDEO_LINK_TOKEN } from '@/lib/dp-outreach/copy';
 import { filterSuppressed } from '@/lib/email/suppression';
 import { errorSummary } from '@/lib/log-safe';
+import { emailButton, renderEmailLayout, stripEmoji, BRAND_BLUE as LAYOUT_BRAND_BLUE } from '@/lib/email/layout';
 
 // Resend client, constructed lazily on first send. `new Resend(undefined)`
 // throws at construction, so building it at module scope made *importing* this
@@ -45,6 +46,27 @@ function getResend(): Resend {
  * All send helpers below call this instead of `resend.emails.send` directly.
  */
 type ResendSendArgs = Parameters<Resend['emails']['send']>[0];
+/**
+ * feat/email-design: every HTML email gets the shared branded layout (once), and subjects / headings lose their
+ * emoji. Wording, recipients and timing are unchanged; the plain-text version is passed through untouched.
+ */
+export function brandEmailArgs<T extends { subject?: unknown; html?: unknown }>(args: T): T {
+  const out: any = { ...args };
+  if (typeof out.subject === 'string') out.subject = stripEmoji(out.subject);
+  if (typeof out.html === 'string' && out.html.trim()) {
+    const headingsClean = out.html.replace(/<(h[1-3])([^>]*)>([\s\S]*?)<\/\1>/gi, (_m: string, tag: string, attrs: string, inner: string) => `<${tag}${attrs}>${stripEmoji(inner)}</${tag}>`);
+    // A clear H1 (the subject, without emoji) when the body has no heading of its own — no new wording.
+    const withHeading = /<h[12][\s>]/i.test(headingsClean) || typeof out.subject !== 'string'
+      ? headingsClean
+      : `<h1 style="margin:0 0 16px;font-size:22px;line-height:30px;font-weight:700">${escapeHtml(out.subject)}</h1>` + headingsClean;
+    // Legacy inline-styled buttons take the brand blue with white text.
+    const branded = withHeading.replace(/<a\b([^>]*?)style="([^"]*background(?:-color)?\s*:[^"]*)"/gi, (_m: string, pre: string, style: string) =>
+      `<a${pre}style="${style.replace(/background(?:-color)?\s*:\s*[^;"]+/gi, `background:${BRAND_BLUE}`).replace(/(^|;)\s*color\s*:\s*[^;"]+/gi, '$1color:#ffffff')}"`);
+    out.html = renderEmailLayout({ html: branded });
+  }
+  return out as T;
+}
+
 export async function guardedResendSend(
   args: ResendSendArgs,
 ): Promise<{ data: { id: string } | null; error: { message?: string; name?: string } | null }> {
@@ -57,7 +79,7 @@ export async function guardedResendSend(
     // Nothing deliverable — skip the send (no bounce, no reputation hit).
     return { data: null, error: null };
   }
-  return getResend().emails.send({ ...args, to: allowed }) as Promise<{
+  return getResend().emails.send(brandEmailArgs({ ...args, to: allowed })) as Promise<{
     data: { id: string } | null;
     error: { message?: string; name?: string } | null;
   }>;
@@ -85,7 +107,7 @@ const DP_LEAD_REPLY_TO = process.env.DP_LEAD_REPLY_TO || 'placements@getcarelink
 const DP_PLACEMENTS_PHONE = (process.env.DP_PLACEMENTS_PHONE || '').trim();
 // Brand-blue accent (matches the landing brand literal) — kept light so the
 // 1:1 emails still read personal, not like an operator marketing blast.
-const BRAND_BLUE = '#3978FC';
+const BRAND_BLUE = LAYOUT_BRAND_BLUE;
 
 /**
  * Send a verification email to a new user
@@ -243,7 +265,7 @@ export async function sendOperatorClaimNotification(args: {
         `<li><strong>Claimed:</strong> ${escapeHtml(claimedAt)}</li>` +
         `</ul>` +
         (adminLink
-          ? `<p><a href="${escapeHtml(adminLink)}">Review it in the admin panel →</a></p>`
+          ? emailButton('Review claim', adminLink)
           : `<p>Review it in the admin panel.</p>`),
     });
 
@@ -308,7 +330,7 @@ export async function sendConciergeRequestNotification(args: {
       html:
         `<p>${escapeHtml(who)} submitted a <strong>concierge placement request</strong> on CareLinkAI.</p>` +
         `<p style="color:#6b7280;font-size:13px">Patient details are kept in-app (never emailed).</p>` +
-        `<p><a href="${escapeHtml(adminLink)}">Review &amp; build the shortlist →</a></p>`,
+        emailButton('Review & build the shortlist', adminLink),
     });
     if (error) {
       console.error('[Resend] Error sending concierge request notification:', error);
@@ -448,7 +470,7 @@ export async function sendHomeClaimAdminNotice(args: { homeName: string; operato
       html:
         `<p><strong>${escapeHtml(subject)}</strong></p>` +
         `<p>Nothing has changed hands yet. Verify the operator, then approve or reject.</p>` +
-        `<p><a href="${escapeHtml(queue)}">Open the claim queue →</a></p>`,
+        emailButton('Review claim', queue),
       tags: [{ name: 'category', value: 'home-claim-admin' }],
     });
     if (error) throw error instanceof Error ? error : new Error(String((error as { message?: string })?.message ?? error));
@@ -474,7 +496,7 @@ export async function sendHomeClaimDecisionEmail(args: { to: string; firstName?:
       to: [args.to],
       subject,
       text: body.join('\n\n') + '\n\nCareLinkAI · Cleveland, OH\n',
-      html: body.map((p) => `<p>${escapeHtml(p)}</p>`).join('') + '<p style="color:#9ca3af;font-size:12px">CareLinkAI · Cleveland, OH</p>',
+      html: body.map((p) => `<p>${escapeHtml(p)}</p>`).join('') + (approved ? emailButton('Open your listing', `${appUrl}/operator/homes/${args.homeId}`) : ''),
       tags: [{ name: 'category', value: `home-claim-${args.decision}` }],
     });
     if (error) throw error instanceof Error ? error : new Error(String((error as { message?: string })?.message ?? error));

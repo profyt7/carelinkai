@@ -6,6 +6,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
+import { brandEmailArgs } from '@/lib/email';
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, requireRole } from "@/lib/auth-utils";
@@ -194,13 +195,13 @@ export async function POST(request: NextRequest) {
           `;
 
           // Send email via Resend
-          const emailResponse = await resend.emails.send({
+          const emailResponse = await resend.emails.send(brandEmailArgs({
             from: "CareLinkAI Discharge Planning <noreply@getcarelinkai.com>",
             to: operatorEmail,
             cc: dpEmail, // CC the discharge planner
             subject: emailSubject,
             html: emailHtml,
-          });
+          }));
 
           console.log("📧 [PLACEMENT-REQUEST] ✅ Email sent to:", operatorEmail, "ID:", emailResponse?.data?.id);
 

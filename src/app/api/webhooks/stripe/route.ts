@@ -3,6 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
+import { brandEmailArgs } from '@/lib/email';
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 import Stripe from "stripe";
@@ -617,7 +618,7 @@ async function notifyProviderRidePaid(ride: {
   const scheduledStr = ride.scheduledAt.toLocaleString("en-US", {
     weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
   });
-  await resend.emails.send({
+  await resend.emails.send(brandEmailArgs({
     from: `CareLinkAI <${process.env.EMAIL_FROM || "noreply@getcarelinkai.com"}>`,
     to: [ride.provider.contactEmail],
     subject: `Payment Received — Ride Confirmed for ${scheduledStr}`,
@@ -641,5 +642,5 @@ async function notifyProviderRidePaid(ride: {
         <p style="color:#9ca3af;font-size:12px;margin-top:24px">CareLinkAI · Cleveland, OH</p>
       </div>
     </div>`,
-  });
+  }));
 }

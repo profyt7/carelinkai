@@ -14,6 +14,7 @@
 export const dynamic = 'force-dynamic';
 
 import { founderUpdateFromClaim } from '@/lib/claim-founder';
+import { brandEmailArgs } from '@/lib/email';
 import { verifyClaimIntent } from '@/lib/claims/claim-intent';
 import { submitSelfServeClaim } from '@/lib/claims/self-serve';
 import { NextRequest, NextResponse } from "next/server";
@@ -449,7 +450,7 @@ export async function POST(request: NextRequest) {
       const { Resend } = await import("resend");
       const resend = new Resend(process.env.RESEND_API_KEY);
       const appUrl = process.env.NEXTAUTH_URL || "https://getcarelinkai.com";
-      resend.emails.send({
+      resend.emails.send(brandEmailArgs({
         from: `CareLinkAI <${process.env.EMAIL_FROM || "noreply@getcarelinkai.com"}>`,
         to: [normalizedEmail],
         subject: "Welcome to CareLinkAI — let's get you listed",
@@ -467,7 +468,7 @@ export async function POST(request: NextRequest) {
           <p style="margin-top:24px">Questions? Reply to this email — we're a small team and we read everything.</p>
           <p style="color:#9ca3af;font-size:12px;margin-top:32px">CareLinkAI · Cleveland, OH</p>
         </div>`,
-      }).catch((err: unknown) => {
+      })).catch((err: unknown) => {
         console.error("[registration] Provider welcome email failed:", errorSummary(err));
       });
     }

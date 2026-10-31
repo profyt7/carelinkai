@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { brandEmailArgs } from '@/lib/email';
 import { COMPANY_EMAIL, CONTACT_PHONE_DISPLAY } from '@/lib/contact';
 
 interface EmailOptions {
@@ -41,13 +42,13 @@ export class InquiryEmailService {
       const resend = this.getResend();
       const from = process.env.RESEND_FROM_EMAIL || 'noreply@getcarelinkai.com';
       
-      await resend.emails.send({
+      await resend.emails.send(brandEmailArgs({
         from: `CareLinkAI <${from}>`,
         to,
         subject: 'Thank you for your inquiry - CareLinkAI',
         html,
         text,
-      });
+      }));
       
       return true;
     } catch (error) {

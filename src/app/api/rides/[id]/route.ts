@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
+import { brandEmailArgs } from '@/lib/email';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -115,7 +116,7 @@ async function notifyCancellation(
 
   // If provider canceled, notify the booker (family email on ride)
   if (canceledBy === "PROVIDER" && ride.family?.user?.email) {
-    await resend.emails.send({
+    await resend.emails.send(brandEmailArgs({
       from: `CareLinkAI <${process.env.EMAIL_FROM || "noreply@getcarelinkai.com"}>`,
       to: [ride.family.user.email],
       subject: "Your Ride Has Been Canceled",
@@ -126,6 +127,6 @@ async function notifyCancellation(
         ${ride.status === "PAID" ? "<p>A full refund has been issued and should appear within 5–10 business days.</p>" : ""}
         <p>Please <a href="${APP_URL}/marketplace?serviceType=transportation">search for another provider</a> or contact us for assistance.</p>
       </div>`,
-    });
+    }));
   }
 }
