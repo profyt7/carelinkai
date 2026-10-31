@@ -2,8 +2,8 @@
 
 /**
  * /admin/home-claims — self-serve listing claims (fix/self-serve-claim). Each row: "New claim: {home} by
- * {operator email}" with Approve / Reject. Approve runs the existing ownership transfer (the listing moves to
- * the operator, in PENDING_REVIEW); Reject leaves the listing alone and emails the operator politely.
+ * {operator email}" with Approve / Reject. Approve transfers ownership only (the listing keeps its status, so a
+ * published listing stays public); Reject leaves the listing alone and emails the operator politely.
  * Admin only — the API 403s everyone else.
  */
 

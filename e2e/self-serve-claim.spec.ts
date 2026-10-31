@@ -10,7 +10,7 @@ import { signClaimToken } from '../src/lib/claim-token';
  *  - logged out: the listing's claim button → /homes/[id]/claim → signup carries the home through
  *    (claim intent) and files the claim; login carries it back (callbackUrl);
  *  - the operator dashboard shows "Claim submitted — we'll verify and email you";
- *  - admin queue: approve transfers ownership (existing transfer → PENDING_REVIEW); reject doesn't;
+ *  - admin queue: approve transfers ownership only (the live listing keeps ACTIVE and stays in public search); reject doesn't;
  *  - the signed outreach claim link still routes to the register/redeem path unchanged.
  * Emails are stubbed by guardedResendSend in e2e; nothing is sent.
  */
@@ -193,7 +193,7 @@ test.describe('@critical self-serve listing claim', () => {
     }
   });
 
-  test('admin queue: approve transfers ownership, reject does not', async ({ browser }) => {
+  test('admin queue: approve transfers ownership and the live listing stays in public search; reject does not', async ({ browser }) => {
     for (const w of SHOTS ? [390, 1280] : []) {
       const page = await ctxPage(browser, w);
       await devLogin(page, ADMIN);
@@ -220,8 +220,14 @@ test.describe('@critical self-serve listing claim', () => {
     await decide(`Claim Test A ${ts}`, 'approve', home.a, 'APPROVED');
     await decide(`Claim Test B ${ts}`, 'reject', home.b, 'REJECTED');
 
+    // Approval transfers ownership only: the live listing keeps its status and stays in public search.
     const a = await prisma.assistedLivingHome.findUniqueOrThrow({ where: { id: home.a }, select: { status: true, operator: { select: { user: { select: { email: true } } } } } });
-    expect([a.operator?.user?.email, a.status]).toEqual([OP_X, 'PENDING_REVIEW']);
+    expect([a.operator?.user?.email, a.status]).toEqual([OP_X, 'ACTIVE']);
+    const pub = await browser.newContext();
+    expect((await pub.request.get(`/api/homes/${home.a}`, { timeout: 120_000 })).status()).toBe(200);
+    const markers = await (await pub.request.get('/api/search?markers=1', { timeout: 120_000 })).json();
+    expect((markers.markers as { id: string }[]).map((m) => m.id)).toContain(home.a);
+    await pub.close();
     const b = await prisma.assistedLivingHome.findUniqueOrThrow({ where: { id: home.b }, select: { operator: { select: { user: { select: { email: true } } } } } });
     expect(b.operator?.user?.email).toBe(DIRECTORY);
     expect((await prisma.homeClaim.findFirstOrThrow({ where: { homeId: home.a } })).status).toBe('APPROVED');

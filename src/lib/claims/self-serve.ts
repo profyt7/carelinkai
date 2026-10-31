@@ -4,12 +4,13 @@ import { recordEvent } from '@/lib/events/record-event';
 import { captureError } from '@/lib/sentry';
 import { sendHomeClaimAdminNotice, sendHomeClaimDecisionEmail } from '@/lib/email';
 import { isUnclaimedHome } from '@/lib/claim-engine/inquiry-claim-notification';
-import { assignHomeToOperator } from '@/lib/claims/assign-home';
+import { transferHomeOwnership } from '@/lib/claims/assign-home';
 
 /**
  * Self-serve listing claim (fix/self-serve-claim). An operator asks for an unclaimed listing → a
  * PENDING_REVIEW HomeClaim + an admin email and queue entry. Nothing changes hands until an admin approves;
- * approval runs the existing admin ownership transfer (assignHomeToOperator), rejection emails the operator.
+ * approval transfers ownership only (transferHomeOwnership: status unchanged, so a published listing stays
+ * public), rejection emails the operator.
  * One pending claim per home (checked here and enforced by a partial unique index). Claimed homes are refused.
  */
 
@@ -73,7 +74,7 @@ const claimInclude = {
   operator: { select: { id: true, userId: true, user: { select: { email: true, firstName: true, lastName: true } } } },
 } as const;
 
-/** Approve: the existing admin ownership transfer runs, then the operator is emailed. */
+/** Approve: transfer ownership only (the listing's public status is unchanged), record it, email the operator. */
 export async function approveHomeClaim(claimId: string, admin: { userId: string }): Promise<ReviewResult> {
   const claim = await prisma.homeClaim.findUnique({ where: { id: claimId }, include: claimInclude });
   if (!claim) return { ok: false, reason: 'not_found' };
@@ -84,7 +85,8 @@ export async function approveHomeClaim(claimId: string, admin: { userId: string 
   // Close the claim first (conditional, so a double click can't transfer twice), then transfer.
   const closed = await prisma.homeClaim.updateMany({ where: { id: claim.id, status: 'PENDING_REVIEW' }, data: { status: 'APPROVED', reviewedAt: new Date(), reviewedById: admin.userId } });
   if (closed.count === 0) return { ok: false, reason: 'not_pending' };
-  await assignHomeToOperator({ home: claim.home, operator: claim.operator, actor: { userId: admin.userId, role: 'ADMIN' } });
+  // Ownership only: the listing keeps its status, so a published listing stays public.
+  await transferHomeOwnership({ home: claim.home, operator: claim.operator, actor: { userId: admin.userId, role: 'ADMIN' }, claimId: claim.id });
 
   if (claim.operator.user?.email) {
     void sendHomeClaimDecisionEmail({ to: claim.operator.user.email, firstName: claim.operator.user.firstName, homeName: claim.home.name, decision: 'approved', homeId: claim.home.id }).catch(() => undefined);

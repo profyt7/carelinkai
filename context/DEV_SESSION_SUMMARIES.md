@@ -2852,6 +2852,6 @@
   - Listing claim buttons now file reviewed claims instead of linking to a generic signup.
 - **New risks/blockers:**
   - The live concierge test needs Chris's browser (this session can't reach getcarelinkai.com or the production DB).
-  - Approving a claim moves the listing to `PENDING_REVIEW` (existing admin behavior).
+  - None for the claim flow: per Chris, approval transfers ownership only, and the listing's status is unchanged.
 - **Recommended next step:** Chris merges #33, runs the concierge acceptance test, and reviews the OL-250 PR.
 

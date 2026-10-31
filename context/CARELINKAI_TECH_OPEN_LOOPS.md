@@ -31,12 +31,12 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
   - "Claim this listing" on any unclaimed listing. A signed-in operator files a claim in one click (`POST /api/homes/[id]/claim-request`). Anyone else goes to `/homes/[id]/claim`: sign up with a signed 2-hour claim intent (`src/lib/claims/claim-intent.ts`, redeemed by the register API), or log in with `callbackUrl` back to it.
   - Every claim is a `HomeClaim` row in `PENDING_REVIEW` (new table, additive migration `20261101010000_home_claims`). One pending claim per home, enforced by a partial unique index. Ownership never moves on its own.
   - Admin gets an email plus an in-app alert, "New claim: {home} by {operator email}", and the `/admin/home-claims` queue (nav: Admin → Listing Claims) with Approve / Reject.
-    - Approve runs the existing admin transfer, now shared as `src/lib/claims/assign-home.ts` and used by `POST /api/admin/homes/[id]/claim` too. The listing moves to the operator in `PENDING_REVIEW`, and the operator is emailed.
+    - Approve transfers ownership only (`transferHomeOwnership` in `src/lib/claims/assign-home.ts`). The listing keeps its status, so a published (ACTIVE) listing stays in public search. The approval is recorded (`claim.approved`), and the operator gets an in-app notice and an email. The admin route `POST /api/admin/homes/[id]/claim` keeps its own behavior (it moves the listing to `PENDING_REVIEW`), now through the shared `assignHomeToOperator`.
     - Reject transfers nothing and sends the operator a polite email that points to /contact.
   - The operator dashboard shows "Claim submitted — we'll verify and email you."
   - Claimed listings say "This listing is managed by its community" with a link to /contact. Claim submissions are rate-limited (5/hour per operator, 20/hour per IP, in memory).
   - The signed outreach links (`/claim?token=`, register `claimToken`) are unchanged.
-- **Note:** approving moves the listing to `PENDING_REVIEW`, the same as the admin claim always has. Check that this is what you want for live listings.
+- **Decision (Chris, 11/01):** approving must not change the listing's public status. An e2e test checks that an approved live listing stays in `/api/search`.
 
 ### OL-249: Concierge $0 acceptance test — PR `fix/concierge-zero-amount-test` (#33)
 - **Status:** 🟡 PR open, CI green; Chris approves the merge.

@@ -66,3 +66,41 @@ export async function assignHomeToOperator(args: {
 
   return { updatedHome, previousOperatorId: home.operatorId };
 }
+
+/**
+ * Self-serve claim approval (fix/self-serve-claim): transfer ownership ONLY. The listing's status is left as
+ * it is, so an ACTIVE (published) listing stays in public search. Records the approval in the listing
+ * history and tells the operator in-app. The admin route above keeps its PENDING_REVIEW behavior, and the
+ * signed outreach claim path (/claim → /api/operator/homes/[id]/claim) is untouched.
+ */
+export async function transferHomeOwnership(args: {
+  home: { id: string; name: string; operatorId: string; status: string };
+  operator: AssignableOperator;
+  actor: EventActor;
+  claimId: string;
+}) {
+  const { home, operator, actor } = args;
+  const updatedHome = await prisma.$transaction(async (tx) => {
+    await recordEvent(tx, {
+      entityType: 'LISTING_CLAIM',
+      entityId: home.id,
+      eventType: 'claim.approved',
+      field: 'operatorId',
+      oldValue: { operatorId: home.operatorId, status: home.status },
+      newValue: { operatorId: operator.id, status: home.status, source: 'self_serve' },
+      source: 'ADMIN',
+      actor,
+    });
+    return tx.assistedLivingHome.update({ where: { id: home.id }, data: { operatorId: operator.id }, select: { id: true, status: true, operatorId: true } });
+  });
+  await prisma.notification.create({
+    data: {
+      userId: operator.userId,
+      type: 'SYSTEM',
+      title: 'Your listing claim is approved',
+      message: `"${home.name}" is now yours. Add your photos, pricing, and availability to keep it current.`,
+      link: `/operator/homes/${home.id}`,
+    },
+  });
+  return { updatedHome, previousOperatorId: home.operatorId };
+}

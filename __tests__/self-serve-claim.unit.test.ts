@@ -121,12 +121,17 @@ describe('submitting a claim', () => {
 });
 
 describe('admin review', () => {
-  it('approve runs the existing ownership transfer (operatorId + PENDING_REVIEW) and emails the operator', async () => {
+  it('approve transfers ownership ONLY: a live (ACTIVE) listing keeps its status, the approval is recorded, the operator is emailed', async () => {
     expect(await approveHomeClaim('claim-1', { userId: 'admin-1' })).toEqual({ ok: true, status: 'APPROVED' });
     expect(P.homeClaim.updateMany).toHaveBeenCalledWith({ where: { id: 'claim-1', status: 'PENDING_REVIEW' }, data: expect.objectContaining({ status: 'APPROVED', reviewedById: 'admin-1' }) });
-    expect(P.assistedLivingHome.update).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'home-1' }, data: { operatorId: 'op-1', status: 'PENDING_REVIEW' } }));
-    expect(P.notification.create.mock.calls[0][0].data).toMatchObject({ userId: 'user-1', title: 'Listing assigned to you' });
-    expect(sendOperatorClaimNotification).toHaveBeenCalledTimes(1);
+    expect(P.assistedLivingHome.update).toHaveBeenCalledTimes(1);
+    const update = P.assistedLivingHome.update.mock.calls[0][0];
+    expect(update.where).toEqual({ id: 'home-1' });
+    expect(update.data).toEqual({ operatorId: 'op-1' }); // no status change
+    const approved = P.entityEvent.create.mock.calls.map((c: any) => c[0].data).find((d: any) => d.eventType === 'claim.approved');
+    expect(approved).toMatchObject({ entityId: 'home-1', newValue: expect.objectContaining({ operatorId: 'op-1', status: 'ACTIVE' }) });
+    expect(P.notification.create.mock.calls[0][0].data).toMatchObject({ userId: 'user-1', title: 'Your listing claim is approved' });
+    expect(sendOperatorClaimNotification).not.toHaveBeenCalled();
     await flush();
     expect(sendHomeClaimDecisionEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'pat@example.test', decision: 'approved', homeId: 'home-1' }));
   });
