@@ -2737,12 +2737,22 @@
 - **New risks/blockers:** slides 08, 11 and 14 show claims the app now hides (re-capture). Provider-page ride requests and the caregiver background-check start API aren't flag-gated.
 - **Recommended next step:** re-capture slides 08 / 11 / 14; decide on provider-page ride requests while Rides is hidden.
 
+### 2026-10-30 — OL-243 merged; OL-244 rides + Checkr-start gates
+- **Objective:** close the two API gaps left by OL-243.
+- **Work completed:** OL-243 squash-merged `a8e1d473`, prod-verify green. OL-244: family ride requests rejected (403) and the provider-page button hidden unless `RIDES_PAYMENTS` (families only, Chris's call); Checkr start → 404 unless `BACKGROUND_CHECKS`. Each new test fails on main and passes here.
+- **Files changed:** `src/app/api/rides/route.ts`, `src/app/api/caregiver/background-checks/start/route.ts`, `src/app/marketplace/providers/[id]/page.tsx`, `__tests__/paid-features.unit.test.ts`, `__tests__/background_checks.api.test.ts`, context files.
+- **Commands run:** `npm run type-check`, `next lint` (changed files), `npm test -- --ci` (169 suites, 1958 passed).
+- **Tests/build status:** local green; build left to CI.
+- **Deployment impact:** families can no longer request rides while `RIDES_PAYMENTS` is off. No env changes.
+- **New risks/blockers:** none.
+- **Recommended next step:** re-capture tour slides 08 / 11 / 14.
+
 ### 2026-10-30 (late) — Founder UX truth: hide unusable operator tools; founding-offer audit
 - **Objective:** Hide On-Call AI and shift auto-fill where the server would reject them, change the homepage concierge and callback copy, and audit what founding operators are promised against what works (read-only).
 - **Work completed:**
   - Capability layer (lib, API, hook, nav field), with gates on the On-Call page and the shifts page.
   - Copy changes; banned phrases added to the truth tests.
-  - Part B audit in the PR body; follow-ups logged in OL-244.
+  - Part B audit in the PR body; follow-ups logged in OL-246.
 - **Files changed:** `src/lib/operator/capabilities.ts` (new), `src/app/api/operator/capabilities/route.ts` (new), `src/hooks/useOperatorCapabilities.tsx` (new), `src/config/navigation/{types,index,professional}.ts`, `src/components/layout/DashboardLayout.tsx`, `src/app/operator/{oncall,shifts}/page.tsx`, `src/app/HomePageClient.tsx`, `src/lib/contact.ts`, `src/app/design-preview/direction-d/FacilityProfilePreview.tsx`, tests, `context/*`.
 - **Commands run:**
   - tsc, eslint, jest (169 suites before merging main);
@@ -2750,7 +2760,7 @@
   - Playwright operator-nav screenshots against the local build. A local-only DB tweak set the test operator's plan to PROFESSIONAL for a control shot, then reset it to null.
 - **Tests/build status:** green locally; CI on the PR.
 - **Deployment impact:** UI and copy only. No flags, env, Stripe, DB records or plan logic.
-- **New risks/blockers:** see OL-244. The founder promises in onboarding, learn copy and the concierge guarantee have no code path.
+- **New risks/blockers:** see OL-246. The founder promises in onboarding, learn copy and the concierge guarantee have no code path.
 - **Recommended next step:** Chris picks the founding-offer definition (PR body); then rewrite the onboarding founder card and the learn copy to match.
 
 ### 2026-10-31 — Family Concierge "pay when ready"
