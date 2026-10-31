@@ -25,11 +25,13 @@ jest.mock('@/lib/email', () => ({
 }));
 jest.mock('@/lib/services/notifications', () => ({ createInAppNotification: jest.fn().mockResolvedValue({ success: true }) }));
 jest.mock('@/lib/sentry', () => ({ captureError: jest.fn() }));
+jest.mock('@/lib/logger', () => ({ logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() } }));
 
 import { prisma } from '@/lib/prisma';
+import { logger } from '@/lib/logger';
 import { sendConciergeAdminNotice, sendConciergeFamilyEmail, sendConciergePaidNotification } from '@/lib/email';
 import {
-  configuredPaymentLink, handlePaymentLinkCheckoutCompleted, isStripePaymentLinkUrl, markPaid, paymentLinkFor, releaseShortlist,
+  configuredPaymentLink, handlePaymentLinkCheckoutCompleted, isFullDiscountTestSession, isStripePaymentLinkUrl, markPaid, paymentLinkFor, releaseShortlist,
   reopenOrder, runConciergeOrderSweep, sendPaymentLink,
 } from '@/lib/concierge/pay-when-ready';
 import { isShortlistVisibleToFamily, signShortlistToken, verifyShortlistToken } from '@/lib/concierge/shortlist-token';
@@ -157,6 +159,47 @@ describe('Stripe webhook: checkout.session.completed from the Payment Link', () 
   it('a late payment on an EXPIRED order still marks it paid and releases', async () => {
     P.conciergeOrder.findUnique.mockResolvedValue(order({ status: 'EXPIRED' }));
     expect(await handlePaymentLinkCheckoutCompleted(completed('evt_7'))).toMatchObject({ handled: true, status: 'PAID', released: true });
+  });
+});
+
+describe('$0 acceptance test: a one-time 100%-off promo code', () => {
+  const zero = (id: string, over: Record<string, unknown> = {}) =>
+    completed(id, { amount_total: 0, amount_subtotal: 39900, total_details: { amount_discount: 39900, amount_shipping: 0, amount_tax: 0 }, payment_status: 'no_payment_required', payment_intent: null, ...over });
+
+  it('a full discount pays the order at $0, releases the shortlist, and is logged as a test', async () => {
+    P.conciergeOrder.findUnique.mockResolvedValue(order({ paymentLinkSentAt: new Date() }));
+    expect(await handlePaymentLinkCheckoutCompleted(zero('evt_z1'))).toEqual({ handled: true, orderId: 'ordabc12345', status: 'PAID', released: true });
+    expect(P.conciergeOrder.update).toHaveBeenCalledWith({ where: { id: 'ordabc12345' }, data: expect.objectContaining({ status: 'PAID', amountCents: 0, stripePaymentIntentId: null }) });
+    const paid = P.entityEvent.create.mock.calls.find((c: any) => c[0].data.eventType === 'order.paid')[0].data;
+    expect(paid.newValue).toMatchObject({ amountCents: 0, source: 'payment_link_test' });
+    expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('test checkout'), expect.objectContaining({ orderId: 'ordabc12345' }));
+    expect(send.mock.calls.filter((c) => c[0].kind === 'shortlist_released')).toHaveLength(1);
+    await flush();
+    expect(sendConciergePaidNotification).toHaveBeenCalledTimes(1);
+  });
+
+  it('a partial discount, or $0 with no discount, is not paid', async () => {
+    P.conciergeOrder.findUnique.mockResolvedValue(order({ paymentLinkSentAt: new Date() }));
+    const partial = zero('evt_z2', { total_details: { amount_discount: 20000 } });
+    expect(await handlePaymentLinkCheckoutCompleted(partial)).toEqual({ handled: true, orderId: 'ordabc12345', status: 'REQUESTED_UNPAID' });
+    expect(await handlePaymentLinkCheckoutCompleted(zero('evt_z3', { total_details: { amount_discount: 0 } }))).toMatchObject({ status: 'REQUESTED_UNPAID' });
+    expect(await handlePaymentLinkCheckoutCompleted(zero('evt_z4', { amount_subtotal: 0, total_details: { amount_discount: 0 } }))).toMatchObject({ status: 'REQUESTED_UNPAID' });
+    expect(await handlePaymentLinkCheckoutCompleted(zero('evt_z5', { payment_status: 'unpaid' }))).toMatchObject({ status: 'REQUESTED_UNPAID' });
+    expect(P.conciergeOrder.update).not.toHaveBeenCalled();
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it('the same $0 event delivered again changes nothing', async () => {
+    P.conciergeOrder.findUnique.mockResolvedValue(order({ status: 'PAID' }));
+    P.stripeWebhookEvent.create.mockRejectedValueOnce(Object.assign(new Error('dup'), { code: 'P2002' }));
+    expect(await handlePaymentLinkCheckoutCompleted(zero('evt_z1'))).toMatchObject({ handled: true, duplicate: true });
+    expect(P.conciergeOrder.update).not.toHaveBeenCalled();
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it('isFullDiscountTestSession', () => {
+    expect(isFullDiscountTestSession(zero('e').data.object)).toBe(true);
+    expect(isFullDiscountTestSession(completed('e').data.object)).toBe(false);
   });
 });
 
