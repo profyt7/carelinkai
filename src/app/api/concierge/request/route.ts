@@ -14,6 +14,8 @@
 
 export const dynamic = 'force-dynamic';
 
+import { sendConciergeFamilyEmail } from '@/lib/email';
+import { conciergeConfirmationEmail } from '@/lib/concierge/family-emails';
 import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit } from '@/lib/rate-limit';
 import { captureError } from '@/lib/sentry';
@@ -77,6 +79,18 @@ export async function POST(request: NextRequest) {
       email: body.contactEmail,
       status: cap.capReached ? 'WAITLIST' : 'REQUESTED_UNPAID',
     });
+    // Pay when ready (10/31): confirm to the family — the terms, what happens next, our phone number.
+    // Never their care needs or other case details. Fire-and-forget: a mail hiccup never fails the request.
+    // Promise.resolve().then(...) so even a synchronous throw can't turn a saved request into a 500.
+    void Promise.resolve()
+      .then(() =>
+        sendConciergeFamilyEmail({
+          toEmail: body.contactEmail,
+          email: conciergeConfirmationEmail({ waitlisted: order.status === 'WAITLIST' }),
+          kind: 'confirmation',
+        }),
+      )
+      .catch((e) => captureError(e instanceof Error ? e : new Error(String(e)), { tags: { feature: 'concierge-family-email' } }));
     return NextResponse.json(
       { ok: true, id: row.id, source: 'concierge_page', status: queueStatus, orderId: order.id, orderStatus: order.status },
       { status: 201 },

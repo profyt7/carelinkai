@@ -2754,3 +2754,41 @@
 - **Commands run:** `npm run type-check`, `next lint`, `npm test -- --ci` (169 suites, 1965 passed), `next build` + standalone server + curl Range checks, Playwright screenshots 390 / 1280.
 - **Deployment impact:** homepage adds a ~4.4 MB video, fetched only when played (`preload="none"`). No env changes.
 - **Recommended next step:** Chris merges; then prod-verify with `check_trackers`.
+
+### 2026-10-30 (late) — Founder UX truth: hide unusable operator tools; founding-offer audit
+- **Objective:** Hide On-Call AI and shift auto-fill where the server would reject them, change the homepage concierge and callback copy, and audit what founding operators are promised against what works (read-only).
+- **Work completed:**
+  - Capability layer (lib, API, hook, nav field), with gates on the On-Call page and the shifts page.
+  - Copy changes; banned phrases added to the truth tests.
+  - Part B audit in the PR body; follow-ups logged in OL-248.
+- **Files changed:** `src/lib/operator/capabilities.ts` (new), `src/app/api/operator/capabilities/route.ts` (new), `src/hooks/useOperatorCapabilities.tsx` (new), `src/config/navigation/{types,index,professional}.ts`, `src/components/layout/DashboardLayout.tsx`, `src/app/operator/{oncall,shifts}/page.tsx`, `src/app/HomePageClient.tsx`, `src/lib/contact.ts`, `src/app/design-preview/direction-d/FacilityProfilePreview.tsx`, tests, `context/*`.
+- **Commands run:**
+  - tsc, eslint, jest (169 suites before merging main);
+  - `next build`;
+  - Playwright operator-nav screenshots against the local build. A local-only DB tweak set the test operator's plan to PROFESSIONAL for a control shot, then reset it to null.
+- **Tests/build status:** green locally; CI on the PR.
+- **Deployment impact:** UI and copy only. No flags, env, Stripe, DB records or plan logic.
+- **New risks/blockers:** see OL-248. The founder promises in onboarding, learn copy and the concierge guarantee have no code path.
+- **Recommended next step:** Chris picks the founding-offer definition (PR body); then rewrite the onboarding founder card and the learn copy to match.
+
+### 2026-10-31 — Family Concierge "pay when ready"
+- **Objective:**
+  - Concierge terms everywhere they're offered.
+  - Family confirmation email.
+  - Admin payment-link / mark-paid / release actions, with the shortlist hidden until paid.
+  - New /concierge headline.
+  - Aggregate count of operators with a founder free period.
+- **Work completed:** see OL-247.
+- **Read-only count:** `scripts/report-founder-free-access.ts` prints aggregate counts. The prod DB isn't reachable from the session sandbox, so Chris runs it in the Render shell.
+- **Files changed:** `src/lib/concierge/{offer,faq,family-emails,pay-when-ready,shortlist-token}.ts`, `src/components/concierge/ConciergeTerms.tsx`, `src/components/admin/ConciergeOrderPanel.tsx`, `src/app/concierge/**`, `src/app/api/concierge/request`, `src/app/api/admin/concierge/**`, `src/app/admin/concierge/[id]`, `src/components/dashboard/ConciergeUpsellCard.tsx`, `src/app/HomePageClient.tsx`, `src/app/terms/page.tsx`, `src/lib/seo/{jsonld,page-meta}.ts`, `src/lib/email.ts`, the prisma schema + migration, tests, e2e, `.github/workflows/prod-verify.yml`.
+- **Commands run:** tsc, eslint, jest (171 suites), `next build`, Playwright e2e/public/concierge (45 passed locally), screenshots.
+- **Deployment impact:**
+  - Additive migration runs on deploy.
+  - The payment link is emailed only when an admin sends it.
+  - No flags, env or Stripe changes.
+- **New risks/blockers:**
+  - Payment confirmation is manual (Phase 1).
+  - Checkout mode contradicts pay when ready (off).
+  - Terms §15 needs counsel review.
+- **Recommended next step:** Chris creates the Payment Link in Stripe and runs the count script.
+

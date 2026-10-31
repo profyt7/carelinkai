@@ -57,7 +57,8 @@ export const PROFESSIONAL_NAV: NavItem[] = [
       myJobs,
       myHires,
       { id: 'shifts', name: 'Shifts', icon: FiCalendar, href: '/operator/shifts', showInMobileBar: true, mobileOrder: 10, roleRestriction: OPS },
-      { id: 'oncall', name: 'On-Call AI', icon: FiZap, href: '/operator/oncall', roleRestriction: OPS },
+      // OL-241: only when the start route would accept it (Professional plan) and SMS sending is configured.
+      { id: 'oncall', name: 'On-Call AI', icon: FiZap, href: '/operator/oncall', roleRestriction: OPS, capability: 'ONCALL' },
     ],
   },
   {

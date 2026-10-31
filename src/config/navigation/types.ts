@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 import type { PaidFeatureKey } from '@/lib/billing/paid-features';
+import type { OperatorCapability } from '@/lib/operator/capabilities';
 
 /**
  * OL-206 — one navigation item. Same fields the old DashboardLayout navItems
@@ -32,6 +33,8 @@ export interface NavItem {
   highlight?: boolean;
   /** OL-186: hidden while this paid feature is switched off. */
   paidFeature?: PaidFeatureKey;
+  /** OL-241: hidden unless the user can actually use this tool (same checks as its server route). */
+  capability?: OperatorCapability;
 }
 
 export type NavShell = 'family' | 'professional' | 'caregiver' | 'dischargePlanner' | 'provider' | 'affiliate';

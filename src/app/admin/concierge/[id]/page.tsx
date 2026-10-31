@@ -8,6 +8,7 @@ import {
   ArrowLeft, Loader2, Send, CheckCircle, Star, MapPin, Bed, User, ClipboardList, Clock,
 } from 'lucide-react';
 import { PayerLaneRow } from '@/components/admin/PayerLaneBadge';
+import ConciergeOrderPanel, { type ConciergeOrderRow } from '@/components/admin/ConciergeOrderPanel';
 
 type Match = {
   homeId: string;
@@ -51,6 +52,8 @@ type Detail = {
   conciergeSubmittedAt: string | null;
   conciergeRespondedAt: string | null;
   facilityResponses?: FacilityResponse[];
+  source?: string | null;
+  conciergeOrders?: ConciergeOrderRow[];
   user: {
     firstName: string | null; lastName: string | null; email: string | null; phone: string | null;
     dischargePlannerProfile: { organization: string | null; title: string | null } | null;
@@ -195,8 +198,14 @@ export default function AdminConciergeCuratePage() {
         body: JSON.stringify({ action: 'respond', curatedHomes, conciergeNote: note }),
       });
       if (!res.ok) throw new Error((await res.json())?.error || 'Failed');
-      toast.success('Shortlist sent to the discharge planner');
-      router.push('/admin/concierge');
+      // A family request stays here: next step is the payment link (pay when ready). A DP request is done.
+      if (detail?.source === 'concierge_page') {
+        toast.success('Shortlist saved — now send the payment link');
+        load();
+      } else {
+        toast.success('Shortlist sent to the discharge planner');
+        router.push('/admin/concierge');
+      }
     } catch (e: any) {
       toast.error(e?.message || 'Failed');
     } finally {
@@ -265,6 +274,11 @@ export default function AdminConciergeCuratePage() {
         <h2 className="text-sm font-semibold text-neutral-700 mb-1">Original request</h2>
         <p className="text-sm text-neutral-700">{detail.queryText}</p>
       </div>
+
+      {/* Pay when ready (10/31): the family's order — payment link, mark paid, release shortlist. */}
+      {(detail.conciergeOrders ?? []).slice(0, 1).map((o) => (
+        <ConciergeOrderPanel key={o.id} order={o} shortlistReady={isReady && (detail.curatedHomes?.length ?? 0) > 0} onChanged={load} />
+      ))}
 
       {/* W4-2: facility accept / decline per shortlisted home */}
       {(detail.facilityResponses?.length ?? 0) > 0 && (
@@ -372,7 +386,7 @@ export default function AdminConciergeCuratePage() {
         )}
 
         <div className="mt-5">
-          <label className="block text-sm font-semibold text-neutral-700 mb-2">Message to the discharge planner (optional)</label>
+          <label className="block text-sm font-semibold text-neutral-700 mb-2">{detail.source === 'concierge_page' ? 'Message to the family — shown with their shortlist once paid and released (optional)' : 'Message to the discharge planner (optional)'}</label>
           <textarea
             value={note} onChange={(e) => setNote(e.target.value)} rows={3}
             placeholder="e.g., Here are three strong options with confirmed availability. Two can do a tour this week…"
@@ -392,7 +406,7 @@ export default function AdminConciergeCuratePage() {
             className="px-5 py-2.5 bg-gradient-to-r from-primary-600 to-purple-600 text-white rounded-lg text-sm font-semibold hover:from-primary-700 hover:to-purple-700 disabled:opacity-50 inline-flex items-center gap-2"
           >
             {saving === 'respond' ? <Loader2 className="h-4 w-4 animate-spin" /> : isReady ? <CheckCircle className="h-4 w-4" /> : <Send className="h-4 w-4" />}
-            {isReady ? 'Re-send updated shortlist' : 'Send shortlist to DP'}
+            {detail.source === 'concierge_page' ? (isReady ? 'Update saved shortlist' : 'Save shortlist') : isReady ? 'Re-send updated shortlist' : 'Send shortlist to DP'}
           </button>
         </div>
       </div>

@@ -19,28 +19,38 @@ export const CONCIERGE_OFFER = {
   priceDisplay: '$399',
   priceLine: '$399 flat, one-time, per family search',
   bookLabel: 'Book the concierge — $399',
-  requestLabel: 'Request the concierge',
+  requestLabel: 'Request your shortlist',
   waitlistLabel: 'Fully booked this month — join the waitlist',
   /**
-   * v2 (OL-165, 10/20): the pitch is the expensive mistake a rushed discharge
-   * causes — never the time saved, never the technology. The $5,000 here is the
-   * cost of that mistake (a second community fee + a second move), not a price.
+   * Pay when ready (10/31): research first, a payment link when the shortlist is
+   * ready, the shortlist released once it's paid. No turnaround promise, no
+   * unsourced dollar figure, no guaranteed opening or placement.
    */
-  headline: 'We keep you from making the $5,000 mistake under pressure.',
-  subhead: 'A verified shortlist in 2 business days — or you pay nothing.',
+  headline: 'Get a verified shortlist before you commit to a home.',
+  subhead: 'We do the research first. You pay only when your shortlist is ready.',
+  /** The full terms, word for word — wherever the concierge is offered and on the request form before submit. */
+  terms:
+    "Personalized shortlist of care options, with availability and pricing labeled as verified or unconfirmed. $399. We do the research first. When your shortlist is ready, we'll send you a secure payment link, and you'll get the full shortlist as soon as it's paid. If we can't put together a useful shortlist, you pay nothing. You're paying for the research and shortlist, not a guaranteed opening or placement.",
+  /** What happens after a request (confirmation screen + email). No turnaround promise. */
+  nextSteps: [
+    'We read your request and start the research.',
+    "When your shortlist is ready, we'll email you a secure payment link for $399.",
+    "As soon as it's paid, you'll get the full shortlist.",
+    "If we can't put together a useful shortlist, you pay nothing.",
+  ],
   /** Above the fold on /concierge: families never pay to search. */
   freeForFamiliesLine:
     'Free for families. Searching CareLinkAI — verified homes, prices, Medicaid waiver status, inspection history — never costs a family anything. The concierge is an optional, private-pay lane.',
   /** Free-lane hero on /concierge once a Medicaid / Medicare / VA answer is given (OL-166b): no price, no dollar figure. */
   freeLaneHeadline: 'Free help for Medicaid, Medicare and VA families',
   freeLaneSubhead:
-    'Verified homes, confirmed availability and Medicaid waiver status, inspection history in plain English — free, with no fee to you or to the home, ever.',
+    'Licensed homes, availability labeled as verified or not, Medicaid waiver status and inspection history in plain English — free, with no fee to you or to the home, ever.',
   /** One-liner for the homepage section and the dashboard card. */
   oneLine: 'A Cleveland person checks fit, prices and the contract with you before you sign — paid by you, flat, never by a home.',
   /** v2 items 1–9, plain language (Family_Concierge_Offer_2026_10_16.md v2). */
   inclusions: [
-    'A 20-minute intake call within 1 business day: care needs, location, timeline, budget and how long it lasts, who in the family decides, and your hospital or discharge contact',
-    'A verified shortlist of 3–5 homes within 2 business days — availability and current price confirmed with each home, ODH inspection history in plain English',
+    'A 20-minute intake call: care needs, location, timeline, budget and how long it lasts, who in the family decides, and your hospital or discharge contact',
+    'A personalized shortlist of care options, with availability and pricing labeled as verified or unconfirmed, and ODH inspection history in plain English',
     'A fit check against each home’s acceptance criteria — two-person assist, wandering or a secured unit, oxygen, insulin, bariatric, behavioral, hospice in place — before it goes on your list, so a mismatch doesn’t force a second move',
     'A Medicaid runway plan: how many months private pay lasts at each home’s price, and when that runway is short, a shortlist that favors homes keeping current residents on the Ohio Assisted Living Waiver',
     'Real prices in writing — base rent, care-level tiers, community fee, recent increases — plus, for each home, what to ask for before signing: a community-fee waiver or reduction, a move-in concession, a 12-month rate lock, a care-level assessment done before the contract',
@@ -49,7 +59,9 @@ export const CONCIERGE_OFFER = {
     'Discharge coordination: one thread with the hospital social worker or discharge planner so the move-in date, paperwork and transport line up',
     'A before-you-sign checklist, check-ins at 30, 60 and 90 days after move-in, and a free re-search within 90 days if the home isn’t working out',
   ],
-  guarantee: 'No verified shortlist within 2 business days → full refund.',
+  /** The only promise about money: no useful shortlist, no charge (nothing is collected before the shortlist exists). */
+  guarantee: "If we can't put together a useful shortlist, you pay nothing.",
+  notAPlacementLine: "You're paying for the research and shortlist, not a guaranteed opening or placement.",
   /** Verbatim from the v2 offer doc. */
   notIncluded: [
     'medical, legal or financial advice',

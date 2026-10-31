@@ -59,17 +59,21 @@ test.describe('@critical Family Concierge — homepage, dashboard cards, terms',
     expect((await r.json()).orderStatus).toBe('REQUESTED_UNPAID');
   });
 
-  test('homepage section renders logged-out: the mistake headline, one line + the guarantee, CTA and free-lane line', async ({ request }) => {
+  test('homepage section renders logged-out: the verified-shortlist headline, one line + the guarantee, CTA and free-lane line', async ({ request }) => {
     const res = await request.get('/');
     expect(res.status()).toBe(200);
     const html = await res.text();
     expect(html).toContain('data-testid="home-concierge-section"');
     // React separates adjacent text expressions with <!-- --> — strip them before text assertions.
     const section = html.slice(html.indexOf('data-testid="home-concierge-section"'), html.indexOf('Why CareLinkAI?')).replace(/<!--\s*-->/g, '');
-    expect(section).toContain('We keep you from making the $5,000 mistake under pressure.');
-    expect(section).toContain('A verified shortlist in 2 business days — or you pay nothing.');
-    expect(section).toContain('No verified shortlist within 2 business days → full refund.');
-    expect(section).toContain('$399 flat, one time');
+    // OL-241: the homepage headline leads with the verified shortlist; /concierge keeps CONCIERGE_OFFER.headline.
+    expect(section).toContain('Get a verified shortlist before you commit to a home.');
+    expect(section).not.toContain('$5,000');
+    // Pay when ready (10/31): the terms, word for word (apostrophe-free slices; raw HTML encodes ').
+    expect(section).toContain('Personalized shortlist of care options, with availability and pricing labeled as verified or unconfirmed. $399. We do the research first.');
+    expect(section).toContain('useful shortlist, you pay nothing.');
+    expect(section).toContain('not a guaranteed opening or placement.');
+    expect(section).not.toMatch(/business day|full refund/);
     expect(section).toContain('Paying with Medicaid, Medicare or the VA? Our help is always free.');
     expect(section).not.toMatch(/legwork/i);
     expect(section).toMatch(/data-testid="home-concierge-cta"[^>]*href="\/concierge"|href="\/concierge"[^>]*data-testid="home-concierge-cta"/);
@@ -78,8 +82,11 @@ test.describe('@critical Family Concierge — homepage, dashboard cards, terms',
   test('/terms has the v2 Family Concierge section: scope, verbatim not-included list, not-advice + no-outcome sentences', async ({ request }) => {
     const html = await (await request.get('/terms')).text();
     expect(html).toContain('data-testid="terms-family-concierge"');
-    expect(html).toContain('flat $399');
-    expect(html).toContain('refund the full fee');
+    // Pay when ready (10/31): $399, research first, payment link when ready, no turnaround promise.
+    expect(html).toContain('$399 per family search');
+    expect(html).toContain('data-testid="terms-concierge-pay-when-ready"');
+    expect(html).toContain('data-testid="terms-concierge-not-placement"');
+    expect(html).not.toMatch(/within (one|two) business day|refund the full fee/);
     const visible = html.replace(/<script[\s\S]*?<\/script>/g, '').replace(/<!--\s*-->/g, '').replace(/<[^>]+>/g, ' ');
     expect(visible).toContain('Medicaid runway estimate');
     expect(visible).toContain('Discharge coordination');
@@ -121,9 +128,10 @@ test.describe('@critical Family Concierge — homepage, dashboard cards, terms',
     const card = page.getByTestId('concierge-paid-card');
     await expect(card).toBeVisible({ timeout: 30000 });
     // OL-165 c: one line + the guarantee.
-    await expect(card).toContainText('Family Concierge — $399 flat, one time');
+    await expect(card).toContainText('Family Concierge — $399, pay when your shortlist is ready');
     await expect(card).toContainText('checks fit, prices and the contract with you before you sign');
-    await expect(card).toContainText('No verified shortlist within 2 business days → full refund.');
+    await expect(card).toContainText("If we can't put together a useful shortlist, you pay nothing.");
+    await expect(card).not.toContainText('business day');
     await expect(card).not.toContainText('legwork');
     await expect(card.getByTestId('concierge-paid-card-cta')).toHaveAttribute('href', '/concierge');
     await expect(page.getByTestId('concierge-free-card')).toHaveCount(0);

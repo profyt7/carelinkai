@@ -9,7 +9,7 @@
 export const CONTACT_PHONE_DISPLAY = '(216) 245-9482';
 export const CONTACT_PHONE_E164 = '+12162459482';
 export const CONTACT_PHONE_TEL = `tel:${CONTACT_PHONE_E164}`;
-export const CONTACT_HOURS_LINE = 'Front desk answers around the clock; a person calls back within one business hour Mon–Fri 8–6 ET, or first thing the next morning.';
+export const CONTACT_HOURS_LINE = 'Front desk answers around the clock; a person calls back within one business day.';
 export const CONTACT_NO_PHI_LINE = 'Please don’t share patient details on the line — share them securely at getcarelinkai.com/concierge.';
 
 /** Company mailing address and contact email for legal notices (/privacy, /terms) — OL-192. */

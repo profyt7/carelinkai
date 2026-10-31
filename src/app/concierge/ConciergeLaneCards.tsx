@@ -1,5 +1,6 @@
 'use client';
 
+import ConciergeTerms from '@/components/concierge/ConciergeTerms';
 import Link from 'next/link';
 import { FiArrowRight, FiCheck, FiPhone } from 'react-icons/fi';
 import { CONCIERGE_OFFER } from '@/lib/concierge/offer';
@@ -96,13 +97,17 @@ export default function ConciergeLaneCards({ route }: { route: ConciergeRoute | 
                 </p>
               )}
             </div>
-            {/* The two-business-day promise + guarantee, next to the CTA. */}
+            {/* Pay when ready (10/31): the deal, next to the CTA. The price stays behind the payer question. */}
             <p className="mt-4 font-semibold text-primary-700" data-testid="concierge-lane-promise">
               {CONCIERGE_OFFER.subhead}
             </p>
-            <p className="mt-1 text-sm text-neutral-700">
-              <strong className="text-neutral-900">Guarantee.</strong> {CONCIERGE_OFFER.guarantee}
-            </p>
+            {showPrice ? (
+              <ConciergeTerms className="mt-1 text-sm text-neutral-700" testId="concierge-lane-terms" />
+            ) : (
+              <p className="mt-1 text-sm text-neutral-700">
+                {CONCIERGE_OFFER.guarantee} {CONCIERGE_OFFER.notAPlacementLine}
+              </p>
+            )}
             <div className="mt-auto pt-6">
               <a href="#screener" className={BTN_PRIMARY} data-testid="concierge-lane-private-cta">
                 {route ? 'Go to the request form' : 'Start with one question'}

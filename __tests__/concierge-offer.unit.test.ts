@@ -58,7 +58,7 @@ describe('CTA mode: flag + capacity', () => {
   it('flag unset → "Request the concierge"; set → "Book the concierge — $399"', () => {
     expect(conciergeCtaMode({ checkoutEnabled: false, capReached: false })).toBe('request');
     expect(conciergeCtaMode({ checkoutEnabled: true, capReached: false })).toBe('checkout');
-    expect(ctaLabelFor('request')).toBe('Request the concierge');
+    expect(ctaLabelFor('request')).toBe('Request your shortlist');
     expect(ctaLabelFor('checkout')).toBe('Book the concierge — $399');
   });
   it('cap reached → waitlist regardless of the flag', () => {
@@ -99,16 +99,20 @@ describe('dashboard dismiss (30 days)', () => {
 });
 
 describe('offer copy (authoritative, v2 — OL-165)', () => {
-  it('is $399 flat, one-time, with the nine v2 inclusions, guarantee and the verbatim not-included list', () => {
+  it('is $399, pay when ready, with the nine inclusions, the terms word for word and the verbatim not-included list', () => {
     expect(CONCIERGE_OFFER.priceCents).toBe(39900);
     expect(CONCIERGE_OFFER.priceDisplay).toBe('$399');
-    expect(CONCIERGE_OFFER.headline).toBe('We keep you from making the $5,000 mistake under pressure.');
-    expect(CONCIERGE_OFFER.subhead).toBe('A verified shortlist in 2 business days — or you pay nothing.');
+    expect(CONCIERGE_OFFER.headline).toBe('Get a verified shortlist before you commit to a home.');
+    expect(CONCIERGE_OFFER.subhead).toBe('We do the research first. You pay only when your shortlist is ready.');
+    // Pay when ready (10/31): the terms, word for word.
+    expect(CONCIERGE_OFFER.terms).toBe("Personalized shortlist of care options, with availability and pricing labeled as verified or unconfirmed. $399. We do the research first. When your shortlist is ready, we'll send you a secure payment link, and you'll get the full shortlist as soon as it's paid. If we can't put together a useful shortlist, you pay nothing. You're paying for the research and shortlist, not a guaranteed opening or placement.");
+    // No turnaround promise and no unsourced dollar figure anywhere in the offer.
+    expect(JSON.stringify(CONCIERGE_OFFER)).not.toMatch(/business day|\$5,000|full refund|(shortlist|call|intake)[^.]{0,40}within \d|\bin \d+ (hours?|days?)/i);
     expect(CONCIERGE_OFFER.freeForFamiliesLine).toMatch(/^Free for families\./);
     const incl = CONCIERGE_OFFER.inclusions;
     expect(incl).toHaveLength(9);
-    expect(incl[0]).toMatch(/20-minute intake call within 1 business day/);
-    expect(incl[1]).toMatch(/3–5 homes within 2 business days/);
+    expect(incl[0]).toMatch(/^A 20-minute intake call:/);
+    expect(incl[1]).toMatch(/availability and pricing labeled as verified or unconfirmed/);
     expect(incl[2]).toMatch(/fit check against each home’s acceptance criteria/);
     expect(incl[2]).toMatch(/two-person assist.*secured unit.*oxygen.*insulin.*bariatric.*behavioral.*hospice/);
     expect(incl[3]).toMatch(/Medicaid runway plan/);
@@ -121,7 +125,8 @@ describe('offer copy (authoritative, v2 — OL-165)', () => {
     expect(incl[8]).toMatch(/before-you-sign checklist/);
     expect(incl[8]).toMatch(/30, 60 and 90 days/);
     expect(incl[8]).toMatch(/free re-search within 90 days/);
-    expect(CONCIERGE_OFFER.guarantee).toBe('No verified shortlist within 2 business days → full refund.');
+    expect(CONCIERGE_OFFER.guarantee).toBe("If we can't put together a useful shortlist, you pay nothing.");
+    expect(CONCIERGE_OFFER.notAPlacementLine).toBe("You're paying for the research and shortlist, not a guaranteed opening or placement.");
     // Verbatim from Family_Concierge_Offer_2026_10_16.md (v2).
     expect(CONCIERGE_OFFER.notIncluded).toEqual([
       'medical, legal or financial advice',

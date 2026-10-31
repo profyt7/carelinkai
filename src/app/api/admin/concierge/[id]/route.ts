@@ -28,6 +28,7 @@ import { createInAppNotification } from '@/lib/services/notifications';
 import { sendConciergeShortlistReadyEmail } from '@/lib/email';
 import { createFacilityResponsesForShortlist, markAdmitted, FACILITY_RESPONSE_SELECT } from '@/lib/concierge/facility-response-engine';
 import { captureError } from '@/lib/sentry';
+import { CONCIERGE_PAGE_SOURCE } from '@/lib/concierge/intake';
 
 function authErr(error: any): NextResponse | null {
   if (error?.name === 'UnauthenticatedError') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -64,7 +65,8 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
         // W4-2: per-home accept / decline state + reasons (admin sees the contact email too).
         facilityResponses: { select: FACILITY_RESPONSE_SELECT, orderBy: { createdAt: 'asc' } },
         // W5-3: paid concierge order(s) — status, cents, timestamps only.
-        conciergeOrders: { select: { id: true, status: true, amountCents: true, paidAt: true, refundedAt: true, createdAt: true }, orderBy: { createdAt: 'desc' } },
+        // Pay when ready (10/31): payment-link + release state for the order actions.
+        conciergeOrders: { select: { id: true, status: true, amountCents: true, paidAt: true, refundedAt: true, createdAt: true, paymentLinkUrl: true, paymentLinkSentAt: true, shortlistReleasedAt: true }, orderBy: { createdAt: 'desc' } },
       },
     });
     if (!row || !row.isConcierge) {
@@ -102,7 +104,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
     const existing = await prisma.placementSearch.findUnique({
       where: { id: params.id },
-      select: { id: true, isConcierge: true, userId: true, conciergeStatus: true, user: { select: { email: true } } },
+      select: { id: true, isConcierge: true, userId: true, conciergeStatus: true, source: true, user: { select: { email: true } } },
     });
     if (!existing || !existing.isConcierge) {
       return NextResponse.json({ error: 'Concierge request not found' }, { status: 404 });
@@ -172,8 +174,11 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
     // Tell the DP their shortlist is ready: in-app bell badge + PHI-free email.
     // Fire-and-forget — never block or fail the admin's send on a notify hiccup.
+    // A family request (/concierge) is owned by a system user: the family gets the payment link and, once
+    // paid, the shortlist through the order actions instead (pay when ready, 10/31).
+    const familyRequest = existing.source === CONCIERGE_PAGE_SOURCE;
     const optionWord = curated.length === 1 ? 'option' : 'options';
-    void createInAppNotification({
+    if (!familyRequest) void createInAppNotification({
       userId: existing.userId,
       type: 'ALERT',
       title: 'Your shortlist is ready',
@@ -181,7 +186,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       link: '/discharge-planner/concierge',
       data: { kind: 'concierge_shortlist_ready', searchId: params.id, count: curated.length },
     });
-    if (existing.user?.email) {
+    if (!familyRequest && existing.user?.email) {
       void sendConciergeShortlistReadyEmail({ toEmail: existing.user.email, count: curated.length });
     }
 

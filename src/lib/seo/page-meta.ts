@@ -119,9 +119,9 @@ export const PAGE_META = {
   },
   concierge: {
     path: '/concierge',
-    title: 'Family Concierge: Verified Shortlist in 2 Days',
+    title: 'Family Concierge: Pay When Ready',
     description:
-      'A Cleveland person checks fit, prices and the contract: a verified shortlist in 2 business days. Private pay; free if Medicaid, Medicare or the VA pays.',
+      'A Cleveland person checks fit, prices and the contract. Research first; pay only when your shortlist is ready. Free if Medicaid, Medicare or the VA pays.',
   },
   search: {
     path: '/search',

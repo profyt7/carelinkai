@@ -5,13 +5,15 @@ import type { PayerSource } from '@/lib/payer/payer-source';
 import { CONCIERGE_REQUEST_API } from '@/lib/concierge/screener';
 import { CONCIERGE_CHECKOUT_API, CONCIERGE_OFFER, CONCIERGE_OFFER_API, ctaLabelFor, type ConciergeCtaMode } from '@/lib/concierge/offer';
 import SmsConsentCheckbox, { emptySmsConsent } from '@/components/consent/SmsConsentCheckbox';
+import ConciergeTerms from '@/components/concierge/ConciergeTerms';
 import type { SmsConsentPayload } from '@/lib/consent/sms-consent';
 
 /**
  * Intake form inside the paid offer (sprint W4 0a, W5-3). Only rendered after a
  * private-pay / LTC / not-sure screener answer. The CTA depends on the server:
  *   checkout → "Book the concierge — <price>" → Stripe Checkout redirect
- *   request  → "Request the concierge" (flag unset) → unpaid queue row
+ *   request  → "Request your shortlist" (flag unset) → unpaid queue row; pay when ready:
+ *              research first, a payment link when the shortlist is ready, the shortlist once paid
  *   waitlist → "Fully booked this month — join the waitlist" → same intake, WAITLIST
  */
 export default function ConciergeRequestForm({ payerSource }: { payerSource: PayerSource }) {
@@ -77,11 +79,13 @@ export default function ConciergeRequestForm({ payerSource }: { payerSource: Pay
   if (state === 'done') {
     return (
       <div data-testid="concierge-request-success" className="rounded-xl border border-success-200 bg-success-50 p-5">
-        <p className="font-semibold text-neutral-900">Got it — a Cleveland person will call you within one business day.</p>
-        <p className="mt-1 text-sm text-neutral-700">
-          Your request is in our concierge queue. Nothing is charged until we have spoken and you decide to go ahead;
-          the fee is {CONCIERGE_OFFER.priceLine}, and {CONCIERGE_OFFER.guarantee.toLowerCase()}
-        </p>
+        <p className="font-semibold text-neutral-900">Got it — your request is in. Nothing has been charged.</p>
+        <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-neutral-700" data-testid="concierge-next-steps">
+          {CONCIERGE_OFFER.nextSteps.map((step) => (
+            <li key={step}>{step}</li>
+          ))}
+        </ol>
+        <p className="mt-2 text-sm text-neutral-700">We&apos;ve emailed you a copy of these terms.</p>
       </div>
     );
   }
@@ -102,7 +106,7 @@ export default function ConciergeRequestForm({ payerSource }: { payerSource: Pay
 
   return (
     <form onSubmit={onSubmit} data-testid="concierge-request-form" data-mode={mode} data-mode-loaded={modeLoaded ? 'true' : 'false'} className="mt-6 rounded-xl border border-neutral-200 bg-neutral-50 p-5">
-      <h4 className="text-lg font-bold text-neutral-900">{mode === 'checkout' ? 'Book the concierge' : mode === 'waitlist' ? 'Join the waitlist' : 'Request the concierge'}</h4>
+      <h4 className="text-lg font-bold text-neutral-900">{mode === 'checkout' ? 'Book the concierge' : mode === 'waitlist' ? 'Join the waitlist' : 'Request your shortlist'}</h4>
       <p className="mt-1 text-sm text-neutral-600">Two minutes. A person reads this — no bots, no resale.</p>
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="block">
@@ -155,6 +159,11 @@ export default function ConciergeRequestForm({ payerSource }: { payerSource: Pay
           <input name="company_url" tabIndex={-1} autoComplete="off" />
         </label>
       </div>
+      {/* Pay when ready (10/31): the full terms, word for word, before the family submits. */}
+      <div className="mt-5 rounded-lg border border-primary-200 bg-white p-4 text-sm text-neutral-800">
+        <p className="font-semibold text-neutral-900">The terms</p>
+        <ConciergeTerms className="mt-1" testId="concierge-form-terms" />
+      </div>
       {error && (
         <p role="alert" className="mt-4 text-sm text-red-600">
           {error}
@@ -170,7 +179,7 @@ export default function ConciergeRequestForm({ payerSource }: { payerSource: Pay
       </button>
       <p className="mt-3 text-xs text-neutral-500">
         {mode === 'checkout'
-          ? 'Secure payment by Stripe. ' + CONCIERGE_OFFER.guarantee + ' '
+          ? 'Secure payment by Stripe. '
           : 'Nothing is charged now. '}
         We keep what you tell us in-app and never email it to a facility. No marketing email, ever.
       </p>

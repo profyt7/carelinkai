@@ -12,6 +12,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import ConciergeTerms from '@/components/concierge/ConciergeTerms';
 import Link from 'next/link';
 import { Sparkles, X, HeartHandshake } from 'lucide-react';
 import { WAIVER_DIRECTORY_PATH } from '@/lib/concierge/screener';
@@ -91,11 +92,10 @@ export default function ConciergeUpsellCard() {
           <Sparkles size={18} className="text-white" />
         </div>
         <div className="flex-1 min-w-0">
-          {/* OL-165 c: one line + the guarantee (private lanes only; the server never sends this card to a free lane). */}
-          <h3 className="font-bold text-neutral-900">Family Concierge — {CONCIERGE_OFFER.priceDisplay} flat, one time</h3>
-          <p className="text-sm text-neutral-700 mt-1">
-            {CONCIERGE_OFFER.oneLine} <strong>{CONCIERGE_OFFER.guarantee}</strong>
-          </p>
+          {/* Private lanes only (the server never sends this card to a free lane). Pay when ready: the full terms. */}
+          <h3 className="font-bold text-neutral-900">Family Concierge — {CONCIERGE_OFFER.priceDisplay}, pay when your shortlist is ready</h3>
+          <p className="text-sm text-neutral-700 mt-1">{CONCIERGE_OFFER.oneLine}</p>
+          <ConciergeTerms className="text-sm text-neutral-700 mt-1" testId="concierge-paid-card-terms" />
           <Link href="/concierge" data-testid="concierge-paid-card-cta" className="mt-3 inline-flex items-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">
             See the Family Concierge →
           </Link>

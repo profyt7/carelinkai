@@ -27,13 +27,13 @@ jest.mock('@/lib/prisma', () => {
   return { prisma: p };
 });
 jest.mock('@/lib/sentry', () => ({ captureError: jest.fn() }));
-jest.mock('@/lib/email', () => ({ sendConciergeRequestNotification: jest.fn(async () => true), sendConciergePaidNotification: jest.fn(async () => true) }));
+jest.mock('@/lib/email', () => ({ sendConciergeRequestNotification: jest.fn(async () => true), sendConciergePaidNotification: jest.fn(async () => true), sendConciergeFamilyEmail: jest.fn(async () => true) }));
 jest.mock('next-auth', () => ({ getServerSession: jest.fn(async () => null) }));
 jest.mock('@/lib/auth', () => ({ authOptions: {} }));
 
 import { POST } from '@/app/api/concierge/request/route';
 import { prisma } from '@/lib/prisma';
-import { sendConciergeRequestNotification } from '@/lib/email';
+import { sendConciergeFamilyEmail, sendConciergeRequestNotification } from '@/lib/email';
 import { CONCIERGE_PAGE_SOURCE, CONCIERGE_PAGE_USER_EMAIL, createConciergePageRequest } from '@/lib/concierge/intake';
 
 const userFind = prisma.user.findUnique as jest.Mock;
@@ -121,6 +121,32 @@ describe('POST /api/concierge/request', () => {
     expect(res.status).toBe(201);
     expect(await res.json()).toEqual({ ok: true, id: 'ps-1', source: 'concierge_page', status: 'SUBMITTED', orderId: 'ord-1', orderStatus: 'REQUESTED_UNPAID' });
     expect(orderCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ placementSearchId: 'ps-1', email: 'dana@example.com', status: 'REQUESTED_UNPAID', amountCents: 39900 }) }));
+  });
+
+  it('pay when ready: emails the family the terms, next steps and our phone number — never their case details', async () => {
+    const send = sendConciergeFamilyEmail as jest.Mock;
+    send.mockClear();
+    await POST(req(base));
+    expect(send).toHaveBeenCalledTimes(1);
+    const arg = send.mock.calls[0][0] as any;
+    expect(String(arg.toEmail).toLowerCase()).toBe('dana@example.com');
+    expect(arg.kind).toBe('confirmation');
+    const blob = `${arg.email.subject}\n${arg.email.text}\n${arg.email.html}`;
+    expect(arg.email.text).toContain("When your shortlist is ready, we'll send you a secure payment link");
+    expect(arg.email.text).toContain('What happens next');
+    expect(arg.email.text).toContain('(216) 245-9482');
+    for (const leak of ['memory care', 'medication', 'Westlake', 'Dana', '216-555-0101', 'urgent']) expect(blob).not.toContain(leak);
+  });
+
+  it('the waitlist confirmation says so and still carries the terms', async () => {
+    const send = sendConciergeFamilyEmail as jest.Mock;
+    send.mockClear();
+    orderCount.mockResolvedValue(4 as never);
+    await POST(req(base));
+    const arg = send.mock.calls[0][0] as any;
+    expect(arg.email.subject).toMatch(/waitlist/i);
+    expect(arg.email.text).toContain('Nothing has been charged.');
+    expect(arg.email.text).toContain('secure payment link');
   });
 
   it('monthly cap reached → WAITLIST queue row + WAITLIST order', async () => {

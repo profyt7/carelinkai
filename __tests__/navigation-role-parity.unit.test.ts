@@ -66,6 +66,8 @@ function legacyMobileHrefs(role: string, o: Opts) {
 const navOpts = (o: Opts) => ({
   paidFeatures: Object.fromEntries(PAID.map((k) => [k, o.paid])),
   marketplaceEnabled: o.marketplace,
+  // OL-241 capabilities (On-Call AI) on: parity is about the old menu's links; hiding is tested in operator-capabilities.
+  capabilities: { ONCALL: true, SHIFT_AUTOFILL: true },
 });
 const newPairs = (role: string, o: Opts) => new Set(flattenNav(getNavForRole(role, navOpts(o))).map((i) => `${role} ${i.href}`));
 

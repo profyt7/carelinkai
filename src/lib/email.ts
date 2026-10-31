@@ -430,6 +430,46 @@ export async function sendConciergeShortlistReadyEmail(args: {
 }
 
 /**
+ * Family Concierge email TO THE FAMILY (pay when ready, 10/31): request confirmation, payment link, or
+ * released shortlist. Content comes from the pure builders in src/lib/concierge/family-emails.ts, which
+ * never include health or case details. Fire-and-forget; logs + Sentry on failure. `kind` is a tag only.
+ */
+export async function sendConciergeFamilyEmail(args: {
+  toEmail: string;
+  email: { subject: string; text: string; html: string };
+  kind: 'confirmation' | 'payment_link' | 'shortlist_released';
+}): Promise<boolean> {
+  const toEmail = args.toEmail?.trim();
+  if (!toEmail) return false;
+  try {
+    if (!process.env.RESEND_API_KEY) {
+      console.error(`[Resend] RESEND_API_KEY not configured — skipping concierge family email (${args.kind})`);
+      return false;
+    }
+    const { data, error } = await guardedResendSend({
+      from: `${APP_NAME} <${FROM_EMAIL}>`,
+      to: [toEmail],
+      replyTo: OUTREACH_REPLY_TO,
+      subject: args.email.subject,
+      text: args.email.text,
+      html: args.email.html,
+    });
+    if (error) {
+      console.error(`[Resend] Error sending concierge family email (${args.kind}):`, error);
+      captureError(error instanceof Error ? error : new Error(String((error as { message?: string })?.message ?? error)),
+        { tags: { feature: 'concierge-family-email' }, extra: { kind: args.kind } });
+      return false;
+    }
+    console.log(`[Resend] ✅ Concierge family email sent (${args.kind}). Email ID:`, data?.id);
+    return true;
+  } catch (error) {
+    console.error(`[Resend] Exception sending concierge family email (${args.kind}):`, error);
+    captureError(error instanceof Error ? error : new Error(String(error)), { tags: { feature: 'concierge-family-email' }, extra: { kind: args.kind } });
+    return false;
+  }
+}
+
+/**
  * Notify the care team (admin) that a DP requested a tour from a concierge
  * shortlist, so Chris can coordinate it on the family's behalf. The concierge
  * promise: this NEVER black-holes — for an unclaimed home the operator is also

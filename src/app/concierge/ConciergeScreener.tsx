@@ -7,6 +7,7 @@ import { PAYER_SOURCE_OPTIONS, isPayerSource, type PayerSource } from '@/lib/pay
 import { WAIVER_DIRECTORY_PATH, routeForPayerSource, type ConciergeRoute } from '@/lib/concierge/screener';
 import { CONCIERGE_OFFER } from '@/lib/concierge/offer';
 import { CONTACT_NO_PHI_LINE, CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from '@/lib/contact';
+import ConciergeTerms from '@/components/concierge/ConciergeTerms';
 import ConciergeRequestForm from './ConciergeRequestForm';
 
 /**
@@ -152,8 +153,8 @@ export default function ConciergeScreener({ onRoute }: { onRoute?: (route: Conci
         </div>
         <p className="mt-3 text-neutral-700">
           {opts.secondary
-            ? 'If it turns out you are paying privately or through long-term care insurance: a verified shortlist in 2 business days, a fit check against each home’s acceptance criteria, a Medicaid runway estimate, the real prices in writing with what to ask for, a contract red-flag review, and one thread with the discharge planner. If Medicaid, Medicare or the VA will pay, the intake call tells you so and points you back to the free help — no charge.'
-            : 'For families paying privately or through long-term care insurance. In a 48-hour discharge window the expensive mistakes are the wrong-fit home, the unread contract and the price that changes after move-in. Within 2 business days you get a verified shortlist, a fit check against each home’s acceptance criteria, a Medicaid runway estimate, the real prices in writing with what to ask for, a contract red-flag review, and one thread with the discharge planner.'}
+            ? 'If it turns out you are paying privately or through long-term care insurance: a personalized shortlist, a fit check against each home’s acceptance criteria, a Medicaid runway estimate, the real prices in writing with what to ask for, a contract red-flag review, and one thread with the discharge planner. If Medicaid, Medicare or the VA will pay, the intake call tells you so and points you back to the free help — no charge.'
+            : 'For families paying privately or through long-term care insurance. In a 48-hour discharge window the expensive mistakes are the wrong-fit home, the unread contract and the price that changes after move-in. You get a personalized shortlist, a fit check against each home’s acceptance criteria, a Medicaid runway estimate, the real prices in writing with what to ask for, a contract red-flag review, and one thread with the discharge planner.'}
         </p>
         <p className="mt-4 text-sm font-semibold text-neutral-900">What’s included</p>
         <ul className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="concierge-inclusions">
@@ -166,7 +167,7 @@ export default function ConciergeScreener({ onRoute }: { onRoute?: (route: Conci
         </ul>
         <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="rounded-lg border border-success-200 bg-success-50 p-4 text-sm text-neutral-800" data-testid="concierge-guarantee">
-            <strong className="text-success-800">Guarantee.</strong> {CONCIERGE_OFFER.guarantee}
+            <strong className="text-success-800">How it works.</strong> <ConciergeTerms className="inline" testId="concierge-offer-terms" />
           </div>
           <div className="rounded-lg bg-neutral-50 p-4 text-sm text-neutral-700" data-testid="concierge-not-included">
             <strong className="text-neutral-900">Not included:</strong> {CONCIERGE_OFFER.notIncluded.join(' · ')}.

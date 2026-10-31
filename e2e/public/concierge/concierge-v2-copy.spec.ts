@@ -16,10 +16,11 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 
-const HEADLINE = 'We keep you from making the $5,000 mistake under pressure.';
-const SUBHEAD = 'A verified shortlist in 2 business days — or you pay nothing.';
-const GUARANTEE = 'No verified shortlist within 2 business days → full refund.';
-// Any dollar amount except the headline's "$5,000 mistake" (the cost of a wrong move, not a price).
+const HEADLINE = 'Get a verified shortlist before you commit to a home.';
+const SUBHEAD = 'We do the research first. You pay only when your shortlist is ready.';
+// Pay when ready (10/31). Apostrophe-free slice of CONCIERGE_OFFER.guarantee (raw HTML encodes ' as &#x27;).
+const GUARANTEE = 'useful shortlist, you pay nothing.';
+// Any dollar amount (the old "$5,000 mistake" headline is gone; the exclusion is kept harmlessly).
 const PRICE = /\$\s?(?!5,000\b)\d/;
 
 async function answer(page: Page, label: RegExp) {
@@ -87,7 +88,7 @@ test.describe('@critical /concierge v2 copy (OL-165)', () => {
     // OL-166b: the free lane gets its own hero (own H1 + the verified-homes line) and no dollar figure anywhere.
     await expect(page.getByTestId('concierge-hero')).toHaveAttribute('data-lane', 'free');
     await expect(page.getByTestId('concierge-headline')).toHaveText('Free help for Medicaid, Medicare and VA families');
-    await expect(page.getByTestId('concierge-subhead')).toContainText('Verified homes, confirmed availability and Medicaid waiver status');
+    await expect(page.getByTestId('concierge-subhead')).toContainText('availability labeled as verified or not, Medicaid waiver status');
     const pageText = await page.getByTestId('concierge-page').innerText();
     expect(pageText).not.toMatch(/\$\s?\d/);
     expect(pageText).not.toContain('399');
