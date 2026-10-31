@@ -11,6 +11,8 @@
 
 export type TourSlide = { image: string; width: number; height: number; chapter: string; caption: string; seconds: number };
 export type Tour = { title: string; sampleDataNote: string | null; slides: TourSlide[] };
+/** Self-hosted narrated tour (public/demo/tour.mp4); no third-party player. */
+export type TourVideo = { src: string; poster: string | null; captions: string | null };
 
 const CAPTION_MAX = 200;
 const SECONDS = { min: 2, max: 30, fallback: 5 };

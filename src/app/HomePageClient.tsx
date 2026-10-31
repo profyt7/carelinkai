@@ -23,7 +23,8 @@ const VERIFIED_AVAILABILITY_DAYS = 10;
 import DemoRequestForm from "@/components/marketing/DemoRequestForm";
 import DemoVideoModal from "@/components/marketing/DemoVideoModal";
 import ProductTour from "@/components/marketing/ProductTour";
-import type { Tour } from "@/lib/marketing/product-tour-data";
+import TourVideo from "@/components/marketing/TourVideo";
+import type { Tour, TourVideo as TourVideoData } from "@/lib/marketing/product-tour-data";
 import { demoSectionCapabilities } from "@/lib/marketing/demo-section";
 import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/contact";
 import { CONCIERGE_OFFER } from "@/lib/concierge/offer";
@@ -68,6 +69,7 @@ export default function HomePage({
   complianceKitsOn = false,
   caregiverProOn = false,
   tour = null,
+  tourVideo = null,
 }: {
   providerListingOn?: boolean;
   providerBoostOn?: boolean;
@@ -78,6 +80,8 @@ export default function HomePage({
   caregiverProOn?: boolean;
   /** /public/demo/tour.json slides (read on the server); none → no tour. */
   tour?: Tour | null;
+  /** Self-hosted narrated tour (public/demo/tour.mp4, read on the server); none → no video, button or modal. */
+  tourVideo?: TourVideoData | null;
 } = {}) {
   // "Now Live" / "Coming Soon" follow the same flags as the product (src/lib/marketing/roadmap.ts).
   const roadmapFlags: RoadmapFlags = { providerListingOn, ridesPaymentsOn, backgroundChecksOn, operatorPlansOn, complianceKitsOn };
@@ -88,7 +92,6 @@ export default function HomePage({
   const [reducedMotion, setReducedMotion] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [demoVideoOpen, setDemoVideoOpen] = useState(false);
-  const demoVideoId = (process.env.NEXT_PUBLIC_DEMO_VIDEO_ID ?? '').trim();
   const demoCapabilities = demoSectionCapabilities();
 
   useEffect(() => {
@@ -1964,8 +1967,8 @@ export default function HomePage({
         </div>
       </section>
 
-      {/* 9. REQUEST A DEMO SECTION — the video, its button and its modal exist only once NEXT_PUBLIC_DEMO_VIDEO_ID is set. */}
-      {demoVideoId && <DemoVideoModal open={demoVideoOpen} onClose={() => setDemoVideoOpen(false)} />}
+      {/* 9. REQUEST A DEMO SECTION — the video, its button and its modal exist only when public/demo/tour.mp4 does (self-hosted; no YouTube). */}
+      {tourVideo && <DemoVideoModal open={demoVideoOpen} onClose={() => setDemoVideoOpen(false)} video={tourVideo} />}
       <section id="request-demo" className="py-20 bg-white border-t border-neutral-100">
         <div className="max-w-5xl mx-auto px-4 md:px-6">
           <div className="text-center mb-12">
@@ -1976,9 +1979,9 @@ export default function HomePage({
               See CareLinkAI in action
             </h2>
             <p className="text-neutral-500 text-lg mb-8 max-w-2xl mx-auto">
-              {tour ? 'Take a 90-second tour, or request a personalized walkthrough.' : 'Request a personalized walkthrough.'} We&apos;ll show families how to find and compare verified communities, and show care homes, caregivers and providers how to manage inquiries, staffing and listings in one place.
+              {tour || tourVideo ? 'Take a 90-second tour, or request a personalized walkthrough.' : 'Request a personalized walkthrough.'} We&apos;ll show families how to find and compare verified communities, and show care homes, caregivers and providers how to manage inquiries, staffing and listings in one place.
             </p>
-            {demoVideoId && (
+            {tourVideo && (
               <button
                 onClick={() => setDemoVideoOpen(true)}
                 className="group inline-flex items-center gap-3 bg-primary-600 hover:bg-primary-700 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg transition-all duration-200 hover:-translate-y-0.5"
@@ -1993,15 +1996,9 @@ export default function HomePage({
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
             <div className="space-y-5">
-              {demoVideoId && (
-                <div className="aspect-video rounded-xl overflow-hidden shadow-lg border border-neutral-200">
-                  <iframe
-                    src={`https://www.youtube.com/embed/${demoVideoId}?rel=0`}
-                    title="CareLinkAI Product Demo"
-                    className="w-full h-full"
-                    allow="fullscreen"
-                    allowFullScreen
-                  />
+              {tourVideo && (
+                <div className="rounded-xl overflow-hidden shadow-lg border border-neutral-200">
+                  <TourVideo video={tourVideo} />
                 </div>
               )}
               <ProductTour tour={tour} />

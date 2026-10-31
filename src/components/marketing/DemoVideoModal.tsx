@@ -2,17 +2,18 @@
 
 import { useEffect } from "react";
 import { FiX } from "react-icons/fi";
+import TourVideo from "@/components/marketing/TourVideo";
+import type { TourVideo as TourVideoData } from "@/lib/marketing/product-tour-data";
 
-// NEXT_PUBLIC_DEMO_VIDEO_ID = the YouTube video id. Unset → the modal never renders
-// (the homepage also hides its button), so no setup text can reach a visitor.
-const DEMO_VIDEO_ID = (process.env.NEXT_PUBLIC_DEMO_VIDEO_ID || "").trim();
-
+// The self-hosted tour (public/demo/tour.mp4). No video → the modal never renders (the homepage
+// also hides its button). No autoplay, no third-party player.
 interface DemoVideoModalProps {
   open: boolean;
   onClose: () => void;
+  video?: TourVideoData | null;
 }
 
-export default function DemoVideoModal({ open, onClose }: DemoVideoModalProps) {
+export default function DemoVideoModal({ open, onClose, video }: DemoVideoModalProps) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -20,7 +21,7 @@ export default function DemoVideoModal({ open, onClose }: DemoVideoModalProps) {
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  if (!open || !DEMO_VIDEO_ID) return null;
+  if (!open || !video) return null;
 
   return (
     <div
@@ -36,14 +37,8 @@ export default function DemoVideoModal({ open, onClose }: DemoVideoModalProps) {
           Close
         </button>
 
-        <div className="aspect-video rounded-xl overflow-hidden shadow-2xl">
-          <iframe
-            src={`https://www.youtube.com/embed/${DEMO_VIDEO_ID}?autoplay=1&rel=0`}
-            title="CareLinkAI Product Demo"
-            className="w-full h-full"
-            allow="autoplay; fullscreen"
-            allowFullScreen
-          />
+        <div className="rounded-xl overflow-hidden shadow-2xl">
+          <TourVideo video={video} />
         </div>
       </div>
     </div>
