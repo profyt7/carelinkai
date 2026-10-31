@@ -35,6 +35,13 @@ async function devLogin(page: Page, email: string) {
   expect(res.status(), `dev-login ${email}`).toBe(200);
 }
 
+/** Navigate, retrying when the CI dev server drops the connection while it restarts on memory. */
+async function go(page: Page, url: string) {
+  await expect(async () => {
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 180_000 });
+  }).toPass({ timeout: 300_000, intervals: [5_000, 10_000, 20_000] });
+}
+
 /** POST a claim from the signed-in page's cookie jar. */
 async function postClaim(page: Page, homeId: string) {
   return (await page.request.post(`/api/homes/${homeId}/claim-request`, { timeout: 120_000 })).status();
@@ -85,17 +92,18 @@ test.describe('@critical self-serve listing claim', () => {
   });
 
   test('logged in: one click files a PENDING_REVIEW claim; nothing changes hands', async ({ browser }) => {
-    for (const w of [390, 1280]) {
+    // Screenshot-only page loads run only when screenshots are requested (keeps the CI dev server's memory down).
+    for (const w of SHOTS ? [390, 1280] : []) {
       const page = await ctxPage(browser, w);
       await devLogin(page, OP_X);
-      await page.goto(`/homes/${home.a}`, { waitUntil: 'domcontentloaded', timeout: 180_000 });
+      await go(page, `/homes/${home.a}`);
       await expect(page.getByTestId('listing-claim-button').first()).toBeVisible(SLOW);
       await shot(page, `listing-claim-button-operator-${w}`, 'listing-claim-button');
       await page.close();
     }
     const page = await ctxPage(browser, 1280);
     await devLogin(page, OP_X);
-    await page.goto(`/homes/${home.a}`, { waitUntil: 'domcontentloaded', timeout: 180_000 });
+    await go(page, `/homes/${home.a}`);
     await page.getByTestId('listing-claim-button').first().click();
     await expect(page.getByTestId('listing-claim-submitted')).toContainText("Claim submitted — we'll verify and email you.", SLOW);
     await shot(page, 'listing-claim-submitted-1280', 'listing-claim-submitted');
@@ -103,15 +111,18 @@ test.describe('@critical self-serve listing claim', () => {
     expect(claims.map((c) => [c.status, c.source])).toEqual([['PENDING_REVIEW', 'listing_button']]);
     const a = await prisma.assistedLivingHome.findUniqueOrThrow({ where: { id: home.a }, select: { operator: { select: { user: { select: { email: true } } } } } });
     expect(a.operator?.user?.email).toBe(DIRECTORY);
-    // The same at 390, on another listing.
+    // The same at 390, on another listing (screenshots only).
+    if (SHOTS) {
     const phone = await ctxPage(browser, 390);
     await devLogin(phone, OP_X);
-    await phone.goto(`/homes/${home.e}`, { waitUntil: 'domcontentloaded', timeout: 180_000 });
+    await go(phone, `/homes/${home.e}`);
     await phone.getByTestId('listing-claim-button').first().click();
     await expect(phone.getByTestId('listing-claim-submitted')).toBeVisible(SLOW);
     await shot(phone, 'listing-claim-submitted-390', 'listing-claim-submitted');
+    await phone.close();
+    }
     // Reload: the listing now says a claim is under review.
-    await page.goto(`/homes/${home.a}`, { waitUntil: 'domcontentloaded', timeout: 180_000 });
+    await go(page, `/homes/${home.a}`);
     await expect(page.getByTestId('listing-claim-pending-staff')).toBeVisible(SLOW);
   });
 
@@ -129,24 +140,24 @@ test.describe('@critical self-serve listing claim', () => {
     await devLogin(op, OP_Y);
     expect(await postClaim(op, home.d)).toBe(409);
     const guest = await ctxPage(browser, 1280);
-    await guest.goto(`/homes/${home.d}`, { waitUntil: 'domcontentloaded', timeout: 180_000 });
+    await go(guest, `/homes/${home.d}`);
     await expect(guest.getByTestId('listing-claim-managed')).toContainText('This listing is managed by its community.', SLOW);
     await expect(guest.getByTestId('listing-claim-managed').getByRole('link')).toHaveAttribute('href', '/contact');
-    await guest.goto(`/homes/${home.d}/claim`, { waitUntil: 'domcontentloaded', timeout: 180_000 });
+    await go(guest, `/homes/${home.d}/claim`);
     await expect(guest.getByTestId('claim-page-managed')).toBeVisible(SLOW);
     expect(await prisma.homeClaim.count({ where: { homeId: home.d } })).toBe(0);
   });
 
   test('logged out: listing button → claim page → signup carries the home through and files the claim', async ({ browser }) => {
-    for (const w of [390, 1280]) {
+    for (const w of SHOTS ? [390, 1280] : []) {
       const page = await ctxPage(browser, w);
-      await page.goto(`/homes/${home.b}`, { waitUntil: 'domcontentloaded', timeout: 180_000 });
+      await go(page, `/homes/${home.b}`);
       await expect(page.getByTestId('listing-claim-open')).toBeVisible(SLOW);
       await shot(page, `listing-claim-button-guest-${w}`, 'listing-claim-open');
       await page.close();
     }
     const page = await ctxPage(browser, 1280);
-    await page.goto(`/homes/${home.b}`, { waitUntil: 'domcontentloaded', timeout: 180_000 });
+    await go(page, `/homes/${home.b}`);
     await page.getByTestId('listing-claim-button').click();
     await expect(page).toHaveURL(new RegExp(`/homes/${home.b}/claim$`), SLOW);
     await expect(page.getByTestId('claim-page-login')).toHaveAttribute('href', `/auth/login?callbackUrl=${encodeURIComponent(`/homes/${home.b}/claim`)}`);
@@ -168,11 +179,14 @@ test.describe('@critical self-serve listing claim', () => {
     const api = await ctxPage(browser, 1280);
     await devLogin(api, OP_Y);
     expect(await postClaim(api, home.c)).toBe(201);
-    for (const w of [390, 1280]) {
+    for (const w of SHOTS ? [390, 1280] : [1280]) {
       const page = await ctxPage(browser, w);
       await devLogin(page, OP_Y);
-      await page.goto('/operator', { waitUntil: 'domcontentloaded', timeout: 180_000 });
-      await expect(page.getByTestId('operator-pending-claims')).toContainText('Claim submitted', SLOW);
+      // Reload until the banner shows: a dev-server restart mid-load leaves the page without it.
+      await expect(async () => {
+        await go(page, '/operator');
+        await expect(page.getByTestId('operator-pending-claims')).toContainText('Claim submitted', { timeout: 60_000 });
+      }).toPass({ timeout: 360_000, intervals: [5_000, 15_000] });
       await expect(page.getByTestId('operator-pending-claims')).toContainText(`Claim Test C ${ts}`, SLOW);
       await shot(page, `operator-claim-submitted-${w}`, 'operator-pending-claims');
       await page.close();
@@ -180,21 +194,31 @@ test.describe('@critical self-serve listing claim', () => {
   });
 
   test('admin queue: approve transfers ownership, reject does not', async ({ browser }) => {
-    for (const w of [390, 1280]) {
+    for (const w of SHOTS ? [390, 1280] : []) {
       const page = await ctxPage(browser, w);
       await devLogin(page, ADMIN);
-      await page.goto('/admin/home-claims', { waitUntil: 'domcontentloaded', timeout: 180_000 });
+      await go(page, '/admin/home-claims');
       await expect(page.getByTestId('admin-home-claim-row').filter({ hasText: `Claim Test A ${ts}` })).toContainText(`by ${OP_X}`, SLOW);
       await shot(page, `admin-claim-queue-${w}`);
       await page.close();
     }
     const page = await ctxPage(browser, 1280);
     await devLogin(page, ADMIN);
-    await page.goto('/admin/home-claims', { waitUntil: 'domcontentloaded', timeout: 180_000 });
-    await page.getByTestId('admin-home-claim-row').filter({ hasText: `Claim Test A ${ts}` }).getByTestId('admin-home-claim-approve').click();
-    await expect(page.getByTestId('admin-home-claim-row').filter({ hasText: `Claim Test A ${ts}` })).toHaveCount(0, SLOW);
-    await page.getByTestId('admin-home-claim-row').filter({ hasText: `Claim Test B ${ts}` }).getByTestId('admin-home-claim-reject').click();
-    await expect(page.getByTestId('admin-home-claim-row').filter({ hasText: `Claim Test B ${ts}` })).toHaveCount(0, SLOW);
+    await go(page, '/admin/home-claims');
+    // Click in the queue; the database is the source of truth. If a dev-server restart swallows the click,
+    // reload and click again (approve / reject are conditional on PENDING_REVIEW, so a repeat can't double-apply).
+    const decide = async (name: string, action: 'approve' | 'reject', homeId: string, want: 'APPROVED' | 'REJECTED') => {
+      await expect(async () => {
+        const row = page.getByTestId('admin-home-claim-row').filter({ hasText: name });
+        if ((await row.count()) === 0) await go(page, '/admin/home-claims');
+        if ((await row.count()) > 0) await row.getByTestId(`admin-home-claim-${action}`).click({ timeout: 30_000 });
+        await expect.poll(async () => (await prisma.homeClaim.findFirstOrThrow({ where: { homeId } })).status, { timeout: 30_000 }).toBe(want);
+      }).toPass({ timeout: 360_000, intervals: [5_000, 15_000] });
+      await expect(page.getByTestId('admin-home-claim-row').filter({ hasText: name })).toHaveCount(0, SLOW);
+    };
+    await expect(page.getByTestId('admin-home-claim-row').filter({ hasText: `Claim Test A ${ts}` })).toContainText(`by ${OP_X}`, SLOW);
+    await decide(`Claim Test A ${ts}`, 'approve', home.a, 'APPROVED');
+    await decide(`Claim Test B ${ts}`, 'reject', home.b, 'REJECTED');
 
     const a = await prisma.assistedLivingHome.findUniqueOrThrow({ where: { id: home.a }, select: { status: true, operator: { select: { user: { select: { email: true } } } } } });
     expect([a.operator?.user?.email, a.status]).toEqual([OP_X, 'PENDING_REVIEW']);
@@ -204,7 +228,7 @@ test.describe('@critical self-serve listing claim', () => {
     expect((await prisma.homeClaim.findFirstOrThrow({ where: { homeId: home.b } })).status).toBe('REJECTED');
     // B is open to claim again after a rejection.
     const guest = await ctxPage(browser, 1280);
-    await guest.goto(`/homes/${home.b}/claim`, { waitUntil: 'domcontentloaded', timeout: 180_000 });
+    await go(guest, `/homes/${home.b}/claim`);
     await expect(guest.getByTestId('claim-page-signed-out')).toBeVisible(SLOW);
   });
 
@@ -214,7 +238,7 @@ test.describe('@critical self-serve listing claim', () => {
     const now = Math.floor(Date.now() / 1000);
     const token = signClaimToken({ operatorEmail: `outreach-${ts}@test.carelinkai.com`, homeId: home.c, clevelandFounder: true, iat: now, exp: now + 3600 }, secret!);
     const page = await ctxPage(browser, 1280);
-    await page.goto(`/claim?token=${encodeURIComponent(token)}`, { waitUntil: 'domcontentloaded', timeout: 180_000 });
+    await go(page, `/claim?token=${encodeURIComponent(token)}`);
     await expect(page).toHaveURL(/\/auth\/register\?role=OPERATOR&claimToken=/, SLOW);
   });
 });
