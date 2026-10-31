@@ -2863,3 +2863,20 @@
   - None for the claim flow: per Chris, approval transfers ownership only, and the listing's status is unchanged.
 - **Recommended next step:** Chris merges #33, runs the concierge acceptance test, and reviews the OL-250 PR.
 
+### 2026-11-01 (later) — Merged #33, #35, #34; concierge manual shortlist blocker (OL-252)
+- **Objective:**
+  - Merge the approved PRs, running prod-verify after each.
+  - Fix the blocker the live payment test found: no way to build a shortlist for family requests.
+- **Work completed:**
+  - **Merges** (prod-verify passed with `check_trackers` on after each):
+    - #33 `2e0e1482` ($0 full-discount test checkout);
+    - #35 `aaa1651c` (tour thumbnail);
+    - #34 `bc8ee8cd` (self-serve claim; approval transfers ownership only).
+  - **OL-252 PR** `fix/concierge-manual-shortlist`: add a home by name/city/ZIP; suggest-on-demand that stores candidates; per-home availability label; reorder and remove.
+- **Files changed:** see OL-252.
+- **Commands run:** tsc, eslint, jest (176 suites, 2047 passed), `next build`, Playwright `e2e/public/concierge/` (manual-shortlist + pay-when-ready, 2 passed).
+- **Tests/build status:** green locally.
+- **Deployment impact:** admin curate panel only; no migration, env or flag changes.
+- **New risks/blockers:** TEST ORDER A/B stay open until OL-252 ships; then Cowork finishes the payment test and runs the cleanup preview.
+- **Recommended next step:** Chris approves the OL-252 merge, then finishes the payment test.
+

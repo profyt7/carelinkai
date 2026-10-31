@@ -17,7 +17,10 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-type Curated = { homeId?: string; name?: string; address?: string; note?: string; confirmedAvailability?: string };
+type Curated = { homeId?: string; name?: string; address?: string; note?: string; confirmedAvailability?: string; availabilityLabel?: 'verified' | 'unconfirmed' };
+
+/** fix/concierge-manual-shortlist: the admin's label decides; older shortlists (no label) fall back to "details given". */
+const isVerified = (h: Curated) => (h.availabilityLabel ? h.availabilityLabel === 'verified' : !!h.confirmedAvailability);
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
@@ -85,10 +88,10 @@ export default async function ConciergeShortlistPage({ params }: { params: Promi
               {i + 1}. {h.name ?? 'Home'}
             </p>
             {h.address && <p className="text-sm text-neutral-600">{h.address}</p>}
-            <p className="mt-2 text-sm" data-testid="concierge-shortlist-availability">
-              {h.confirmedAvailability ? (
+            <p className="mt-2 text-sm" data-testid="concierge-shortlist-availability" data-label={isVerified(h) ? 'verified' : 'unconfirmed'}>
+              {isVerified(h) ? (
                 <>
-                  <span className="font-semibold text-success-700">Availability — verified by our team:</span> {h.confirmedAvailability}
+                  <span className="font-semibold text-success-700">Availability — verified by our team{h.confirmedAvailability ? ':' : '.'}</span> {h.confirmedAvailability}
                 </>
               ) : (
                 <>
