@@ -13,6 +13,7 @@
 // Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';
 
+import { founderUpdateFromClaim } from '@/lib/claim-founder';
 import { NextRequest, NextResponse } from "next/server";
 import { UserRole, UserStatus, AuditAction } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -279,16 +280,11 @@ export async function POST(request: NextRequest) {
               process.env['NEXTAUTH_SECRET'] ?? ''
             );
             if (payload && payload.operatorEmail.toLowerCase() === normalizedEmail) {
-              console.log("[REGISTER API] Applying Cleveland founder claim token");
+              console.log("[REGISTER API] Applying claim token");
+              // OL-248: founder status only from what the link says (a cohort link minted false stays false).
               await tx.operator.update({
                 where: { id: newOperator.id },
-                data: {
-                  clevelandFounder: true,
-                  freeAccessUntil: new Date(
-                    Date.now() + 1000 * 60 * 60 * 24 * 180
-                  ),
-                  seededHomeId: payload.homeId ?? null,
-                },
+                data: founderUpdateFromClaim({ clevelandFounder: false, freeAccessUntil: null }, payload),
               });
             } else {
               console.log("[REGISTER API] Claim token invalid or email mismatch — skipping");

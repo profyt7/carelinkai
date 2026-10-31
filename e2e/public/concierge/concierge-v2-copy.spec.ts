@@ -1,6 +1,6 @@
 /**
- * /concierge v2 copy + structure (OL-165). Backend untouched; checkout stays
- * behind CONCIERGE_CHECKOUT_ENABLED.
+ * /concierge v2 copy + structure (OL-165). Upfront checkout is retired (OL-248);
+ * pay when ready is the only path.
  *
  *  - "Free for families" is above the fold (in the hero, before the screener
  *    and before the headline in DOM order);

@@ -28,7 +28,7 @@ import { prisma } from '@/lib/prisma';
 import { sendConciergePaidNotification } from '@/lib/email';
 import { createInAppNotification } from '@/lib/services/notifications';
 import { stripe } from '@/lib/stripe';
-import { handleConciergeStripeEvent, isConciergeStripeEvent, capStatus, createOrder, createCheckoutSession } from '@/lib/concierge/orders';
+import { handleConciergeStripeEvent, isConciergeStripeEvent, capStatus, createOrder, } from '@/lib/concierge/orders';
 
 const P = prisma as any;
 const flush = () => new Promise((r) => setImmediate(r));
@@ -144,15 +144,12 @@ describe('capacity + orders', () => {
     expect(P.conciergeOrder.count).toHaveBeenCalledWith({ where: { status: { in: ['PAID', 'REQUESTED_UNPAID'] }, createdAt: { gte: new Date('2026-10-01T00:00:00.000Z') } } });
     expect(s).toMatchObject({ cap: 4, committed: 4, capReached: true, checkoutEnabled: false, mode: 'waitlist' });
   });
-  it('flag unset → request; flag set + preflight green and under cap → checkout; flag set but preflight red → request (OL-162)', async () => {
+  it('upfront checkout is retired (OL-248): request under the cap, whatever CONCIERGE_CHECKOUT_ENABLED and Stripe say', async () => {
     P.conciergeOrder.count.mockResolvedValue(1);
-    expect((await capStatus()).mode).toBe('request');
     process.env['CONCIERGE_CHECKOUT_ENABLED'] = '1';
-    // The flag alone is not enough: the Stripe key / price / webhook / admin email must be in place.
-    expect((await capStatus()).mode).toBe('request');
     Object.assign(process.env, { STRIPE_SECRET_KEY: 'sk_test_unit', STRIPE_PRICE_FAMILY_CONCIERGE: 'price_unit', STRIPE_WEBHOOK_SECRET: 'whsec_unit', ADMIN_NOTIFY_EMAIL: 'admin@example.com' });
-    expect((await capStatus()).mode).toBe('checkout');
-    for (const k of ['STRIPE_SECRET_KEY', 'STRIPE_PRICE_FAMILY_CONCIERGE', 'STRIPE_WEBHOOK_SECRET', 'ADMIN_NOTIFY_EMAIL']) delete process.env[k];
+    expect(await capStatus()).toMatchObject({ mode: 'request', checkoutEnabled: false });
+    for (const k of ['CONCIERGE_CHECKOUT_ENABLED', 'STRIPE_SECRET_KEY', 'STRIPE_PRICE_FAMILY_CONCIERGE', 'STRIPE_WEBHOOK_SECRET', 'ADMIN_NOTIFY_EMAIL']) delete process.env[k];
   });
   it('createOrder writes the order + order.created event (source FAMILY) in one transaction', async () => {
     P.conciergeOrder.create.mockResolvedValue({ id: 'ord_9', status: 'REQUESTED_UNPAID' });
@@ -162,19 +159,8 @@ describe('capacity + orders', () => {
     expect(P.conciergeOrder.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ email: 'fam@example.com', status: 'REQUESTED_UNPAID', amountCents: 39900 }) }));
     expect(P.entityEvent.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ entityType: 'CONCIERGE_ORDER', entityId: 'ord_9', eventType: 'order.created', source: 'FAMILY' }) }));
   });
-  it('createCheckoutSession uses the existing Price and never creates products/prices', async () => {
-    process.env['STRIPE_PRICE_FAMILY_CONCIERGE'] = 'price_test_399';
-    (stripe.checkout.sessions.create as jest.Mock).mockResolvedValue({ id: 'cs_9', url: 'https://checkout.stripe.test/cs_9' });
-    const s = await createCheckoutSession({ orderId: 'ord_9', placementSearchId: 'ps_9', email: 'fam@example.com' });
-    expect(s).toEqual({ id: 'cs_9', url: 'https://checkout.stripe.test/cs_9' });
-    const arg = (stripe.checkout.sessions.create as jest.Mock).mock.calls[0][0];
-    expect(arg.mode).toBe('payment');
-    expect(arg.line_items).toEqual([{ price: 'price_test_399', quantity: 1 }]);
-    expect(arg.metadata).toMatchObject({ type: 'FAMILY_CONCIERGE', orderId: 'ord_9' });
-    expect(arg.success_url).toContain('/concierge/thanks?order=ord_9');
-    expect((stripe as any).products).toBeUndefined();
-    expect((stripe as any).prices).toBeUndefined();
-    delete process.env['STRIPE_PRICE_FAMILY_CONCIERGE'];
-    await expect(createCheckoutSession({ orderId: 'o', placementSearchId: 'p', email: 'e@x.com' })).rejects.toThrow(/STRIPE_PRICE_FAMILY_CONCIERGE/);
+  it('the upfront Checkout Session builder is gone (OL-248)', async () => {
+    const mod = await import('@/lib/concierge/orders');
+    expect((mod as Record<string, unknown>)['createCheckoutSession']).toBeUndefined();
   });
 });

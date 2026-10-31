@@ -13,6 +13,7 @@ import {
   type HowToGuide,
 } from './howto/content';
 import { filterGuidesForRole, type ViewerRole } from '@/lib/howto/access';
+import { currentLearnFlags, withLearnFlags } from '@/lib/howto/flags';
 
 export const metadata: Metadata = {
   title: 'Family Education Hub',
@@ -40,7 +41,9 @@ export default async function LearnPage({
   // Role-gated How-To guides, grouped by audience for display. Each guide can
   // belong to more than one audience; show it under the first matching group
   // in display order so it appears once.
-  const visibleHowTo = filterGuidesForRole(HOWTO_GUIDES, role);
+  // OL-248: titles and summaries follow the flags (no On-Call texts/calls or plan prices while they're off).
+  const learnFlags = await currentLearnFlags();
+  const visibleHowTo = filterGuidesForRole(HOWTO_GUIDES.map((g) => withLearnFlags(g, learnFlags)), role);
   const shownSlugs = new Set<string>();
   const howToByAudience: Array<{ audience: HowToAudience; guides: HowToGuide[] }> = [];
   for (const audience of AUDIENCE_ORDER) {

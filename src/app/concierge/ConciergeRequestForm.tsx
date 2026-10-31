@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { PayerSource } from '@/lib/payer/payer-source';
 import { CONCIERGE_REQUEST_API } from '@/lib/concierge/screener';
-import { CONCIERGE_CHECKOUT_API, CONCIERGE_OFFER, CONCIERGE_OFFER_API, ctaLabelFor, type ConciergeCtaMode } from '@/lib/concierge/offer';
+import { CONCIERGE_OFFER, CONCIERGE_OFFER_API, ctaLabelFor, type ConciergeCtaMode } from '@/lib/concierge/offer';
 import SmsConsentCheckbox, { emptySmsConsent } from '@/components/consent/SmsConsentCheckbox';
 import ConciergeTerms from '@/components/concierge/ConciergeTerms';
 import type { SmsConsentPayload } from '@/lib/consent/sms-consent';
@@ -11,7 +11,6 @@ import type { SmsConsentPayload } from '@/lib/consent/sms-consent';
 /**
  * Intake form inside the paid offer (sprint W4 0a, W5-3). Only rendered after a
  * private-pay / LTC / not-sure screener answer. The CTA depends on the server:
- *   checkout → "Book the concierge — <price>" → Stripe Checkout redirect
  *   request  → "Request your shortlist" (flag unset) → unpaid queue row; pay when ready:
  *              research first, a payment link when the shortlist is ready, the shortlist once paid
  *   waitlist → "Fully booked this month — join the waitlist" → same intake, WAITLIST
@@ -29,7 +28,7 @@ export default function ConciergeRequestForm({ payerSource }: { payerSource: Pay
     fetch(CONCIERGE_OFFER_API, { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => {
-        if (alive && j && (j.mode === 'checkout' || j.mode === 'request' || j.mode === 'waitlist')) setMode(j.mode);
+        if (alive && j && (j.mode === 'request' || j.mode === 'waitlist')) setMode(j.mode);
       })
       .catch(() => undefined)
       .finally(() => alive && setModeLoaded(true));
@@ -56,19 +55,10 @@ export default function ConciergeRequestForm({ payerSource }: { payerSource: Pay
     setState('submitting');
     setError(null);
     try {
-      const api = mode === 'checkout' ? CONCIERGE_CHECKOUT_API : CONCIERGE_REQUEST_API;
-      let res = await fetch(api, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      let data = await res.json().catch(() => ({}));
-      // Checkout not available after all (flag flipped / Stripe down) → fall back to the request path.
-      if (!res.ok && mode === 'checkout' && data?.fallback === 'request') {
-        res = await fetch(CONCIERGE_REQUEST_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-        data = await res.json().catch(() => ({}));
-      }
+      // Pay when ready is the only path (OL-248): every submit is a request; nothing is charged now.
+      const res = await fetch(CONCIERGE_REQUEST_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || 'Something went wrong. Please try again.');
-      if (data?.url) {
-        window.location.assign(data.url as string);
-        return;
-      }
       setState(data?.waitlisted || data?.orderStatus === 'WAITLIST' ? 'waitlisted' : 'done');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong.');
@@ -106,7 +96,7 @@ export default function ConciergeRequestForm({ payerSource }: { payerSource: Pay
 
   return (
     <form onSubmit={onSubmit} data-testid="concierge-request-form" data-mode={mode} data-mode-loaded={modeLoaded ? 'true' : 'false'} className="mt-6 rounded-xl border border-neutral-200 bg-neutral-50 p-5">
-      <h4 className="text-lg font-bold text-neutral-900">{mode === 'checkout' ? 'Book the concierge' : mode === 'waitlist' ? 'Join the waitlist' : 'Request your shortlist'}</h4>
+      <h4 className="text-lg font-bold text-neutral-900">{mode === 'waitlist' ? 'Join the waitlist' : 'Request your shortlist'}</h4>
       <p className="mt-1 text-sm text-neutral-600">Two minutes. A person reads this — no bots, no resale.</p>
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="block">
@@ -178,9 +168,7 @@ export default function ConciergeRequestForm({ payerSource }: { payerSource: Pay
         {state === 'submitting' ? 'Sending…' : ctaLabelFor(mode)}
       </button>
       <p className="mt-3 text-xs text-neutral-500">
-        {mode === 'checkout'
-          ? 'Secure payment by Stripe. '
-          : 'Nothing is charged now. '}
+        Nothing is charged now. 
         We keep what you tell us in-app and never email it to a facility. No marketing email, ever.
       </p>
     </form>

@@ -12,7 +12,7 @@
 import { renderToString } from 'react-dom/server';
 import HomePageClient from '@/app/HomePageClient';
 import { comingSoonItems, nowLiveItems, ROADMAP_FLAGS_OFF } from '@/lib/marketing/roadmap';
-import { loadProductTour, loadTourVideo } from '@/lib/marketing/product-tour';
+import { loadTourVideo } from '@/lib/marketing/product-tour';
 import ProviderCard from '@/components/marketplace/ProviderCard';
 import CaregiverCard from '@/components/marketplace/CaregiverCard';
 import BackgroundCheckBadge from '@/components/caregiver/BackgroundCheckBadge';
@@ -191,43 +191,43 @@ describe('no background-check UI while BACKGROUND_CHECKS is off (seeded CLEAR ro
   });
 });
 
-describe('product tour on the homepage', () => {
-  const demo = (html: string) => text(section(html, 'request-demo'));
-  it('renders when public/demo/tour.json exists, with chapter chips, controls and the sample-data note', () => {
-    const tour = loadProductTour();
-    expect(tour).not.toBeNull();
-    const html = renderToString(<HomePageClient tour={tour} />);
-    expect(html).toContain('data-testid="product-tour"');
-    const t = demo(html);
-    for (const c of ['For families', 'For discharge planners', 'For care homes', 'For caregivers', 'For providers', 'Back', 'Play', 'Next']) expect(t).toContain(c);
-    expect(t).toContain('All names, homes and prices shown are sample data.');
-    expect(t).toContain('Take a 90-second tour, or request a personalized walkthrough.');
-    // alt = caption, size from the JSON.
-    expect(html).toContain(`alt="${tour!.slides[0]!.caption.replace(/'/g, '&#x27;')}"`);
-    expect(html).toContain(`width="${tour!.slides[0]!.width}"`);
-  });
-  it('no tour.json → no tour and no "90-second" claim', () => {
-    const html = renderToString(<HomePageClient tour={null} />);
+describe('"Get started on your own" panel on the homepage (OL-248 h)', () => {
+  const panel = (html: string) => text(section(html, 'get-started'));
+  it('with tour.mp4: the tour button, role links, guides and footer; no form, no slide tour, no walkthrough request', () => {
+    const html = renderToString(<HomePageClient tourVideo={loadTourVideo()} />);
+    const t = panel(html);
+    expect(t).toContain('Get started on your own');
+    expect(t).toContain('Watch the 90-second tour, then jump straight to what you need. Getting started is free.');
+    expect(t).toContain('Watch the 90-second tour');
+    for (const c of ['Find care near you', 'Claim your free listing', 'Send a referral', 'Explore caregiver opportunities', 'Step-by-step guides', 'Questions? Call']) expect(t).toContain(c);
     expect(html).not.toContain('data-testid="product-tour"');
-    expect(demo(html)).not.toContain('90-second');
+    expect(html).not.toContain('id="request-demo"');
+    expect(html).not.toMatch(/<form[^>]*demo/i);
+    expect(text(html)).not.toMatch(/personalized walkthrough|Request (a|My) Demo/i);
+  });
+  it('no tour.mp4 → no tour button and no "90-second" claim', () => {
+    const html = renderToString(<HomePageClient tourVideo={null} />);
+    expect(html).not.toContain('data-testid="get-started-watch-tour"');
+    expect(panel(html)).not.toContain('90-second');
   });
 });
 
 describe('self-hosted tour video: no third-party video player anywhere on the homepage', () => {
   const YOUTUBE = /youtube\.com|youtube-nocookie\.com|youtu\.be/i;
-  it('the committed tour.mp4 shows the video (no autoplay) and nothing references YouTube', () => {
+  it('the committed tour.mp4 shows the tour button and nothing references YouTube', () => {
     const tourVideo = loadTourVideo();
     expect(tourVideo?.src).toBe('/demo/tour.mp4');
-    const html = renderToString(<HomePageClient tour={loadProductTour()} tourVideo={tourVideo} />);
-    expect(html).toContain('<source src="/demo/tour.mp4" type="video/mp4"/>');
+    const html = renderToString(<HomePageClient tourVideo={tourVideo} />);
+    // The video only mounts inside the tour dialog now; the page links nothing third-party.
+    expect(html).toContain('data-testid="get-started-watch-tour"');
     expect(html).not.toMatch(/<video[^>]*autoplay/i);
     expect(html).not.toMatch(YOUTUBE);
     expect(html).not.toMatch(/<iframe/i);
   });
-  it('without tour.mp4: no video, no Watch Demo, still no YouTube', () => {
+  it('without tour.mp4: no video, no tour button, still no YouTube', () => {
     const html = renderToString(<HomePageClient />);
     expect(html).not.toContain('<video');
-    expect(text(html)).not.toContain('Watch Demo');
+    expect(html).not.toContain('get-started-watch-tour');
     expect(html).not.toMatch(YOUTUBE);
   });
   it('loadTourVideo: no tour.mp4 → null; captions / poster only when their files exist', () => {

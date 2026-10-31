@@ -3,6 +3,20 @@ _Last updated: 2026-10-30 (night) — **OL-245 PR** `chore/tour-recapture` (self
 
 
 
+## Active Branch (2026-10-31, later) — OL-248 `fix/ol-246-founder-truth` (PR open; base main `e334476a`)
+- **Main:** #31 `25e2d2a8` and #29 `e334476a` merged and prod-verified (`check_trackers` on).
+- **Concierge phase 2 (pay when ready only):**
+  - The payment link is `CONCIERGE_PAYMENT_LINK_URL` (Stripe Payment Link) + `?client_reference_id=<orderId>&prefilled_email=<email>`.
+  - The webhook's `checkout.session.completed` with a matching `client_reference_id` → PAID, shortlist released, family and admin emailed (`handlePaymentLinkCheckoutCompleted`; idempotent on the event id).
+  - The hourly sweep runs via `scripts/run-cron.js` → `POST /api/cron/concierge-orders`: one reminder at 3 days, EXPIRED at 14.
+  - New `EXPIRED` status; `paymentReminderSentAt` and `expiredAt` columns.
+  - Upfront checkout is retired (`/api/concierge/checkout` → 410; `isCheckoutEnabled()` always false).
+- **Founder truth:**
+  - The Founding Operator card comes from `src/lib/operator/founding-offer.ts`.
+  - How-To guides are trimmed per flag by `src/lib/howto/flags.ts`.
+  - Claim writes go through `founderUpdateFromClaim` (`src/lib/claim-founder.ts`).
+- **Homepage (OL-248 h):** the demo-request form and `/api/demo-request` are deleted. Section `#get-started` (`GetStartedPanel`) has the tour button (dialog, `/demo/tour.mp4`) and role links from `getStartedLinks()`; the provider link follows `PROVIDER_LISTING_ENABLED`. The homepage no longer renders the slide tour (still on /help). `DemoRequest` table kept, no longer written.
+
 ## Family Concierge, pay when ready (2026-10-31, same branch / PR #29)
 - **`ConciergeOrder` columns:** `paymentLinkUrl`, `paymentLinkSentAt`, `shortlistReleasedAt` (additive migration).
 - **Admin flow:**

@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 
+import { founderUpdateFromClaim } from '@/lib/claim-founder';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -54,22 +55,21 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const freeUntil = new Date();
-  freeUntil.setMonth(freeUntil.getMonth() + 6);
-
-  await prisma.operator.update({
+  // OL-248: founder status only from the link; never reset an existing free period or founder flag.
+  const data = founderUpdateFromClaim(
+    { clevelandFounder: operator.clevelandFounder, freeAccessUntil: operator.freeAccessUntil },
+    payload,
+  );
+  const updated = await prisma.operator.update({
     where: { id: operator.id },
-    data: {
-      clevelandFounder: true,
-      freeAccessUntil: freeUntil,
-      seededHomeId: payload.homeId ?? null,
-    },
+    data,
+    select: { clevelandFounder: true, freeAccessUntil: true, seededHomeId: true },
   });
 
   return NextResponse.json({
     ok: true,
-    clevelandFounder: true,
-    freeAccessUntil: freeUntil,
-    seededHomeId: payload.homeId ?? null,
+    clevelandFounder: updated.clevelandFounder,
+    freeAccessUntil: updated.freeAccessUntil,
+    seededHomeId: updated.seededHomeId,
   });
 }

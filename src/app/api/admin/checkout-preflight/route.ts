@@ -19,8 +19,9 @@ export async function GET() {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
   const p = checkoutPreflight();
+  // OL-248: upfront concierge checkout is retired — never reported as on, whatever the flag says.
   return NextResponse.json(
-    { ...p, paidFeatures: paidFeatureStatus(), checkedAt: new Date().toISOString() },
+    { ...p, checkoutEnabled: false, checkoutRetired: true, paidFeatures: paidFeatureStatus(), checkedAt: new Date().toISOString() },
     { headers: { 'cache-control': 'no-store' } },
   );
 }

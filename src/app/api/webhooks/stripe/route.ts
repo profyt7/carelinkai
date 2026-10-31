@@ -11,6 +11,7 @@ import { InvoiceStatus, SubscriptionPlan, SubscriptionStatus } from "@prisma/cli
 import { smsService } from "@/lib/sms/sms-service";
 import { captureError } from '@/lib/sentry';
 import { handleConciergeStripeEvent, isConciergeStripeEvent } from '@/lib/concierge/orders';
+import { handlePaymentLinkCheckoutCompleted } from '@/lib/concierge/pay-when-ready';
 import { fulfilFeaturedListingCheckout, isFeaturedListingCheckout } from '@/lib/billing/featured-listing';
 import { planForPriceId } from '@/lib/operator-plans';
 
@@ -161,6 +162,17 @@ export async function POST(request: NextRequest) {
         });
         logger.error("Invalid webhook payload", { err: err instanceof Error ? err.message : err });
         return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+      }
+    }
+
+    // ─── Family Concierge, pay when ready (OL-248): the $399 Payment Link ─────────
+    // checkout.session.completed whose client_reference_id is a concierge order → PAID, shortlist released,
+    // family + admin emailed. Idempotent on event.id; any other session falls through untouched.
+    if (event.type === "checkout.session.completed") {
+      const pl = await handlePaymentLinkCheckoutCompleted(event);
+      if (pl.handled) {
+        logger.info("Concierge payment link processed", { orderId: pl.orderId, status: pl.status, duplicate: !!pl.duplicate, released: !!pl.released });
+        return NextResponse.json({ received: true, concierge: true, duplicate: !!pl.duplicate }, { status: 200 });
       }
     }
 

@@ -12,7 +12,6 @@ import path from 'node:path';
 import React from 'react';
 import ProductTour from '@/components/marketing/ProductTour';
 import { CHAPTER_HELP_ANCHOR, loadProductTour, parseTour, tourChapters, tourSeconds, type Tour } from '@/lib/marketing/product-tour';
-import { demoSectionCapabilities } from '@/lib/marketing/demo-section';
 
 jest.mock('next/image', () => function Image(p: any) {
   return require('react').createElement('img', { alt: p.alt, src: p.src, width: p.width, height: p.height, className: p.className, 'data-testid': p['data-testid'] });
@@ -150,13 +149,5 @@ describe('ProductTour', () => {
     render(<ProductTour tour={TOUR} chapterHref={(c) => (CHAPTER_HELP_ANCHOR[c] ? `#${CHAPTER_HELP_ANCHOR[c]}` : undefined)} />);
     expect(screen.getByRole('link', { name: 'For families' }).getAttribute('href')).toBe('#help-family');
     expect(screen.getByRole('link', { name: 'For care homes' }).getAttribute('href')).toBe('#help-operator');
-  });
-});
-
-describe('demoSectionCapabilities', () => {
-  it('follows the residents / marketplace public flags (on unless "false")', () => {
-    expect(demoSectionCapabilities({})).toHaveLength(4);
-    const off = demoSectionCapabilities({ NEXT_PUBLIC_RESIDENTS_ENABLED: 'false', NEXT_PUBLIC_MARKETPLACE_ENABLED: 'false' });
-    expect(off).toEqual(['Operator dashboard: inquiries, shifts', 'Inquiry pipeline with AI-drafted replies', 'Family portal: search, documents, messaging']);
   });
 });

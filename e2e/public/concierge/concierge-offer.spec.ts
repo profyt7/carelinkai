@@ -213,11 +213,12 @@ test.describe('@critical /concierge offer + payer screener', () => {
     const res = await request.post('/api/concierge/request', { headers: { 'x-forwarded-for': `203.0.113.${(ts % 200) + 1}` }, data });
     expect(res.status()).toBe(400);
     expect((await res.json()).freeHelp).toBe('/cleveland/assisted-living?waiver=1');
+    // Upfront checkout is retired (OL-248): 410 for everyone, stores nothing.
     const co = await request.post('/api/concierge/checkout', { headers: { 'x-forwarded-for': `203.0.113.${(ts % 200) + 2}` }, data });
-    expect(co.status()).toBe(400);
+    expect(co.status()).toBe(410);
   });
 
-  test('checkout is closed while CONCIERGE_CHECKOUT_ENABLED is unset (409 → fallback request)', async ({ request }) => {
+  test('upfront checkout is retired: the offer is always a request and /checkout answers 410 → fallback request (OL-248)', async ({ request }) => {
     const offer = await request.get('/api/concierge/offer');
     expect(offer.status()).toBe(200);
     expect(await offer.json()).toMatchObject({ mode: 'request', checkoutEnabled: false, priceDisplay: '$399' });
@@ -225,7 +226,7 @@ test.describe('@critical /concierge offer + payer screener', () => {
       headers: { 'x-forwarded-for': `203.0.113.${(ts % 200) + 3}` },
       data: { payerSource: 'PRIVATE_FUNDS', contactName: 'X Y', contactEmail: `co-${ts}@test.carelinkai.com`, careNeeds: 'memory care please' },
     });
-    expect(co.status()).toBe(409);
+    expect(co.status()).toBe(410);
     expect((await co.json()).fallback).toBe('request');
   });
 
