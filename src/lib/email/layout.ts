@@ -31,9 +31,15 @@ export function emailAssetBase(): string {
   return /^https:\/\//i.test(app) ? app : 'https://getcarelinkai.com';
 }
 
-/** Logo PNGs are 912×214; rendered at 148×35 with explicit width/height so clients reserve the space. */
+/**
+ * Email-sized logos (2× files, explicit width/height so clients reserve the space):
+ *  - email-logo.png 296×76 → 148×38, with a thin white edge so the navy wordmark stays readable when an app forces a
+ *    dark background;
+ *  - email-logo-on-dark.png 296×70 → 148×35, the white wordmark for the dark-mode swap.
+ */
 const LOGO_W = 148;
-const LOGO_H = 35;
+const LOGO_H = 38;
+const LOGO_DARK_H = 35;
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -116,8 +122,8 @@ ${pre}
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px">
   <tr><td align="left" style="padding:4px 4px 16px">
     <a href="${app}" style="text-decoration:none">
-      <img src="${assets}/images/logo.png" width="${LOGO_W}" height="${LOGO_H}" alt="CareLinkAI" class="clk-logo-light" style="display:inline-block;border:0;width:${LOGO_W}px;height:${LOGO_H}px;font-family:${FONT};font-size:18px;font-weight:700;color:${TEXT}">
-      <img src="${assets}/images/logo-on-dark.png" width="${LOGO_W}" height="${LOGO_H}" alt="CareLinkAI" class="clk-logo-dark" style="display:none;border:0;width:${LOGO_W}px;height:${LOGO_H}px;font-family:${FONT};font-size:18px;font-weight:700;color:#ffffff">
+      <img src="${assets}/images/email-logo.png" width="${LOGO_W}" height="${LOGO_H}" alt="CareLinkAI" class="clk-logo-light" style="display:inline-block;border:0;width:${LOGO_W}px;height:${LOGO_H}px;font-family:${FONT};font-size:18px;font-weight:700;color:${TEXT}">
+      <img src="${assets}/images/email-logo-on-dark.png" width="${LOGO_W}" height="${LOGO_DARK_H}" alt="CareLinkAI" class="clk-logo-dark" style="display:none;border:0;width:${LOGO_W}px;height:${LOGO_DARK_H}px;font-family:${FONT};font-size:18px;font-weight:700;color:#ffffff">
     </a>
   </td></tr>
   <tr><td class="clk-card clk-card-pad" style="background:#ffffff;border:1px solid ${CARD_BORDER};border-radius:12px;padding:32px;font-family:${FONT};font-size:16px;line-height:24px;color:${TEXT}">
