@@ -2915,3 +2915,10 @@
 - **Files changed:** `src/app/HomePageClient.tsx`, `__tests__/concierge-screener.unit.test.ts`, `__tests__/prelaunch-polish-2.unit.test.tsx`, context files.
 - **Commands run:** `npm run type-check`, `next lint`, `npm test -- --ci` (179 suites, 2084 passed), before / after screenshots 390 / 1280.
 - **Deployment impact:** homepage copy only, after Chris's OK.
+
+### 2026-11-01 — OL-256 merged; OL-257 home care claims
+- **Objective:** no public claim of home care agency listings (live: 0) or of an aide pool (live: ~0 real caregivers).
+- **Work completed:** OL-256 squash-merged `2b315a76`. OL-257: home care page metadata / JSON-LD / share images reframed as a guide + agency invitation; hub card + footer "Home care guide"; llms.txt; homepage caregiver-hire lines reworded; claims test (fails on main with the three removed claims). OL-258 logged, not started (relayed request; awaiting direct confirmation).
+- **Files changed:** `src/app/cleveland/home-care-agencies/{page,opengraph-image,twitter-image}.tsx`, `src/app/cleveland/page.tsx`, `src/components/site/SiteFooter.tsx`, `src/lib/seo/{page-meta,llms-txt}.ts`, `src/app/HomePageClient.tsx`, `__tests__/home-care-claims.unit.test.ts`, context files.
+- **Commands run:** `npm run type-check`, `next lint`, `npm test -- --ci`, truth suites.
+- **Deployment impact:** copy / metadata only, after Chris's OK.

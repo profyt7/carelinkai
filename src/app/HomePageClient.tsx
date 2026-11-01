@@ -699,7 +699,7 @@ export default function HomePage({
                 Families who hire caregivers directly can schedule, track, and manage private shifts — all in one place. Mark shifts complete or cancelled and keep a full history.
               </p>
               <p className="text-xs font-semibold text-primary-500">
-                ✓ Built for home care families
+                ✓ Hiring an aide yourself? Post the job free.
               </p>
             </div>
           </div>
@@ -1097,7 +1097,7 @@ export default function HomePage({
                   </div>
                   <div>
                     <h4 className="text-lg font-bold text-neutral-900 mb-2">Household Shift Management</h4>
-                    <p className="text-neutral-500">Post caregiver job listings, hire directly, then schedule and track private household shifts — perfect for families managing in-home care for a loved one.</p>
+                    <p className="text-neutral-500">Hiring an aide yourself? Post the job free, hire directly, then schedule and track private household shifts in one place.</p>
                   </div>
                 </div>
               </div>

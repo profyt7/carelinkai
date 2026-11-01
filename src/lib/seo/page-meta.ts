@@ -115,7 +115,8 @@ export const PAGE_META = {
     path: '/cleveland/home-care-agencies',
     title: 'Home Care Agencies in Cleveland, OH',
     description:
-      'Home care in Greater Cleveland: how in-home aides and Ohio’s PASSPORT waiver work, plus a free listing for local agencies to claim. Free for families.',
+      // A guide, not listings: there are no home care agency listings yet (OL-257).
+      'A guide to home care in Greater Cleveland: in-home aides, Ohio’s PASSPORT waiver and choosing an agency. Home care agencies: list your agency free.',
   },
   concierge: {
     path: '/concierge',

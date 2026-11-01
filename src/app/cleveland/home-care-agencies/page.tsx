@@ -36,11 +36,11 @@ export const metadata: Metadata = publicMetadata(PAGE_META.homeCareAgencies);
 const structuredData = {
   '@context': 'https://schema.org',
   '@type': 'WebPage',
-  name: 'Home Care Agencies in Cleveland, OH',
-  description:
-    'Verified listings for Cleveland home care agencies — in front of families and discharge planners, with a local caregiver pool for open shifts.',
+  // OL-257: a guide plus an agency invitation. No agency listings exist yet, so nothing here claims them.
+  name: 'Home care guide for Cleveland, OH',
+  description: 'A guide to home care in Greater Cleveland: in-home aides, Ohio’s PASSPORT waiver and choosing an agency. Home care agencies: list your agency free.',
   url: PAGE_URL,
-  about: { '@type': 'Thing', name: 'Home care agencies' },
+  about: { '@type': 'Thing', name: 'Home care' },
   publisher: {
     '@type': 'Organization',
     name: 'CareLinkAI',
