@@ -6,7 +6,7 @@
  */
 
 import { CONCIERGE_OFFER } from '@/lib/concierge/offer';
-import { emailButton } from '@/lib/email/layout';
+import { emailButton, emailDisclaimer } from '@/lib/email/layout';
 import { CONTACT_NO_PHI_LINE, CONTACT_PHONE_DISPLAY } from '@/lib/contact';
 
 export type FamilyEmail = { subject: string; text: string; html: string };
@@ -14,8 +14,9 @@ export type FamilyEmail = { subject: string; text: string; html: string };
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 const phoneLine = `Questions? Call us at ${CONTACT_PHONE_DISPLAY}. ${CONTACT_NO_PHI_LINE}`;
 const p = (s: string) => `<p>${esc(s)}</p>`;
-const small = (s: string) => `<p style="color:#6b7280;font-size:13px">${esc(s)}</p>`;
-const button = (href: string, label: string) => emailButton(label, href);
+/** Disclaimers (the not-a-placement line, the phone/no-PHI line): 14px muted, wording unchanged. */
+const small = (s: string) => emailDisclaimer(esc(s));
+const button = (href: string, label: string, linkText: string) => emailButton(label, href, linkText);
 
 /** Sent right after a request is submitted. `waitlisted` = the month's capacity was reached. */
 export function conciergeConfirmationEmail(opts: { waitlisted: boolean }): FamilyEmail {
@@ -53,7 +54,7 @@ export function conciergePaymentLinkEmail(opts: { paymentLinkUrl: string }): Fam
   return {
     subject: 'Your Family Concierge shortlist is ready',
     text: [pay, `Secure payment link:\n${opts.paymentLinkUrl}`, CONCIERGE_OFFER.notAPlacementLine, phoneLine].join('\n\n'),
-    html: p(pay) + button(opts.paymentLinkUrl, `Pay ${CONCIERGE_OFFER.priceDisplay} securely`) + p(CONCIERGE_OFFER.notAPlacementLine) + small(phoneLine),
+    html: p(pay) + button(opts.paymentLinkUrl, `Pay ${CONCIERGE_OFFER.priceDisplay} securely`, 'Open secure payment link') + small(CONCIERGE_OFFER.notAPlacementLine) + small(phoneLine),
   };
 }
 
@@ -63,7 +64,7 @@ export function conciergeShortlistReleasedEmail(opts: { shortlistUrl: string }):
   return {
     subject: 'Your Family Concierge shortlist',
     text: [intro, `View your shortlist:\n${opts.shortlistUrl}`, CONCIERGE_OFFER.notAPlacementLine, phoneLine].join('\n\n'),
-    html: p(intro) + button(opts.shortlistUrl, 'View your shortlist') + p(CONCIERGE_OFFER.notAPlacementLine) + small(phoneLine),
+    html: p(intro) + button(opts.shortlistUrl, 'View your shortlist', 'Open your shortlist') + small(CONCIERGE_OFFER.notAPlacementLine) + small(phoneLine),
   };
 }
 
@@ -73,6 +74,6 @@ export function conciergePaymentReminderEmail(opts: { paymentLinkUrl: string }):
   return {
     subject: 'Reminder: your Family Concierge shortlist is ready',
     text: [pay, `Secure payment link:\n${opts.paymentLinkUrl}`, CONCIERGE_OFFER.notAPlacementLine, phoneLine].join('\n\n'),
-    html: p(pay) + button(opts.paymentLinkUrl, `Pay ${CONCIERGE_OFFER.priceDisplay} securely`) + p(CONCIERGE_OFFER.notAPlacementLine) + small(phoneLine),
+    html: p(pay) + button(opts.paymentLinkUrl, `Pay ${CONCIERGE_OFFER.priceDisplay} securely`, 'Open secure payment link') + small(CONCIERGE_OFFER.notAPlacementLine) + small(phoneLine),
   };
 }
