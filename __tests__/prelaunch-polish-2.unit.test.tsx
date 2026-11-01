@@ -39,18 +39,26 @@ describe('1. copy says what is true today', () => {
     expect(src).not.toMatch(/each week|every week|this week|confirmed by (the|each) home|open beds confirmed|beds confirmed with|availability confirmed\.|real-time bed|Real-Time Availability|beds available right now|Verified Cleveland/i);
   });
 
-  it('the hero says it as it is: one labeled-facts headline; the subhead covers in-home and service providers too', () => {
+  it('the hero says it as it is: short eyebrow, plain headline, one-line subhead; trust details moved below, not dropped', () => {
     const home = read('src/app/HomePageClient.tsx');
+    const badge = home.slice(home.indexOf('{/* Trust badge */}'), home.indexOf('data-testid="home-hero-headline"'));
+    expect(badge).toContain('Assisted living &amp; senior care in Cleveland, Ohio');
     const h1 = home.slice(home.indexOf('data-testid="home-hero-headline"'), home.indexOf('</h1>'));
-    expect(h1).toContain('Cleveland assisted living, with every fact clearly labeled.');
+    expect(h1).toContain('Find the right care for someone you love.');
     expect(h1).not.toMatch(/Verified|Free for families/);
     const sub = home.slice(home.indexOf('data-testid="home-hero-subhead"'), home.indexOf('</p>', home.indexOf('data-testid="home-hero-subhead"')));
-    expect(sub).toContain('plus in-home care and service providers for seniors living at home');
-    expect(sub).toContain('We&apos;re confirming open beds, starting prices and Medicaid waiver status directly with communities, and we show you exactly what&apos;s verified and when.');
-    expect(sub).toContain('Free for families.');
+    expect(sub).toContain('Compare Cleveland-area communities by price, care level, and openings — with every detail clearly labeled as confirmed or not yet checked.');
+    // No named care types, safeguards or waiver details in the hero any more…
+    const hero = home.slice(home.indexOf('{/* Trust badge */}'), home.indexOf('</section>', home.indexOf('{/* Trust badge */}')));
+    expect(hero).not.toMatch(/memory care|in-home care|HIPAA|Medicaid waiver/i);
+    // …they live in the "What we verify" strip right under it.
+    const trust = home.slice(home.indexOf('data-testid="hero-trust-panel"'), home.indexOf('data-testid="home-concierge-section"'));
+    expect(trust).toContain('We&apos;re confirming open beds, starting prices and Medicaid waiver status directly with communities, and we show you exactly what&apos;s verified and when.');
+    expect(trust).toContain('Built with HIPAA-aligned safeguards.');
+    // The page title / description keep "assisted living" and "Cleveland" (they never led with the old headline).
     const meta = read('src/app/page.tsx');
     expect(meta).toContain("'Cleveland Assisted Living, Every Fact Labeled | CareLinkAI'");
-    expect(meta).toContain('plus in-home care and service providers');
+    expect(meta).toMatch(/description:\s*'Assisted living[^']*Cleveland/);
   });
 });
 
