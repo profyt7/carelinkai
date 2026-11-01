@@ -49,7 +49,7 @@ export function buildLlmsTxt(): string {
     `- Memory care: ${SITE_URL}/cleveland/memory-care`,
     `- Independent living: ${SITE_URL}/cleveland/independent-living`,
     `- Nursing homes: ${SITE_URL}/cleveland/nursing-homes`,
-    `- Home care agencies (aides + families): ${SITE_URL}/cleveland/home-care-agencies`,
+    `- Home care guide (in-home aides, Ohio’s PASSPORT waiver, choosing an agency; agencies can list free; no agency listings yet): ${SITE_URL}/cleveland/home-care-agencies`,
     `- Family concierge (private pay; free lane for Medicaid/Medicare/VA): ${SITE_URL}/concierge`,
     `- Search every home: ${SITE_URL}/search`,
     `- Senior care guides: ${SITE_URL}/learn`,

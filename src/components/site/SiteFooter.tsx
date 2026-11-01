@@ -17,7 +17,7 @@ const COLUMNS: ReadonlyArray<{ title: string; links: ReadonlyArray<{ href: strin
       { href: '/cleveland/memory-care', label: 'Memory care' },
       { href: '/cleveland/independent-living', label: 'Independent living' },
       { href: '/cleveland/nursing-homes', label: 'Nursing homes' },
-      { href: '/cleveland/home-care-agencies', label: 'Home care agencies' },
+      { href: '/cleveland/home-care-agencies', label: 'Home care guide' },
     ],
   },
   {
