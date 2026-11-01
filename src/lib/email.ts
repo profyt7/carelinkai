@@ -16,7 +16,7 @@ import { captureError } from '@/lib/sentry';
 import { VIDEO_LINK_TEXT, VIDEO_LINK_TOKEN } from '@/lib/dp-outreach/copy';
 import { filterSuppressed } from '@/lib/email/suppression';
 import { errorSummary } from '@/lib/log-safe';
-import { emailButton, renderEmailLayout, stripEmoji, BRAND_BLUE as LAYOUT_BRAND_BLUE } from '@/lib/email/layout';
+import { emailButton, DISCLAIMER_STYLE, renderEmailLayout, stripEmoji, BRAND_BLUE as LAYOUT_BRAND_BLUE } from '@/lib/email/layout';
 
 // Resend client, constructed lazily on first send. `new Resend(undefined)`
 // throws at construction, so building it at module scope made *importing* this
@@ -269,7 +269,7 @@ export async function sendOperatorClaimNotification(args: {
         `<li><strong>Claimed:</strong> ${escapeHtml(claimedAt)}</li>` +
         `</ul>` +
         (adminLink
-          ? emailButton('Review claim', adminLink)
+          ? emailButton('Review claim', adminLink, 'Open the claim')
           : `<p>Review it in the admin panel.</p>`),
     });
 
@@ -333,8 +333,8 @@ export async function sendConciergeRequestNotification(args: {
         `Patient details are kept in-app (never emailed). Review and build the shortlist here:\n${adminLink}\n`,
       html:
         `<p>${escapeHtml(who)} submitted a <strong>concierge placement request</strong> on CareLinkAI.</p>` +
-        `<p style="color:#6b7280;font-size:13px">Patient details are kept in-app (never emailed).</p>` +
-        emailButton('Review & build the shortlist', adminLink),
+        `<p class="clk-disclaimer" style="${DISCLAIMER_STYLE}">Patient details are kept in-app (never emailed).</p>` +
+        emailButton('Review & build the shortlist', adminLink, 'Open the request'),
     });
     if (error) {
       console.error('[Resend] Error sending concierge request notification:', error);
@@ -383,7 +383,7 @@ export async function sendConciergePaidNotification(args: {
         `Start the intake call within one business day. Details are in-app (never emailed):\n${adminLink}\n`,
       html:
         `<p>A family paid <strong>${escapeHtml(amount)}</strong> for the <strong>Family Concierge</strong> (order ${escapeHtml(args.orderId)}).</p>` +
-        `<p style="color:#6b7280;font-size:13px">Start the intake call within one business day. Details are in-app (never emailed).</p>` +
+        `<p class="clk-disclaimer" style="${DISCLAIMER_STYLE}">Start the intake call within one business day. Details are in-app (never emailed).</p>` +
         `<p><a href="${escapeHtml(adminLink)}">Open the request →</a></p>`,
     });
     if (error) {
@@ -436,7 +436,7 @@ export async function sendConciergeShortlistReadyEmail(args: {
       html:
         `<p>Your CareLinkAI care team has curated <strong>${n} ${optionWord}</strong> for your placement request.</p>` +
         `<p><a href="${escapeHtml(link)}" style="display:inline-block;background:#0d9488;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">View your shortlist</a></p>` +
-        `<p style="color:#6b7280;font-size:13px">Details are kept private and secure in CareLinkAI.</p>`,
+        `<p class="clk-disclaimer" style="${DISCLAIMER_STYLE}">Details are kept private and secure in CareLinkAI.</p>`,
     });
     if (error) {
       console.error('[Resend] Error sending concierge shortlist-ready email:', error);
@@ -474,7 +474,7 @@ export async function sendHomeClaimAdminNotice(args: { homeName: string; operato
       html:
         `<p><strong>${escapeHtml(subject)}</strong></p>` +
         `<p>Nothing has changed hands yet. Verify the operator, then approve or reject.</p>` +
-        emailButton('Review claim', queue),
+        emailButton('Review claim', queue, 'Open the claim queue'),
       tags: [{ name: 'category', value: 'home-claim-admin' }],
     });
     if (error) throw error instanceof Error ? error : new Error(String((error as { message?: string })?.message ?? error));
@@ -502,7 +502,7 @@ export async function sendHomeClaimDecisionEmail(args: { to: string; firstName?:
       to: [args.to],
       subject,
       text: (approved ? [body[0], body[1], `Open your listing: ${listingUrl}`, ...body.slice(2)] : body).join('\n\n') + '\n\nCareLinkAI · Cleveland, OH\n',
-      html: body.map((p) => `<p>${escapeHtml(p)}</p>`).join('') + (approved ? emailButton('Open your listing', listingUrl) : ''),
+      html: body.map((p) => `<p>${escapeHtml(p)}</p>`).join('') + (approved ? emailButton('Open your listing', listingUrl, 'Open your listing') : ''),
       tags: [{ name: 'category', value: `home-claim-${args.decision}` }],
     });
     if (error) throw error instanceof Error ? error : new Error(String((error as { message?: string })?.message ?? error));
@@ -627,7 +627,7 @@ export async function sendConciergeTourNotification(args: {
       html:
         `<p>${escapeHtml(who)} requested a <strong>tour at ${escapeHtml(facility)}</strong> from their CareLinkAI concierge shortlist.</p>` +
         `<p>${escapeHtml(claimLine)}</p>` +
-        `<p style="color:#6b7280;font-size:13px">Patient details are kept in-app (never emailed).</p>` +
+        `<p class="clk-disclaimer" style="${DISCLAIMER_STYLE}">Patient details are kept in-app (never emailed).</p>` +
         `<p><a href="${escapeHtml(adminLink)}">Coordinate this tour →</a></p>`,
     });
     if (error) {
@@ -695,7 +695,7 @@ export async function sendInquiryClaimNudgeEmail(args: {
   <p>${isTour ? `A family wants to <strong>tour</strong> ` : `${escapeHtml(leadPhrase)} `}<strong>${safeFacility}</strong> on CareLinkAI.</p>
   <p>${escapeHtml(actionLine)}</p>
   <p><a href="${escapeHtml(args.claimUrl)}" style="display:inline-block;background:#0d9488;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">${isTour ? 'Claim &amp; confirm the tour' : `Claim ${safeFacility}`}</a></p>
-  <p style="color:#6b7280;font-size:13px">Details are kept private until you claim. There is no cost to claim or respond.</p>
+  <p class="clk-disclaimer" style="${DISCLAIMER_STYLE}">Details are kept private until you claim. There is no cost to claim or respond.</p>
 </body></html>`;
 
     const { data, error } = await guardedResendSend({
@@ -757,7 +757,7 @@ export async function sendNewLeadOperatorEmail(args: {
 <html><body style="font-family:Arial,sans-serif;color:#1f2937;line-height:1.5">
   <p>${hi}you have a new ${lead} for <strong>${facility}</strong> on CareLinkAI.</p>
   <p><a href="${escapeHtml(args.ctaUrl)}" style="display:inline-block;background:#0d9488;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">View &amp; respond</a></p>
-  <p style="color:#6b7280;font-size:13px">Details are kept private and secure on CareLinkAI.</p>
+  <p class="clk-disclaimer" style="${DISCLAIMER_STYLE}">Details are kept private and secure on CareLinkAI.</p>
 </body></html>`;
 
     const { error } = await guardedResendSend({
@@ -842,7 +842,7 @@ export async function sendClaimDripEmail(args: {
 <html><body style="font-family:Arial,sans-serif;color:#1f2937;line-height:1.5">
   <p>${escapeHtml(lead)}</p>
   <p><a href="${escapeHtml(args.claimUrl)}" style="display:inline-block;background:#0d9488;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">${cta}</a></p>
-  <p style="color:#6b7280;font-size:13px">Details are kept private until you claim. There is no cost to claim or respond.</p>
+  <p class="clk-disclaimer" style="${DISCLAIMER_STYLE}">Details are kept private until you claim. There is no cost to claim or respond.</p>
   <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0"/>
   <p style="color:#9ca3af;font-size:12px">
     ${APP_NAME} · ${escapeHtml(args.postalAddress)}<br/>
@@ -1077,7 +1077,7 @@ export async function sendDirectoryClaimInviteEmail(args: {
   <p>${escapeHtml(intro)}</p>
   <p>${escapeHtml(ask)}</p>
   ${ctas}
-  <p style="color:#6b7280;font-size:13px">There is no cost to claim or to keep a listing. If you're not the right person, please forward this to whoever manages marketing or admissions.</p>
+  <p class="clk-disclaimer" style="${DISCLAIMER_STYLE}">There is no cost to claim or to keep a listing. If you're not the right person, please forward this to whoever manages marketing or admissions.</p>
   <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0"/>
   <p style="color:#9ca3af;font-size:12px">
     ${APP_NAME} · ${escapeHtml(args.postalAddress)}<br/>
