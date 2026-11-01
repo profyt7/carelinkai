@@ -2909,9 +2909,9 @@
 - **Deployment impact:** email appearance only. No env changes.
 - **New risks/blockers:** apps that force-invert can still alter colors (no markup prevents it).
 
-### 2026-11-01 — OL-256 merged; OL-256 homepage hero copy
+### 2026-11-01 — OL-255 merged; OL-256 homepage hero copy
 - **Objective:** shorter, warmer hero; trust details below the fold, not deleted.
-- **Work completed:** OL-256 squash-merged `e7ea3b80`, prod-verify (trackers) green. OL-256: new eyebrow / H1 / subhead; Medicaid-waiver + HIPAA sentences moved into "What we verify"; HIPAA chip removed from the hero row (lower HIPAA-Aligned badge kept). Title / description left as is. Care types could not be checked against live listings (host not reachable from this session).
+- **Work completed:** OL-255 squash-merged `e7ea3b80`, prod-verify (trackers) green. OL-256: new eyebrow / H1 / subhead; Medicaid-waiver + HIPAA sentences moved into "What we verify"; HIPAA chip removed from the hero row (lower HIPAA-Aligned badge kept). Title / description left as is. Care types could not be checked against live listings (host not reachable from this session).
 - **Files changed:** `src/app/HomePageClient.tsx`, `__tests__/concierge-screener.unit.test.ts`, `__tests__/prelaunch-polish-2.unit.test.tsx`, context files.
 - **Commands run:** `npm run type-check`, `next lint`, `npm test -- --ci` (179 suites, 2084 passed), before / after screenshots 390 / 1280.
 - **Deployment impact:** homepage copy only, after Chris's OK.

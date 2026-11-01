@@ -14,12 +14,12 @@ export const metadata: Metadata = {
   // The root layout's title template does not apply to the page in its own segment, so the suffix is written once here.
   title: { absolute: 'Cleveland Assisted Living, Every Fact Labeled | CareLinkAI' },
   description:
-    'Assisted living and memory care across Greater Cleveland, plus in-home care and service providers. Every fact labeled verified or not. Free for families.',
+    'Assisted living and memory care across Greater Cleveland, plus senior service providers. Every fact labeled verified or not. Free for families.',
   alternates: { canonical: 'https://getcarelinkai.com/' },
   openGraph: {
     title: 'Cleveland Assisted Living, Every Fact Labeled | CareLinkAI',
     description:
-      'Assisted living and memory care across Greater Cleveland, plus in-home care and service providers. Every fact labeled verified or not. Free for families.',
+      'Assisted living and memory care across Greater Cleveland, plus senior service providers. Every fact labeled verified or not. Free for families.',
     type: 'website',
     url: 'https://getcarelinkai.com/',
     siteName: 'CareLinkAI',
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Cleveland Assisted Living, Every Fact Labeled | CareLinkAI',
     description:
-      'Assisted living and memory care across Greater Cleveland, plus in-home care and service providers. Every fact labeled verified or not. Free for families.',
+      'Assisted living and memory care across Greater Cleveland, plus senior service providers. Every fact labeled verified or not. Free for families.',
     images: ['/images/twitter-image.jpg'],
   },
 };

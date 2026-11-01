@@ -319,7 +319,8 @@ export function buildOrganizationJsonLd(opts: { includeFeeModel?: boolean } = {}
       '@type': 'AdministrativeArea',
       name: `${c} County, Ohio`,
     })),
-    knowsAbout: ['Assisted living', 'Memory care', 'Independent living', 'Skilled nursing', 'Home care', 'Ohio Department of Health inspections'],
+    // No 'Home care': there are no in-home care / home-care agency listings (11/01 live count: 0 of 144).
+    knowsAbout: ['Assisted living', 'Memory care', 'Independent living', 'Skilled nursing', 'Ohio Department of Health inspections'],
     slogan: 'Verified senior care in Cleveland. No broker fees.',
     additionalProperty: [
       ...(includeFeeModel ? [{ '@type': 'PropertyValue', name: 'Fee model', value: FEE_MODEL_LINE }] : []),

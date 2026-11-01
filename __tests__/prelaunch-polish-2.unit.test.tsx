@@ -19,6 +19,7 @@ import { render, screen } from '@testing-library/react';
 import ProviderCard from '@/components/marketplace/ProviderCard';
 import { chooseMenuSpot, HIDE_DELAY_MS, overlapsPrimaryContent, SHOW_DELAY_MS, SUPPORT_AVOID_SELECTOR } from '@/components/support/SupportDock';
 import { isSupportSlotPath } from '@/components/support/support-slot';
+import { buildOrganizationJsonLd } from '@/lib/seo/jsonld';
 
 const read = (p: string) => fs.readFileSync(path.join(process.cwd(), p), 'utf8');
 
@@ -59,6 +60,13 @@ describe('1. copy says what is true today', () => {
     const meta = read('src/app/page.tsx');
     expect(meta).toContain("'Cleveland Assisted Living, Every Fact Labeled | CareLinkAI'");
     expect(meta).toMatch(/description:\s*'Assisted living[^']*Cleveland/);
+    // No in-home care claims in the homepage metadata or the Organization JSON-LD it renders: 0 of 144 live
+    // listings are in-home care / home-care agencies (11/01). Memory care stays (103 listings).
+    expect(meta).not.toMatch(/in-home|home care/i);
+    expect(meta).toContain('memory care');
+    const org = JSON.stringify(buildOrganizationJsonLd({ includeFeeModel: false }));
+    expect(org).not.toMatch(/in-home|home care/i);
+    expect(org).toContain('Memory care');
   });
 });
 
