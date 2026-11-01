@@ -7,13 +7,34 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
 
 ## 🔴 SHIP NOW (this week)
 
+### OL-254: One branded layout for all transactional emails — PR `feat/email-design`
+- **Status:** 🟡 PR open (not merged).
+- **What:**
+  - `src/lib/email/layout.ts`:
+    - gray page, white 600px card, logo (`/images/logo.png`, white wordmark `/images/logo-on-dark.png` in dark mode);
+    - one bulletproof brand-blue CTA (VML for Outlook) with a plain-link fallback;
+    - footer with phone, site, privacy and terms.
+  - `guardedResendSend` wraps every HTML email once and strips emoji from subjects and headings. The 11 direct `resend.emails.send` calls (rides, crons, register, placement request, stripe webhook, inquiry email service) use the same `brandEmailArgs`.
+  - Bodies without a heading get the subject as H1, and legacy inline buttons take the brand blue.
+  - Key CTAs are now buttons: Review & build the shortlist, Pay $399 securely, View your shortlist, Review claim, Open your listing.
+- **Unchanged:** wording, recipients and timing; plain text is untouched.
+- **Not converted:** the availability ping keeps its 0–5 one-tap links (multiple links by design).
+- **Review fixes:**
+  - Claim-approved copy: "We confirmed your claim. The listing is now yours.", with the button as the single action.
+  - The logo is absolute https on our domain, with width and height.
+  - Transactional mail (no List-Unsubscribe header) is no longer blocked by a marketing "unsubscribe" suppression. Bounces and complaints still block it.
+
 ### OL-253: Concierge test saved a shortlist and emailed a real facility — PR `fix/concierge-outbound-safety`
-- **Status:** 🟡 PR open (stop-ship; Chris approves the merge). Incident: saving TEST ORDER A's shortlist sent an accept/decline request to Heritage of Lyndhurst. Chris apologized to them.
+- **Status:** ✅ MERGED #37 `67f6009a` (2026-11-01). Incident: saving TEST ORDER A's shortlist sent an accept/decline request to Heritage of Lyndhurst. Chris apologized to them.
 - **Root cause:** saving a shortlist emailed every curated home (DP and family requests alike) with no test flag and no confirmation. Re-saves also re-emailed homes that hadn't answered.
 - **Fix:**
   - **Test flag:** `isTest` on PlacementSearch + ConciergeOrder. It's set automatically from the email's "+…test…" tag or a "TEST…" name, the admin can toggle it, and the migration backfills TEST ORDER A/B.
   - **Test orders never contact facilities:** contacts are logged "suppressed (test)", and test orders are excluded from metrics and the monthly cap.
   - **Real requests:** homes are emailed only after "This will email N homes … Send / Save without notifying homes" (focus defaults to Save without notifying), and a notified home is never emailed again.
+- **Safety control (decision, Chris 11/01):**
+  - The **stored `isTest` flag** on the request/order is the safety control. Auto-detection (the email's +tag contains "test", or the name starts with "TEST") is only a convenience that sets it at intake.
+  - Admins see a **Test badge** on `/admin/concierge/[id]` and can **switch it on or off** there (`set_test`; the request and its orders follow).
+  - Never rely on naming alone: before testing with an address or name that doesn't match the rule, switch the flag on.
 - **Follow-ups (not fixed here, noted in the PR audit):**
   - The DP gets the in-app notice and the "shortlist ready" email again on every re-save.
   - A manual release re-sends the family email.

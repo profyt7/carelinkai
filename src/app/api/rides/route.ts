@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
+import { brandEmailArgs } from '@/lib/email';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -336,7 +337,7 @@ async function notifyProviderNewRide(
     hour: "numeric", minute: "2-digit", timeZoneName: "short",
   });
 
-  await resend.emails.send({
+  await resend.emails.send(brandEmailArgs({
     from: `CareLinkAI <${process.env.EMAIL_FROM || "noreply@getcarelinkai.com"}>`,
     to: [provider.contactEmail],
     subject: isPaid
@@ -362,5 +363,5 @@ async function notifyProviderNewRide(
           <p style="color:#9ca3af;font-size:12px;margin-top:24px">CareLinkAI · Cleveland, OH</p>
         </div>
       </div>`,
-  });
+  }));
 }

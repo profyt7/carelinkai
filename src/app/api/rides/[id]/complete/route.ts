@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
+import { brandEmailArgs } from '@/lib/email';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -53,7 +54,7 @@ async function notifyRideComplete(ride: any) {
   const resend = new Resend(process.env.RESEND_API_KEY);
   const APP_URL = process.env.NEXTAUTH_URL || "https://getcarelinkai.com";
 
-  await resend.emails.send({
+  await resend.emails.send(brandEmailArgs({
     from: `CareLinkAI <${process.env.EMAIL_FROM || "noreply@getcarelinkai.com"}>`,
     to: [bookerEmail],
     subject: "Ride Completed",
@@ -64,5 +65,5 @@ async function notifyRideComplete(ride: any) {
       <p style="color:#6b7280;font-size:14px">${ride.pickupAddress} → ${ride.dropoffAddress}</p>
       <a href="${APP_URL}/rides" style="display:inline-block;background:#16a34a;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;margin-top:12px">View Ride History →</a>
     </div>`,
-  });
+  }));
 }

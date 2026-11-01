@@ -8,6 +8,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
+import { brandEmailArgs } from '@/lib/email';
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
     const bookerEmail = ride.family?.user?.email ?? ride.operator?.user?.email;
     const bookerFirstName = ride.family?.user?.firstName ?? ride.operator?.user?.firstName ?? "there";
     if (bookerEmail) {
-      await resend.emails.send({
+      await resend.emails.send(brandEmailArgs({
         from: `CareLinkAI <${process.env.EMAIL_FROM || "noreply@getcarelinkai.com"}>`,
         to: [bookerEmail],
         subject: `Ride Reminder — Tomorrow at ${ride.scheduledAt.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`,
@@ -74,12 +75,12 @@ export async function GET(request: NextRequest) {
           </table>
           <a href="${APP_URL}/rides" style="display:inline-block;background:#4f46e5;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600">View Ride Details →</a>
         </div>`,
-      }).catch(() => {});
+      })).catch(() => {});
       sent++;
     }
 
     // Email the provider
-    await resend.emails.send({
+    await resend.emails.send(brandEmailArgs({
       from: `CareLinkAI <${process.env.EMAIL_FROM || "noreply@getcarelinkai.com"}>`,
       to: [ride.provider.contactEmail],
       subject: `Ride Tomorrow — ${passengerLabel}`,
@@ -96,7 +97,7 @@ export async function GET(request: NextRequest) {
         </table>
         <a href="${APP_URL}/rides" style="display:inline-block;background:#4f46e5;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600">View Dispatch →</a>
       </div>`,
-    }).catch(() => {});
+    })).catch(() => {});
     sent++;
   }
 

@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
+import { brandEmailArgs } from '@/lib/email';
 import { prisma } from "@/lib/prisma";
 import { purgeExpiredAnalyticsEvents } from "@/lib/analytics/retention";
 
@@ -85,7 +86,7 @@ export async function GET(req: NextRequest) {
       const lines = creds
         .map((c) => `• ${c.type.replace(/_/g, " ")} — expires ${c.expiresAt!.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`)
         .join("<br>");
-      await resend.emails.send({
+      await resend.emails.send(brandEmailArgs({
         from: `CareLinkAI <${process.env.EMAIL_FROM || "noreply@getcarelinkai.com"}>`,
         to: [p.contactEmail],
         subject: `Action needed: credentials expiring soon — ${p.businessName}`,
@@ -96,7 +97,7 @@ export async function GET(req: NextRequest) {
           <p>Please upload updated documents at <a href="${process.env.NEXTAUTH_URL || "https://getcarelinkai.com"}/settings/provider/credentials">your credentials page</a> to avoid disruption to your marketplace listing.</p>
           <p style="color:#9ca3af;font-size:12px">CareLinkAI · Cleveland, OH</p>
         </div>`,
-      }).catch(() => {});
+      })).catch(() => {});
     }
   }
 
