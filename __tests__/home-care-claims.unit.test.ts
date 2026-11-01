@@ -74,6 +74,14 @@ describe('home care agencies: a guide, not listings (while the agency count is 0
     expect(JSON.stringify(buildOrganizationJsonLd({ includeFeeModel: false }))).not.toMatch(/home care agenc/i);
   });
 
+  it('homepage: the caregiver-hire lines describe what is live (post a job free), not "home care families"', () => {
+    // 11/01: 56 visible caregiver profiles, ~0 real (seeded / test), so no claim that families can pick from aides.
+    const home = fs.readFileSync(path.join(ROOT, 'src/app/HomePageClient.tsx'), 'utf8');
+    expect(home).not.toMatch(/home care families|families managing in-home care/i);
+    expect(home).toContain('✓ Hiring an aide yourself? Post the job free.');
+    expect(home).toContain('Hiring an aide yourself? Post the job free, hire directly, then schedule and track private household shifts in one place.');
+  });
+
   it('the hub card and footer link say "Home care guide" (same URL)', () => {
     const hub = fs.readFileSync(path.join(ROOT, 'src/app/cleveland/page.tsx'), 'utf8');
     const card = hub.slice(hub.indexOf('href="/cleveland/home-care-agencies"'), hub.indexOf('</Link>', hub.indexOf('href="/cleveland/home-care-agencies"')));
