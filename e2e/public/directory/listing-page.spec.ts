@@ -117,7 +117,13 @@ test.describe('@critical /homes/[id] listing page (OL-173)', () => {
     await expect(body).not.toContainText(/\b0 beds\b/);
 
     // (c) staffing + amenities
-    await expect(body).not.toContainText('24/7');
+    // The site footer's phone line ("our automated front desk answers 24/7") is about our line, not the home's staffing.
+    const withoutPhoneLine = await page.evaluate(() => {
+      const clone = document.body.cloneNode(true) as HTMLElement;
+      clone.querySelectorAll('[data-testid="footer-phone-line"], script, style').forEach((n) => n.remove());
+      return clone.innerText;
+    });
+    expect(withoutPhoneLine).not.toContain('24/7');
     await expect(page.getByTestId('amenities-heading')).toHaveText('Reported features — confirm on your tour');
     await expect(page.getByTestId('listing-amenities')).toHaveAttribute('data-verified', 'false');
 

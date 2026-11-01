@@ -17,7 +17,7 @@ export function buildLlmsTxt(): string {
     '',
     `Site: ${SITE_URL}`,
     `Sitemap: ${SITE_URL}/sitemap.xml`,
-    `Contact: ${CONTACT_PHONE_DISPLAY} (${CONTACT_PHONE_E164}) — front desk answers around the clock, a person calls back Mon–Fri 8–6 ET. No patient details by phone; secure requests at ${SITE_URL}/concierge. Web: ${SITE_URL}/contact`,
+    `Contact: ${CONTACT_PHONE_DISPLAY} (${CONTACT_PHONE_E164}) — an automated front desk answers 24/7 and takes a message; a person calls back within one business day (Mon–Fri 8–6 ET). No patient details by phone; secure requests at ${SITE_URL}/concierge. Web: ${SITE_URL}/contact`,
     '',
     '## What is verified vs self-reported',
     '',

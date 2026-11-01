@@ -13,7 +13,7 @@ import { CONTACT_HOURS_LINE, CONTACT_NO_PHI_LINE, CONTACT_PHONE_DISPLAY, CONTACT
 export const metadata: Metadata = publicMetadata({
   path: '/contact',
   title: `Contact us — ${CONTACT_PHONE_DISPLAY}`,
-  description: `Call ${CONTACT_PHONE_DISPLAY}. Our front desk answers around the clock and a person calls you back. For families, planners and care homes in Greater Cleveland.`,
+  description: `Call ${CONTACT_PHONE_DISPLAY}. Our automated front desk answers 24/7 and takes your message; a person calls you back within one business day. Greater Cleveland.`,
   image: '/images/og-image.jpg',
 });
 

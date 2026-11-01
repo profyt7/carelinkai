@@ -73,7 +73,8 @@ test.describe('@critical OL-176 unclaimed listing: no unlabeled claims', () => {
     // No amenity claim appears unlabeled anywhere else on the page.
     const rest = await page.evaluate(() => {
       const clone = document.body.cloneNode(true) as HTMLElement;
-      clone.querySelectorAll('[data-testid="listing-amenities"], [data-testid="listing-description"], script, style').forEach((n) => n.remove());
+      // footer-phone-line ("our automated front desk answers 24/7") describes our phone line, not the home.
+      clone.querySelectorAll('[data-testid="listing-amenities"], [data-testid="listing-description"], [data-testid="footer-phone-line"], script, style').forEach((n) => n.remove());
       return clone.innerText;
     });
     for (const claim of [...AMENITIES, '24/7', 'MIND-diet']) expect({ claim, found: rest.includes(claim) }).toEqual({ claim, found: false });
