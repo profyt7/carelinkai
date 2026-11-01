@@ -69,7 +69,11 @@ describe('every email: layout, one CTA, no emoji in subject/headings, plain text
     expect(html).toContain('<meta name="supported-color-schemes" content="light only">');
     expect(html).toContain(':root { color-scheme: light only; supported-color-schemes: light only; }');
     expect(html).toMatch(/<table role="presentation" width="100%"[^>]*bgcolor="#F4F5F7"[^>]*style="background:#F4F5F7;/);
-    expect(html).toMatch(/<td class="clk-card clk-card-pad" bgcolor="#FFFFFF" style="background:#FFFFFF;[^"]*color:#1A1A1A"/);
+    expect(html).toMatch(/<td class="clk-card clk-card-pad" align="left" bgcolor="#FFFFFF" style="text-align:left;background:#FFFFFF;[^"]*color:#1A1A1A"/);
+    // fix/email-polish: the logo is centered above the card; headings and paragraphs stay left (the card cell is left).
+    expect(html).toMatch(/<td align="center"[^>]*style="[^"]*text-align:center[^"]*">\s*<a href="https:\/\/getcarelinkai\.com"[^>]*>\s*<img src="https:\/\/getcarelinkai\.com\/images\/email-logo\.png"/);
+    // Disclaimers are 14px muted #63666A wherever they appear.
+    for (const d of html.match(/<p class="clk-disclaimer"[^>]*>/g) ?? []) expect(d).toMatch(/font-size:14px;[^"]*color:#63666A/);
     // No text element anywhere in the email leans on an inherited color.
     const bare = (html.replace(/<!--[\s\S]*?-->/g, '').match(/<(h[1-6]|p|li|td|th|span|div|strong|b|em|a)\b[^>]*>/gi) ?? [])
       .filter((t) => {
@@ -90,7 +94,16 @@ describe('every email: layout, one CTA, no emoji in subject/headings, plain text
       expect(hrefs.length).toBe(3);
       expect(new Set(hrefs).size).toBe(1);
       expect(html).toContain(c.cta.replace('&', '&amp;'));
-      expect(html).toContain('Or open this link:');
+      // Centered: the table, its cell (which holds the Outlook VML too) and the fallback line.
+      expect(block.slice(0, 400)).toMatch(/^data-cta="primary"><tr><td align="center" style="text-align:center[^"]*"><!--\[if mso\]><v:roundrect/);
+      expect(html).toMatch(/<table role="presentation" align="center"[^>]*data-cta="primary"/);
+      // The fallback shows descriptive linked text, never the raw URL; the plain text keeps the full URL.
+      const fallback = block.slice(block.indexOf('clk-fallback'), block.indexOf('</p>'));
+      const visible = fallback.replace(/^[^>]*>/, '').replace(/<[^>]+>/g, '');
+      expect(visible).toMatch(/^Open /);
+      expect(visible).not.toMatch(/https?:|www\./);
+      expect(html).not.toContain('Or open this link:');
+      expect(msg.text).toContain(hrefs[0]!.replace(/&amp;/g, '&'));
     }
     expect(msg.subject).not.toMatch(EMOJI);
     for (const h of html.match(/<h[1-3][^>]*>[\s\S]*?<\/h[1-3]>/gi) ?? []) expect(h).not.toMatch(EMOJI);
@@ -138,19 +151,41 @@ describe('claim approved copy', () => {
     expect(msg.html).toContain('We confirmed your claim. The listing is now yours.');
     expect(msg.html).not.toContain('We verified it');
     expect(msg.html).not.toMatch(/availability here:/);
-    expect(msg.html.match(/\/operator\/homes\/h-1/g)).toHaveLength(4); // VML href, button href, fallback href + its visible text — nothing else
+    expect(msg.html.match(/\/operator\/homes\/h-1/g)).toHaveLength(3); // VML href, button href, fallback href (its text says "Open your listing") — nothing else
     expect(msg.text).toContain('Open your listing: https://getcarelinkai.com/operator/homes/h-1');
   });
 });
 
 describe('layout pieces', () => {
-  it('the button is a bulletproof table with VML for Outlook and a plain link under it', () => {
-    const b = emailButton('View your shortlist', 'https://x.test/a?b=1&c=2');
+  it('the button is a centered bulletproof table with VML for Outlook and a descriptive fallback link under it', () => {
+    const b = emailButton('View your shortlist', 'https://x.test/a?b=1&c=2', 'Open your shortlist');
     expect(b).toContain('role="presentation"');
     expect(b).toContain('v:roundrect');
     expect(b).toContain('#3978FC');
-    expect(b).toContain('https://x.test/a?b=1&amp;c=2');
-    expect(b).toContain('Or open this link:');
+    expect(b.match(/href="https:\/\/x\.test\/a\?b=1&amp;c=2"/g)).toHaveLength(3); // VML, button, fallback: same destination
+    expect(b).toMatch(/<table role="presentation" align="center"[^>]*><tr><td align="center" style="text-align:center"><!--\[if mso\]>/);
+    expect(b).toMatch(/<p class="clk-muted clk-fallback" align="center" style="[^"]*text-align:center"><a href="https:\/\/x\.test\/a\?b=1&amp;c=2" style="color:#3978FC">Open your shortlist<\/a><\/p>$/);
+    expect(b.replace(/<!--[\s\S]*?-->/g, '').replace(/<[^>]+>/g, '')).not.toContain('x.test');
+  });
+  it('family emails: fallback says "Open secure payment link" / "Open your shortlist"; the not-a-placement line is a 14px muted disclaimer, wording unchanged', () => {
+    const pay = conciergePaymentLinkEmail({ paymentLinkUrl: 'https://buy.stripe.com/test_x?client_reference_id=ord1' });
+    const rem = conciergePaymentReminderEmail({ paymentLinkUrl: 'https://buy.stripe.com/test_x' });
+    const rel = conciergeShortlistReleasedEmail({ shortlistUrl: 'https://getcarelinkai.com/concierge/shortlist/tok' });
+    for (const e of [pay, rem]) {
+      expect(e.html).toContain('>Open secure payment link</a>');
+      expect(e.text).toContain('Secure payment link:\nhttps://buy.stripe.com/test_x');
+    }
+    expect(rel.html).toContain('>Open your shortlist</a>');
+    expect(rel.text).toContain('View your shortlist:\nhttps://getcarelinkai.com/concierge/shortlist/tok');
+    for (const e of [pay, rem, rel]) {
+      expect(e.html).toMatch(/<p class="clk-disclaimer" style="[^"]*font-size:14px;[^"]*color:#63666A[^"]*">You&#39;re paying for the research and shortlist, not a guaranteed opening or placement\.<\/p>/);
+      expect(e.text).toContain("You're paying for the research and shortlist, not a guaranteed opening or placement.");
+    }
+  });
+  it('admin emails: fallback says "Open the request" / "Open the claim"; destinations unchanged', async () => {
+    const req = await capture(() => email.sendConciergeRequestNotification({ requestId: 'ps-1', dpName: 'Dana Planner', dpOrganization: 'Metro Hospital' }));
+    expect(req.html).toMatch(/<a href="https:\/\/getcarelinkai\.com\/admin\/concierge\/ps-1" style="color:#3978FC">Open the request<\/a>/);
+    expect(req.text).toContain('https://getcarelinkai.com/admin/concierge/ps-1');
   });
   it('wraps once, strips an outer document, always renders light, and strips emoji', () => {
     const once = renderEmailLayout({ html: '<html><head><title>x</title></head><body><p>Hi</p><p style="color:#B91C1C">Keep</p><a href="/x">L</a></body></html>' });

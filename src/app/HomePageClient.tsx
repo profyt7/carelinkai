@@ -246,15 +246,15 @@ export default function HomePage({
               {/* Trust badge */}
               <div className="inline-flex items-center bg-white rounded-full px-4 py-2 shadow-sm mb-6 border border-neutral-200">
                 <FiStar className="text-secondary-500 mr-2" />
-                <span className="text-sm font-semibold text-neutral-900">Senior care, simplified for Northeast Ohio families</span>
+                <span className="text-sm font-semibold text-neutral-900">Assisted living &amp; senior care in Cleveland, Ohio</span>
               </div>
               
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-neutral-900 leading-tight" data-testid="home-hero-headline">
-                Cleveland assisted living, with every fact clearly labeled.
+                Find the right care for someone you love.
               </h1>
               
               <p className="mt-6 text-xl text-neutral-700 max-w-xl leading-relaxed" data-testid="home-hero-subhead">
-                Assisted living and memory care communities, plus in-home care and service providers for seniors living at home. We&apos;re confirming open beds, starting prices and Medicaid waiver status directly with communities, and we show you exactly what&apos;s verified and when. <span className="font-semibold text-neutral-900">Free for families.</span> Built with HIPAA-aligned safeguards.
+                Compare Cleveland-area communities by price, care level, and openings — with every detail clearly labeled as confirmed or not yet checked.
               </p>
               
               {/* CTAs */}
@@ -297,10 +297,6 @@ export default function HomePage({
                   <span>No credit card required</span>
                 </div>
                 <div className="flex items-center">
-                  <FiShield className="text-secondary-500 mr-2 flex-shrink-0" />
-                  <span>HIPAA-aligned safeguards</span>
-                </div>
-                <div className="flex items-center">
                   <FiZap className="text-secondary-500 mr-2 flex-shrink-0" />
                   <span>Free AI matching</span>
                 </div>
@@ -322,6 +318,10 @@ export default function HomePage({
         <div className="max-w-7xl mx-auto px-4 md:px-6">
           <div data-testid="hero-trust-panel" className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm md:p-8">
             <p id="hero-trust-heading" className="text-xs font-semibold uppercase tracking-widest text-neutral-500">What we verify</p>
+            {/* Moved here from the hero subhead / trust row (hero copy update): no detail dropped. */}
+            <p className="mt-3 max-w-3xl text-sm leading-relaxed text-neutral-600" data-testid="hero-trust-intro">
+              We&apos;re confirming open beds, starting prices and Medicaid waiver status directly with communities, and we show you exactly what&apos;s verified and when. Built with HIPAA-aligned safeguards.
+            </p>
             <ul className="mt-5 grid gap-6 md:grid-cols-3 md:gap-8">
               <li className="flex gap-4">
                 <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-700"><FiShield aria-hidden="true" className="h-5 w-5" /></span>
