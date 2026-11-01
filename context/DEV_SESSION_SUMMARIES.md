@@ -2901,3 +2901,10 @@
 - **New risks/blockers:** concierge testing is paused until this merges.
 - **Recommended next step:** Chris approves the merge; Cowork resumes the payment test (TEST ORDER A/B are isTest after the migration).
 
+### 2026-11-01 — OL-255 emails always light
+- **Objective:** emails look the same (white card on light gray) whatever the reader's dark-mode setting.
+- **Work completed:** removed all dark-mode styling and the dark logo; light-only color-scheme declared; explicit inline colors/backgrounds on every layout element and on sender text lacking a color. Snapshots updated (visible text and links verified identical for all 16). 5 key emails rendered in Chromium with light and dark emulation: pixel-identical; before/after comparisons in `docs/screenshots/email-always-light/`.
+- **Files changed:** `src/lib/email/layout.ts`, `__tests__/email-design.unit.test.ts` (+ snapshot), `docs/screenshots/email-always-light/*`, context files.
+- **Commands run:** `npm run type-check`, `next lint`, `npm test -- --ci` (178 suites, 2079 passed), Playwright light/dark renders.
+- **Deployment impact:** email appearance only. No env changes.
+- **New risks/blockers:** apps that force-invert can still alter colors (no markup prevents it).

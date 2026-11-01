@@ -62,7 +62,21 @@ describe('every email: layout, one CTA, no emoji in subject/headings, plain text
     expect(html).toContain('alt="CareLinkAI"');
     // (a) logos: absolute https on our domain, alt text, explicit width and height (email-sized files)
     expect(html).toMatch(/<img src="https:\/\/getcarelinkai\.com\/images\/email-logo\.png" width="148" height="38" alt="CareLinkAI"/);
-    expect(html).toMatch(/<img src="https:\/\/getcarelinkai\.com\/images\/email-logo-on-dark\.png" width="148" height="35" alt="CareLinkAI"/);
+    // Always light (fix/email-always-light): one logo, no dark-mode styles, light declared, colors inline.
+    expect(html).not.toContain('email-logo-on-dark.png');
+    expect(html).not.toMatch(/prefers-color-scheme|data-ogsc|data-ogsb/);
+    expect(html).toContain('<meta name="color-scheme" content="light only">');
+    expect(html).toContain('<meta name="supported-color-schemes" content="light only">');
+    expect(html).toContain(':root { color-scheme: light only; supported-color-schemes: light only; }');
+    expect(html).toMatch(/<table role="presentation" width="100%"[^>]*bgcolor="#F4F5F7"[^>]*style="background:#F4F5F7;/);
+    expect(html).toMatch(/<td class="clk-card clk-card-pad" bgcolor="#FFFFFF" style="background:#FFFFFF;[^"]*color:#1A1A1A"/);
+    // No text element anywhere in the email leans on an inherited color.
+    const bare = (html.replace(/<!--[\s\S]*?-->/g, '').match(/<(h[1-6]|p|li|td|th|span|div|strong|b|em|a)\b[^>]*>/gi) ?? [])
+      .filter((t) => {
+        const m = t.match(/\sstyle\s*=\s*(?:"([^"]*)"|'([^']*)')/i);
+        return !(m && /(^|;)\s*color\s*:/i.test(m[1] ?? m[2] ?? ''));
+      });
+    expect(bare).toEqual([]);
     expect(html).toContain('CareLinkAI · Cleveland, Ohio');
     expect(html).toContain('(216) 245-9482');
     expect(html).toContain('/privacy');
@@ -138,12 +152,20 @@ describe('layout pieces', () => {
     expect(b).toContain('https://x.test/a?b=1&amp;c=2');
     expect(b).toContain('Or open this link:');
   });
-  it('wraps once, strips an outer document, supports dark mode, and strips emoji', () => {
-    const once = renderEmailLayout({ html: '<html><head><title>x</title></head><body><p>Hi</p></body></html>' });
+  it('wraps once, strips an outer document, always renders light, and strips emoji', () => {
+    const once = renderEmailLayout({ html: '<html><head><title>x</title></head><body><p>Hi</p><p style="color:#B91C1C">Keep</p><a href="/x">L</a></body></html>' });
     expect(renderEmailLayout({ html: once })).toBe(once);
     expect(once).not.toMatch(/<body[^>]*>\s*<html/i);
-    expect(once).toContain('prefers-color-scheme: dark');
-    expect(once).toContain('/images/email-logo-on-dark.png');
+    expect(once).not.toMatch(/prefers-color-scheme|data-ogsc|data-ogsb|email-logo-on-dark|clk-logo-dark/);
+    expect(once).toContain('content="light only"');
+    expect(once).toContain('/images/email-logo.png');
+    // Sender text without a color gets body text / brand blue inline; an explicit color is kept.
+    expect(once).toContain('<p style="color:#1A1A1A">Hi</p>');
+    expect(once).toContain('<p style="color:#B91C1C">Keep</p>');
+    expect(once).toContain('<a href="/x" style="color:#3978FC">L</a>');
+    // Footer: muted #63666A, the wording unchanged.
+    expect(once).toMatch(/class="clk-footer"[^>]*color:#63666A/);
+    expect(once.replace(/<[^>]+>/g, '')).toContain('CareLinkAI · Cleveland, Ohio · (216) 245-9482');
     expect(stripEmoji('🧑‍⚕️ New concierge placement request')).toBe('New concierge placement request');
     expect(stripEmoji('🎉 New CareLinkAI claim — Maple')).toBe('New CareLinkAI claim — Maple');
   });

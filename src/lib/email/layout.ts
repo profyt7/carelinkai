@@ -2,8 +2,10 @@
  * One branded layout for every transactional email (feat/email-design). Visual only: wording, recipients and
  * timing stay with each sender. Clean card style:
  *  - light gray page (#F4F5F7), centered white card (max 600px, rounded, 1px #E9EAED border);
- *  - CareLinkAI logo PNG hosted on our domain (alt text; the white-wordmark version in dark mode where the client
- *    supports it); nothing in the logo is needed to understand the email;
+ *  - CareLinkAI logo PNG hosted on our domain (alt text); nothing in the logo is needed to understand the email;
+ *  - ALWAYS LIGHT (fix/email-always-light): no dark-mode styles; `color-scheme: light only` is declared, and every
+ *    layout element carries its own background / color inline (bgcolor too), so nothing depends on inheritance.
+ *    Text in a sender's body that has no color of its own gets one inline (body text, or brand blue for links).
  *  - Inter / Segoe UI / Roboto / Arial; at most ONE primary CTA, a bulletproof table button (VML for Outlook) with a
  *    plain-text link under it;
  *  - footer: "CareLinkAI · Cleveland, Ohio · (216) 245-9482", getcarelinkai.com, privacy and terms. No unsubscribe
@@ -15,9 +17,10 @@
 export const BRAND_BLUE = '#3978FC';
 export const LAYOUT_MARKER = 'data-clk-layout="1"';
 const PAGE_BG = '#F4F5F7';
+const CARD_BG = '#FFFFFF';
 const CARD_BORDER = '#E9EAED';
-const TEXT = '#1F2937';
-const MUTED = '#6B7280';
+const TEXT = '#1A1A1A';
+const MUTED = '#63666A';
 const FONT = "Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 const PHONE = '(216) 245-9482';
 
@@ -32,14 +35,12 @@ export function emailAssetBase(): string {
 }
 
 /**
- * Email-sized logos (2× files, explicit width/height so clients reserve the space):
- *  - email-logo.png 296×76 → 148×38, with a thin white edge so the navy wordmark stays readable when an app forces a
- *    dark background;
- *  - email-logo-on-dark.png 296×70 → 148×35, the white wordmark for the dark-mode swap.
+ * Email-sized logo (2× file, explicit width/height so clients reserve the space): email-logo.png 296×76 → 148×38,
+ * with a thin white edge so the navy wordmark stays readable even if an app forces a dark background. Always this
+ * one; there is no dark-mode swap.
  */
 const LOGO_W = 148;
 const LOGO_H = 38;
-const LOGO_DARK_H = 35;
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -70,6 +71,24 @@ export function emailContent(opts: { heading?: string; paragraphs: string[]; cta
   return h1 + body + cta + foot;
 }
 
+/**
+ * Don't rely on inheritance: give every text element in a sender's body an inline color when it has none (body
+ * text; links brand blue). Elements that already set a color keep it. Backgrounds are left alone (an inner cell may
+ * sit on a tinted box). Conditional-comment (VML) markup has its own colors and is not matched.
+ */
+const TEXT_TAGS = /<(h[1-6]|p|li|ul|ol|td|th|span|div|strong|b|em|i|small|label|blockquote|a)\b([^>]*)>/gi;
+export function inlineTextColors(html: string): string {
+  return html.replace(TEXT_TAGS, (whole: string, tag: string, attrs: string) => {
+    const color = tag.toLowerCase() === 'a' ? BRAND_BLUE : TEXT;
+    const m = attrs.match(/\sstyle\s*=\s*(["'])([\s\S]*?)\1/i);
+    if (!m) return `<${tag}${attrs} style="color:${color}">`;
+    if (/(^|;)\s*color\s*:/i.test(m[2]!)) return whole;
+    const own = m[2]!.trim().replace(/;\s*$/, '');
+    const style = own ? `${own};color:${color}` : `color:${color}`;
+    return `<${tag}${attrs.replace(m[0], ` style=${m[1]}${style}${m[1]}`)}>`;
+  });
+}
+
 /** Strip an outer <html>/<body> document so a full legacy page can sit inside the card. */
 function innerBody(html: string): string {
   const m = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
@@ -89,49 +108,36 @@ export function renderEmailLayout(opts: { html: string; preheader?: string }): s
     ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">${esc(opts.preheader)}</div>`
     : '';
   return `<!doctype html>
-<html lang="en" ${LAYOUT_MARKER}>
+<html lang="en" ${LAYOUT_MARKER} style="color-scheme:light only;background:${PAGE_BG}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="light dark">
-<meta name="supported-color-schemes" content="light dark">
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light only">
 <title>CareLinkAI</title>
 <style>
-  body { margin:0; padding:0; background:${PAGE_BG}; }
+  :root { color-scheme: light only; supported-color-schemes: light only; }
+  body { margin:0; padding:0; background:${PAGE_BG}; color:${TEXT}; }
   a { color:${BRAND_BLUE}; }
-  .clk-logo-dark { display:none; }
-  @media (prefers-color-scheme: dark) {
-    body, .clk-page { background:#111318 !important; }
-    .clk-card { background:#1B1E24 !important; border-color:#2C3038 !important; }
-    .clk-card, .clk-card p, .clk-card li, .clk-card td, .clk-card h1, .clk-card h2, .clk-card h3, .clk-card strong { color:#E8EAED !important; }
-    .clk-muted, .clk-footer, .clk-footer a { color:#A0A6B0 !important; }
-    .clk-card a { color:#7EA6FF !important; }
-    .clk-card a.clk-btn { color:#ffffff !important; background:${BRAND_BLUE} !important; }
-    .clk-logo-light { display:none !important; }
-    .clk-logo-dark { display:inline-block !important; }
-  }
-  [data-ogsc] .clk-logo-light { display:none !important; }
-  [data-ogsc] .clk-logo-dark { display:inline-block !important; }
   @media (max-width: 620px) { .clk-card-pad { padding:24px 20px !important; } }
 </style>
 </head>
-<body style="margin:0;padding:0;background:${PAGE_BG}">
+<body bgcolor="${PAGE_BG}" style="margin:0;padding:0;background:${PAGE_BG};background-color:${PAGE_BG};color:${TEXT}">
 ${pre}
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="clk-page" style="background:${PAGE_BG}">
-<tr><td align="center" style="padding:24px 12px">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px">
-  <tr><td align="left" style="padding:4px 4px 16px">
-    <a href="${app}" style="text-decoration:none">
-      <img src="${assets}/images/email-logo.png" width="${LOGO_W}" height="${LOGO_H}" alt="CareLinkAI" class="clk-logo-light" style="display:inline-block;border:0;width:${LOGO_W}px;height:${LOGO_H}px;font-family:${FONT};font-size:18px;font-weight:700;color:${TEXT}">
-      <img src="${assets}/images/email-logo-on-dark.png" width="${LOGO_W}" height="${LOGO_DARK_H}" alt="CareLinkAI" class="clk-logo-dark" style="display:none;border:0;width:${LOGO_W}px;height:${LOGO_DARK_H}px;font-family:${FONT};font-size:18px;font-weight:700;color:#ffffff">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${PAGE_BG}" class="clk-page" style="background:${PAGE_BG};background-color:${PAGE_BG};color:${TEXT}">
+<tr><td align="center" bgcolor="${PAGE_BG}" style="padding:24px 12px;background:${PAGE_BG};background-color:${PAGE_BG};color:${TEXT}">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${PAGE_BG}" style="max-width:600px;background:${PAGE_BG};background-color:${PAGE_BG};color:${TEXT}">
+  <tr><td align="left" bgcolor="${PAGE_BG}" style="padding:4px 4px 16px;background:${PAGE_BG};background-color:${PAGE_BG};color:${TEXT}">
+    <a href="${app}" style="text-decoration:none;color:${TEXT}">
+      <img src="${assets}/images/email-logo.png" width="${LOGO_W}" height="${LOGO_H}" alt="CareLinkAI" style="display:inline-block;border:0;width:${LOGO_W}px;height:${LOGO_H}px;font-family:${FONT};font-size:18px;font-weight:700;color:${TEXT}">
     </a>
   </td></tr>
-  <tr><td class="clk-card clk-card-pad" style="background:#ffffff;border:1px solid ${CARD_BORDER};border-radius:12px;padding:32px;font-family:${FONT};font-size:16px;line-height:24px;color:${TEXT}">
-${innerBody(opts.html)}
+  <tr><td class="clk-card clk-card-pad" bgcolor="${CARD_BG}" style="background:${CARD_BG};background-color:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:12px;padding:32px;font-family:${FONT};font-size:16px;line-height:24px;color:${TEXT}">
+${inlineTextColors(innerBody(opts.html))}
   </td></tr>
-  <tr><td class="clk-footer" style="padding:20px 4px 8px;font-family:${FONT};font-size:12px;line-height:18px;color:${MUTED}" align="center">
-    CareLinkAI · Cleveland, Ohio · <a href="tel:+12162459482" style="color:${MUTED};text-decoration:none">${PHONE}</a><br>
-    <a href="${app}" style="color:${MUTED}">getcarelinkai.com</a> · <a href="${app}/privacy" style="color:${MUTED}">Privacy</a> · <a href="${app}/terms" style="color:${MUTED}">Terms</a>
+  <tr><td class="clk-footer" bgcolor="${PAGE_BG}" style="padding:20px 4px 8px;background:${PAGE_BG};background-color:${PAGE_BG};font-family:${FONT};font-size:12px;line-height:18px;color:${MUTED}" align="center">
+    <span style="color:${MUTED}">CareLinkAI · Cleveland, Ohio · </span><a href="tel:+12162459482" style="color:${MUTED};text-decoration:none">${PHONE}</a><br>
+    <a href="${app}" style="color:${MUTED}">getcarelinkai.com</a><span style="color:${MUTED}"> · </span><a href="${app}/privacy" style="color:${MUTED}">Privacy</a><span style="color:${MUTED}"> · </span><a href="${app}/terms" style="color:${MUTED}">Terms</a>
   </td></tr>
   </table>
 </td></tr>
