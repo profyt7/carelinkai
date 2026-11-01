@@ -116,7 +116,7 @@ export default function ConciergeScreener({ onRoute }: { onRoute?: (route: Conci
         <p className="mt-4 text-sm text-neutral-700" data-testid="concierge-phone-line">
           Prefer to talk? Call{' '}
           <a href={CONTACT_PHONE_TEL} className="font-semibold text-primary-700 hover:underline">{CONTACT_PHONE_DISPLAY}</a>
-          {' '}— our front desk takes your name and number and a person calls you back. Free. {CONTACT_NO_PHI_LINE}
+          {' '}— our automated front desk answers 24/7 and takes your name and number, and a person calls you back within one business day. Free. {CONTACT_NO_PHI_LINE}
         </p>
       </div>
     );
@@ -180,7 +180,7 @@ export default function ConciergeScreener({ onRoute }: { onRoute?: (route: Conci
         <p className="mt-4 text-sm text-neutral-700" data-testid="concierge-phone-line">
           Prefer to talk? Call{' '}
           <a href={CONTACT_PHONE_TEL} className="font-semibold text-primary-700 hover:underline">{CONTACT_PHONE_DISPLAY}</a>
-          {' '}— our front desk takes your name and number and a person calls you back. {CONTACT_NO_PHI_LINE}
+          {' '}— our automated front desk answers 24/7 and takes your name and number, and a person calls you back within one business day. {CONTACT_NO_PHI_LINE}
         </p>
         <div className="mt-4">{changeAnswer}</div>
       </div>

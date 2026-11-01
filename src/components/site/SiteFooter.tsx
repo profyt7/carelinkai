@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { CONTACT_HOURS_LINE, CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from '@/lib/contact';
+import { CONTACT_FOOTER_LINE, CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from '@/lib/contact';
 import { SUBURBS, suburbPath } from '@/lib/directory/suburbs';
 
 /**
@@ -52,7 +52,7 @@ export default function SiteFooter() {
               <a href={CONTACT_PHONE_TEL} className="font-semibold text-white hover:underline" data-testid="footer-phone">
                 Call {CONTACT_PHONE_DISPLAY}
               </a>
-              <span className="block text-neutral-400">{CONTACT_HOURS_LINE}</span>
+              {' '}<span className="text-neutral-400" data-testid="footer-phone-line">{CONTACT_FOOTER_LINE}</span>
             </p>
           </div>
           {COLUMNS.map((c) => (

@@ -148,7 +148,7 @@ export default async function ClevelandHomeCareAgenciesPage({ searchParams }: { 
               'A “Verified” badge once we have confirmed your Ohio licensure and contact details.',
               'Open-shift posts to the Cleveland caregiver marketplace.',
               'Free to claim and keep. No broker fees. No charge to families.',
-              'Founder-run from Cleveland — a person answers, not a ticket queue.',
+              'Founder-run from Cleveland — our automated front desk answers 24/7 and a person calls you back within one business day, not a ticket queue.',
             ].map((line) => (
               <li key={line} className="flex gap-3">
                 <FiCheck className="mt-1 flex-shrink-0 text-success-600" />
