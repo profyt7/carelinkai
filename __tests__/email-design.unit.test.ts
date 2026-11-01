@@ -60,7 +60,9 @@ describe('every email: layout, one CTA, no emoji in subject/headings, plain text
     expect(html).toContain(LAYOUT_MARKER);
     expect(html.split(LAYOUT_MARKER)).toHaveLength(2); // wrapped exactly once
     expect(html).toContain('alt="CareLinkAI"');
-    expect(html).toContain('/images/logo.png');
+    // (a) logos: absolute https on our domain, alt text, explicit width and height (email-sized files)
+    expect(html).toMatch(/<img src="https:\/\/getcarelinkai\.com\/images\/email-logo\.png" width="148" height="38" alt="CareLinkAI"/);
+    expect(html).toMatch(/<img src="https:\/\/getcarelinkai\.com\/images\/email-logo-on-dark\.png" width="148" height="35" alt="CareLinkAI"/);
     expect(html).toContain('CareLinkAI · Cleveland, Ohio');
     expect(html).toContain('(216) 245-9482');
     expect(html).toContain('/privacy');
@@ -141,7 +143,7 @@ describe('layout pieces', () => {
     expect(renderEmailLayout({ html: once })).toBe(once);
     expect(once).not.toMatch(/<body[^>]*>\s*<html/i);
     expect(once).toContain('prefers-color-scheme: dark');
-    expect(once).toContain('/images/logo-on-dark.png');
+    expect(once).toContain('/images/email-logo-on-dark.png');
     expect(stripEmoji('🧑‍⚕️ New concierge placement request')).toBe('New concierge placement request');
     expect(stripEmoji('🎉 New CareLinkAI claim — Maple')).toBe('New CareLinkAI claim — Maple');
   });
