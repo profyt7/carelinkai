@@ -21,6 +21,7 @@ import { prefersReducedMotion, durations, easings } from "@/lib/animations";
 /** Must equal AVAILABILITY_FRESH_DAYS (src/lib/availability/availability.ts, server-only); pinned by __tests__/homepage-hero.unit.test.tsx. */
 const VERIFIED_AVAILABILITY_DAYS = 10;
 import GetStartedPanel from "@/components/marketing/GetStartedPanel";
+import { GET_STARTED_ANCHOR } from "@/lib/marketing/get-started-links";
 import type { TourVideo as TourVideoData } from "@/lib/marketing/product-tour-data";
 import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/contact";
 import { CONCIERGE_OFFER } from "@/lib/concierge/offer";
@@ -264,30 +265,36 @@ export default function HomePage({
                 animate={mounted && !reducedMotion ? { opacity: 1, y: 0 } : undefined}
                 transition={{ duration: 0.5, delay: 0.3 }}
               >
+                {/* fix/hero-primary-cta: ONE primary action, straight to search (public, no sign-up wall).
+                    Sign-up stays further down the page (Get Started panel, final CTA). */}
                 <motion.div
                   whileHover={reducedMotion ? undefined : { scale: 1.02, y: -2 }}
                   whileTap={reducedMotion ? undefined : { scale: 0.98 }}
                 >
                   <Link
-                    href="/auth/register"
+                    href="/search"
+                    data-testid="hero-primary-cta"
                     className="group bg-gradient-to-r from-primary-500 to-secondary-500 hover:shadow-xl text-white px-8 py-4 rounded-lg font-semibold text-center flex items-center justify-center shadow-lg transition-all duration-300"
                   >
-                    Get Started — It&apos;s Free
+                    <FiSearch className="mr-2" />
+                    Find Senior Care
                     <FiArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </motion.div>
-                <motion.div
-                  whileHover={reducedMotion ? undefined : { scale: 1.02, y: -2 }}
-                  whileTap={reducedMotion ? undefined : { scale: 0.98 }}
-                >
-                  <Link 
-                    href="/search" 
-                    className="bg-white hover:bg-neutral-50 text-neutral-900 px-8 py-4 rounded-lg font-semibold border-2 border-neutral-300 text-center flex items-center justify-center transition-all duration-300 hover:border-primary-500"
+                {tourVideo && (
+                  <motion.div
+                    whileHover={reducedMotion ? undefined : { scale: 1.02, y: -2 }}
+                    whileTap={reducedMotion ? undefined : { scale: 0.98 }}
                   >
-                    <FiSearch className="mr-2" />
-                    Find Care Now
-                  </Link>
-                </motion.div>
+                    <Link
+                      href={`#${GET_STARTED_ANCHOR}`}
+                      data-testid="hero-secondary-cta"
+                      className="bg-white hover:bg-neutral-50 text-neutral-900 px-8 py-4 rounded-lg font-semibold border-2 border-neutral-300 text-center flex items-center justify-center transition-all duration-300 hover:border-primary-500"
+                    >
+                      Watch the 90-second tour
+                    </Link>
+                  </motion.div>
+                )}
               </motion.div>
               
               {/* Trust indicators */}

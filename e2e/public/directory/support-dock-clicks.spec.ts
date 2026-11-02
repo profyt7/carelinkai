@@ -88,12 +88,13 @@ test.describe('floating support controls never take a click meant for a primary 
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('support-dock')).toBeAttached({ timeout: 60_000 });
     await recordClicks(page);
-    const getStarted = page.getByRole('link', { name: /Get Started/ }).first();
-    const findCare = page.getByRole('link', { name: /Find Care Now/ }).first();
+    // fix/hero-primary-cta: the hero's two CTAs are "Find Senior Care" (primary) and "Watch the 90-second tour".
+    const primary = page.getByTestId('hero-primary-cta');
+    const tour = page.getByTestId('hero-secondary-cta');
     await page.waitForTimeout(900);
-    // As first loaded (where the two floating buttons used to sit on "Get Started").
-    if ((await getStarted.boundingBox())!.y + 40 < 844) await expectClicksLand(page, getStarted, 'Get Started (as loaded)');
-    for (const [loc, what] of [[getStarted, 'Get Started'], [findCare, 'Find Care Now']] as const) {
+    // As first loaded (where the two floating buttons used to sit on the primary CTA).
+    if ((await primary.boundingBox())!.y + 40 < 844) await expectClicksLand(page, primary, 'Find Senior Care (as loaded)');
+    for (const [loc, what] of [[primary, 'Find Senior Care'], [tour, 'Watch the 90-second tour']] as const) {
       await parkBottomRight(page, loc);
       await expectClicksLand(page, loc, what);
     }
