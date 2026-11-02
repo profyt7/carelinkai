@@ -2922,3 +2922,15 @@
 - **Files changed:** `src/app/cleveland/home-care-agencies/{page,opengraph-image,twitter-image}.tsx`, `src/app/cleveland/page.tsx`, `src/components/site/SiteFooter.tsx`, `src/lib/seo/{page-meta,llms-txt}.ts`, `src/app/HomePageClient.tsx`, `__tests__/home-care-claims.unit.test.ts`, context files.
 - **Commands run:** `npm run type-check`, `next lint`, `npm test -- --ci`, truth suites.
 - **Deployment impact:** copy / metadata only, after Chris's OK.
+
+### 2026-11-02 — Session wrap (archive cleanup → email + homepage truth passes)
+- **Objective:** close out this session's threads and hand the open ones to the other session.
+- **Work completed:**
+  - **Merged and prod-verified this session:** #18 inbound alerts for every caller (`771513e`); #27 demo-section truth (`b7bb4f0`); #28 product tour content + truth fixes (`a8e1d47`); #30 family rides + Checkr-start gates (`0201b8d`); #41 emails always light (OL-255, `e7ea3b8`, trackers on); #43 hero copy + no in-home care in homepage metadata (OL-256, `2b315a7`). Opened for Chris to merge: #31 self-hosted tour video, #35 tour thumbnail.
+  - Also: deleted 747 Actions artifacts (~4.48 GB) on the private archive repo; Actions caches can't be reached from this environment.
+  - **Closed:** TEST ORDER A/B (Chris 11/02). Live payment test passed; both kept as test records with `isTest` on; no cleanup.
+- **Open, handed off:** OL-257 PR #44 (green, awaiting OK); OL-258 (relayed scope; not started).
+- **Files changed (this wrap):** context files only.
+- **Deployment impact:** none (context only).
+- **New risks/blockers:** getcarelinkai.com is outside this environment's network policy, so live-data checks rely on Chris.
+- **Recommended next step:** Chris OKs #44, then the other session takes OL-258.
