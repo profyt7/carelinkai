@@ -16,13 +16,17 @@ import BackgroundCheckOrderPanel from "@/components/marketplace/BackgroundCheckO
 import BackgroundCheckBadge from "@/components/caregiver/BackgroundCheckBadge";
 import { getCloudinaryAvatar, isCloudinaryUrl } from "@/lib/cloudinaryUrl";
 import { isPaidFeatureEnabled } from "@/lib/billing/paid-features";
+import { isMockViewerAllowed } from "@/lib/mockMode.server";
+// OL-258: real, local caregivers only; background-check status from provider orders only.
+import { realCaregiverWhere, displayBackgroundCheckStatus, LATEST_BACKGROUND_CHECK_ORDER } from "@/lib/marketplace/real-caregivers";
 
 export const dynamic = "force-dynamic";
 
-async function getCaregiverById(id: string) {
+async function getCaregiverById(id: string, opts: { allowAny: boolean }) {
   try {
-    const caregiver = await prisma.caregiver.findUnique({
-      where: { id },
+    // OL-258: families only see real, local profiles (a demo/seed id 404s). Admins can open any profile.
+    const caregiver = await prisma.caregiver.findFirst({
+      where: opts.allowAny ? { id } : { AND: [realCaregiverWhere(), { id }] },
       include: {
         user: {
           select: {
@@ -48,7 +52,8 @@ async function getCaregiverById(id: string) {
           orderBy: {
             expirationDate: 'desc'
           }
-        }
+        },
+        backgroundCheckOrders: LATEST_BACKGROUND_CHECK_ORDER,
       }
     });
 
@@ -102,8 +107,9 @@ async function getCaregiverById(id: string) {
 
     // Generate badges
     const badges: string[] = [];
+    const bgStatus = displayBackgroundCheckStatus(caregiver.backgroundCheckOrders);
     // OL-186: no "Clear" badge while BACKGROUND_CHECKS is off.
-    if (caregiver.backgroundCheckStatus === 'CLEAR' && isPaidFeatureEnabled('BACKGROUND_CHECKS')) {
+    if (bgStatus === 'CLEAR' && isPaidFeatureEnabled('BACKGROUND_CHECKS')) {
       badges.push('Background Check Clear');
     }
     if (caregiver.yearsExperience && caregiver.yearsExperience >= 5) {
@@ -123,7 +129,7 @@ async function getCaregiverById(id: string) {
       yearsExperience: caregiver.yearsExperience,
       specialties: caregiver.specialties || [],
       bio: caregiver.bio || null,
-      backgroundCheckStatus: caregiver.backgroundCheckStatus,
+      backgroundCheckStatus: bgStatus,
       photoUrl,
       ratingAverage: reviewStats._avg.rating ? Number(reviewStats._avg.rating.toFixed(1)) : 0,
       reviewCount: reviewStats._count._all,
@@ -187,12 +193,15 @@ export default async function CaregiverDetailPage({
   
   let caregiver;
   
-  if ((generalMockMode || showMarketplace) && isMockCaregiverId) {
+  // OL-258: mock profiles only for viewers allowed to see mocks (non-production, or a production admin).
+  // This used to default on in production, so /marketplace/caregivers/cg_1 showed a fake caregiver to anyone.
+  const mockViewer = await isMockViewerAllowed();
+  if ((generalMockMode || showMarketplace) && isMockCaregiverId && mockViewer) {
     // Use mock data for testing/demo
     caregiver = getMockCaregiverDetail(params.id);
   } else {
     // Use real database data
-    caregiver = await getCaregiverById(params.id);
+    caregiver = await getCaregiverById(params.id, { allowAny: session?.user?.role === 'ADMIN' });
   }
 
   if (!caregiver) {
