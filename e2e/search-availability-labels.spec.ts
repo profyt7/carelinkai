@@ -90,11 +90,15 @@ test.describe('@critical search cards show only verified availability (OL-200)',
       .catch(() => undefined);
   });
 
-  test('API keeps the capacity number but marks only (3) as verified', async ({ request }) => {
+  test('API sends no capacity number and marks only (3) as verified', async ({ request }) => {
     const res = await request.get(`/api/search?location=${CITY}&limit=50`);
     expect(res.status()).toBe(200);
-    const byId = new Map(((await res.json()).results as any[]).map((r) => [r.id, r]));
-    expect(byId.get(ids[UNCLAIMED]).availability).toBe(22);
+    const text = await res.text();
+    // fix/public-api-truth-privacy: no capacity-derived `availability`, no operator email in a logged-out response.
+    expect(text).not.toContain(OP_EMAIL);
+    expect(text).not.toMatch(/@test\.carelinkai\.com/);
+    const byId = new Map((JSON.parse(text).results as any[]).map((r) => [r.id, r]));
+    for (const id of Object.values(ids)) expect(byId.get(id)).not.toHaveProperty('availability');
     expect(byId.get(ids[UNCLAIMED]).availabilityFreshness.fresh).toBe(false);
     expect(byId.get(ids[FULL]).availabilityFreshness.fresh).toBe(false);
     expect(byId.get(ids[VERIFIED]).availabilityFreshness).toMatchObject({ fresh: true, count: 3 });

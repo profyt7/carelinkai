@@ -3,7 +3,7 @@
  *
  *  1. /concierge → Medicaid answer → CTA lands on the directory with the
  *     "Accepts Medicaid waiver" filter preset → only ACCEPTING_NEW homes render,
- *     each with the waiver line + WRAAA source note; the search API honours the
+ *     each with the waiver line + its real source / date note; the search API honours the
  *     same filter.
  *  2. Admin sets "accepts while Medicaid is pending" (source VA_CALL) in the
  *     Acceptance panel → /api/homes/:id and the public listing show the line →
@@ -101,7 +101,10 @@ test.describe('@critical Medicaid waiver filter + acceptance facts', () => {
     for (let i = 0; i < n; i++) {
       await expect(lines.nth(i)).toHaveAttribute('data-waiver-status', 'ACCEPTING_NEW');
       await expect(lines.nth(i)).toContainText('Accepting new waiver residents');
-      await expect(lines.nth(i)).toContainText('Source: Western Reserve Area Agency on Aging, Oct 2026. Confirm with the home.');
+      // fix/public-api-truth-privacy: the note names the stored source + date (the dev fixture writes IMPORT, today),
+      // never a fixed "WRAAA, Oct 2026" line.
+      await expect(lines.nth(i)).toContainText(/Source: a public-records import, verified [A-Z][a-z]{2} \d{1,2}, \d{4}\. Confirm with the home\./);
+      await expect(lines.nth(i)).not.toContainText('Western Reserve');
     }
 
     // The unfiltered page still shows the current-residents-only home (with its own line) and the UNKNOWN one (no line).
