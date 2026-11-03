@@ -7,6 +7,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { scoreCaregiverForListing, scoreListingForCaregiver, DEFAULT_WEIGHTS } from "@/lib/matching";
 import { z } from "zod";
+import { realCaregiverWhere, displayBackgroundCheckStatus, LATEST_BACKGROUND_CHECK_ORDER } from '@/lib/marketplace/real-caregivers';
 
 // Validate query parameters
 const querySchema = z.object({
@@ -145,11 +146,10 @@ async function getCaregiverRecommendations(session: any, listingId: string | und
   }
 
   // Fetch candidate caregivers (limit to 50 for performance)
+  // OL-258: only real, local, marketplace-visible caregivers (never demo/seed/test profiles).
   const candidateCaregivers = await prisma.caregiver.findMany({
     where: {
-      user: {
-        status: "ACTIVE",
-      },
+      AND: [realCaregiverWhere(), { user: { status: "ACTIVE" } }],
     },
     include: {
       user: {
@@ -161,6 +161,7 @@ async function getCaregiverRecommendations(session: any, listingId: string | und
           profileImageUrl: true,
         },
       },
+      backgroundCheckOrders: LATEST_BACKGROUND_CHECK_ORDER,
     },
     take: 50, // Limit candidates for performance
   });
@@ -213,7 +214,7 @@ async function getCaregiverRecommendations(session: any, listingId: string | und
           yearsExperience: caregiver.yearsExperience,
           hourlyRate: caregiver.hourlyRate,
           specialties: caregiver.specialties,
-          backgroundCheckStatus: caregiver.backgroundCheckStatus,
+          backgroundCheckStatus: displayBackgroundCheckStatus(caregiver.backgroundCheckOrders),
           reviewCount: reviews.length,
           averageRating: reviews.length > 0
             ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length

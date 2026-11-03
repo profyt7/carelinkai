@@ -19,6 +19,7 @@ import { UserRole } from '@prisma/client';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { displayBackgroundCheckStatus, LATEST_BACKGROUND_CHECK_ORDER } from '@/lib/marketplace/real-caregivers';
 
 /**
  * GET handler - Retrieve all favorites for the current user
@@ -103,7 +104,8 @@ export async function GET(request: NextRequest) {
                 select: {
                   rating: true
                 }
-              }
+              },
+              backgroundCheckOrders: LATEST_BACKGROUND_CHECK_ORDER,
             }
           }
         },
@@ -191,7 +193,7 @@ export async function GET(request: NextRequest) {
             settings: fav.caregiver.settings,
             careTypes: fav.caregiver.careTypes,
             photoUrl: fav.caregiver.user.profileImageUrl,
-            backgroundCheckStatus: fav.caregiver.backgroundCheckStatus,
+            backgroundCheckStatus: displayBackgroundCheckStatus(fav.caregiver.backgroundCheckOrders), // OL-258: provider orders only
             ratingAverage: avgRating,
             reviewCount: fav.caregiver.reviews.length
           }

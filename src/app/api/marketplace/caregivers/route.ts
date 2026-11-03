@@ -12,6 +12,8 @@ import { isMockModeEnabled } from '@/lib/mockMode';
 // OL-186: no "Background Check Clear" badge while BACKGROUND_CHECKS is off (seeded CLEAR rows).
 import { isPaidFeatureEnabled } from '@/lib/billing/paid-features';
 import { isMockViewerAllowed } from '@/lib/mockMode.server';
+// OL-258: real, local caregivers only; background-check status from provider orders only.
+import { realCaregiverWhere, displayBackgroundCheckStatus, LATEST_BACKGROUND_CHECK_ORDER } from '@/lib/marketplace/real-caregivers';
 
 /**
  * GET /api/marketplace/caregivers
@@ -20,6 +22,10 @@ import { isMockViewerAllowed } from '@/lib/mockMode.server';
  * Supports filtering by: q, city, state, minRate, maxRate, minExperience, specialties
  * Supports pagination with page and pageSize parameters
  * 
+ * OL-258: requires sign-in (the /marketplace page does too) and returns only real, local caregivers
+ * (realCaregiverWhere: not isDemo, no seed/test email, an Ohio address with a city). The background-check
+ * status comes from provider orders only (displayBackgroundCheckStatus), never the seeded column.
+ *
  * Mock Mode Support:
  * - When carelink_mock_mode cookie is set to "1", returns mock data when no results found
  * - This allows admins to toggle between real and mock data via /admin/tools
@@ -39,6 +45,13 @@ export async function GET(request: Request) {
         );
       }
       var __rl_caregivers_get = { rr, limit };
+    }
+
+    // OL-258: signed-in users only, like the /marketplace page. Logged out this used to return names,
+    // photos, bios, city/state, rates and user ids for every visible profile.
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Sign in to browse caregivers' }, { status: 401 });
     }
     
     // Extract filter parameters
@@ -73,8 +86,9 @@ export async function GET(request: Request) {
     
     // If explicit IDs are provided, short-circuit to fetch those caregivers only
     if (ids && ids.length > 0) {
+      // OL-258: the same real-caregiver filter as the list (this path used to return hidden/demo profiles by id).
       const caregivers = await prisma.caregiver.findMany({
-        where: { id: { in: ids } },
+        where: { AND: [realCaregiverWhere(), { id: { in: ids } }] },
         include: {
           user: {
             select: {
@@ -85,6 +99,7 @@ export async function GET(request: Request) {
               addresses: true,
             },
           },
+          backgroundCheckOrders: LATEST_BACKGROUND_CHECK_ORDER,
         },
       });
 
@@ -133,11 +148,11 @@ export async function GET(request: Request) {
           yearsExperience: caregiver.yearsExperience,
           specialties: caregiver.specialties || [],
           bio: caregiver.bio || null,
-          backgroundCheckStatus: caregiver.backgroundCheckStatus,
+          backgroundCheckStatus: displayBackgroundCheckStatus(caregiver.backgroundCheckOrders),
           photoUrl,
           ratingAverage: Number((ratingInfo.avg ?? 0).toFixed(1)) || 0,
           reviewCount: ratingInfo.count,
-          badges: deriveBadges(ratingInfo.avg ?? 0, ratingInfo.count, caregiver.yearsExperience, caregiver.backgroundCheckStatus),
+          badges: deriveBadges(ratingInfo.avg ?? 0, ratingInfo.count, caregiver.yearsExperience, displayBackgroundCheckStatus(caregiver.backgroundCheckOrders)),
           isPro: caregiver.isPro,
         };
       });
@@ -147,7 +162,7 @@ export async function GET(request: Request) {
           data: formattedCaregivers,
           pagination: { page: 1, pageSize: formattedCaregivers.length, total: formattedCaregivers.length },
         },
-        { status: 200, headers: { 'Cache-Control': 'public, max-age=15, s-maxage=15, stale-while-revalidate=60', ...(typeof __rl_caregivers_get !== 'undefined' ? buildRateLimitHeaders(__rl_caregivers_get.rr, __rl_caregivers_get.limit) : {}) } }
+        { status: 200, headers: { 'Cache-Control': 'private, max-age=15', ...(typeof __rl_caregivers_get !== 'undefined' ? buildRateLimitHeaders(__rl_caregivers_get.rr, __rl_caregivers_get.limit) : {}) } }
       );
     }
 
@@ -275,6 +290,9 @@ export async function GET(request: Request) {
       }
     }
     
+    // OL-258: every list query is ANDed with the real-caregiver filter.
+    const listWhere: Prisma.CaregiverWhereInput = { AND: [realCaregiverWhere(), where] };
+
     // Radius filtering support
     const useRadius = !!(lat !== null && lng !== null && radiusMiles !== null && !Number.isNaN(radiusMiles));
     let caregivers: any[] = [];
@@ -282,7 +300,7 @@ export async function GET(request: Request) {
     if (useRadius) {
       // Pull a larger candidate set; include addresses for lat/lng
       const candidates = await prisma.caregiver.findMany({
-        where,
+        where: listWhere,
         include: {
           user: {
             select: {
@@ -292,7 +310,8 @@ export async function GET(request: Request) {
               profileImageUrl: true,
               addresses: true
             }
-          }
+          },
+          backgroundCheckOrders: LATEST_BACKGROUND_CHECK_ORDER,
         },
         take: 500
       });
@@ -323,11 +342,12 @@ export async function GET(request: Request) {
 
       if (cursor) {
         const rows = await prisma.caregiver.findMany({
-          where,
+          where: listWhere,
           include: {
             user: {
               select: { id: true, firstName: true, lastName: true, profileImageUrl: true, addresses: true }
-            }
+            },
+            backgroundCheckOrders: LATEST_BACKGROUND_CHECK_ORDER,
           },
           orderBy,
           cursor: { id: cursor },
@@ -336,13 +356,13 @@ export async function GET(request: Request) {
         });
         caregivers = rows.slice(0, pageSize) as any[];
         // get total for compatibility with existing UI counters
-        totalCount = await prisma.caregiver.count({ where });
+        totalCount = await prisma.caregiver.count({ where: listWhere });
         // Attach marker for nextCursor via response (below)
         (caregivers as any).__nextCursor = rows[pageSize]?.id ?? null;
       } else {
         const [rows, count] = await Promise.all([
           prisma.caregiver.findMany({
-            where,
+            where: listWhere,
             include: {
               user: {
                 select: { id: true, firstName: true, lastName: true, profileImageUrl: true, addresses: true }
@@ -352,7 +372,7 @@ export async function GET(request: Request) {
             skip,
             take: pageSize + 1,
           }),
-          prisma.caregiver.count({ where })
+          prisma.caregiver.count({ where: listWhere })
         ]);
         caregivers = rows.slice(0, pageSize) as any[];
         totalCount = count as number;
@@ -427,7 +447,7 @@ export async function GET(request: Request) {
         yearsExperience: caregiver.yearsExperience,
         specialties: caregiver.specialties || [],
         bio: caregiver.bio || null,
-        backgroundCheckStatus: caregiver.backgroundCheckStatus,
+        backgroundCheckStatus: displayBackgroundCheckStatus(caregiver.backgroundCheckOrders),
         photoUrl,
         ratingAverage,
         reviewCount: ratingInfo.count,
@@ -435,7 +455,7 @@ export async function GET(request: Request) {
           ratingInfo.avg ?? 0,
           ratingInfo.count,
           caregiver.yearsExperience,
-          caregiver.backgroundCheckStatus
+          displayBackgroundCheckStatus(caregiver.backgroundCheckOrders)
         ),
         isPro: caregiver.isPro,
         ...(useRadius ? { distanceMiles: caregiver.distanceMiles } : {})
@@ -475,7 +495,7 @@ export async function GET(request: Request) {
             total: mockCaregivers.length
           }
         },
-        { status: 200, headers: { 'Cache-Control': 'public, max-age=15, s-maxage=15, stale-while-revalidate=60' } }
+        { status: 200, headers: { 'Cache-Control': 'private, max-age=15' } }
       );
     }
     
@@ -494,7 +514,7 @@ export async function GET(request: Request) {
           cursor: nextCursor,
         }
       },
-      { status: 200, headers: { 'Cache-Control': 'public, max-age=15, s-maxage=15, stale-while-revalidate=60', ...(typeof __rl_caregivers_get !== 'undefined' ? buildRateLimitHeaders(__rl_caregivers_get.rr, __rl_caregivers_get.limit) : {}) } }
+      { status: 200, headers: { 'Cache-Control': 'private, max-age=15', ...(typeof __rl_caregivers_get !== 'undefined' ? buildRateLimitHeaders(__rl_caregivers_get.rr, __rl_caregivers_get.limit) : {}) } }
     );
   } catch (error) {
     console.error('Error fetching caregivers:', error);

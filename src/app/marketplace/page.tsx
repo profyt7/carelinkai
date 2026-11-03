@@ -1949,6 +1949,14 @@ export default function MarketplacePage() {
             {activeTab === "caregivers" ? (
               caregiversLoading && caregiversToRender.length === 0 ? (
                 <div className="py-20 text-center text-neutral-500">Loading caregivers…</div>
+              ) : caregiversToRender.length === 0 && chips.length === 0 && !cgShortlistOnly ? (
+                // OL-258: no real caregivers yet (demo/seed profiles are filtered out). Say so, and offer the
+                // live family flow: posting a job notifies the poster (in-app + email) when a caregiver applies.
+                <div className="py-16 text-center" data-testid="caregivers-empty-onboarding">
+                  <div className="text-lg font-medium text-neutral-900 mb-2">We&apos;re onboarding Cleveland caregivers now</div>
+                  <div className="text-sm text-neutral-600 mb-4">Post your job free and we&apos;ll notify you when a caregiver applies.</div>
+                  <Link href="/marketplace/listings/new" className="inline-flex items-center rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700">Post a job free</Link>
+                </div>
               ) : caregiversToRender.length === 0 ? (
                 <div className="py-16 text-center">
                   <div className="text-lg font-medium text-neutral-900 mb-1">No caregivers found</div>
