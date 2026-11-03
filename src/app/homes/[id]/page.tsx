@@ -44,6 +44,7 @@ import FeaturedBadge from "@/components/homes/FeaturedBadge";
 import AvailabilityBadge, { UNVERIFIED_AVAILABILITY } from "@/components/availability/AvailabilityBadge";
 import HomeImagePlaceholder from "@/components/homes/HomeImagePlaceholder";
 import PriceLine from "@/components/ui/PriceLine";
+import LastConfirmed from "@/components/ui/LastConfirmed";
 import { setBottomStackHeight } from "@/hooks/useBottomStackOffset";
 import { listingBreadcrumb } from "@/lib/seo/listing-meta";
 import { track } from "@/lib/analytics/events";
@@ -675,7 +676,9 @@ export default function HomeDetailPage() {
                           <p className="text-xs text-neutral-600" data-testid="panel-availability-detail">
                             {facts.availability.known ? facts.availability.detail : 'Availability changes often — we verify on request.'}
                           </p>
+                          <LastConfirmed at={availability.verifiedAt} testId="availability-last-confirmed" />
                           <PriceLine pricing={realHome.pricing} />
+                          <LastConfirmed at={realHome.pricing?.confirmedAt} testId="price-last-confirmed" />
                           {realHome.pricing?.transparent && (
                             <span className="inline-block rounded-full bg-success-50 px-2 py-0.5 text-[11px] font-medium text-success-700 ring-1 ring-inset ring-success-200">Transparent Pricing</span>
                           )}
@@ -1140,6 +1143,7 @@ export default function HomeDetailPage() {
                 {hasPrice ? (
                   <>
                     <PriceLine pricing={realHome.pricing} className="text-base" />
+                    <LastConfirmed at={realHome.pricing?.confirmedAt} testId="pricing-section-last-confirmed" className="mt-1" />
                     {/* OL-176: an imported / estimated figure is not a quote from the community. */}
                     {!realHome.pricePending && realHome.pricing?.source !== 'OPERATOR' && (
                       <p className="mt-2 text-xs text-neutral-600" data-testid="pricing-range-source">

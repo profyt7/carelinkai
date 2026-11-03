@@ -95,7 +95,19 @@ export type PricingView = {
   /** Earns the "Transparent Pricing" badge: operator-provided AND recent. */
   transparent: boolean;
   familyReportCount: number;
+  /**
+   * When the community itself last confirmed the shown price (OPERATOR or a QA-approved AI_CALL), ISO; null for
+   * estimates, family averages and no price. Listing pages show it as "Last confirmed <date>" / "Not yet confirmed".
+   */
+  confirmedAt?: string | null;
 };
+
+/** The shown price counts as confirmed only when the community gave it (operator or its phone answer). */
+function confirmedAtFor(src: PriceSource, updatedAt?: Date | string | null): string | null {
+  if ((src !== 'OPERATOR' && src !== 'AI_CALL') || !updatedAt) return null;
+  const d = new Date(updatedAt);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
 
 function money(n: number): string {
   return `$${n.toLocaleString('en-US')}`;
@@ -123,7 +135,7 @@ export function pricingView(
     return {
       hasPrice: true, amount: familyAvg, low, high, source: 'FAMILY_AVG', sourceLabel: SOURCE_LABEL.FAMILY_AVG,
       display: `Families report ~${money(familyAvg)}/mo (avg of ${familyCount})`,
-      transparent, familyReportCount: familyCount,
+      transparent, familyReportCount: familyCount, confirmedAt: null,
     };
   }
   // 2) Operator-provided starting price.
@@ -133,7 +145,7 @@ export function pricingView(
     return {
       hasPrice: true, amount: starting, low, high, source: src, sourceLabel: label,
       display: `Starting around ${money(starting)}/mo · ${label}`,
-      transparent, familyReportCount: familyCount,
+      transparent, familyReportCount: familyCount, confirmedAt: confirmedAtFor(src, home.priceUpdatedAt),
     };
   }
   // 3) An estimated range (DP or public).
@@ -144,10 +156,10 @@ export function pricingView(
     return {
       hasPrice: true, amount: low, low, high, source: src, sourceLabel: label,
       display: `Starting around ${range}/mo · ${label}`,
-      transparent, familyReportCount: familyCount,
+      transparent, familyReportCount: familyCount, confirmedAt: confirmedAtFor(src, home.priceUpdatedAt),
     };
   }
-  return { hasPrice: false, amount: null, low: null, high: null, source: null, sourceLabel: '', display: 'Contact for pricing', transparent: false, familyReportCount: familyCount };
+  return { hasPrice: false, amount: null, low: null, high: null, source: null, sourceLabel: '', display: 'Contact for pricing', transparent: false, familyReportCount: familyCount, confirmedAt: null };
 }
 
 /** Average of VERIFIED family quote reports (base + care add-on) for a home. */
