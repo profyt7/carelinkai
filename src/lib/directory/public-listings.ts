@@ -126,6 +126,8 @@ export type PublicListingRow = {
   priceMax?: unknown;
   odhLicenseNumber?: string | null;
   medicaidWaiverStatus?: MedicaidWaiverPublicView['status'] | null;
+  medicaidWaiverSource?: string | null;
+  medicaidWaiverVerifiedAt?: Date | string | null;
   medicaidPendingAccepted?: boolean | null;
   medicaidPendingAcceptedVerifiedAt?: Date | string | null;
   address?: {
@@ -255,6 +257,8 @@ export const PUBLIC_LISTING_SELECT = {
   priceMax: true,
   odhLicenseNumber: true,
   medicaidWaiverStatus: true,
+  medicaidWaiverSource: true,
+  medicaidWaiverVerifiedAt: true,
   medicaidPendingAccepted: true,
   medicaidPendingAcceptedVerifiedAt: true,
   address: { select: { street: true, city: true, state: true, zipCode: true, latitude: true, longitude: true } },

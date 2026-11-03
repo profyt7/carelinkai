@@ -58,8 +58,9 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
 }
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+  let admin: { id: string; role: UserRole };
   try {
-    await requireRole([UserRole.ADMIN]);
+    admin = (await requireRole([UserRole.ADMIN])) as { id: string; role: UserRole };
   } catch {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
@@ -87,6 +88,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   const view = await setHomePricing({
     homeId: params.id,
     source,
+    actor: { userId: admin.id, role: admin.role },
+    eventSource: 'ADMIN',
     ...(('startingPriceMonthly' in body) ? { startingPriceMonthly: body['startingPriceMonthly'] as number | null } : {}),
     ...(('priceRangeLow' in body) ? { priceRangeLow: body['priceRangeLow'] as number | null } : {}),
     ...(('priceRangeHigh' in body) ? { priceRangeHigh: body['priceRangeHigh'] as number | null } : {}),

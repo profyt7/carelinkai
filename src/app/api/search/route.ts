@@ -35,6 +35,12 @@ import { isUnclaimedHome } from '@/lib/claim-engine/inquiry-claim-notification';
 import { prisma } from '@/lib/prisma';
 import { placeholderImageFor } from '@/lib/placeholder-images';
 import { availabilityView } from '@/lib/availability/availability';
+
+/** True when the home's openings are confirmed (fresh) and at least `min`. */
+function hasVerifiedOpenings(home: { availabilityCount?: number | null; availabilityVerifiedAt?: Date | string | null; availabilitySource?: any }, min: number): boolean {
+  const v = availabilityView(home);
+  return v.fresh && (v.count ?? 0) >= min;
+}
 import { pricingView } from '@/lib/pricing/pricing';
 import { compareSearchRank, isFeaturedActive } from '@/lib/directory/featured-rank';
 import { errorSummary } from '@/lib/log-safe';
@@ -346,8 +352,8 @@ function calculateMatchScore(home: any, params: any): number {
   // 4. Availability Match
   if (params.availability === true) {
     factorsConsidered++;
-    const hasAvailability = home.capacity > home.currentOccupancy;
-    totalScore += hasAvailability ? 15 : 0;
+    // Verified openings only (fresh confirmation with a count > 0), never capacity − occupancy.
+    totalScore += hasVerifiedOpenings(home, 1) ? 15 : 0;
   }
   
   // 5. Amenities Match
@@ -481,8 +487,6 @@ export function generateMockHomes(count: number = 12) {
         formattedMax: fmt(maxPrice),
       },
       capacity: 20 + (i % 10),
-      // capacity math; never render as availability — see OL-200
-      availability: 5 + (i % 4),
       availabilityFreshness: availabilityView({ availabilityCount: null, availabilityVerifiedAt: null, availabilitySource: null }),
       pricing: pricingView({ startingPriceMonthly: null, priceRangeLow: null, priceRangeHigh: null, priceSource: null, priceUpdatedAt: null }),
       gender: 'ALL',
@@ -848,15 +852,13 @@ export async function GET(request: NextRequest) {
         // VA-collected approximate price (pending operator confirmation) → card shows "~".
         pricePending: (home.preFilledFields as Record<string, unknown> | null)?.priceRange === 'VA_UNVERIFIED',
         capacity: home.capacity,
-        // capacity math; never render as availability — see OL-200
-        availability: home.capacity - home.currentOccupancy,
+        // fix/public-api-truth-privacy: no capacity-derived "availability" field — anything named
+        // availability must be a confirmed fact. Openings come only from availabilityFreshness.
         gender: home.genderRestriction || 'ALL',
         amenities: home.amenities,
         imageUrl,
-        operator: home.operator ? {
-          name: `${home.operator.user.firstName} ${home.operator.user.lastName}`,
-          email: home.operator.user.email
-        } : null,
+        // fix/public-api-truth-privacy: public route — no operator name or login email.
+        operator: home.operator && !unclaimed ? { company: home.operator.companyName ?? null } : null,
         // A listing still owned by the directory sentinel operator is "unclaimed"
         // — surfaced in results so the seeded directory shows, badged so families
         // know no operator manages it yet.
@@ -919,20 +921,11 @@ export async function GET(request: NextRequest) {
     // It runs over the whole ranked set, so the count is exact and pages stay contiguous.
     let filteredResults = results;
     
-    // Boolean availability filter (has any available spots)
-    if (availability === true) {
-      filteredResults = results.filter((r) => r.availability > 0);
-    }
-    
-    // Numeric availability filter (minimum beds required)
-    if (
-      typeof availability === 'number' &&
-      !Number.isNaN(availability) &&
-      availability > 0
-    ) {
-      filteredResults = results.filter(
-        (r) => r.availability >= availability
-      );
+    // "Has availability" / "minimum spots" filters match VERIFIED openings only: confirmed within
+    // AVAILABILITY_FRESH_DAYS with a count. Capacity − occupancy is never treated as open beds.
+    const minOpenings = availability === true ? 1 : typeof availability === 'number' && !Number.isNaN(availability) && availability > 0 ? availability : 0;
+    if (minOpenings > 0) {
+      filteredResults = results.filter((r) => (r.availabilityFreshness?.fresh ?? false) && (r.availabilityFreshness?.count ?? 0) >= minOpenings);
     }
 
     // Total = every ranked match (capped at SEARCH_FETCH_MAX); the page is a slice of that one order.

@@ -241,6 +241,7 @@ describe('OL-163d: QA-approved AI-call facts in the listing JSON-LD', () => {
           availabilityVerifiedAt: new Date('2026-10-12T15:05:00Z'),
           medicaidWaiverStatus: 'CURRENT_RESIDENTS_ONLY' as never,
           medicaidWaiverSource: 'AI_CALL',
+          medicaidWaiverVerifiedAt: new Date('2026-10-12T15:05:00Z'),
           medicaidPendingAccepted: true,
           medicaidPendingAcceptedVerifiedAt: new Date('2026-10-12T15:05:00Z'),
         } as Partial<PublicListingRow>),
@@ -253,6 +254,11 @@ describe('OL-163d: QA-approved AI-call facts in the listing JSON-LD', () => {
     expect(src?.description).toMatch(/reviewed by a person/);
     expect(prop(ld, 'medicaidWaiverStatus')).toBe('CURRENT_RESIDENTS_ONLY');
     expect(prop(ld, 'medicaidPendingAccepted')).toBe('yes');
+    expect(prop(ld, 'medicaidWaiverSource')).toBe('AI_CALL');
+    expect(prop(ld, 'medicaidWaiverVerifiedAt')).toBe('2026-10-12T15:05:00.000Z');
+    const waiver = (ld.additionalProperty as Array<{ name: string; description?: string }>).find((p) => p.name === 'medicaidWaiverStatus');
+    expect(waiver?.description).toContain('verified Oct 12, 2026');
+    expect(waiver?.description).not.toMatch(/Western Reserve/);
   });
   it('publishes nothing from a stale verification', () => {
     const ld = buildListingJsonLd(toPublicListing(fullRow({ availabilitySource: 'AI_CALL' as never, availabilityVerifiedAt: new Date('2026-09-01T00:00:00Z') }), NOW));

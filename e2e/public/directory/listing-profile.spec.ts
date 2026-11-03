@@ -259,12 +259,17 @@ test.describe('@critical OL-217 facility profile — one inquiry pathway', () =>
     await ctx.close();
   });
 
-  test('390×660 FAMILY, claimed home: the Contact Information email is tappable at max scroll', async ({ browser }) => {
+  test('390×660 FAMILY, claimed home: the last Contact Information line is tappable at max scroll; no operator email', async ({ browser }) => {
     const page = await signedIn(browser, FAMILY_EMAIL, { width: 390, height: 660 });
     await openListing(page, claimedId, CLAIMED);
     await scrollToEnd(page);
     await expect(page.getByTestId('listing-cta-bar')).toHaveAttribute('data-hidden', 'false');
-    await expectTappable(page.getByRole('link', { name: OP_EMAIL }), 'operator email at max scroll');
+    // fix/public-api-truth-privacy: the operator's login email is no longer published; the company line is now
+    // the last item in Contact Information (the seed has no phone), so it must clear the CTA bar.
+    const contact = page.locator('section[aria-labelledby="listing-contact-h"]');
+    await expectTappable(contact.getByText(`Profile Ops ${ts}`, { exact: true }), 'company line at max scroll');
+    await expect(contact).not.toContainText(OP_EMAIL);
+    await expect(page.locator(`a[href^="mailto:${OP_EMAIL}"]`)).toHaveCount(0);
     await page.context().close();
   });
 

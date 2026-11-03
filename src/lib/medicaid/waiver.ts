@@ -25,8 +25,37 @@ export function isProtectedSource(source: string | null | undefined): boolean {
 /** The WRAAA list we baseline from, verbatim as stored in medicaidWaiverSource. */
 export const WRAAA_IMPORT_SOURCE = 'WRAAA Medicaid Waiver Facilities list (accessed 2026-10-16)';
 export const WRAAA_ACCESSED_AT = new Date('2026-10-16T00:00:00.000Z');
-/** Public attribution line under the waiver status. */
-export const WAIVER_SOURCE_NOTE = 'Source: Western Reserve Area Agency on Aging, Oct 2026. Confirm with the home.';
+/**
+ * Where a published waiver status came from (fix/public-api-truth-privacy). The note under the status names the
+ * real source and date from medicaidWaiverSource / medicaidWaiverVerifiedAt — it used to say "WRAAA, Oct 2026" for
+ * every home, including statuses later set by a call, an operator or an admin.
+ */
+export type WaiverSourceKind = 'WRAAA_LIST' | 'AI_CALL' | 'VA_CALL' | 'OPERATOR' | 'ADMIN' | 'IMPORT' | 'UNKNOWN';
+
+export function waiverSourceKind(source: string | null | undefined): WaiverSourceKind {
+  if (!source) return 'UNKNOWN';
+  if (source === WRAAA_IMPORT_SOURCE || /^WRAAA\b/i.test(source)) return 'WRAAA_LIST';
+  if (source === 'AI_CALL' || source === 'VA_CALL' || source === 'OPERATOR' || source === 'ADMIN' || source === 'IMPORT') return source;
+  return 'UNKNOWN';
+}
+
+/** Plain words for each source (used in the page note and the JSON-LD). */
+export const WAIVER_SOURCE_LABEL: Record<WaiverSourceKind, string> = {
+  WRAAA_LIST: 'Western Reserve Area Agency on Aging waiver facilities list',
+  AI_CALL: 'the community, by phone to CareLinkAI’s calling assistant',
+  VA_CALL: 'the community, by phone to the CareLinkAI team',
+  OPERATOR: 'the community’s operator on CareLinkAI',
+  ADMIN: 'the CareLinkAI team',
+  IMPORT: 'a public-records import',
+  UNKNOWN: 'source not recorded',
+};
+
+/** "Source: <label>, verified <date>. Confirm with the home." — the date is omitted when we don't have one. */
+export function waiverSourceNote(source: string | null | undefined, verifiedAt: Date | string | null | undefined): string {
+  const label = WAIVER_SOURCE_LABEL[waiverSourceKind(source)];
+  const d = fmtDate(verifiedAt);
+  return `Source: ${label}${d ? `, verified ${d}` : ''}. Confirm with the home.`;
+}
 
 /** WRAAA's five counties — a home there that is NOT on the list is NOT_ON_LIST. */
 export const WRAAA_COUNTIES: readonly string[] = ['Cuyahoga', 'Lake', 'Geauga', 'Lorain', 'Medina'];
@@ -134,8 +163,12 @@ export type MedicaidWaiverPublicView = {
   status: MedicaidWaiverStatus;
   /** 'Accepting new waiver residents' etc., or null when nothing should render. */
   line: string | null;
-  /** Attribution shown under `line` (only when `line` is set). */
+  /** Attribution shown under `line` (only when `line` is set): the real source and date. */
   note: string | null;
+  /** Machine-readable source of the status (null when nothing renders). */
+  source: WaiverSourceKind | null;
+  /** When that source confirmed it, ISO (null when unknown or nothing renders). */
+  verifiedAt: string | null;
   /** 'Accepts residents while the Medicaid application is pending: yes — verified Oct 16, 2026', or null. */
   pendingLine: string | null;
   pendingAccepted: boolean | null;
@@ -158,10 +191,14 @@ export function medicaidWaiverPublicView(home: WaiverHomeFacts): MedicaidWaiverP
     pending === null
       ? null
       : `Accepts residents while the Medicaid application is pending: ${pending ? 'yes' : 'no'}${pendingDate ? ` — verified ${pendingDate}` : ''}`;
+  const verifiedAt = home.medicaidWaiverVerifiedAt ? new Date(home.medicaidWaiverVerifiedAt) : null;
+  const verifiedIso = verifiedAt && !Number.isNaN(verifiedAt.getTime()) ? verifiedAt.toISOString() : null;
   return {
     status,
     line,
-    note: line ? WAIVER_SOURCE_NOTE : null,
+    note: line ? waiverSourceNote(home.medicaidWaiverSource, home.medicaidWaiverVerifiedAt) : null,
+    source: line ? waiverSourceKind(home.medicaidWaiverSource) : null,
+    verifiedAt: line ? verifiedIso : null,
     pendingLine,
     pendingAccepted: pending,
   };

@@ -61,17 +61,7 @@ export async function GET(request: NextRequest) {
               where: { isPrimary: true },
               take: 1
             },
-            operator: {
-              include: {
-                user: {
-                  select: {
-                    firstName: true,
-                    lastName: true,
-                    email: true
-                  }
-                }
-              }
-            }
+            operator: { select: { companyName: true } }
           }
         }
       },
@@ -101,13 +91,10 @@ export async function GET(request: NextRequest) {
           max: favorite.home.priceMax ? Number(favorite.home.priceMax) : null
         },
         capacity: favorite.home.capacity,
-        availability: favorite.home.capacity - favorite.home.currentOccupancy,
         amenities: favorite.home.amenities,
         imageUrl: favorite.home.photos?.[0]?.url ?? null,
-        operator: favorite.home.operator ? {
-          name: `${favorite.home.operator.user.firstName} ${favorite.home.operator.user.lastName}`,
-          email: favorite.home.operator.user.email
-        } : null
+        // fix/public-api-truth-privacy: business name only — no operator personal name or login email.
+        operator: favorite.home.operator ? { company: favorite.home.operator.companyName ?? null } : null
       }
     }));
     

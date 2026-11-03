@@ -103,7 +103,8 @@ describe.each([
   ['relevance (default)', 'location=Cleveland', TOTAL],
   ['price_low', 'sortBy=price_low', TOTAL],
   ['price_high', 'sortBy=price_high', TOTAL],
-  ['availability=true filter', 'availability=true', HOMES.filter((h) => h.capacity > h.currentOccupancy).length],
+  // fix/public-api-truth-privacy: "has availability" means verified openings, never capacity − occupancy.
+  ['availability=true filter', 'availability=true', HOMES.filter((h) => h.availabilityVerifiedAt && (h.availabilityCount ?? 0) >= 1).length],
 ])('GET /api/search paging — %s', (_label, filter, expected) => {
   it.each([7, 10])('pages of %i: every home exactly once, no duplicates, no gaps', async (limit) => {
     const { ids, totalResults } = await pageThrough(filter, limit);
