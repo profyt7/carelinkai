@@ -178,13 +178,13 @@ export default function ClevelandLandingPage() {
           className={`block p-6 ${CARD}`}
         >
           <p className="text-sm font-semibold text-primary-700 uppercase tracking-wide">Care at home</p>
-          <h3 className="mt-2 text-xl font-bold text-neutral-900">Home care agencies in Cleveland</h3>
+          <h3 className="mt-2 text-xl font-bold text-neutral-900">Home care guide</h3>
           <p className="mt-2 text-neutral-700">
             Aides and nurses who come to you. Run a Cleveland home care agency? Claim your free
             agency listing.
           </p>
           <p className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary-600">
-            Home care agencies
+            Home care guide
             <FiArrowRight />
           </p>
         </Link>
