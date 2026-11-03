@@ -112,3 +112,53 @@ describe('fee model copy: no permanent promise, no attack on commission models',
     for (const f of publicSources()) expect({ f: path.relative(ROOT, f), hit: /ranked or recommended/.test(fs.readFileSync(f, 'utf8')) }).toEqual({ f: path.relative(ROOT, f), hit: false });
   });
 });
+
+/**
+ * fix/no-broker-fees-copy: "No broker fees" on /cleveland, the /cleveland/assisted-living banner and the
+ * Organization JSON-LD (description + slogan) now describe today's model with the disclosure.
+ */
+describe('"No broker fees" reworded to today’s model', () => {
+  const TODAY =
+    'Today we don’t charge homes a placement fee; if that ever changes, we’ll tell you before you rely on a shortlist, and it never changes your price or which homes we show.';
+  const flat = (s: string) => s.replace(/\s+/g, ' ');
+  it.each([
+    'src/app/cleveland/page.tsx',
+    'src/app/cleveland/assisted-living/page.tsx',
+    'src/lib/seo/jsonld.ts',
+  ])('%s: the disclosure wording, no "No broker fees"', (f) => {
+    const src = flat(read(f));
+    expect(src).toContain(TODAY);
+    expect(src).not.toMatch(/no broker fees?/i);
+  });
+  it('the Organization slogan has no "No broker fees"', () => {
+    expect(read('src/lib/seo/jsonld.ts')).toContain("slogan: 'Verified senior care in Cleveland. Homes never pay to be listed or ranked.'");
+  });
+});
+
+/**
+ * PROTECTED (Chris, 11/03): when care is paid through Medicaid, Medicare or the VA, CareLinkAI never charges a fee
+ * to the family or to the home. That is permanent policy, not a description of today's model, so these lines are
+ * pinned word for word. Do not soften them ("today", "currently", "if that ever changes", …) or remove them without
+ * Chris's sign-off; change this test only with that sign-off.
+ */
+describe('PROTECTED: the Medicaid / Medicare / VA free-lane promise stays permanent and word for word', () => {
+  const flat = (s: string) => s.replace(/\s+/g, ' ');
+  const PROTECTED: { file: string; phrase: string }[] = [
+    { file: 'src/app/concierge/ConciergeScreener.tsx', phrase: 'When care is paid through Medicaid, Medicare or the VA, CareLinkAI never charges a fee to you or to the home for the placement.' },
+    { file: 'src/app/concierge/ConciergeIntro.tsx', phrase: 'When care is paid through Medicaid, Medicare or the VA, CareLinkAI never charges you or the home.' },
+    { file: 'src/app/concierge/page.tsx', phrase: 'Families paying through Medicaid, Medicare or the VA get the directory, guides and direct home contact free, with no fee attached to the placement, ever.' },
+    { file: 'src/lib/concierge/offer.ts', phrase: 'Medicaid waiver status and inspection history in plain English — free, with no fee to you or to the home, ever.' },
+  ];
+  it.each(PROTECTED)('$file keeps: "$phrase"', ({ file, phrase }) => {
+    expect(flat(read(file))).toContain(phrase);
+  });
+  it('the shared free-lane subhead is the protected wording', () => {
+    expect(CONCIERGE_OFFER.freeLaneSubhead).toMatch(/— free, with no fee to you or to the home, ever\.$/);
+  });
+  it('no softening words next to the free-lane promise anywhere in public copy', () => {
+    const SOFTENED = /(Medicaid, Medicare or the VA)[^.\n]{0,120}\b(today|currently|for now|at this time|if that ever changes)\b[^.\n]{0,60}\b(fee|charge)/i;
+    expect(SOFTENED.test('When care is paid through Medicaid, Medicare or the VA, today CareLinkAI doesn’t charge a fee to the home.')).toBe(true); // not vacuous
+    const hits = publicSources().filter((f) => SOFTENED.test(flat(stripComments(fs.readFileSync(f, 'utf8'))))).map((f) => path.relative(ROOT, f));
+    expect(hits).toEqual([]);
+  });
+});
