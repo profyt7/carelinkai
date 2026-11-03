@@ -89,8 +89,9 @@ export default function ConciergePage() {
         <h2 className="text-3xl font-bold text-neutral-900">Why it’s different from a “free” placement agency</h2>
         <ul className="mt-6 space-y-3 max-w-3xl">
           {[
-            'National placement agencies are paid a commission by the home — often a month’s rent — which is why their “free” shortlist leans toward whoever pays. Our concierge is paid by you, flat, one time.',
+            CONCIERGE_OFFER.disclosureComparisonLine,
             CONCIERGE_OFFER.honestyLine,
+            CONCIERGE_OFFER.feeDisclosureLine,
             'Every home we shortlist is a licensed Ohio facility with its state inspection history in front of you, facts only.',
             'Availability and pricing are labeled as verified or unconfirmed, so you know what to double-check before you tour.',
             `We do the research first and send a payment link only when your shortlist is ready. ${CONCIERGE_OFFER.guarantee}`,

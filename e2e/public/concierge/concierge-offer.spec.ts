@@ -61,7 +61,8 @@ test.describe('@critical /concierge offer + payer screener', () => {
     const visible = html.replace(/<script[\s\S]*?<\/script>/g, '').replace(/<[^>]+>/g, ' ');
     expect(visible).not.toMatch(PRICE);
     // Copy honesty (W5-3 d) + v2 framing (OL-165).
-    expect(visible).toContain('Homes never pay to be listed, ranked or recommended.');
+    expect(visible).toContain('Homes never pay to be listed or ranked.');
+    expect(visible).not.toContain('ranked or recommended');
     expect(visible).not.toContain('homes never pay us to be recommended');
     expect(visible).toContain('Get a verified shortlist before you commit to a home.');
     expect(visible).not.toContain('5,000');

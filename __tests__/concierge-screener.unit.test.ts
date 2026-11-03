@@ -18,6 +18,7 @@ import { CONCIERGE_OFFER, CONCIERGE_CHECKOUT_API } from '@/lib/concierge/offer';
 import { PAYER_SOURCE_VALUES } from '@/lib/payer/payer-source';
 import { isKnownAppPath, isPublicPage } from '@/lib/routing/public-routes';
 import sitemap from '@/app/sitemap';
+const CONCIERGE_OFFER_DISCLOSURE = 'If a home ever pays CareLinkAI a fee when a resident moves in, we tell you before you tour; it never changes your price or which homes we show you.';
 
 describe('routeForPayerSource', () => {
   it('private pay and LTC insurance see the offer (the family pays)', () => {
@@ -115,7 +116,9 @@ describe('no Stripe in the screener / request files; no price in the server-rend
       'src/components/dashboard/ConciergeUpsellCard.tsx',
       'src/lib/concierge/offer.ts',
     ]) {
-      const src = read(f);
+      // fix/fee-disclosure-copy: the Terms fee disclosure (CONCIERGE_OFFER.feeDisclosureLine) is the one allowed
+      // mention of a home-paid fee; any other facility-fee wording still fails.
+      const src = read(f).split(CONCIERGE_OFFER_DISCLOSURE).join('');
       expect({ file: f, legwork: /legwork/i.test(src), ai: /\bAI\b/.test(src), facilityFee: /pays CareLinkAI a fee|move-in fee|referral fee/i.test(src) }).toEqual({
         file: f,
         legwork: false,
@@ -131,8 +134,13 @@ describe('no Stripe in the screener / request files; no price in the server-rend
     const tsec = terms.slice(terms.indexOf('data-testid="terms-family-concierge"'), terms.indexOf('Contact Us'));
     expect(tsec).toMatch(/not medical, legal or financial advice/);
     expect(tsec).toMatch(/do not promise savings, a particular outcome/);
-    // OL-166a: the Terms keep the move-in-fee DISCLOSURE sentence (Terms only — never /concierge, homepage or dashboard).
-    expect(tsec).toMatch(/If a home ever pays CareLinkAI a fee when a resident moves in, we tell you before you tour; it never changes your price or which homes we show you\./);
+    // OL-166a: the Terms keep the move-in-fee DISCLOSURE sentence. fix/fee-disclosure-copy: it now lives in
+    // CONCIERGE_OFFER.feeDisclosureLine (pinned word for word in concierge-offer.unit.test.ts) and Chris asked for it
+    // on /concierge too; it is still never on the homepage or the dashboard card.
+    expect(tsec).toContain('Homes never pay to be listed or ranked. {CONCIERGE_OFFER.feeDisclosureLine}');
+    expect(read('src/app/concierge/page.tsx')).toContain('CONCIERGE_OFFER.feeDisclosureLine');
+    expect(section).not.toMatch(/feeDisclosureLine|pays CareLinkAI a fee/);
+    expect(read('src/components/dashboard/ConciergeUpsellCard.tsx')).not.toMatch(/feeDisclosureLine|pays CareLinkAI a fee/);
     expect(tsec).not.toMatch(/legwork|\bAI\b/);
   });
 

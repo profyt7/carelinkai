@@ -280,8 +280,8 @@ export default function ClevelandLandingPage() {
           <ul className="mt-8 space-y-4">
             {[
               {
-                t: 'No broker fees',
-                d: 'We don’t charge homes a placement fee, and we don’t take a cut when a family moves in. You contact the home directly.',
+                t: 'No pay-to-rank',
+                d: 'Homes don’t pay to be listed or ranked. Today we don’t charge homes a placement fee; if that ever changes, we’ll tell you before you tour, and it won’t change your price or which homes we show you.',
               },
               {
                 t: 'Local and verified',
