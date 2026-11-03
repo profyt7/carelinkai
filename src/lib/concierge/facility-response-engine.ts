@@ -20,6 +20,7 @@ import type { FacilityDeclineReason, FacilityResponseStatus, Prisma } from '@pri
 import { prisma } from '@/lib/prisma';
 import { recordEvent, type EventActor } from '@/lib/events/record-event';
 import { captureError } from '@/lib/sentry';
+import { guardDeclineText } from '@/lib/phi-guard';
 import { sendFacilityResponseRequestEmail } from '@/lib/email';
 import { signUnsubscribeToken } from '@/lib/unsubscribe-token';
 import { createInAppNotification } from '@/lib/services/notifications';
@@ -265,7 +266,7 @@ export async function applyFacilityResponse(args: {
     await prisma.$transaction(async (tx) => {
       await tx.facilityResponse.update({
         where: { id: view.id },
-        data: { ...base, status: 'DECLINED', declinedAt: now, declineReason: reason, declineText: args.text?.trim().slice(0, 500) || null },
+        data: { ...base, status: 'DECLINED', declinedAt: now, declineReason: reason, declineText: guardDeclineText(args.text, 500).text },
       });
       await tx.assistedLivingHome.update({
         where: { id: view.homeId },

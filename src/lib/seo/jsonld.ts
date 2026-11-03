@@ -27,6 +27,7 @@ import {
   CONTACT_PHONE_E164,
 } from '@/lib/contact';
 import type { PublicListing } from '@/lib/directory/public-listings';
+import { WAIVER_SOURCE_LABEL } from '@/lib/medicaid/waiver';
 
 export const SITE_URL = 'https://getcarelinkai.com';
 export const ORG_NAME = 'CareLinkAI';
@@ -158,6 +159,13 @@ export function buildListingJsonLd(l: PublicListing, opts: { description?: strin
       : undefined,
     l.medicaidWaiver.line
       ? { '@type': 'PropertyValue', name: 'medicaidWaiverStatus', value: l.medicaidWaiver.status, description: `${l.medicaidWaiver.line}. ${l.medicaidWaiver.note ?? ''}`.trim() }
+      : undefined,
+    // fix/public-api-truth-privacy: the real source and date behind the waiver status, not a fixed "WRAAA" note.
+    l.medicaidWaiver.line && l.medicaidWaiver.source
+      ? { '@type': 'PropertyValue', name: 'medicaidWaiverSource', value: l.medicaidWaiver.source, description: WAIVER_SOURCE_LABEL[l.medicaidWaiver.source] }
+      : undefined,
+    l.medicaidWaiver.line && l.medicaidWaiver.verifiedAt
+      ? { '@type': 'PropertyValue', name: 'medicaidWaiverVerifiedAt', value: l.medicaidWaiver.verifiedAt }
       : undefined,
     l.medicaidWaiver.pendingAccepted !== null
       ? { '@type': 'PropertyValue', name: 'medicaidPendingAccepted', value: l.medicaidWaiver.pendingAccepted ? 'yes' : 'no', description: l.medicaidWaiver.pendingLine ?? undefined }

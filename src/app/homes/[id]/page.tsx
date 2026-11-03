@@ -7,10 +7,8 @@ import dynamic from "next/dynamic";
 import { 
   FiMapPin, 
   FiPhone, 
-  FiMail, 
   FiCalendar, 
   FiHome, 
-  FiUsers, 
   FiCheck, 
   FiX, 
   FiHeart,
@@ -1273,20 +1271,8 @@ export default function HomeDetailPage() {
                               <span className="text-neutral-700">{realHome.operator.company}</span>
                             </div>
                           )}
-                          {realHome.operator.name && (
-                            <div className="flex items-center">
-                              <FiUsers className="mr-3 h-5 w-5 text-neutral-500 flex-shrink-0" />
-                              <span className="text-neutral-700">{realHome.operator.name}</span>
-                            </div>
-                          )}
-                          {realHome.operator.email && (
-                            <div className="flex items-center">
-                              <FiMail className="mr-3 h-5 w-5 text-neutral-500 flex-shrink-0" />
-                              <a href={`mailto:${realHome.operator.email}`} className="text-primary-600 hover:underline">
-                                {realHome.operator.email}
-                              </a>
-                            </div>
-                          )}
+                          {/* No operator name or login email here: the public API no longer sends them
+                              (fix/public-api-truth-privacy). Phone + the inquiry form reach the home. */}
                         </div>
                       </div>
                 ) : (

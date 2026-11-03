@@ -9,7 +9,8 @@
  */
 
 import { prisma } from '@/lib/prisma';
-import type { PriceSource, CareLevel } from '@prisma/client';
+import type { PriceSource, CareLevel, EventSource } from '@prisma/client';
+import { recordEvent, type EventActor } from '@/lib/events/record-event';
 
 /** Operator pricing older than this stops earning the "Transparent Pricing" badge. */
 export const PRICING_FRESH_DAYS = 180;
@@ -177,22 +178,52 @@ export async function computeFamilyAvg(homeId: string): Promise<{ avg: number | 
  * THE single write path for source-tagged pricing (operator / DP / public). Sets the
  * fields provided, stamps priceUpdatedAt=now, records the source. Auth is the CALLER's
  * responsibility. Ints are clamped. Returns the fresh view.
+ *
+ * fix/public-api-truth-privacy: every edit appends a `pricing.updated` EntityEvent in the
+ * same transaction — old and new values, the price source, the date, and who made it.
  */
+export const PRICING_FIELDS = ['startingPriceMonthly', 'priceRangeLow', 'priceRangeHigh', 'priceSource', 'priceUpdatedAt'] as const;
+
 export async function setHomePricing(params: {
   homeId: string;
   source: PriceSource;
   startingPriceMonthly?: number | null;
   priceRangeLow?: number | null;
   priceRangeHigh?: number | null;
+  /** Who made the edit (stored on the EntityEvent). */
+  actor?: EventActor | null;
+  /** EntityEvent source — the admin pricing route is the only caller today. */
+  eventSource?: EventSource;
 }): Promise<PricingView> {
-  const data: Record<string, unknown> = { priceSource: params.source, priceUpdatedAt: new Date() };
+  const now = new Date();
+  const data: Record<string, unknown> = { priceSource: params.source, priceUpdatedAt: now };
   if ('startingPriceMonthly' in params) data.startingPriceMonthly = params.startingPriceMonthly == null ? null : normalizePriceInt(params.startingPriceMonthly);
   if ('priceRangeLow' in params) data.priceRangeLow = params.priceRangeLow == null ? null : normalizePriceInt(params.priceRangeLow);
   if ('priceRangeHigh' in params) data.priceRangeHigh = params.priceRangeHigh == null ? null : normalizePriceInt(params.priceRangeHigh);
-  const home = await prisma.assistedLivingHome.update({
-    where: { id: params.homeId },
-    data,
-    select: { startingPriceMonthly: true, priceRangeLow: true, priceRangeHigh: true, priceSource: true, priceUpdatedAt: true, priceMin: true, priceMax: true },
+  const select = { startingPriceMonthly: true, priceRangeLow: true, priceRangeHigh: true, priceSource: true, priceUpdatedAt: true, priceMin: true, priceMax: true } as const;
+  const pick = (h: Record<string, unknown> | null) => {
+    const out: Record<string, unknown> = {};
+    for (const k of PRICING_FIELDS) {
+      const v = h ? h[k] : null;
+      out[k] = v instanceof Date ? v.toISOString() : (v ?? null);
+    }
+    return out;
+  };
+  const home = await prisma.$transaction(async (tx) => {
+    const before = await tx.assistedLivingHome.findUnique({ where: { id: params.homeId }, select });
+    const after = await tx.assistedLivingHome.update({ where: { id: params.homeId }, data, select });
+    await recordEvent(tx, {
+      entityType: 'HOME',
+      entityId: params.homeId,
+      eventType: 'pricing.updated',
+      field: 'pricing',
+      oldValue: pick(before as Record<string, unknown> | null),
+      newValue: pick(after as Record<string, unknown>),
+      source: params.eventSource ?? 'ADMIN',
+      actor: params.actor ?? null,
+      occurredAt: now,
+    });
+    return after;
   });
   const family = await computeFamilyAvg(params.homeId);
   return pricingView(home, family);

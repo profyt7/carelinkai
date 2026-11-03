@@ -2934,3 +2934,14 @@
 - **Deployment impact:** none (context only).
 - **New risks/blockers:** getcarelinkai.com is outside this environment's network policy, so live-data checks rely on Chris.
 - **Recommended next step:** Chris OKs #44, then the other session takes OL-258.
+
+### 2026-11-03 — #48 merged; OL-259 public API truth + privacy
+- **Objective:** act on readiness-report items 1–5: no operator email/name in public responses, no capacity "availability", real waiver source/date, logged price edits, PHI screen on decline notes.
+- **Work completed:** #48 (readiness report, docs) squash-merged `745fb56`. OL-259 PR `fix/public-api-truth-privacy`: operator `{ company }` only in search / home / favorites APIs, operator name + mailto removed from the listing page; capacity `availability` removed, search availability filter + boost now use verified openings; waiver note + JSON-LD from `medicaidWaiverSource` / `medicaidWaiverVerifiedAt`; `pricing.updated` EntityEvent on every `setHomePricing` (admin actor); `guardDeclineText()` wired into the facility decline path.
+- **Files changed:** `src/app/api/{search,homes/[id],favorites}/route.ts`, `src/app/api/admin/homes/[id]/pricing/route.ts`, `src/app/homes/[id]/page.tsx`, `src/lib/medicaid/waiver.ts`, `src/lib/directory/public-listings.ts`, `src/lib/seo/jsonld.ts`, `src/lib/pricing/pricing.ts`, `src/lib/events/record-event.ts`, `src/lib/phi-guard.ts`, `src/lib/concierge/facility-response-engine.ts`; tests `__tests__/{public-api-truth-privacy.api,decline-text-phi.unit,pricing-event-log.unit,medicaid-waiver.unit,search.stable-paging.api}.test.ts`, `src/lib/seo/__tests__/jsonld.test.ts`; context files.
+- **Commands run:** `npx tsc --noEmit`, `next lint`, `npx jest` (186 suites, 2154 passed, 10 skipped; the truth suites are part of the run).
+- **Tests/build status:** green locally.
+- **Deployment impact:** API response shape changes: `operator.name` / `operator.email` and `availability` are gone from `/api/search`, `/api/homes/[id]` and `/api/favorites`. In-repo callers checked; no migration, no env changes. Merge only after Chris's OK.
+- **New risks/blockers:** the decline screen over-redacts condition words a facility may use as a business reason; the "has availability" filter returns far fewer homes, because few have fresh verified counts.
+- **Recommended next step:** Chris reviews and OKs the PR. Readiness items 5, 6, 8 wait for the benchmark baseline; 9 and 10 wait for the 90-day plan.
+

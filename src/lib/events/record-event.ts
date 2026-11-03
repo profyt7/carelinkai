@@ -42,6 +42,7 @@ export const ALLOWED_VALUE_KEYS: ReadonlySet<string> = new Set([
   'source', 'verifiedAt', 'occurredAt', 'sentAt', 'openedAt', 'respondedAt', 'acceptedAt', 'declinedAt', 'admittedAt',
   'optedIn', 'optedInSource', 'optedInAt', 'optedOutAt', 'preferredChannel', 'amountCents', 'currency',
   'capacity', 'currentOccupancy', 'priceMin', 'priceMax', 'startingPriceMonthly', 'priceSource',
+  'priceRangeLow', 'priceRangeHigh', 'priceUpdatedAt',
   'genderRestriction', 'amenities', 'careLevels', 'acceptsMedicaid',
   'medicaidWaiverStatus', 'medicaidWaiverSource', 'medicaidWaiverVerifiedAt',
   'medicaidPendingAccepted', 'medicaidPendingAcceptedSource', 'medicaidPendingAcceptedVerifiedAt',

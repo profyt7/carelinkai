@@ -336,12 +336,11 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       photos: (home.photos || []).map((p) => ({ id: p.id, url: p.url, caption: p.caption || '' })),
       // OL-176: an unclaimed listing's operator is the directory placeholder
       // account — never present it (or its system email) as the facility contact.
+      // fix/public-api-truth-privacy: this route is public (signed-out), so only the
+      // business name goes out; the operator's personal name and login email never do.
+      // Families reach a claimed home through its listed phone or the inquiry form.
       operator: home.operator && !unclaimed
-        ? {
-            name: `${home.operator.user.firstName} ${home.operator.user.lastName}`,
-            email: home.operator.user.email,
-            company: home.operator.companyName,
-          }
+        ? { company: home.operator.companyName }
         : null,
       rating: averageRating,
       reviewCount: ratings.length,

@@ -7,7 +7,9 @@ import {
   mostPermissiveWaiverStatus,
   wraaaStatusToEnum,
   medicaidWaiverPublicView,
-  WAIVER_SOURCE_NOTE,
+  WRAAA_IMPORT_SOURCE,
+  waiverSourceKind,
+  waiverSourceNote,
   isProtectedSource,
   normalizeAcuityCeiling,
   ACUITY_KEYS,
@@ -39,11 +41,28 @@ describe('wraaaStatusToEnum', () => {
 });
 
 describe('medicaidWaiverPublicView — honest public copy', () => {
-  it('renders the three listed statuses with the source note', () => {
-    expect(medicaidWaiverPublicView({ medicaidWaiverStatus: 'ACCEPTING_NEW' })).toMatchObject({ line: 'Accepting new waiver residents', note: WAIVER_SOURCE_NOTE });
+  it('renders the three listed statuses with the real source + date note', () => {
+    expect(
+      medicaidWaiverPublicView({ medicaidWaiverStatus: 'ACCEPTING_NEW', medicaidWaiverSource: WRAAA_IMPORT_SOURCE, medicaidWaiverVerifiedAt: '2026-10-16T00:00:00Z' }),
+    ).toMatchObject({
+      line: 'Accepting new waiver residents',
+      note: 'Source: Western Reserve Area Agency on Aging waiver facilities list, verified Oct 16, 2026. Confirm with the home.',
+      source: 'WRAAA_LIST',
+      verifiedAt: '2026-10-16T00:00:00.000Z',
+    });
     expect(medicaidWaiverPublicView({ medicaidWaiverStatus: 'CURRENT_RESIDENTS_ONLY' }).line).toBe('Waiver — current residents only');
     expect(medicaidWaiverPublicView({ medicaidWaiverStatus: 'NOT_ACCEPTING_REFERRALS' }).line).toBe('Not taking new waiver referrals');
-    expect(WAIVER_SOURCE_NOTE).toBe('Source: Western Reserve Area Agency on Aging, Oct 2026. Confirm with the home.');
+  });
+  it('names the actual source and date — never a fixed WRAAA note for a call / operator / admin status', () => {
+    const v = medicaidWaiverPublicView({ medicaidWaiverStatus: 'CURRENT_RESIDENTS_ONLY', medicaidWaiverSource: 'AI_CALL', medicaidWaiverVerifiedAt: new Date('2026-10-12T15:05:00Z') });
+    expect(v.note).toBe('Source: the community, by phone to CareLinkAI’s calling assistant, verified Oct 12, 2026. Confirm with the home.');
+    expect(v.note).not.toMatch(/Western Reserve|WRAAA/);
+    expect(v.source).toBe('AI_CALL');
+    expect(medicaidWaiverPublicView({ medicaidWaiverStatus: 'ACCEPTING_NEW', medicaidWaiverSource: 'ADMIN' }).note).toBe('Source: the CareLinkAI team. Confirm with the home.');
+    expect(medicaidWaiverPublicView({ medicaidWaiverStatus: 'ACCEPTING_NEW' })).toMatchObject({ source: 'UNKNOWN', verifiedAt: null, note: 'Source: source not recorded. Confirm with the home.' });
+    expect(waiverSourceKind('WRAAA Medicaid Waiver Facilities list (accessed 2026-11-01)')).toBe('WRAAA_LIST');
+    expect(waiverSourceKind('something else')).toBe('UNKNOWN');
+    expect(waiverSourceNote('OPERATOR', 'not a date')).toBe('Source: the community’s operator on CareLinkAI. Confirm with the home.');
   });
   it('renders NOTHING for NOT_ON_LIST / UNKNOWN / missing', () => {
     for (const s of ['NOT_ON_LIST', 'UNKNOWN'] as const) {
