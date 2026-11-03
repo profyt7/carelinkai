@@ -127,9 +127,15 @@ describe('offer copy (authoritative, v2 — OL-165)', () => {
       'attending tours in person',
       'negotiating on the family’s behalf (we prepare them; they ask)',
     ]);
-    expect(CONCIERGE_OFFER.honestyLine).toBe(
-      'Homes never pay to be listed, ranked or recommended. The concierge is paid by you — flat, one time — never by a home.',
+    // fix/fee-disclosure-copy: today's model, without promising we'll never take a placement fee.
+    expect(CONCIERGE_OFFER.honestyLine).toBe('Homes never pay to be listed or ranked. Your concierge fee is paid by you.');
+    expect(CONCIERGE_OFFER.feeDisclosureLine).toBe(
+      'If a home ever pays CareLinkAI a fee when a resident moves in, we tell you before you tour; it never changes your price or which homes we show you.',
     );
+    expect(CONCIERGE_OFFER.disclosureComparisonLine).toBe(
+      'Some placement services are paid by the home without telling you. We tell you up front who pays us, and it never changes your price or which homes we show you.',
+    );
+    expect(CONCIERGE_OFFER.oneLine).toBe('A Cleveland person checks fit, prices and the contract with you before you sign. Your concierge fee is paid by you.');
     expect(CONCIERGE_OFFER.noOutcomeLine).toMatch(/never promise savings, a particular outcome/);
     expect(CONCIERGE_OFFER.freeLaneLine).toBe('Paying with Medicaid, Medicare or the VA? Our help is always free.');
     expect(CONCIERGE_FIVE_MISTAKES).toHaveLength(5);
@@ -143,7 +149,8 @@ describe('offer copy (authoritative, v2 — OL-165)', () => {
   });
 
   it('copy rules (OL-165 e): no "AI", no "legwork", no promised savings / outcomes / negotiation results, no facility fee', () => {
-    const all = JSON.stringify({ CONCIERGE_OFFER, CONCIERGE_FIVE_MISTAKES });
+    // The Terms fee disclosure is the one allowed mention of a home-paid fee (fix/fee-disclosure-copy).
+    const all = JSON.stringify({ CONCIERGE_OFFER, CONCIERGE_FIVE_MISTAKES }).split(CONCIERGE_OFFER.feeDisclosureLine).join('');
     expect(all).not.toMatch(/\bAI\b/);
     expect(all).not.toMatch(/legwork/i);
     expect(all).not.toMatch(/\b(we|we’ll|we will|you’ll|you will) (save|negotiate|get you|lower)/i);

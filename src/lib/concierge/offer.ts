@@ -44,7 +44,7 @@ export const CONCIERGE_OFFER = {
   freeLaneSubhead:
     'Licensed homes, availability labeled as verified or not, Medicaid waiver status and inspection history in plain English — free, with no fee to you or to the home, ever.',
   /** One-liner for the homepage section and the dashboard card. */
-  oneLine: 'A Cleveland person checks fit, prices and the contract with you before you sign — paid by you, flat, never by a home.',
+  oneLine: 'A Cleveland person checks fit, prices and the contract with you before you sign. Your concierge fee is paid by you.',
   /** v2 items 1–9, plain language (Family_Concierge_Offer_2026_10_16.md v2). */
   inclusions: [
     'A 20-minute intake call: care needs, location, timeline, budget and how long it lasts, who in the family decides, and your hospital or discharge contact',
@@ -69,7 +69,17 @@ export const CONCIERGE_OFFER = {
   ],
   capacityNote: 'Capacity-limited — a small number of family searches each month so every one gets a person.',
   /** Copy-honesty bullet (replaces "homes never pay us to be recommended"); never mentions a facility fee (OL-165 e). */
-  honestyLine: 'Homes never pay to be listed, ranked or recommended. The concierge is paid by you — flat, one time — never by a home.',
+  honestyLine: 'Homes never pay to be listed or ranked. Your concierge fee is paid by you.',
+  /**
+   * fix/fee-disclosure-copy: the fee-model disclosure, word for word as in the Terms ("Who pays"). It describes
+   * today's model without promising we will never take a placement fee. The only place a home-paid fee may be
+   * mentioned in family-facing copy.
+   */
+  feeDisclosureLine:
+    'If a home ever pays CareLinkAI a fee when a resident moves in, we tell you before you tour; it never changes your price or which homes we show you.',
+  /** /concierge comparison with other placement services: disclosure-based, no attack on commission models. */
+  disclosureComparisonLine:
+    'Some placement services are paid by the home without telling you. We tell you up front who pays us, and it never changes your price or which homes we show you.',
   /** Copy rule: describe what we check and what we tell the family to ask; promise nothing. */
   noOutcomeLine:
     'We tell you what we checked and what to ask for. We never promise savings, a particular outcome, or that a home will agree to a request.',

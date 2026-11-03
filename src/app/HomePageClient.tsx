@@ -1027,7 +1027,7 @@ export default function HomePage({
                 <FiCheck className="text-success-600 flex-shrink-0 text-xl mt-0.5" />
                 <div>
                   <span className="font-bold text-success-800 text-base">100% free for families — no subscription, no credit card, no catch.</span>
-                  <span className="text-success-700 ml-2 text-sm">Search care homes, connect with caregivers, and book tours at absolutely no cost. CareLinkAI is funded by care home operators, not families.</span>
+                  <span className="text-success-700 ml-2 text-sm">Search care homes, connect with caregivers, and book tours at absolutely no cost. Free for families to search. Homes never pay to be listed or ranked.</span>
                 </div>
               </div>
               <div className="grid md:grid-cols-2 gap-8">
@@ -1896,7 +1896,7 @@ export default function HomePage({
               <AnimatePresence>
                 {openFaqIndex === 7 && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-                    <div className="px-6 pb-5 text-neutral-500"><p>We&apos;re confirming open beds, starting prices and Medicaid waiver status directly with Cleveland-area communities, and we show you exactly what&apos;s verified and when: a listing says ‘Verified’ only with the date we confirmed it, and everything else is labeled unverified. Other directories list what a community said once. We never charge families, and we don’t take a cut of your move-in.</p></div>
+                    <div className="px-6 pb-5 text-neutral-500"><p>We&apos;re confirming open beds, starting prices and Medicaid waiver status directly with Cleveland-area communities, and we show you exactly what&apos;s verified and when: a listing says ‘Verified’ only with the date we confirmed it, and everything else is labeled unverified. Other directories list what a community said once. Searching is free for families, and homes never pay to be listed or ranked. Today we don’t charge homes a placement fee; if that ever changes, we’ll tell you before you tour.</p></div>
                   </motion.div>
                 )}
               </AnimatePresence>

@@ -13,7 +13,7 @@ export function buildLlmsTxt(): string {
   const lines: string[] = [
     '# CareLinkAI',
     '',
-    '> A Cleveland, Ohio senior care directory, staffing marketplace and operations platform. Founder-run from Cleveland. Families and hospital discharge planners use it to find licensed assisted living, memory care, independent living and nursing homes across Greater Cleveland (Cuyahoga, Summit, Lake, Lorain, Medina, Geauga and Portage counties) and to contact homes directly. No broker fees, no lead resale, no call center.',
+    '> A Cleveland, Ohio senior care directory, staffing marketplace and operations platform. Founder-run from Cleveland. Families and hospital discharge planners use it to find licensed assisted living, memory care, independent living and nursing homes across Greater Cleveland (Cuyahoga, Summit, Lake, Lorain, Medina, Geauga and Portage counties) and to contact homes directly. Homes don’t pay to be listed or ranked. Today we don’t charge homes a placement fee; if that ever changes, we tell families before they tour, and it won’t change their price or which homes we show them. No call center in the middle.',
     '',
     `Site: ${SITE_URL}`,
     `Sitemap: ${SITE_URL}/sitemap.xml`,
