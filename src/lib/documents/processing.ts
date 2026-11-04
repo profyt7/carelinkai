@@ -6,6 +6,7 @@
  */
 
 import { prisma } from '@/lib/prisma';
+import type { Prisma } from '@prisma/client';
 import { classifyDocument, determineReviewStatus, shouldAutoClassify } from './classification';
 import { validateDocument, getValidationStatus } from './validation';
 import { DocumentType } from '@/lib/types/documents';
@@ -213,7 +214,7 @@ export async function processDocuments(documentIds: string[]): Promise<Map<strin
 /**
  * Get documents that need review
  */
-export async function getDocumentsNeedingReview(userId?: string) {
+export async function getDocumentsNeedingReview(userId?: string, scope?: Prisma.DocumentWhereInput | null) {
   const where: any = {
     OR: [
       { reviewStatus: 'PENDING_REVIEW' },
@@ -228,7 +229,7 @@ export async function getDocumentsNeedingReview(userId?: string) {
   }
 
   return prisma.document.findMany({
-    where,
+    where: scope ? { AND: [where, scope] } : where,
     orderBy: { createdAt: 'desc' },
     include: {
       uploadedBy: {
