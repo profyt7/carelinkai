@@ -1,0 +1,150 @@
+name: Prod Probe (security fixes, signed-in)
+
+# Confirms the P0 security fixes against PRODUCTION with two signed-in, synthetic FAMILY test accounts.
+# Read-only by design: it never creates inquiries, documents, messages or anything that notifies a third party.
+# The only writes it can cause are each probe account's own Family/FamilyMember row (GET /api/family/membership
+# self-provisions the caller's own family). Output is status codes and counts only — never response data.
+#
+# Secrets (create the accounts in production first, synthetic data only):
+#   PROD_PROBE_A_EMAIL / PROD_PROBE_A_PASSWORD   — FAMILY account A
+#   PROD_PROBE_B_EMAIL / PROD_PROBE_B_PASSWORD   — FAMILY account B
+# Probes that need an account report SKIP when its secrets are missing; unauthenticated probes always run.
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'Site to probe'
+        default: 'https://getcarelinkai.com'
+        required: true
+      probes:
+        description: 'Comma list: p0-1,p0-3,p0-4,p0-5,p0-6,p0-7 (or "all")'
+        default: 'all'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    name: Probe production
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run probes
+        env:
+          BASE: ${{ inputs.base_url }}
+          PROBES: ${{ inputs.probes }}
+          A_EMAIL: ${{ secrets.PROD_PROBE_A_EMAIL }}
+          A_PASSWORD: ${{ secrets.PROD_PROBE_A_PASSWORD }}
+          B_EMAIL: ${{ secrets.PROD_PROBE_B_EMAIL }}
+          B_PASSWORD: ${{ secrets.PROD_PROBE_B_PASSWORD }}
+        run: |
+          cat > probe.mjs <<'EOF'
+          const BASE = process.env.BASE.replace(/\/$/, '');
+          const want = new Set((process.env.PROBES || 'all').split(',').map((s) => s.trim()));
+          const on = (p) => want.has('all') || want.has(p);
+          const results = [];
+          const record = (probe, status, detail) => { results.push({ probe, status, detail }); console.log(`${status.padEnd(4)} ${probe}: ${detail}`); };
+
+          // Minimal cookie jar per account.
+          function jar() {
+            const c = new Map();
+            return {
+              header: () => [...c].map(([k, v]) => `${k}=${v}`).join('; '),
+              take: (res) => { for (const sc of res.headers.getSetCookie?.() ?? []) { const [kv] = sc.split(';'); const i = kv.indexOf('='); c.set(kv.slice(0, i).trim(), kv.slice(i + 1)); } },
+              has: (name) => [...c.keys()].some((k) => k.includes(name)),
+            };
+          }
+          async function req(j, path, init = {}) {
+            const res = await fetch(BASE + path, { ...init, redirect: 'manual', headers: { ...(init.headers || {}), ...(j ? { cookie: j.header() } : {}) } });
+            if (j) j.take(res);
+            return res;
+          }
+          async function signIn(email, password) {
+            if (!email || !password) return null;
+            const j = jar();
+            const csrf = await (await req(j, '/api/auth/csrf')).json();
+            const body = new URLSearchParams({ csrfToken: csrf.csrfToken, email, password, callbackUrl: BASE + '/dashboard', json: 'true' });
+            await req(j, '/api/auth/callback/credentials', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body });
+            const session = await (await req(j, '/api/auth/session')).json().catch(() => ({}));
+            if (!session?.user) throw new Error(`sign-in failed for probe account (${email.replace(/(.).*@/, '$1***@')})`);
+            return j;
+          }
+          const count = (x) => (Array.isArray(x) ? x.length : x && typeof x === 'object' ? Object.keys(x).length : 0);
+
+          const A = await signIn(process.env.A_EMAIL, process.env.A_PASSWORD).catch((e) => { record('sign-in A', 'FAIL', e.message); return null; });
+          const B = await signIn(process.env.B_EMAIL, process.env.B_PASSWORD).catch((e) => { record('sign-in B', 'FAIL', e.message); return null; });
+          const needA = (p) => { if (!A) { record(p, 'SKIP', 'PROD_PROBE_A_* secrets not set'); return false; } return true; };
+
+          // P0-1: a FAMILY caller is refused by the convert endpoint before any lookup (pre-fix: 404 for an unknown id, 200 for a real one).
+          if (on('p0-1') && needA('p0-1')) {
+            const r = await req(A, '/api/operator/inquiries/probe-nonexistent-id/convert');
+            record('p0-1', r.status === 403 ? 'PASS' : 'FAIL', `family GET convert → ${r.status} (want 403)`);
+          }
+
+          // P0-3: A cannot read B's family, and is not auto-added (a second call is still refused).
+          if (on('p0-3')) {
+            if (!A || !B) record('p0-3', 'SKIP', 'needs both probe accounts');
+            else {
+              const fam = await (await req(B, '/api/family/membership')).json().catch(() => ({}));
+              if (!fam.familyId) record('p0-3', 'FAIL', 'could not resolve probe B family id');
+              else {
+                const r1 = await req(A, `/api/family/notes?familyId=${encodeURIComponent(fam.familyId)}`);
+                const r2 = await req(A, `/api/family/emergency?familyId=${encodeURIComponent(fam.familyId)}`);
+                const r3 = await req(A, `/api/family/notes?familyId=${encodeURIComponent(fam.familyId)}`);
+                const ok = [r1, r2, r3].every((r) => r.status === 403);
+                record('p0-3', ok ? 'PASS' : 'FAIL', `A on B's family: notes ${r1.status}, emergency ${r2.status}, notes again ${r3.status} (want 403 ×3)`);
+              }
+            }
+          }
+
+          // P0-4: a FAMILY with no linked residents gets nothing (pre-fix: every resident), JSON and CSV.
+          if (on('p0-4') && needA('p0-4')) {
+            const j = await req(A, '/api/residents');
+            const items = j.status === 200 ? count((await j.json()).items) : -1;
+            const c = await req(A, '/api/residents?format=csv');
+            const ctype = c.headers.get('content-type') || '';
+            let rows = -1;
+            if (c.status === 200 && ctype.includes('csv')) rows = Math.max(0, (await c.text()).trim().split('\n').length - 1);
+            else if (c.status === 200) rows = count((await c.json()).items);
+            const ok = items === 0 && rows === 0;
+            record('p0-4', ok ? 'PASS' : 'FAIL', `family residents JSON items=${items}, CSV rows=${rows} (want 0, 0)`);
+          }
+
+          // P0-5: a FAMILY sees no documents it doesn't own (pre-fix: every document).
+          if (on('p0-5') && needA('p0-5')) {
+            const r = await req(A, '/api/documents');
+            let n = -1;
+            if (r.status === 200) n = count((await r.json()).documents);
+            const ok = r.status === 403 || n === 0;
+            record('p0-5', ok ? 'PASS' : 'FAIL', `family GET /api/documents → ${r.status}, documents=${n} (want 403 or 0)`);
+          }
+
+          // P0-6: dashboards/reports are not platform-wide for a FAMILY caller.
+          if (on('p0-6') && needA('p0-6')) {
+            const paths = ['/api/dashboard/activity', '/api/dashboard/metrics', '/api/dashboard/alerts', '/api/dashboard/charts', '/api/operator/dashboard'];
+            const st = [];
+            for (const p of paths) st.push(`${p.split('/').pop()}=${(await req(A, p)).status}`);
+            const rep = await req(A, '/api/reports/generate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ type: 'RESIDENT_CENSUS', format: 'CSV', homeIds: [] }) });
+            const ok = st.every((s) => /=(401|403)$/.test(s)) && [401, 403].includes(rep.status);
+            record('p0-6', ok ? 'PASS' : 'FAIL', `family: ${st.join(', ')}, reports/generate=${rep.status} (want 403)`);
+          }
+
+          // P0-7: unsigned Twilio webhooks are rejected (no account needed).
+          if (on('p0-7')) {
+            const form = { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: 'Digits=2&MessageSid=probe&Body=NO&From=%2B15555550100' };
+            const s = [];
+            for (const p of ['/api/webhooks/twilio/voice/accept?attemptId=probe', '/api/webhooks/twilio/voice?attemptId=probe', '/api/webhooks/twilio/sms', '/api/webhooks/twilio/status']) s.push(`${p.split('?')[0].split('/').pop()}=${(await req(null, p, form)).status}`);
+            const ok = s.every((x) => /=403$/.test(x));
+            record('p0-7', ok ? 'PASS' : 'FAIL', `unsigned: ${s.join(', ')} (want 403)`);
+          }
+
+          const failed = results.filter((r) => r.status === 'FAIL');
+          console.log(`\n${results.length} probes: ${results.filter((r) => r.status === 'PASS').length} pass, ${failed.length} fail, ${results.filter((r) => r.status === 'SKIP').length} skip`);
+          if (failed.length) process.exit(1);
+          EOF
+          node probe.mjs
