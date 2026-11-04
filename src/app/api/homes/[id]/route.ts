@@ -311,9 +311,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         formattedMax: home.priceMax ? formatCurrency(Number(home.priceMax)) : null,
       },
       capacity: home.capacity,
-      // Legacy static math (seed defaults, stale). The listing page no longer
-      // renders it (OL-173) — it uses availabilityFreshness + verifiedFields.
-      availability: home.capacity - home.currentOccupancy,
+      // OL-259 follow-up: no capacity-derived `availability` (capacity − occupancy) in this public
+      // response — it read as open beds. Openings come only from availabilityFreshness below.
       // OL-173: which fields an OPERATOR / ADMIN / VA_CALL write backs.
       verifiedFields,
       // Live-ish verified availability (OL-110) — honest freshness, never fake "live".
@@ -364,7 +363,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       'AssistedLivingHome',
       home.id,
       `Viewed home details: ${home.name}`,
-      { availability: data.availability }
+      { availabilityVerified: data.availabilityFreshness.fresh }
     );
 
     return NextResponse.json({ success: true, data }, { status: 200 });

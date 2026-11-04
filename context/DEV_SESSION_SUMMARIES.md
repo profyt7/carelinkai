@@ -2945,3 +2945,12 @@
 - **New risks/blockers:** the decline screen over-redacts condition words a facility may use as a business reason; the "has availability" filter returns far fewer homes, because few have fresh verified counts.
 - **Recommended next step:** Chris reviews and OKs the PR. Readiness items 5, 6, 8 wait for the benchmark baseline; 9 and 10 wait for the 90-day plan.
 
+### 2026-11-04 — OL-259 prod-verify + home API follow-up
+- **Objective:** verify #50 live; confirm no emails / no `availability` in logged-out public APIs and the real waiver source on a listing; check the fee-copy PR.
+- **Work completed:** prod-verify (expect_sha `80061f75`, trackers) green: live sha matches, 0 tracker requests on /, /search, a listing, /concierge. Live API check (one-off run of a new `check_public_api` step from a branch) found `/api/homes/[id]` still sending capacity `availability`; everything else passed (0 emails in /api/search and /api/homes/<id>, operator { company } only, page + JSON-LD show "Western Reserve Area Agency on Aging waiver facilities list, verified Oct 16, 2026"). Fix PR removes the field and lands the check. Fee copy: #51 already open from the other session, green, scope matches.
+- **Files changed:** `src/app/api/homes/[id]/route.ts`, `__tests__/public-api-truth-privacy.api.test.ts`, `.github/workflows/prod-verify.yml`, context files.
+- **Commands run:** `gh workflow run prod-verify.yml` ×2, `npx tsc --noEmit`, `next lint`, `npx jest` (186 suites, 2155 passed).
+- **Deployment impact:** `/api/homes/[id]` response loses `availability` (no in-repo reader). Merge after Chris's OK, then prod-verify with `check_public_api`.
+- **New risks/blockers:** none.
+- **Recommended next step:** Chris OKs this PR and #51.
+
