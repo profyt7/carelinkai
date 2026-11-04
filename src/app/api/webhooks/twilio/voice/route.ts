@@ -1,10 +1,14 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { verifyTwilioRequest } from '@/lib/twilio/verify-webhook';
 import { prisma } from '@/lib/prisma';
 
 // IVR entry point — Twilio calls this when it dials a caregiver
 export async function POST(req: NextRequest) {
+  // P0-7: reject anything Twilio didn't sign (was: any caller could read a shift's home and times by attemptId).
+  const verified = await verifyTwilioRequest(req);
+  if (!verified.ok) return verified.response;
   const { searchParams } = new URL(req.url);
   const attemptId = searchParams.get('attemptId') ?? '';
 
