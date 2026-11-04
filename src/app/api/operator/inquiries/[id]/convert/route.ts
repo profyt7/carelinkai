@@ -27,11 +27,12 @@ import { prisma } from '@/lib/prisma';
  * — and convert, creating a resident and a placement fee — any tenant's inquiry by id.
  */
 async function denyUnlessInquiryTenant(user: { id: string; role: string }, inquiryId: string): Promise<NextResponse | null> {
+  // Non-operators (FAMILY, STAFF, PROVIDER, DISCHARGE_PLANNER, …) are refused before any lookup.
+  const operator = user.role === 'ADMIN' ? null : await prisma.operator.findUnique({ where: { userId: user.id }, select: { id: true } });
+  if (user.role !== 'ADMIN' && !operator) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const inquiry = await prisma.inquiry.findUnique({ where: { id: inquiryId }, select: { home: { select: { operatorId: true } } } });
   if (!inquiry) return NextResponse.json({ error: 'Inquiry not found' }, { status: 404 });
-  if (user.role === 'ADMIN') return null;
-  const operator = await prisma.operator.findUnique({ where: { userId: user.id }, select: { id: true } });
-  if (!operator || inquiry.home?.operatorId !== operator.id) {
+  if (user.role !== 'ADMIN' && inquiry.home?.operatorId !== operator!.id) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
   return null;

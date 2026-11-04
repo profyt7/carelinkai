@@ -108,10 +108,16 @@ describe('GET/POST /api/operator/inquiries/[id]/convert is tenant-scoped', () =>
     expect(convert).not.toHaveBeenCalled();
   });
 
-  it('unknown inquiry → 404', async () => {
+  it('unknown inquiry → 404 for an operator; a FAMILY caller gets 403 before any lookup', async () => {
     currentUser = { id: 'u', role: 'OPERATOR' };
+    operatorFindUnique.mockResolvedValue({ id: 'op-x' });
     inquiryFindUnique.mockResolvedValue(null);
     expect((await call('GET')).status).toBe(404);
+    currentUser = { id: 'fam', role: 'FAMILY' };
+    operatorFindUnique.mockResolvedValue(null);
+    inquiryFindUnique.mockClear();
+    expect((await call('GET')).status).toBe(403);
+    expect(inquiryFindUnique).not.toHaveBeenCalled();
   });
 
   it.each(['GET', 'POST'] as const)('%s: the owning operator (and ADMIN) still works', async (m) => {
