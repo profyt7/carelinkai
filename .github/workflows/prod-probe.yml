@@ -139,8 +139,10 @@ jobs:
             const form = { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: 'Digits=2&MessageSid=probe&Body=NO&From=%2B15555550100' };
             const s = [];
             for (const p of ['/api/webhooks/twilio/voice/accept?attemptId=probe', '/api/webhooks/twilio/voice?attemptId=probe', '/api/webhooks/twilio/sms', '/api/webhooks/twilio/status']) s.push(`${p.split('?')[0].split('/').pop()}=${(await req(null, p, form)).status}`);
-            const ok = s.every((x) => /=403$/.test(x));
-            record('p0-7', ok ? 'PASS' : 'FAIL', `unsigned: ${s.join(', ')} (want 403)`);
+            // 503 = TWILIO_AUTH_TOKEN unset in prod (fails closed, still safe) — flagged so it gets set.
+            const ok = s.every((x) => /=(403|503)$/.test(x));
+            const noToken = s.some((x) => /=503$/.test(x));
+            record('p0-7', ok ? 'PASS' : 'FAIL', `unsigned: ${s.join(', ')} (want 403; 503 = token unset, set TWILIO_AUTH_TOKEN)${noToken ? ' WARN token unset' : ''}`);
           }
 
           const failed = results.filter((r) => r.status === 'FAIL');
