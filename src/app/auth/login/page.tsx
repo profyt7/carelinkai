@@ -15,6 +15,7 @@ import { errorSummary } from '@/lib/log-safe';
 type FormData = {
   email: string;
   password: string;
+  twoFactorCode?: string;
 };
 
 export default function LoginPage() {
@@ -35,6 +36,8 @@ export default function LoginPage() {
   const [showVerificationHelp, setShowVerificationHelp] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
   const [userEmail, setUserEmail] = useState<string>("");
+  // P0-2: second step — shown when the server answers TWO_FACTOR_REQUIRED. No session exists until the code is accepted.
+  const [needsTwoFactor, setNeedsTwoFactor] = useState(false);
 
   useEffect(() => {
     // Post-registration: an account starts PENDING and CANNOT sign in until the
@@ -98,7 +101,14 @@ export default function LoginPage() {
         redirect: false,
         email: data.email,
         password: data.password,
+        ...(needsTwoFactor && data.twoFactorCode ? { twoFactorCode: data.twoFactorCode.trim() } : {}),
       });
+
+      if (result?.error === "TWO_FACTOR_REQUIRED") {
+        setNeedsTwoFactor(true);
+        setIsLoading(false);
+        return;
+      }
 
       if (result?.error) {
         console.error('NextAuth signIn error');
@@ -310,6 +320,26 @@ export default function LoginPage() {
                 {errors.password && <p className="text-xs text-error-600">{errors.password.message}</p>}
               </div>
 
+              {needsTwoFactor && (
+                <div className="space-y-1.5">
+                  <label htmlFor="twoFactorCode" className="block text-sm font-medium text-neutral-700">
+                    Authentication code
+                  </label>
+                  <input
+                    id="twoFactorCode"
+                    type="text"
+                    inputMode="text"
+                    autoComplete="one-time-code"
+                    autoFocus
+                    placeholder="6-digit code or backup code"
+                    className="block w-full px-3 py-2.5 border border-neutral-300 rounded-lg shadow-sm text-sm focus:ring-primary-500 focus:border-primary-500 focus:outline-none"
+                    {...register("twoFactorCode", { required: "Enter the code from your authenticator app" })}
+                  />
+                  <p className="text-xs text-neutral-500">Open your authenticator app, or use one of your backup codes.</p>
+                  {errors.twoFactorCode && <p className="text-xs text-error-600">{errors.twoFactorCode.message}</p>}
+                </div>
+              )}
+
               {/* Remember me */}
               <div className="flex items-center">
                 <input
@@ -339,7 +369,7 @@ export default function LoginPage() {
                     </svg>
                     Signing in...
                   </>
-                ) : "Sign in"}
+                ) : needsTwoFactor ? "Verify and sign in" : "Sign in"}
               </button>
             </form>
 

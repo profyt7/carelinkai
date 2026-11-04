@@ -41,7 +41,7 @@ describe('auth log guard (static)', () => {
       'src/app/api/auth/reset-password/route.ts',
       'src/app/api/auth/resend-verification/route.ts',
       'src/app/api/auth/send-verification/route.ts',
-      'src/app/api/auth/verify-2fa/route.ts',
+      'src/app/api/auth/setup-2fa/route.ts', // P0-2: verify-2fa removed
       'src/app/auth/login/page.tsx',
       'src/app/auth/register/page.tsx',
     ]) {

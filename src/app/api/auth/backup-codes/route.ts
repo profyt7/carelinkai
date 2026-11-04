@@ -1,259 +1,76 @@
 /**
- * Two-Factor Authentication Backup Codes API Endpoint for CareLinkAI
- * 
- * This API handles backup codes for 2FA by:
- * - Generating secure random backup codes
- * - Retrieving existing backup codes
- * - Regenerating backup codes when requested
- * - Creating audit logs for all actions
- * 
- * Security features:
- * - Session validation to ensure authenticated access
- * - Cryptographically secure random code generation
- * - Requires 2FA to be enabled
- * - Detailed audit logging for security monitoring
+ * 2FA backup codes (P0-2). Only hashes are stored, so codes can never be read back.
+ * GET  → how many unused codes remain.
+ * POST { code } → regenerate (requires a current authenticator code); new codes returned exactly once.
  */
-
-// Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';
 
-import { NextRequest, NextResponse } from "next/server";
-import { AuditAction } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
-import { randomBytes } from "crypto";
+import { NextRequest, NextResponse } from 'next/server';
+import { AuditAction } from '@prisma/client';
+import { z } from 'zod';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 import { captureError } from '@/lib/sentry';
 import { errorSummary } from '@/lib/log-safe';
+import { decryptTotpSecret, generateBackupCodes, hashBackupCode, isEnrolled, verifyTotp } from '@/lib/two-factor/secure';
+import { audit2fa, limited } from '@/lib/two-factor/route-helpers';
 
-
-// Constants
-const BACKUP_CODE_COUNT = 10;
-const BACKUP_CODE_LENGTH = 10;
-const BACKUP_CODE_FORMAT = /^[A-Z0-9]{5}-[A-Z0-9]{5}$/;
-
-/**
- * Generate a set of backup codes
- * @returns Array of backup codes
- */
-function generateBackupCodes(count: number = BACKUP_CODE_COUNT): string[] {
-  const codes: string[] = [];
-  
-  for (let i = 0; i < count; i++) {
-    // Generate 10 bytes of random data (80 bits of entropy)
-    const buffer = randomBytes(BACKUP_CODE_LENGTH);
-    
-    // Convert to uppercase alphanumeric and format with hyphen
-    let code = buffer.toString('base64')
-      .replace(/[+/=]/g, '') // Remove non-alphanumeric
-      .substring(0, BACKUP_CODE_LENGTH)
-      .toUpperCase();
-    
-    // Format as XXXXX-XXXXX
-    code = `${code.substring(0, 5)}-${code.substring(5, 10)}`;
-    
-    codes.push(code);
-  }
-  
-  return codes;
+async function currentUser() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.email) return null;
+  return prisma.user.findUnique({
+    where: { email: session.user.email },
+    select: { id: true, twoFactorEnabled: true, twoFactorSecret: true, backupCodes: true },
+  });
 }
 
-/**
- * GET handler to retrieve existing backup codes
- */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    // Verify user is authenticated via session
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.email) {
-      return NextResponse.json(
-        { success: false, message: "Authentication required" },
-        { status: 401 }
-      );
+    const user = await currentUser();
+    if (!user) return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
+    if (!isEnrolled(user)) {
+      return NextResponse.json({ success: false, message: 'Two-factor authentication must be enabled to manage backup codes' }, { status: 400 });
     }
-    
-    // Get user from database
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { 
-        id: true, 
-        email: true,
-        twoFactorEnabled: true,
-        backupCodes: true
-      }
-    });
-    
-    if (!user) {
-      return NextResponse.json(
-        { success: false, message: "User not found" },
-        { status: 404 }
-      );
-    }
-    
-    // Check if 2FA is enabled
-    if (!user.twoFactorEnabled) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          message: "Two-factor authentication must be enabled to manage backup codes" 
-        },
-        { status: 400 }
-      );
-    }
-    
-    // Get client IP for audit logging
-    const clientIp = request.headers.get("x-forwarded-for") || 
-                    // @ts-ignore - `ip` exists only in Node runtime requests
-                    (request as any).ip || 
-                    "unknown";
-    
-    // Create audit log entry
-    await prisma.auditLog.create({
-      data: {
-        action: AuditAction.READ,
-        resourceType: "BACKUP_CODES",
-        resourceId: user.id,
-        description: "Retrieved backup codes",
-        ipAddress: clientIp,
-        metadata: {
-          count: Array.isArray(user.backupCodes) ? user.backupCodes.length : 0
-        },
-        userId: user.id,
-        actionedBy: user.id
-      }
-    });
-    
-    // Return backup codes
-    return NextResponse.json({
-      success: true,
-      message: "Backup codes retrieved successfully",
-      data: {
-        backupCodes: user.backupCodes || [],
-        count: Array.isArray(user.backupCodes) ? user.backupCodes.length : 0
-      }
-    });
-    
+    const remaining = Array.isArray(user.backupCodes) ? user.backupCodes.length : 0;
+    return NextResponse.json({ success: true, data: { remaining } });
   } catch (error: any) {
-    captureError(error instanceof Error ? error : new Error(String(error)), {
-      tags: { route: 'auth:backup-codes' },
-    });
-    console.error("Backup codes retrieval error:", errorSummary(error));
-    
-    // Generic error response
-    return NextResponse.json(
-      { 
-        success: false, 
-        message: "Failed to retrieve backup codes", 
-        error: process.env.NODE_ENV === "development" ? error.message : undefined 
-      }, 
-      { status: 500 }
-    );
+    captureError(error instanceof Error ? error : new Error(String(error)), { tags: { route: 'auth:backup-codes' } });
+    console.error('Backup codes retrieval error:', errorSummary(error));
+    return NextResponse.json({ success: false, message: 'Failed to retrieve backup codes' }, { status: 500 });
   }
 }
 
-/**
- * POST handler to generate new backup codes
- */
+const regenSchema = z.object({ code: z.string().regex(/^\d{6}$/, 'Enter the 6-digit code from your authenticator app') });
+
 export async function POST(request: NextRequest) {
   try {
-    // Verify user is authenticated via session
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.email) {
-      return NextResponse.json(
-        { success: false, message: "Authentication required" },
-        { status: 401 }
-      );
+    const user = await currentUser();
+    if (!user) return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
+    if (!isEnrolled(user)) {
+      return NextResponse.json({ success: false, message: 'Two-factor authentication must be enabled to generate backup codes' }, { status: 400 });
     }
-    
-    // Get user from database
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { 
-        id: true, 
-        email: true,
-        twoFactorEnabled: true,
-        backupCodes: true
-      }
-    });
-    
-    if (!user) {
-      return NextResponse.json(
-        { success: false, message: "User not found" },
-        { status: 404 }
-      );
+    const parsed = regenSchema.safeParse(await request.json().catch(() => ({})));
+    if (!parsed.success) {
+      return NextResponse.json({ success: false, message: 'Invalid input data', errors: parsed.error.flatten().fieldErrors }, { status: 400 });
     }
-    
-    // Check if 2FA is enabled
-    if (!user.twoFactorEnabled) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          message: "Two-factor authentication must be enabled to generate backup codes" 
-        },
-        { status: 400 }
-      );
+    if (limited(`backupcodes:${user.id}`)) {
+      return NextResponse.json({ success: false, message: 'Too many attempts. Please try again later.', rateLimit: true }, { status: 429 });
     }
-    
-    // Generate new backup codes
+    const dec = decryptTotpSecret(user.twoFactorSecret);
+    if (!dec || !verifyTotp(dec.secret, parsed.data.code)) {
+      await audit2fa(request, user.id, AuditAction.ACCESS_DENIED, 'Backup code regeneration: invalid code', {}, 'BACKUP_CODES');
+      return NextResponse.json({ success: false, message: 'Invalid verification code.' }, { status: 400 });
+    }
+
     const backupCodes = generateBackupCodes();
-    
-    // Update user with new backup codes
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        backupCodes: backupCodes
-      }
-    });
-    
-    // Get client IP for audit logging
-    const clientIp = request.headers.get("x-forwarded-for") || 
-                    // @ts-ignore - `ip` exists only in Node runtime requests
-                    (request as any).ip || 
-                    "unknown";
-    
-    // Create audit log entry
-    await prisma.auditLog.create({
-      data: {
-        action: AuditAction.CREATE,
-        resourceType: "BACKUP_CODES",
-        resourceId: user.id,
-        description: "Generated new backup codes",
-        ipAddress: clientIp,
-        metadata: {
-          count: backupCodes.length,
-          regenerated: user.backupCodes !== null && Array.isArray(user.backupCodes)
-        },
-        userId: user.id,
-        actionedBy: user.id
-      }
-    });
-    
-    // Return new backup codes
-    return NextResponse.json({
-      success: true,
-      message: "Backup codes generated successfully",
-      data: {
-        backupCodes: backupCodes,
-        count: backupCodes.length
-      }
-    });
-    
+    await prisma.user.update({ where: { id: user.id }, data: { backupCodes: backupCodes.map(hashBackupCode) } });
+    await audit2fa(request, user.id, AuditAction.CREATE, 'Generated new backup codes', { count: backupCodes.length }, 'BACKUP_CODES');
+
+    return NextResponse.json({ success: true, message: 'Backup codes generated successfully', data: { backupCodes, count: backupCodes.length } });
   } catch (error: any) {
-    captureError(error instanceof Error ? error : new Error(String(error)), {
-      tags: { route: 'auth:backup-codes' },
-    });
-    console.error("Backup codes generation error:", errorSummary(error));
-    
-    // Generic error response
-    return NextResponse.json(
-      { 
-        success: false, 
-        message: "Failed to generate backup codes", 
-        error: process.env.NODE_ENV === "development" ? error.message : undefined 
-      }, 
-      { status: 500 }
-    );
+    captureError(error instanceof Error ? error : new Error(String(error)), { tags: { route: 'auth:backup-codes' } });
+    console.error('Backup codes generation error:', errorSummary(error));
+    return NextResponse.json({ success: false, message: 'Failed to generate backup codes' }, { status: 500 });
   }
 }
