@@ -10,6 +10,7 @@ import { AuditAction } from '@prisma/client';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { publish } from '@/lib/server/sse';
 import { captureError } from '@/lib/sentry';
+import { ensureFamilyAccess } from '@/lib/family/access';
 
 const updatePreferencesSchema = z.object({
   familyId: z.string().cuid(),
@@ -32,54 +33,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'familyId required' }, { status: 400 });
     }
 
-    // Verify user has access to this family - AUTO-CREATE if missing
-    let familyMember = await prisma.familyMember.findFirst({
-      where: {
-        familyId,
-        userId: user.id,
-        status: 'ACTIVE',
-      },
-    });
-
-    console.log(`[EMERGENCY] Existing FamilyMember: ${familyMember ? 'YES' : 'NO'}`);
-
-    // Auto-create FamilyMember if missing (user accessed via direct link or sharing)
-    if (!familyMember) {
-      console.log(`[EMERGENCY] Auto-creating FamilyMember for user ${user.id} in family ${familyId}...`);
-      
-      // Verify the family exists first
-      const family = await prisma.family.findUnique({
-        where: { id: familyId },
-        select: { id: true, userId: true },
-      });
-
-      if (!family) {
-        console.log(`[EMERGENCY] Family ${familyId} not found`);
-        return NextResponse.json({ error: 'Family not found' }, { status: 404 });
-      }
-
-      // Determine role: OWNER if this is their family, otherwise MEMBER
-      const role = family.userId === user.id ? 'OWNER' : 'MEMBER';
-      
-      try {
-        familyMember = await prisma.familyMember.create({
-          data: {
-            familyId,
-            userId: user.id,
-            role,
-            status: 'ACTIVE',
-            joinedAt: new Date(),
-          },
-        });
-        console.log(`[EMERGENCY] ✓ Created FamilyMember with role ${role}`);
-      } catch (createError) {
-        captureError(createError instanceof Error ? createError : new Error(String(createError)), {
-          tags: { route: 'family:emergency' },
-        });
-        console.error('[EMERGENCY] Failed to create FamilyMember:', createError);
-        // Continue anyway - read access should still work
-      }
-    }
+    // P0-3: only an ACTIVE member (or the family's own owner account) may read; nobody is auto-added.
+    const access = await ensureFamilyAccess(user.id, familyId);
+    if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
     const preferences = await prisma.emergencyPreference.findFirst({
       where: { 
@@ -109,14 +65,9 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const data = updatePreferencesSchema.parse(body);
 
-    // Verify user has access to this family and is not a guest
-    const familyMember = await prisma.familyMember.findFirst({
-      where: {
-        familyId: data.familyId,
-        userId: user.id,
-        role: { in: ['OWNER', 'CARE_PROXY', 'MEMBER'] }, // Guests cannot update
-      },
-    });
+    // P0-3: ACTIVE non-guest member (or the family's owner account) only.
+    const access = await ensureFamilyAccess(user.id, data.familyId, { write: true });
+    const familyMember = access.ok ? { role: access.role } : null;
 
     if (!familyMember) {
       return NextResponse.json(
