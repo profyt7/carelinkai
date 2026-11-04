@@ -71,6 +71,11 @@ on:
         type: boolean
         required: false
         default: true
+      check_public_api:
+        description: 'OL-259: logged-out /api/search + one /api/homes/<id> carry no email address, no `availability` field, operator { company } only; that listing page (browser) shows the stored waiver source/date note and no mailto; JSON-LD has medicaidWaiverSource. Read-only.'
+        type: boolean
+        required: false
+        default: false
       check_trackers:
         description: 'OL-228/229: /, /search?q=test, one /homes/<id> and /concierge load zero scripts or requests from facebook.net, clarity.ms, googletagmanager.com, google-analytics.com (analytics consent granted; /api/analytics/track blocked so nothing is written); /admin/analytics/funnel answers without a server error'
         type: boolean
@@ -484,6 +489,106 @@ jobs:
           }
           const fs = await import('node:fs');
           fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, out.join('\n') + '\n');
+          console.log(out.join('\n'));
+          if (fail) process.exit(1);
+          EOF
+          node check.mjs
+
+      - name: Public API privacy + waiver source (OL-259)
+        if: ${{ inputs.check_public_api }}
+        shell: bash
+        env:
+          BASE: ${{ inputs.base }}
+        run: |
+          set -e
+          mkdir -p pwa && cd pwa
+          npm init -y >/dev/null
+          npm i playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null 2>&1
+          cat > check.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          const BASE = process.env.BASE;
+          const UA = 'CareLinkAI-ProdVerify/1.0 (+github-actions)';
+          const out = [];
+          let fail = false;
+          const pass = (m) => out.push(`- ✅ ${m}`);
+          const bad = (m) => { out.push(`- ❌ ${m}`); fail = true; console.error('::error::' + m); };
+          const note = (m) => out.push(`- ℹ️ ${m}`);
+          // Emails, minus asset names like logo@2x.png.
+          const emails = (t) => (t.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) || []).filter((e) => !/\.(png|jpe?g|webp|gif|svg|avif)$/i.test(e));
+          const OLD_NOTE = 'Source: Western Reserve Area Agency on Aging, Oct 2026. Confirm with the home.';
+          const get = async (path) => {
+            const r = await fetch(BASE + path, { headers: { 'User-Agent': UA, Accept: 'application/json' } });
+            return { status: r.status, text: await r.text() };
+          };
+          const checkOperator = (where, op) => {
+            if (op == null) return;
+            const keys = Object.keys(op);
+            if (keys.every((k) => k === 'company')) return;
+            bad(`${where}: operator has keys ${JSON.stringify(keys)} (only "company" allowed)`);
+          };
+          try {
+            // 1) /api/search, logged out.
+            const s = await get('/api/search?location=Cleveland&limit=50');
+            const sj = JSON.parse(s.text);
+            const results = sj.results || [];
+            if (s.status !== 200 || !results.length) bad(`/api/search → ${s.status}, ${results.length} results`);
+            const se = emails(s.text);
+            se.length ? bad(`/api/search: ${se.length} email address(es) in body, e.g. ${se[0].replace(/^[^@]+/, '***')}`) : pass(`/api/search: ${results.length} results, 0 email addresses in ${s.text.length} bytes`);
+            const withAvail = results.filter((r) => Object.prototype.hasOwnProperty.call(r, 'availability'));
+            withAvail.length ? bad(`/api/search: ${withAvail.length} results still have "availability"`) : pass('/api/search: no result has an "availability" field');
+            results.forEach((r) => checkOperator(`/api/search ${r.id}`, r.operator));
+            if (!fail) pass(`/api/search: operator is { company } or null on every result`);
+
+            // 2) One /api/homes/<id>, preferring a home with a published waiver status.
+            const w = JSON.parse((await get('/api/search?location=Cleveland&medicaidWaiver=true&limit=10')).text);
+            const id = (w.results && w.results[0] && w.results[0].id) || (results[0] && results[0].id);
+            if (!id) throw new Error('no home id to check');
+            const h = await get(`/api/homes/${id}`);
+            const hj = JSON.parse(h.text);
+            const d = hj.data ?? hj.home ?? hj;
+            if (h.status !== 200) bad(`/api/homes/${id} → ${h.status}`);
+            const he = emails(h.text);
+            he.length ? bad(`/api/homes/${id}: ${he.length} email address(es) in body`) : pass(`/api/homes/${id} (${d.name}): 0 email addresses`);
+            Object.prototype.hasOwnProperty.call(d, 'availability') ? bad(`/api/homes/${id}: has "availability"`) : pass(`/api/homes/${id}: no "availability" field`);
+            checkOperator(`/api/homes/${id}`, d.operator);
+            note(`/api/homes/${id} operator: ${JSON.stringify(d.operator)}`);
+            const mw = d.medicaidWaiver || {};
+            if (mw.line) {
+              note(`waiver: status ${mw.status} · source ${mw.source} · verifiedAt ${mw.verifiedAt} · note "${mw.note}"`);
+              (mw.note && mw.note.startsWith('Source: ') && mw.note !== OLD_NOTE && mw.source) ? pass('API waiver note is built from the stored source/date') : bad(`API waiver note looks fixed or empty: ${JSON.stringify(mw)}`);
+            } else {
+              note(`home ${id} has no published waiver status (${mw.status}); waiver page check skipped`);
+            }
+
+            // 3) The listing page in a browser, logged out.
+            const browser = await chromium.launch();
+            try {
+              const page = await (await browser.newContext({ userAgent: UA })).newPage();
+              await page.route('**/api/analytics/track', (r) => r.abort());
+              await page.goto(`${BASE}/homes/${id}`, { waitUntil: 'networkidle', timeout: 60000 }).catch(() => page.waitForLoadState('load'));
+              const html = await page.content();
+              const pe = emails(await page.evaluate(() => document.body.innerText));
+              const mailto = await page.locator('a[href^="mailto:"]').evaluateAll((as) => as.map((a) => a.getAttribute('href')));
+              const opMail = mailto.filter((m) => !/getcarelinkai\.com/i.test(m));
+              opMail.length ? bad(`/homes/${id}: operator mailto links ${JSON.stringify(opMail)}`) : pass(`/homes/${id}: no operator mailto (site mailto: ${mailto.length}); visible emails: ${pe.filter((e) => !/getcarelinkai\.com/i.test(e)).length} non-site`);
+              if (mw.line) {
+                const line = page.getByTestId('listing-page-waiver-line');
+                await line.waitFor({ timeout: 30000 });
+                const text = (await line.innerText()).replace(/\s+/g, ' ').trim();
+                note(`page waiver line: "${text}"`);
+                (text.includes(mw.note) && !text.includes(OLD_NOTE)) ? pass(`/homes/${id}: page shows the real waiver source note`) : bad(`/homes/${id}: page waiver line does not show the API note`);
+                /"medicaidWaiverSource"/.test(html) ? pass(`/homes/${id}: JSON-LD has medicaidWaiverSource`) : bad(`/homes/${id}: JSON-LD has no medicaidWaiverSource`);
+                /"medicaidWaiverVerifiedAt"/.test(html) ? pass(`/homes/${id}: JSON-LD has medicaidWaiverVerifiedAt`) : note(`/homes/${id}: no medicaidWaiverVerifiedAt in JSON-LD (no stored date)`);
+              }
+            } finally {
+              await browser.close();
+            }
+          } catch (e) {
+            bad(`public API check threw: ${e.message}`);
+          }
+          const fs = await import('node:fs');
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, '## Public API privacy + waiver source (OL-259)\n' + out.join('\n') + '\n');
           console.log(out.join('\n'));
           if (fail) process.exit(1);
           EOF
