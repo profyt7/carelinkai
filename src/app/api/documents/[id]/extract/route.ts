@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { denyUnlessDocumentAccess } from '@/lib/documents/access';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
@@ -23,6 +24,9 @@ export async function POST(
     }
 
     const documentId = params.id;
+    // P0-5: the caller must be allowed to see this document (was: any signed-in user).
+    const denied = await denyUnlessDocumentAccess(session.user.id, documentId);
+    if (denied) return denied;
 
     // Dynamic import of extraction module to avoid canvas issues during build
     const { extractDocumentText } = await import('@/lib/documents/extraction');

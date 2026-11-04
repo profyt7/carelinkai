@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getProcessingStats } from '@/lib/documents/processing';
+import { isDocumentAdmin } from '@/lib/documents/access';
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,9 +28,9 @@ export async function GET(request: NextRequest) {
     const userIdFilter = searchParams.get('userId');
 
     // Get processing statistics
-    const stats = await getProcessingStats(
-      userIdFilter || undefined
-    );
+    // P0-5: only ADMIN/STAFF may see platform-wide or another user's stats; everyone else sees their own uploads.
+    const admin = await isDocumentAdmin(session.user.id);
+    const stats = await getProcessingStats(admin ? userIdFilter || undefined : session.user.id);
 
     return NextResponse.json({
       success: true,
