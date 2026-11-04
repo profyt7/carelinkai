@@ -477,9 +477,10 @@ export async function getInquiryForConversion(inquiryId: string) {
   return await prisma.inquiry.findUnique({
     where: { id: inquiryId },
     include: {
+      // P0-1: contact fields only — never the whole User row (it used to carry credential fields).
       family: {
         include: {
-          user: true,
+          user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
         },
       },
       home: {
@@ -487,7 +488,7 @@ export async function getInquiryForConversion(inquiryId: string) {
           address: true,
         },
       },
-      convertedBy: true,
+      convertedBy: { select: { id: true, firstName: true, lastName: true } },
       convertedResident: {
         select: {
           id: true,

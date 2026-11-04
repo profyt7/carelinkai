@@ -19,6 +19,24 @@ import { createAuditLogFromRequest } from '@/lib/audit';
 import { AuditAction } from '@prisma/client';
 import { z } from 'zod';
 import { captureError, isExpectedAuthError } from '@/lib/sentry';
+import { prisma } from '@/lib/prisma';
+
+/**
+ * P0-1: the caller must own the inquiry's home (ADMIN excepted). Before this, any role holding
+ * inquiries.view / inquiries.convert (operators, families, staff, providers, discharge planners) could read
+ * — and convert, creating a resident and a placement fee — any tenant's inquiry by id.
+ */
+async function denyUnlessInquiryTenant(user: { id: string; role: string }, inquiryId: string): Promise<NextResponse | null> {
+  // Non-operators (FAMILY, STAFF, PROVIDER, DISCHARGE_PLANNER, …) are refused before any lookup.
+  const operator = user.role === 'ADMIN' ? null : await prisma.operator.findUnique({ where: { userId: user.id }, select: { id: true } });
+  if (user.role !== 'ADMIN' && !operator) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const inquiry = await prisma.inquiry.findUnique({ where: { id: inquiryId }, select: { home: { select: { operatorId: true } } } });
+  if (!inquiry) return NextResponse.json({ error: 'Inquiry not found' }, { status: 404 });
+  if (user.role !== 'ADMIN' && inquiry.home?.operatorId !== operator!.id) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+  return null;
+}
 
 export async function POST(
   request: NextRequest,
@@ -30,6 +48,8 @@ export async function POST(
 
     // Check permission to convert inquiries
     await requirePermission(PERMISSIONS.INQUIRIES_CONVERT);
+    const denied = await denyUnlessInquiryTenant(user, params.id);
+    if (denied) return denied;
 
     // Parse request body
     const body = await request.json();
@@ -121,6 +141,8 @@ export async function GET(
 
     // Check permission to view inquiries
     await requirePermission(PERMISSIONS.INQUIRIES_VIEW);
+    const denied = await denyUnlessInquiryTenant(user, params.id);
+    if (denied) return denied;
 
     // Get inquiry details
     const inquiry = await getInquiryForConversion(params.id);

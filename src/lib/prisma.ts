@@ -20,19 +20,42 @@
 
 import { PrismaClient } from "@prisma/client";
 
-// Define global type for PrismaClient
-declare global {
-  // eslint-disable-next-line no-var
-  var prisma: PrismaClient | undefined;
-}
+/**
+ * P0-1 (security decision package, Nov 2026): User credential fields are NEVER returned by default.
+ * Before this, any `include: { user: true }` (or a bare `findUnique` on User) sent the password hash, 2FA
+ * secret, backup codes and email/reset tokens to whoever got the response — e.g.
+ * GET /api/operator/inquiries/[id]/convert and GET /api/tours/[id]. With a global `omit`, every query leaves
+ * them out unless the caller opts in explicitly with `select: { passwordHash: true }` (auth flows only).
+ * Writes and `where` filters on these fields still work.
+ */
+export const USER_SECRET_FIELDS = {
+  passwordHash: true,
+  twoFactorSecret: true,
+  backupCodes: true,
+  verificationToken: true,
+  resetPasswordToken: true,
+} as const;
 
-function createPrismaClient(): PrismaClient {
+const PRISMA_OPTIONS = {
+  omit: { user: USER_SECRET_FIELDS },
+} as const;
+
+function createPrismaClient() {
   return new PrismaClient({
+    ...PRISMA_OPTIONS,
     log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
   });
 }
 
+export type AppPrismaClient = ReturnType<typeof createPrismaClient>;
+
+// Define global type for PrismaClient
+declare global {
+  // eslint-disable-next-line no-var
+  var prisma: AppPrismaClient | undefined;
+}
+
 // Initialize (or reuse) the process-wide client
-export const prisma: PrismaClient = globalThis.prisma ?? createPrismaClient();
+export const prisma: AppPrismaClient = globalThis.prisma ?? createPrismaClient();
 
 globalThis.prisma = prisma;

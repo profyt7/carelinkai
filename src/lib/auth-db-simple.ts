@@ -69,6 +69,7 @@ export const authOptions: NextAuthOptions = {
           // Find user by email
           const user = await prisma.user.findUnique({
             where: { email },
+            omit: { passwordHash: false }, // P0-1: secrets are omitted by default; this auth path needs the hash
           });
 
           // User not found

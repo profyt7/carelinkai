@@ -13,7 +13,7 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import { AuditAction } from "@prisma/client";
+import { AuditAction, type PrismaClient } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { UserStatus, UserRole } from "@prisma/client";
 import { compare } from "bcryptjs";
@@ -26,7 +26,8 @@ import { errorSummary } from '@/lib/log-safe';
  * NextAuth configuration options
  */
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  // The adapter only needs User/Account/Session basics; secrets stay omitted (P0-1, src/lib/prisma.ts).
+  adapter: PrismaAdapter(prisma as unknown as PrismaClient),
   
   // Configure JWT session
   session: {
