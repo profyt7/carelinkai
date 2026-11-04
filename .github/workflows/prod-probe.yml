@@ -18,7 +18,7 @@ on:
         default: 'https://getcarelinkai.com'
         required: true
       probes:
-        description: 'Comma list: p0-1,p0-3,p0-4,p0-5,p0-6,p0-7 (or "all")'
+        description: 'Comma list: p0-1,p0-2,p0-3,p0-4,p0-5,p0-6,p0-7 (or "all")'
         default: 'all'
         required: true
 
@@ -42,6 +42,8 @@ jobs:
           A_PASSWORD: ${{ secrets.PROD_PROBE_A_PASSWORD }}
           B_EMAIL: ${{ secrets.PROD_PROBE_B_EMAIL }}
           B_PASSWORD: ${{ secrets.PROD_PROBE_B_PASSWORD }}
+          TFA_EMAIL: ${{ secrets.PROD_PROBE_2FA_EMAIL }}
+          TFA_PASSWORD: ${{ secrets.PROD_PROBE_2FA_PASSWORD }}
         run: |
           cat > probe.mjs <<'EOF'
           const BASE = process.env.BASE.replace(/\/$/, '');
@@ -143,6 +145,21 @@ jobs:
             const ok = s.every((x) => /=(403|503)$/.test(x));
             const noToken = s.some((x) => /=503$/.test(x));
             record('p0-7', ok ? 'PASS' : 'FAIL', `unsigned: ${s.join(', ')} (want 403; 503 = token unset, set TWILIO_AUTH_TOKEN)${noToken ? ' WARN token unset' : ''}`);
+          }
+
+          // P0-2: a 2FA-enrolled account's correct password ALONE must not produce a session.
+          if (on('p0-2')) {
+            if (!process.env.TFA_EMAIL || !process.env.TFA_PASSWORD) record('p0-2', 'SKIP', 'PROD_PROBE_2FA_* secrets not set');
+            else {
+              const j = jar();
+              const csrf = await (await req(j, '/api/auth/csrf')).json();
+              const body = new URLSearchParams({ csrfToken: csrf.csrfToken, email: process.env.TFA_EMAIL, password: process.env.TFA_PASSWORD, callbackUrl: BASE + '/dashboard', json: 'true' });
+              const r = await req(j, '/api/auth/callback/credentials', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body });
+              const loc = r.headers.get('location') || '';
+              const session = await (await req(j, '/api/auth/session')).json().catch(() => ({}));
+              const ok = !session?.user && /TWO_FACTOR_REQUIRED/.test(decodeURIComponent(loc));
+              record('p0-2', ok ? 'PASS' : 'FAIL', `password only → session ${session?.user ? 'ISSUED' : 'none'}, error=${(decodeURIComponent(loc).match(/error=([^&]+)/) || [])[1] || 'none'} (want none + TWO_FACTOR_REQUIRED)`);
+            }
           }
 
           const failed = results.filter((r) => r.status === 'FAIL');
