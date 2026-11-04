@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { dashboardScope } from '@/lib/dashboard/scope';
 import { captureError } from '@/lib/sentry';
 
 export const dynamic = "force-dynamic";
@@ -29,24 +30,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Resolve operator scope — null means ADMIN (no scope restriction).
-    let operatorId: string | null = null;
-    if (user.role === 'OPERATOR') {
-      const operator = await prisma.operator.findUnique({
-        where: { userId: user.id },
-        select: { id: true },
-      });
-      if (!operator) {
-        return NextResponse.json({ error: 'Operator record not found' }, { status: 404 });
-      }
-      operatorId = operator.id;
-    }
-
-    // Scoped WHERE fragments — empty objects for ADMIN, nested filters for OPERATOR.
-    const residentScope = operatorId ? { home: { operatorId } } : {};
-    const inquiryScope  = operatorId ? { home: { operatorId } } : {};
-    const incidentScope = operatorId ? { resident: { home: { operatorId } } } : {};
-    const assessScope   = operatorId ? { resident: { home: { operatorId } } } : {};
-    const homeScope     = operatorId ? { operatorId } : {};
+    // P0-6: every role is scoped (was: only OPERATOR; everyone else got the platform-wide view).
+    const s = await dashboardScope(user);
+    if (s instanceof NextResponse) return s;
+    const residentScope = s.resident;
+    const inquiryScope = s.inquiry;
+    const incidentScope = s.incident;
+    const assessScope = s.assess;
+    const homeScope = s.home;
 
     // METRIC 1: Total Residents
     let totalResidents = 0;
@@ -99,9 +90,7 @@ export async function GET(request: NextRequest) {
     // METRIC 2: Active Caregivers
     let activeCaregivers = 0;
     try {
-      const caregiverScope = operatorId
-        ? { employmentStatus: 'ACTIVE', employments: { some: { operatorId } } }
-        : { employmentStatus: 'ACTIVE' };
+      const caregiverScope = s.caregiver;
       activeCaregivers = await prisma.caregiver.count({ where: caregiverScope as any });
     } catch (error) {
       captureError(error instanceof Error ? error : new Error(String(error)), {

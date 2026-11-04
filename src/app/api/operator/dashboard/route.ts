@@ -33,6 +33,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // P0-6: operator dashboard is for operators (own homes) and ADMIN/STAFF (global). Every other role used to get
+    // the empty homeFilter {} = platform-wide inquiries and residents.
+    if (user.role !== UserRole.OPERATOR && user.role !== UserRole.ADMIN && user.role !== UserRole.STAFF) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     // Resolve operator (if user is OPERATOR). Admins may view global summary.
     const operator = user.role === UserRole.OPERATOR
       ? await prisma.operator.findUnique({ where: { userId: user.id } })
