@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, requireAnyPermission } from '@/lib/auth-utils';
 import { prisma } from '@/lib/prisma';
 import { generateReport } from '@/lib/services/reports';
+import { resolveReportHomeIds } from '@/lib/reports/scope';
 import { generatePDF } from '@/lib/utils/pdf-generator';
 import { generateExcel } from '@/lib/utils/excel-generator';
 import { generateCSV } from '@/lib/utils/csv-generator';
@@ -18,7 +19,7 @@ interface RouteParams {
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    await requireAuth();
+    const user = await requireAuth();
     await requireAnyPermission(['reports.view', 'reports.generate', 'analytics.view']);
 
     const report = await prisma.report.findUnique({ where: { id: params.id } });
@@ -26,12 +27,18 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Report not found' }, { status: 404 });
     }
 
+    // P0-6: only the report's creator (or ADMIN/STAFF) may re-run it, and only over homes the caller may see now.
+    if (report.generatedBy !== user.id && user.role !== 'ADMIN' && user.role !== 'STAFF') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
     const config = report.config as any;
+    const allowed = await resolveReportHomeIds(user.id, config?.homeIds);
+    if (allowed instanceof NextResponse) return allowed;
 
     const reportData = await generateReport(report.type, {
       startDate: config.startDate ? new Date(config.startDate) : new Date(Date.now() - 30 * 86400_000),
       endDate: config.endDate ? new Date(config.endDate) : new Date(),
-      homeIds: config.homeIds ?? [],
+      homeIds: allowed.homeIds,
       includeCharts: config.includeCharts ?? true,
       includeSummary: config.includeSummary ?? true,
       includeDetails: config.includeDetails ?? true,

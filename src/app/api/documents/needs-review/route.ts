@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { documentScopeWhere } from '@/lib/documents/access';
 import { getDocumentsNeedingReview } from '@/lib/documents/processing';
 
 export async function GET(request: NextRequest) {
@@ -27,9 +28,9 @@ export async function GET(request: NextRequest) {
     const userIdFilter = searchParams.get('userId');
 
     // Get documents needing review
-    const documents = await getDocumentsNeedingReview(
-      userIdFilter || undefined
-    );
+    // P0-5: scoped to the caller (was: any user's documents via ?userId=, or all of them).
+    const scope = await documentScopeWhere(session.user.id);
+    const documents = await getDocumentsNeedingReview(userIdFilter || undefined, scope);
 
     return NextResponse.json({
       success: true,

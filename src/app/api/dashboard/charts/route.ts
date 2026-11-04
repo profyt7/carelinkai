@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { dashboardScope } from '@/lib/dashboard/scope';
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -27,22 +28,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    let operatorId: string | null = null;
-    if (user.role === 'OPERATOR') {
-      const operator = await prisma.operator.findUnique({
-        where: { userId: user.id },
-        select: { id: true },
-      });
-      if (!operator) {
-        return NextResponse.json({ error: 'Operator record not found' }, { status: 404 });
-      }
-      operatorId = operator.id;
-    }
-
-    const residentScope = operatorId ? { home: { operatorId } } : {};
-    const inquiryScope  = operatorId ? { home: { operatorId } } : {};
-    const incidentScope = operatorId ? { resident: { home: { operatorId } } } : {};
-    const homeScope     = operatorId ? { operatorId } : {};
+    // P0-6: every role is scoped (was: only OPERATOR; everyone else got the platform-wide view).
+    const s = await dashboardScope(user);
+    if (s instanceof NextResponse) return s;
+    const residentScope = s.resident;
+    const inquiryScope = s.inquiry;
+    const incidentScope = s.incident;
+    const homeScope = s.home;
 
     // CHART 1: Occupancy Trend (Last 6 Months)
     let occupancyTrend: Array<{ month: string; occupancy: number }> = [];

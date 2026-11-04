@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { scopedDocumentWhere } from '@/lib/documents/access';
 import { DocumentType, ValidationStatus, ReviewStatus } from '@prisma/client';
 
 export async function GET(request: NextRequest) {
@@ -99,10 +100,13 @@ export async function GET(request: NextRequest) {
     const orderBy: any = {};
     orderBy[sortBy] = sortOrder;
 
+    // P0-5: only documents in the caller's scope (was: every document; uploadedById/residentId came from the caller).
+    const scoped = await scopedDocumentWhere(session.user.id, where);
+
     // Execute query
     const [documents, total] = await Promise.all([
       prisma.document.findMany({
-        where,
+        where: scoped,
         orderBy,
         skip,
         take: limit,
@@ -138,7 +142,7 @@ export async function GET(request: NextRequest) {
           },
         },
       }),
-      prisma.document.count({ where }),
+      prisma.document.count({ where: scoped }),
     ]);
 
     return NextResponse.json({

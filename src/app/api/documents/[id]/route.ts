@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { denyUnlessDocumentAccess } from '@/lib/documents/access';
 import { deleteFromCloudinary } from '@/lib/documents/cloudinary';
 
 export async function GET(
@@ -22,6 +23,9 @@ export async function GET(
       );
     }
 
+    // P0-5: the caller must be allowed to see this document (was: any signed-in user).
+    const denied = await denyUnlessDocumentAccess(session.user.id, params.id);
+    if (denied) return denied;
     const document = await prisma.document.findUnique({
       where: { id: params.id },
       include: {
@@ -87,6 +91,9 @@ export async function DELETE(
     }
 
     // Get document to check permissions
+    // P0-5: the caller must be allowed to see this document (was: any signed-in user).
+    const denied = await denyUnlessDocumentAccess(session.user.id, params.id);
+    if (denied) return denied;
     const document = await prisma.document.findUnique({
       where: { id: params.id },
     });
@@ -156,6 +163,9 @@ export async function PATCH(
     }
 
     // Get document to check permissions
+    // P0-5: the caller must be allowed to see this document (was: any signed-in user).
+    const denied = await denyUnlessDocumentAccess(session.user.id, params.id);
+    if (denied) return denied;
     const existingDocument = await prisma.document.findUnique({
       where: { id: params.id },
     });

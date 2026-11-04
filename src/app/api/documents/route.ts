@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { scopedDocumentWhere } from '@/lib/documents/access';
 import { DocumentType } from '@prisma/client';
 
 export async function GET(request: NextRequest) {
@@ -41,12 +42,15 @@ export async function GET(request: NextRequest) {
       where.type = type;
     }
 
+    // P0-5: only documents in the caller's scope (was: every document for any signed-in user).
+    const scoped = await scopedDocumentWhere(session.user.id, where);
+
     // Get total count
-    const total = await prisma.document.count({ where });
+    const total = await prisma.document.count({ where: scoped });
 
     // Get documents
     const documents = await prisma.document.findMany({
-      where,
+      where: scoped,
       include: {
         uploadedBy: {
           select: {

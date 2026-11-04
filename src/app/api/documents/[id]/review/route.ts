@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { denyUnlessDocumentAccess } from '@/lib/documents/access';
 import { markDocumentAsReviewed } from '@/lib/documents/processing';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { AuditAction, DocumentType } from '@prisma/client';
@@ -44,6 +45,9 @@ export async function POST(
     }
 
     const documentId = params.id;
+    // P0-5: the caller must be allowed to see this document (was: any signed-in user).
+    const denied = await denyUnlessDocumentAccess(session.user.id, documentId);
+    if (denied) return denied;
 
     // Check if document exists
     const document = await prisma.document.findUnique({

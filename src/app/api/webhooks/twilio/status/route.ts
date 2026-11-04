@@ -1,13 +1,16 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { verifyTwilioRequest } from '@/lib/twilio/verify-webhook';
 import { prisma } from '@/lib/prisma';
 
 // Delivery status callback from Twilio
 export async function POST(req: NextRequest) {
   try {
-    const text = await req.text();
-    const params = new URLSearchParams(text);
+    // P0-7: reject anything Twilio didn't sign (was: any POST accepted).
+    const verified = await verifyTwilioRequest(req);
+    if (!verified.ok) return verified.response;
+    const params = new URLSearchParams(verified.params);
     const messageSid = params.get('MessageSid') ?? '';
     const status = params.get('MessageStatus') ?? '';
 

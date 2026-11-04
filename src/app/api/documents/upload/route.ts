@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { canAttachDocument } from '@/lib/documents/access';
 import { uploadToCloudinary } from '@/lib/documents/cloudinary';
 import { extractDocumentText } from '@/lib/documents/extraction';
 import { DataClassification, DocumentType } from '@prisma/client';
@@ -47,6 +48,11 @@ export async function POST(request: NextRequest) {
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    }
+
+    // P0-5: only attach to a resident / inquiry the caller may access (was: any id from the form).
+    if ((residentId || inquiryId) && !(await canAttachDocument(session.user.id, { residentId, inquiryId }))) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     if (!ALLOWED_MIME_TYPES.includes(file.type)) {

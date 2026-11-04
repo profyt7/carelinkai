@@ -49,6 +49,10 @@ export async function GET(req: NextRequest) {
       // Family members see only their residents
       // Skip home-based filtering, use resident IDs directly
       allowedHomeIds = null;
+      // P0-4: a family with no linked residents sees none (this used to fall through with no filter = every resident).
+      if (!Array.isArray(scope.residentIds) || scope.residentIds.length === 0) {
+        return NextResponse.json({ items: [], nextCursor: null });
+      }
     } else {
       // Operators and Caregivers: filtered by their assigned homes
       allowedHomeIds = scope.homeIds;
@@ -74,12 +78,16 @@ export async function GET(req: NextRequest) {
     }
     
     // Apply scope-based filtering to where clause
-    if (scope.role === "FAMILY" && scope.residentIds.length > 0) {
-      // Family members see only their residents
-      where.id = { in: scope.residentIds };
+    if (scope.role === "FAMILY") {
+      // Family members see only their residents (non-empty, checked above)
+      where.id = { in: scope.residentIds as string[] };
     } else if (allowedHomeIds) {
-      // Operators/Caregivers see residents in their assigned homes
-      where.homeId = where.homeId ? where.homeId : { in: allowedHomeIds };
+      // Operators/Caregivers see residents in their assigned homes. P0-4: a requested homeId must be one of
+      // them — it used to REPLACE the scope, so ?homeId=<another tenant's home> (incl. format=csv) leaked PHI.
+      if (homeId && !allowedHomeIds.includes(homeId)) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+      where.homeId = homeId ? homeId : { in: allowedHomeIds };
     }
 
     // For CSV export, fetch more comprehensive data

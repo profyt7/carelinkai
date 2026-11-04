@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { verifyTwilioRequest } from '@/lib/twilio/verify-webhook';
 import { prisma } from '@/lib/prisma';
 import { handleCaregiverReply } from '@/lib/oncall/dispatcher';
 
@@ -8,8 +9,10 @@ export async function POST(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const attemptId = searchParams.get('attemptId') ?? '';
 
-  const text = await req.text();
-  const params = new URLSearchParams(text);
+  // P0-7: reject anything Twilio didn't sign (was: no auth at all — any attemptId could be confirmed/declined).
+  const verified = await verifyTwilioRequest(req);
+  if (!verified.ok) return verified.response;
+  const params = new URLSearchParams(verified.params);
   const digits = params.get('Digits') ?? '';
 
   // Map IVR digit to keyword
