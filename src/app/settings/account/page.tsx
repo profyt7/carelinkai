@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import TwoFactorPanel from "@/components/settings/TwoFactorPanel";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -252,53 +253,7 @@ export default function AccountSettings() {
     }
   };
   
-  // Handle 2FA toggle
-  const handleToggle2FA = async () => {
-    try {
-      setSaving(true);
-      
-      const res = await fetch("/api/profile/2fa", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          enabled: !twoFactorEnabled,
-        }),
-      });
-      
-      const data = await res.json();
-      
-      if (data.success) {
-        setTwoFactorEnabled(!twoFactorEnabled);
-        setMessage({
-          type: "success",
-          text: `Two-factor authentication ${!twoFactorEnabled ? "enabled" : "disabled"} successfully!`,
-        });
-        
-        // Update session
-        await update();
-      } else {
-        setMessage({
-          type: "error",
-          text: data.message || "Failed to update two-factor authentication.",
-        });
-      }
-    } catch (error) {
-      console.error("Error updating 2FA:", error);
-      setMessage({
-        type: "error",
-        text: "An error occurred while updating two-factor authentication.",
-      });
-    } finally {
-      setSaving(false);
-      
-      // Clear message after 5 seconds
-      setTimeout(() => {
-        setMessage({ type: "", text: "" });
-      }, 5000);
-    }
-  };
+
   
   // Handle notification preferences save
   const handleSavePreferences = async () => {
@@ -745,27 +700,10 @@ export default function AccountSettings() {
                       ? "Your account is protected with an additional layer of security. When signing in, you'll need to provide a verification code."
                       : "Add an extra layer of security to your account. When enabled, you'll be required to enter a verification code in addition to your password when signing in."}
                   </p>
-                  <div className="mt-4">
-                    <button
-                      type="button"
-                      onClick={handleToggle2FA}
-                      disabled={saving}
-                      className={`inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                        twoFactorEnabled
-                          ? "border-error-300 bg-white text-error-700 hover:bg-error-50"
-                          : "border-transparent bg-primary-600 text-white hover:bg-primary-700"
-                      }`}
-                    >
-                      {saving ? (
-                        <FiLoader className="mr-2 h-4 w-4 animate-spin" />
-                      ) : twoFactorEnabled ? (
-                        <FiSlash className="mr-2 h-4 w-4" />
-                      ) : (
-                        <FiShield className="mr-2 h-4 w-4" />
-                      )}
-                      {twoFactorEnabled ? "Disable 2FA" : "Enable 2FA"}
-                    </button>
-                  </div>
+                  <TwoFactorPanel
+                    enabled={twoFactorEnabled}
+                    onChange={async (v) => { setTwoFactorEnabled(v); await update(); }}
+                  />
                 </div>
               </div>
             </div>

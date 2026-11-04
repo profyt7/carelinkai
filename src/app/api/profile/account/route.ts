@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { AuditAction } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { isEnrolled } from "@/lib/two-factor/secure";
 
 
 /**
@@ -40,6 +41,7 @@ export async function GET(req: NextRequest) {
         firstName: true,
         lastName: true,
         twoFactorEnabled: true,
+        twoFactorSecret: true,
         notificationPrefs: true,
         preferences: true,
         lastLoginAt: true,
@@ -97,7 +99,8 @@ export async function GET(req: NextRequest) {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        twoFactorEnabled: user.twoFactorEnabled,
+        // P0-2: enrolled only if a secret exists (the removed toggle could set the flag alone).
+        twoFactorEnabled: isEnrolled(user),
         notificationPrefs: user.notificationPrefs || {},
         preferences: user.preferences || {},
         lastLogin: user.lastLoginAt,
