@@ -324,8 +324,7 @@ export default async function ClevelandAssistedLivingPage({ searchParams }: { se
             Browse assisted living in Cleveland
           </h2>
           <p className="mt-3 text-primary-100 max-w-2xl mx-auto">
-            Search by neighborhood, size, and amenities. Contact homes directly. No broker
-            fees, no call center.
+            Search by neighborhood, size, and amenities. Contact homes directly. Today we don’t charge homes a placement fee; if that ever changes, we’ll tell you before you rely on a shortlist, and it never changes your price or which homes we show.
           </p>
           <Link
             href="/search?careLevel=ASSISTED"

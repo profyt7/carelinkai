@@ -312,7 +312,7 @@ export function buildOrganizationJsonLd(opts: { includeFeeModel?: boolean } = {}
       hoursAvailable: 'Automated front desk 24/7 (takes messages); a person calls back the next business day, Mon–Fri 08:00–18:00 America/New_York',
     },
     description:
-      'A Cleveland-built senior care directory: licensed assisted living, memory care, independent living and nursing homes with Ohio Department of Health inspection facts, and open beds and pricing we are confirming with each home (marked verified only with a date). Families contact homes directly; no broker fees.',
+      'A Cleveland-built senior care directory: licensed assisted living, memory care, independent living and nursing homes with Ohio Department of Health inspection facts, and open beds and pricing we are confirming with each home (marked verified only with a date). Families contact homes directly. Today we don’t charge homes a placement fee; if that ever changes, we’ll tell you before you rely on a shortlist, and it never changes your price or which homes we show.',
     foundingLocation: { '@type': 'Place', name: 'Cleveland, Ohio' },
     founder: { '@type': 'Person', name: 'Chris Tolliver' },
     address: {
@@ -329,7 +329,7 @@ export function buildOrganizationJsonLd(opts: { includeFeeModel?: boolean } = {}
     })),
     // No 'Home care': there are no in-home care / home-care agency listings (11/01 live count: 0 of 144).
     knowsAbout: ['Assisted living', 'Memory care', 'Independent living', 'Skilled nursing', 'Ohio Department of Health inspections'],
-    slogan: 'Verified senior care in Cleveland. No broker fees.',
+    slogan: 'Verified senior care in Cleveland. Homes never pay to be listed or ranked.',
     additionalProperty: [
       ...(includeFeeModel ? [{ '@type': 'PropertyValue', name: 'Fee model', value: FEE_MODEL_LINE }] : []),
       { '@type': 'PropertyValue', name: 'Machine-readable overview', value: `${SITE_URL}/llms.txt` },

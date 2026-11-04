@@ -121,8 +121,8 @@ export default function ClevelandLandingPage() {
             CareLinkAI is a Cleveland-built directory of senior care options across Greater
             Cleveland. We list assisted living, memory care, independent living, and nursing
             homes — with verified information sourced from public Ohio Department of Health
-            licensing records and the operators themselves. No broker fees, no call center
-            in the middle. You contact the home directly.
+            licensing records and the operators themselves. Today we don’t charge homes a placement fee; if that ever changes, we’ll tell you before you rely on a shortlist, and it never changes your price or which homes we show. No call center in the middle. You contact the home
+            directly.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
