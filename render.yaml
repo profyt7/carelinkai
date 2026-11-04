@@ -67,10 +67,12 @@ services:
         sync: false
       - key: NEXTAUTH_URL
         sync: false
+      # OL-260: the job calls the deployed app over HTTPS; a value here (not a
+      # secret) stops it defaulting to localhost when the var is missing.
       - key: NEXT_PUBLIC_APP_URL
-        sync: false
+        value: https://getcarelinkai.com
       - key: NODE_ENV
-        sync: false
+        value: production
       - key: OUTREACH_REPLY_TO
         sync: false
       - key: RESEND_API_KEY
