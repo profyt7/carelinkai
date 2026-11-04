@@ -14,6 +14,7 @@
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 
+import type { PrismaClient } from "@prisma/client";
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ingestOdhRecords, parseOdhInput } from '@/lib/inspections/ingest';
@@ -57,7 +58,7 @@ export async function GET(request: NextRequest) {
       );
     }
     const records = parseOdhInput(await res.text());
-    const summary = await ingestOdhRecords(prisma, records, { force: true });
+    const summary = await ingestOdhRecords(prisma as unknown as PrismaClient, records, { force: true });
     return NextResponse.json({ ok: true, summary });
   } catch (error) {
     return NextResponse.json(
