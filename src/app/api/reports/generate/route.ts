@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, requireAnyPermission } from '@/lib/auth-utils';
 import { generateReport } from '@/lib/services/reports';
+import { resolveReportHomeIds } from '@/lib/reports/scope';
 import { generatePDF } from '@/lib/utils/pdf-generator';
 import { generateExcel } from '@/lib/utils/excel-generator';
 import { generateCSV } from '@/lib/utils/csv-generator';
@@ -57,11 +58,15 @@ export async function POST(request: NextRequest) {
     const parsedStartDate = startDate ? new Date(startDate) : subMonths(new Date(), 1);
     const parsedEndDate = endDate ? new Date(endDate) : new Date();
 
+    // P0-6: only homes the caller may see (empty no longer means "all homes" for non-admins).
+    const allowed = await resolveReportHomeIds(user.id, homeIds);
+    if (allowed instanceof NextResponse) return allowed;
+
     // Generate report data
     const reportData = await generateReport(type, {
       startDate: parsedStartDate,
       endDate: parsedEndDate,
-      homeIds: homeIds || [],
+      homeIds: allowed.homeIds,
       includeCharts,
       includeSummary,
       includeDetails,
@@ -118,7 +123,7 @@ export async function POST(request: NextRequest) {
         config: {
           startDate: parsedStartDate.toISOString(),
           endDate: parsedEndDate.toISOString(),
-          homeIds: homeIds || [],
+          homeIds: allowed.homeIds, // P0-6: the resolved, in-scope list
           includeCharts,
           includeSummary,
           includeDetails,

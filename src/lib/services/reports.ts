@@ -1,4 +1,5 @@
-'use server';
+// P0-6: no 'use server' — this module is server-only library code imported by the report route handlers.
+// As a 'use server' file its exports (which do no auth checks) could be exposed as callable server actions.
 
 import { prisma } from '@/lib/prisma';
 import { startOfMonth, endOfMonth, subMonths, format } from 'date-fns';
