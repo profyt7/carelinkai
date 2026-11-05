@@ -16,8 +16,13 @@
  *   CRON_MAX_PER_RUN - Maximum notifications to process per run (default: 100)
  */
 
-// Read environment variables with defaults
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:5000';
+// Read environment variables with defaults.
+// OL-260: the Render cron service lost NEXT_PUBLIC_APP_URL in the 2026-10-28 repo
+// switch and every run since 10/29 called http://localhost:5000 ("fetch failed",
+// exit 1). Resolve the base URL the same way the app does, and fall back to the
+// production host when NODE_ENV is production so a missing var can't point the
+// job at localhost again.
+const BASE_URL = resolveBaseUrl(process.env);
 const CRON_SECRET = process.env.CRON_SECRET;
 const WINDOW_MINUTES = parseInt(process.env.CRON_WINDOW_MINUTES || '1440', 10);
 const MAX_PER_RUN = parseInt(process.env.CRON_MAX_PER_RUN || '100', 10);
@@ -26,6 +31,18 @@ const MAX_PER_RUN = parseInt(process.env.CRON_MAX_PER_RUN || '100', 10);
 if (!CRON_SECRET) {
   console.warn('⚠️  Warning: CRON_SECRET environment variable is not set.');
   console.warn('   Every call will fail with "auth 401 — CRON_SECRET mismatch" (the endpoints fail closed).');
+}
+
+/**
+ * Base URL precedence: CRON_BASE_URL > NEXT_PUBLIC_APP_URL > NEXTAUTH_URL >
+ * production host (when NODE_ENV=production) > localhost for dev.
+ */
+function resolveBaseUrl(env) {
+  const candidates = [env.CRON_BASE_URL, env.NEXT_PUBLIC_APP_URL, env.NEXTAUTH_URL];
+  for (const c of candidates) {
+    if (c && /^https?:\/\//.test(c)) return c.replace(/\/$/, '');
+  }
+  return env.NODE_ENV === 'production' ? 'https://getcarelinkai.com' : 'http://localhost:5000';
 }
 
 /**
@@ -137,8 +154,10 @@ async function runCronTasks() {
   }
 }
 
-// Run the script
-runCronTasks().catch(error => {
+module.exports = { resolveBaseUrl, classifyCronFailure };
+
+// Run the script only when executed directly (tests require() it).
+if (require.main === module) runCronTasks().catch(error => {
   console.error('❌ Unhandled error:', error);
   process.exit(1);
 });
