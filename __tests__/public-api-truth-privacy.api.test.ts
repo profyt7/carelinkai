@@ -109,6 +109,13 @@ describe('logged-out GET /api/homes/[id]', () => {
     const data = body.data ?? body.home ?? body;
     expect(data.operator).toEqual({ company: 'Lakeview Senior Living LLC' });
   });
+  it('emits no capacity-derived availability field (capacity − occupancy would read "28")', async () => {
+    const body = await (await homeGET(new NextRequest('http://localhost/api/homes/home-1'), { params: { id: 'home-1' } })).json();
+    const data = body.data ?? body.home ?? body;
+    expect(data).not.toHaveProperty('availability');
+    expect(JSON.stringify(body)).not.toContain('"availability":28');
+    expect(data.availabilityFreshness).toMatchObject({ fresh: false });
+  });
   it('the waiver note names the real source and date', async () => {
     const body = await (await homeGET(new NextRequest('http://localhost/api/homes/home-1'), { params: { id: 'home-1' } })).json();
     const data = body.data ?? body.home ?? body;
