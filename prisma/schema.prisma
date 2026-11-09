@@ -22,6 +22,8 @@ model User {
   twoFactorEnabled          Boolean                  @default(false)
   twoFactorSecret           String?
   backupCodes               Json?
+  /// Bumped to end every session of this user (security package §3). Tokens carry it as `sv`.
+  sessionVersion            Int                      @default(0)
   verificationToken         String?
   verificationTokenExpiry   DateTime?
   resetPasswordToken        String?

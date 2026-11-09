@@ -27,6 +27,10 @@ env:
   # Per run, never a literal in the repo; local throwaway DB only. Must pass the
   # signup rule: upper, lower, digit and one of @$!%*?&.
   DEMO_ACCOUNT_PASSWORD: Ci${{ github.run_id }}x${{ github.run_attempt }}!Aa
+  # The seeded admin/operator/DP accounts have no authenticator app; without this
+  # every privileged spec would land on the forced 2FA setup page. Enforcement
+  # itself is unit-tested (__tests__/session-guard.unit.test.ts). Never set in prod.
+  TWO_FACTOR_ENFORCEMENT: 'off'
 
 jobs:
   changes:

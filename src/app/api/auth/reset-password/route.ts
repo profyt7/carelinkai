@@ -81,6 +81,8 @@ export async function POST(request: NextRequest) {
         passwordHash: hashedPassword,
         resetPasswordToken: null,
         resetPasswordTokenExpiry: null,
+        // Security package §3: a reset ends every existing session.
+        sessionVersion: { increment: 1 },
       },
     });
 
