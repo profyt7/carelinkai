@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { withAuth } from 'next-auth/middleware';
+import { getToken } from 'next-auth/jwt';
+import { apiAllowedDuringTwoFactorSetup, twoFactorSetupUrl } from '@/lib/auth/two-factor-routes';
 import { middlewareRateLimitFor, rateLimitExceeded } from '@/lib/edge-rate-limit';
 import { isKnownAppPath, isPublicPage } from '@/lib/routing/public-routes';
 import { isPageMethodAllowed, methodNotAllowedHeaders } from '@/lib/routing/page-methods';
@@ -63,7 +65,7 @@ function shouldBypassAuth(pathname: string): boolean {
 /**
  * Main middleware export - wrapped with our custom path checking logic
  */
-export default function middleware(req: NextRequest) {
+export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   /* ------------------------------------------------------------------
@@ -103,6 +105,25 @@ export default function middleware(req: NextRequest) {
    * ---------------------------------------------------------------- */
   if (!isPageMethodAllowed(req.method, pathname, req.headers)) {
     return new NextResponse(JSON.stringify({ error: 'Method Not Allowed' }), { status: 405, headers: methodNotAllowedHeaders() });
+  }
+
+  /* ------------------------------------------------------------------
+   * 2FA ENFORCEMENT FOR APIs (security package §3). Route handlers do their
+   * own auth; this only refuses a signed-in user whose token says they must
+   * set up 2FA first (ADMIN / STAFF / OPERATOR / DISCHARGE_PLANNER without an
+   * authenticator). /api/auth/* stays open so they can enrol and sign out.
+   * ---------------------------------------------------------------- */
+  if (pathname.startsWith('/api/')) {
+    if (!apiAllowedDuringTwoFactorSetup(pathname)) {
+      const token = await getToken({ req, secret: process.env['NEXTAUTH_SECRET'], cookieName: sessionCookieNameEdge() }).catch(() => null);
+      if (token && (token as any).twoFactorSetupRequired === true) {
+        return new NextResponse(JSON.stringify({ error: 'TWO_FACTOR_SETUP_REQUIRED' }), {
+          status: 403,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+    }
+    return NextResponse.next();
   }
 
   /* ------------------------------------------------------------------
@@ -204,6 +225,16 @@ export default function middleware(req: NextRequest) {
           const res = NextResponse.next();
           try { res.cookies.set('e2e-bypass', '1', { path: '/' }); } catch {}
           return applySecurityHeaders(req, res);
+        }
+
+        // 2FA enforcement for pages: a user who must set up 2FA sees nothing else first.
+        const tok = req?.nextauth?.token;
+        if (tok && tok.twoFactorSetupRequired === true && !isPublicPage(pathname)) {
+          const to = req.nextUrl.clone();
+          const target = twoFactorSetupUrl(pathname, req.nextUrl.search);
+          to.pathname = target.split('?')[0];
+          to.search = target.slice(target.indexOf('?'));
+          return applySecurityHeaders(req, NextResponse.redirect(to));
         }
 
         // Always-public paths — single source of truth: src/lib/routing/public-routes.ts
@@ -313,8 +344,17 @@ export const config = {
     // /api/auth is deliberately NOT here — it is rate-limited at its own route handler.
     '/api/webhooks/:path*',
     '/api/password/:path*',
+    // Every other API: only the 2FA-setup check above (no auth redirect, no headers).
+    '/api/:path*',
   ],
 };
+
+/** Same cookie name as src/lib/auth.ts (kept inline: this file runs on the Edge). */
+function sessionCookieNameEdge(): string {
+  return process.env.NODE_ENV === 'production' && process.env['ALLOW_INSECURE_AUTH_COOKIE'] !== '1'
+    ? '__Secure-next-auth.session-token'
+    : 'next-auth.session-token';
+}
 
 /**
  * Apply security headers (CSP, HSTS, etc.)

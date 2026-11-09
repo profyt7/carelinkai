@@ -8,10 +8,11 @@
 import { useState } from "react";
 import { FiLoader, FiShield, FiSlash } from "react-icons/fi";
 
-type Props = { enabled: boolean; onChange: (enabled: boolean) => void };
+/** `required`: the account's role must keep 2FA on (no Disable button). */
+type Props = { enabled: boolean; onChange: (enabled: boolean) => void; required?: boolean };
 type Step = "idle" | "scan" | "codes" | "disable";
 
-export default function TwoFactorPanel({ enabled, onChange }: Props) {
+export default function TwoFactorPanel({ enabled, onChange, required = false }: Props) {
   const [step, setStep] = useState<Step>("idle");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -110,7 +111,13 @@ export default function TwoFactorPanel({ enabled, onChange }: Props) {
         </div>
       )}
 
-      {step === "idle" && enabled && (
+      {step === "idle" && enabled && required && (
+        <p className="text-sm text-neutral-600" data-testid="two-factor-required">
+          Two-factor authentication is required for your account role, so it can&apos;t be turned off.
+        </p>
+      )}
+
+      {step === "idle" && enabled && !required && (
         <button type="button" onClick={() => { setError(null); setStep("disable"); }} className={danger}>
           <FiSlash className="mr-2 h-4 w-4" />Disable 2FA
         </button>

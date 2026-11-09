@@ -15,6 +15,8 @@ import { captureError } from '@/lib/sentry';
 import { errorSummary } from '@/lib/log-safe';
 import { consumeBackupCode, decryptTotpSecret, verifyTotp } from '@/lib/two-factor/secure';
 import { audit2fa, clientIp, limited } from '@/lib/two-factor/route-helpers';
+import { roleRequiresTwoFactor, twoFactorEnforced } from '@/lib/auth/session-guard';
+import { endOtherSessions } from '@/lib/auth/session-version';
 
 const disableSchema = z.object({
   verificationMethod: z.enum(['password', 'totp']),
@@ -34,11 +36,19 @@ export async function POST(request: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
-      select: { id: true, passwordHash: true, twoFactorEnabled: true, twoFactorSecret: true, backupCodes: true },
+      select: { id: true, role: true, passwordHash: true, twoFactorEnabled: true, twoFactorSecret: true, backupCodes: true },
     });
     if (!user) return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 });
     if (!user.twoFactorEnabled) {
       return NextResponse.json({ success: false, message: 'Two-factor authentication is not enabled for this account' }, { status: 400 });
+    }
+
+    // Security package §3: these roles must keep 2FA on.
+    if (twoFactorEnforced() && roleRequiresTwoFactor(user.role)) {
+      return NextResponse.json(
+        { success: false, message: 'Two-factor authentication is required for your account role and cannot be turned off.' },
+        { status: 403 },
+      );
     }
 
     if (limited(`disable2fa:${clientIp(request)}:${user.id}`)) {
@@ -68,7 +78,10 @@ export async function POST(request: NextRequest) {
     });
     await audit2fa(request, user.id, AuditAction.UPDATE, 'Two-factor authentication disabled', { method: 'DISABLE_2FA', verificationMethod });
 
-    return NextResponse.json({ success: true, message: 'Two-factor authentication has been successfully disabled for your account' });
+    // Turning 2FA off ends other sessions; this device stays signed in.
+    const res = NextResponse.json({ success: true, message: 'Two-factor authentication has been successfully disabled for your account' });
+    await endOtherSessions(request, res, user.id);
+    return res;
   } catch (error: any) {
     captureError(error instanceof Error ? error : new Error(String(error)), { tags: { route: 'auth:disable-2fa' } });
     console.error('Disable 2FA error:', errorSummary(error));

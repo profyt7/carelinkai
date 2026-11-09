@@ -7,6 +7,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { AuditAction } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { endOtherSessions } from "@/lib/auth/session-version";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { newPasswordSchema } from "@/lib/password-policy";
@@ -166,10 +167,13 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({
+    // Security package §3: other devices are signed out; this one stays signed in.
+    const res = NextResponse.json({
       success: true,
-      message: "Password changed successfully",
+      message: "Password changed successfully. Other devices have been signed out.",
     });
+    await endOtherSessions(req, res, user.id);
+    return res;
   } catch (error) {
     console.error("Error changing password:", error);
     return NextResponse.json(

@@ -15,6 +15,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { AuditAction } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { endOtherSessions } from "@/lib/auth/session-version";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { z } from "zod";
@@ -220,10 +221,13 @@ export async function POST(request: NextRequest) {
     });
     
     // Return success response
-    return NextResponse.json({
+    // Security package §3: other devices are signed out; this one stays signed in.
+    const res = NextResponse.json({
       success: true,
-      message: "Password changed successfully"
+      message: "Password changed successfully. Other devices have been signed out."
     });
+    await endOtherSessions(request, res, userId);
+    return res;
     
   } catch (error: any) {
     console.error("Password change error:", error);

@@ -18,6 +18,7 @@ import { prisma } from "@/lib/prisma";
 import type { UserStatus, UserRole } from "@prisma/client";
 import { compare } from "bcryptjs";
 import { checkSecondFactor, TWO_FACTOR_REQUIRED } from "@/lib/two-factor/login";
+import { applyUserToToken, GUARD_USER_SELECT, type GuardUser } from "@/lib/auth/session-guard";
 import { errorSummary } from '@/lib/log-safe';
 
 // Assumption: Use shared Prisma client singleton to avoid connection bloat
@@ -98,6 +99,7 @@ export const authOptions: NextAuthOptions = {
             twoFactorSecret: true,
             backupCodes: true,
             lastLoginAt: true,
+            sessionVersion: true,
           }
         });
         
@@ -232,6 +234,7 @@ export const authOptions: NextAuthOptions = {
           status: user.status,
           emailVerified: user.emailVerified,
           twoFactorEnabled: user.twoFactorEnabled,
+          sessionVersion: user.sessionVersion,
           profileImageUrl: null
         } as any;
       }
@@ -241,7 +244,7 @@ export const authOptions: NextAuthOptions = {
   // Callbacks to customize session and JWT behavior
   callbacks: {
     // Add custom claims to JWT
-    async jwt({ token, user, trigger }) {
+    async jwt({ token, user }) {
       if (user) {
         token["id"] = (user as any).id;
         token["email"] = (user as any).email;
@@ -251,38 +254,25 @@ export const authOptions: NextAuthOptions = {
         token["role"] = (user as any).role;
         token["emailVerified"] = (user as any).emailVerified as any;
         token["twoFactorEnabled"] = (user as any).twoFactorEnabled;
+        token["sv"] = (user as any).sessionVersion ?? 0;
+        token["authTime"] = Math.floor(Date.now() / 1000);
       }
-      
-      // On session update or refresh, fetch latest user data including profile image
-      if (trigger === "update" || !token["profileImageUrl"]) {
-        try {
-          const dbUser = await prisma.user.findUnique({
-            where: { id: token["id"] as string },
-            select: { profileImageUrl: true, firstName: true, lastName: true }
-          });
-          if (dbUser) {
-            // Extract the medium or thumbnail URL from the JSON structure
-            const imgUrl = dbUser.profileImageUrl;
-            if (imgUrl && typeof imgUrl === 'object') {
-              const imgData = imgUrl as { medium?: string; thumbnail?: string; original?: string };
-              token["profileImageUrl"] = imgData.medium || imgData.thumbnail || imgData.original || null;
-            } else if (typeof imgUrl === 'string') {
-              token["profileImageUrl"] = imgUrl;
-            } else {
-              token["profileImageUrl"] = null;
-            }
-            // Also update name in case it changed
-            token["firstName"] = dbUser.firstName;
-            token["lastName"] = dbUser.lastName;
-            token["name"] = `${dbUser.firstName} ${dbUser.lastName}`;
-          }
-        } catch (e) {
-          // Ignore errors - don't break the session
-          console.error('[auth] Error fetching profile image:', errorSummary(e));
-        }
+
+      // Security package §3: one PK lookup per call. Revokes the token (throws →
+      // NextAuth clears the cookie) when the user is gone, not ACTIVE, or its
+      // session version moved; refreshes role/name/image; sets the 2FA-setup claim.
+      let dbUser: GuardUser | null;
+      try {
+        dbUser = (await prisma.user.findUnique({
+          where: { id: token["id"] as string },
+          select: GUARD_USER_SELECT,
+        })) as GuardUser | null;
+      } catch (e) {
+        // Fail open on a database error: keep the claims we already have.
+        console.error('[auth] session refresh lookup failed:', errorSummary(e));
+        return token;
       }
-      
-      return token;
+      return applyUserToToken(token, dbUser);
     },
     
     // Add custom session data
@@ -297,6 +287,7 @@ export const authOptions: NextAuthOptions = {
         // Include profile image URL in session
         (session.user as any).image = token["profileImageUrl"] as string | null;
         (session.user as any).profileImageUrl = token["profileImageUrl"] as string | null;
+        (session.user as any).twoFactorSetupRequired = token["twoFactorSetupRequired"] === true;
       }
       return session;
     },
@@ -319,6 +310,28 @@ export const authOptions: NextAuthOptions = {
     }
   },
   
+  // A revoked session (SessionRevokedError from the jwt callback) is expected, not an error.
+  logger: {
+    error(code, metadata) {
+      const err = (metadata as any)?.error ?? metadata;
+      if (code === "JWT_SESSION_ERROR" && err && (err as any).name === "SessionRevokedError") {
+        // OL-231: fixed text only (no ids / emails in logs).
+        const reason = (err as any).reason;
+        if (reason === "inactive") console.warn("[auth] session revoked: account not active");
+        else if (reason === "version") console.warn("[auth] session revoked: signed out by a password/security change");
+        else console.warn("[auth] session revoked: account no longer exists");
+        return;
+      }
+      console.error("[next-auth] error", errorSummary(err));
+    },
+    warn() {
+      console.warn("[next-auth] warning");
+    },
+    debug() {
+      /* intentionally silent (debug output can carry tokens) */
+    },
+  },
+
   // Enable debug in development
   debug: process.env["NODE_ENV"] === "development",
 };

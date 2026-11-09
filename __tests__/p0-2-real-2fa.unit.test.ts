@@ -162,6 +162,18 @@ describe('setup-2fa', () => {
     expect(decryptTotpSecret(data.twoFactorSecret)!.secret).toBe(body.data.secret);
   });
 
+  it('GET is idempotent: a second call shows the same secret and does not replace it', async () => {
+    const { GET } = await import('@/app/api/auth/setup-2fa/route');
+    userFindUnique.mockResolvedValue({ id: 'u1', email: 'u@example.test', twoFactorEnabled: false, twoFactorSecret: null });
+    const first = (await (await GET(req())).json()).data.secret;
+    const stored = (userUpdate.mock.calls[0][0] as any).data.twoFactorSecret;
+    userUpdate.mockClear();
+    userFindUnique.mockResolvedValue({ id: 'u1', email: 'u@example.test', twoFactorEnabled: false, twoFactorSecret: stored });
+    const second = (await (await GET(req())).json()).data.secret;
+    expect(second).toBe(first);
+    expect(userUpdate).not.toHaveBeenCalled();
+  });
+
   it('POST verifies against the stored secret (a client-supplied secret is ignored), enables, returns codes once, stores hashes', async () => {
     const attacker = authenticator.generateSecret();
     userFindUnique.mockResolvedValue({ id: 'u1', email: 'u@example.test', twoFactorEnabled: false, twoFactorSecret: encryptTotpSecret(SECRET) });
@@ -205,6 +217,7 @@ describe('source guards', () => {
       for (const m of src.matchAll(/twoFactorSecret:\s*([^,}\n]+)/g)) {
         const v = m[1].trim();
         if (v === 'true' || v === 'false') continue; // select/omit flags
+        if (/^string\b/.test(v)) continue; // a type annotation, not a write
         expect({ f: path.relative(ROOT, f), v, ok: /^(encryptTotpSecret\(|null\b)/.test(v) }).toMatchObject({ ok: true });
       }
       for (const m of src.matchAll(/backupCodes:\s*([^,}\n]+)/g)) {

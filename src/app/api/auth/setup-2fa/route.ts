@@ -1,7 +1,8 @@
 /**
  * 2FA enrolment (P0-2).
  *
- * GET  → generates a new TOTP secret, stores it ENCRYPTED as a pending secret (twoFactorEnabled stays false),
+ * GET  → returns the pending TOTP secret (generating and storing it ENCRYPTED on first call; twoFactorEnabled stays false;
+ *        later calls reuse it so the QR never changes under the user),
  *        returns the QR code + the secret for manual entry.
  * POST { token } → verifies the code against the stored pending secret (never a client-supplied secret),
  *        turns 2FA on, and returns 10 backup codes exactly once (only hashes are stored).
@@ -41,12 +42,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Two-factor authentication is already enabled for this account' }, { status: 400 });
     }
 
-    const secret = generateTotpSecret();
+    // Idempotent: reuse a pending (not yet confirmed) secret, so a second GET — a re-render,
+    // a second tab, a reload — shows the same QR instead of silently replacing the secret
+    // the user just scanned (which made their first code "invalid").
+    const pending = !user.twoFactorEnabled ? decryptTotpSecret(user.twoFactorSecret) : null;
+    const secret = pending?.secret ?? generateTotpSecret();
     const otpAuthUrl = totpKeyUri(user.email, secret);
     const qrCode = await QRCode.toDataURL(otpAuthUrl, { width: 220, margin: 4 });
 
     // Pending secret: stored encrypted, flag stays off until a code proves the app is set up.
-    await prisma.user.update({ where: { id: user.id }, data: { twoFactorEnabled: false, twoFactorSecret: encryptTotpSecret(secret) } });
+    if (!pending || pending.needsRewrite || user.twoFactorEnabled) {
+      await prisma.user.update({ where: { id: user.id }, data: { twoFactorEnabled: false, twoFactorSecret: encryptTotpSecret(secret) } });
+    }
     await audit2fa(request, user.id, AuditAction.READ, 'Generated 2FA setup QR code', { method: 'TOTP_SETUP', step: 'GENERATE_QR' });
 
     return NextResponse.json({ success: true, message: 'Two-factor authentication setup initiated', data: { secret, qrCode, otpAuthUrl } });
