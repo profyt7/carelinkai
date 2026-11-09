@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { captureError } from '@/lib/sentry';
 import { errorSummary } from '@/lib/log-safe';
+import { passwordProblems } from '@/lib/password-policy';
 
 export const dynamic = "force-dynamic";
 
@@ -19,33 +20,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate password strength
-    if (password.length < 8) {
-      return NextResponse.json(
-        { message: "Password must be at least 8 characters" },
-        { status: 400 }
-      );
+    // Validate password strength — same rule as every other password form (src/lib/password-policy.ts).
+    if (typeof password !== "string") {
+      return NextResponse.json({ message: "Token and password are required" }, { status: 400 });
     }
-
-    if (!/[A-Z]/.test(password)) {
-      return NextResponse.json(
-        { message: "Password must contain an uppercase letter" },
-        { status: 400 }
-      );
-    }
-
-    if (!/[a-z]/.test(password)) {
-      return NextResponse.json(
-        { message: "Password must contain a lowercase letter" },
-        { status: 400 }
-      );
-    }
-
-    if (!/[0-9]/.test(password)) {
-      return NextResponse.json(
-        { message: "Password must contain a number" },
-        { status: 400 }
-      );
+    const problems = passwordProblems(password);
+    if (problems.length) {
+      return NextResponse.json({ message: problems[0], errors: problems }, { status: 400 });
     }
 
     // Hash the provided token to match stored hash

@@ -19,6 +19,7 @@ import { endOtherSessions } from "@/lib/auth/session-version";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { z } from "zod";
+import { newPasswordSchema } from "@/lib/password-policy";
 import { compare, hash } from "bcryptjs";
 import { rateLimit } from "@/lib/rate-limit";
 
@@ -31,11 +32,8 @@ const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 // Password change request schema
 const passwordChangeSchema = z.object({
   currentPassword: z.string().min(1, "Current password is required"),
-  newPassword: z.string().min(8, "Password must be at least 8 characters")
-    .regex(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-      "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character"
-    ),
+  // Same rule as every other password form (src/lib/password-policy.ts).
+  newPassword: newPasswordSchema,
   confirmPassword: z.string().min(1, "Password confirmation is required")
 }).refine(data => data.newPassword === data.confirmPassword, {
   message: "Passwords do not match",

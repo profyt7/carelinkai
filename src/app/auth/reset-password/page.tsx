@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { FiLock, FiEye, FiEyeOff, FiCheck, FiAlertCircle, FiArrowLeft } from "react-icons/fi";
+import { checkPassword, isPasswordValid, passwordProblems, PASSWORD_REQUIREMENTS } from "@/lib/password-policy";
 
 type FormData = {
   password: string;
@@ -33,16 +34,11 @@ function ResetPasswordForm() {
 
   const password = watch("password", "");
 
-  // Password strength requirements
-  const requirements = [
-    { label: "At least 8 characters", met: password.length >= 8 },
-    { label: "Contains uppercase letter", met: /[A-Z]/.test(password) },
-    { label: "Contains lowercase letter", met: /[a-z]/.test(password) },
-    { label: "Contains a number", met: /[0-9]/.test(password) },
-    { label: "Contains special character", met: /[!@#$%^&*(),.?":{}|<>]/.test(password) },
-  ];
+  // Same rule as the server (src/lib/password-policy.ts).
+  const checks = checkPassword(password);
+  const requirements = PASSWORD_REQUIREMENTS.map((r) => ({ label: r.label, met: checks[r.key] }));
 
-  const allRequirementsMet = requirements.every((req) => req.met);
+  const allRequirementsMet = isPasswordValid(password);
 
   // Verify token on mount
   useEffect(() => {
@@ -194,10 +190,7 @@ function ResetPasswordForm() {
               }`}
               {...register("password", {
                 required: "Password is required",
-                minLength: {
-                  value: 8,
-                  message: "Password must be at least 8 characters",
-                },
+                validate: (value) => passwordProblems(value)[0] ?? true,
               })}
             />
             <button

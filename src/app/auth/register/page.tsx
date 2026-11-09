@@ -32,6 +32,7 @@ import {
   FiLoader,
 } from "react-icons/fi";
 import { errorSummary } from '@/lib/log-safe';
+import { checkPassword, passwordLength, passwordProblems, PASSWORD_MIN_LENGTH } from '@/lib/password-policy';
 import { PROVIDER_CATEGORIES, categoryDisplayLabel } from "@/lib/providers/categories";
 
 type UserRole =
@@ -72,12 +73,13 @@ const calculatePasswordStrength = (
 ): { score: number; label: string; color: string } => {
   if (!password) return { score: 0, label: "", color: "bg-neutral-200" };
   let score = 0;
-  if (password.length >= 8) score += 1;
-  if (password.length >= 12) score += 1;
-  if (/[a-z]/.test(password)) score += 1;
-  if (/[A-Z]/.test(password)) score += 1;
-  if (/[0-9]/.test(password)) score += 1;
-  if (/[@$!%*?&]/.test(password)) score += 1;
+  const c = checkPassword(password);
+  if (passwordLength(password) >= 8) score += 1;
+  if (c.minLength) score += 1;
+  if (c.hasLowercase) score += 1;
+  if (c.hasUppercase) score += 1;
+  if (c.hasNumber) score += 1;
+  if (c.hasSymbol) score += 1;
   const percentage = Math.min((score / 6) * 100, 100);
   if (percentage <= 25) return { score: percentage, label: "Weak", color: "bg-error-500" };
   if (percentage <= 50) return { score: percentage, label: "Fair", color: "bg-warning-500" };
@@ -85,13 +87,17 @@ const calculatePasswordStrength = (
   return { score: percentage, label: "Strong", color: "bg-success-500" };
 };
 
-const checkPasswordRequirements = (password: string) => ({
-  minLength: (password?.length ?? 0) >= 8,
-  hasUppercase: /[A-Z]/.test(password ?? ""),
-  hasLowercase: /[a-z]/.test(password ?? ""),
-  hasNumber: /[0-9]/.test(password ?? ""),
-  hasSpecial: /[@$!%*?&]/.test(password ?? ""),
-});
+// Same rule as the server (src/lib/password-policy.ts).
+const checkPasswordRequirements = (password: string) => {
+  const c = checkPassword(password ?? "");
+  return {
+    minLength: c.minLength,
+    hasUppercase: c.hasUppercase,
+    hasLowercase: c.hasLowercase,
+    hasNumber: c.hasNumber,
+    hasSpecial: c.hasSymbol,
+  };
+};
 
 const relationshipOptions: { value: RelationshipType; label: string }[] = [
   { value: "SELF", label: "For myself" },
@@ -512,15 +518,8 @@ export default function RegisterPage() {
                     placeholder="Create a strong password"
                     {...register("password", {
                       required: "Password is required",
-                      minLength: {
-                        value: 8,
-                        message: "Password must be at least 8 characters",
-                      },
-                      pattern: {
-                        value:
-                          /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-                        message: "Password doesn't meet all requirements",
-                      },
+                      validate: (value) =>
+                        passwordProblems(value)[0] ?? true,
                     })}
                   />
                   <button
@@ -637,7 +636,7 @@ export default function RegisterPage() {
                     ) : (
                       <FiX className="h-3 w-3 mr-1.5" />
                     )}
-                    At least 8 characters long
+                    At least {PASSWORD_MIN_LENGTH} characters long
                   </li>
                   <li
                     className={`flex items-center ${
@@ -693,7 +692,7 @@ export default function RegisterPage() {
                     ) : (
                       <FiX className="h-3 w-3 mr-1.5" />
                     )}
-                    At least one special character (@$!%*?&)
+                    At least one symbol (any non-letter, non-number, e.g. - _ ! ^ £)
                   </li>
                 </ul>
               </div>
