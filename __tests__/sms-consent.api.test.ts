@@ -161,7 +161,7 @@ describe('concierge form (/api/concierge/request + /checkout)', () => {
 
 describe('POST /api/auth/register (caregiver / any role signup)', () => {
   const body = (smsConsent?: unknown) => ({
-    email: 'pat@example.com', password: 'Str0ng!Pass', firstName: 'Pat', lastName: 'Lee', phone: '(216) 555-0142',
+    email: 'pat@example.com', password: 'Str0ng!Pass-2026', firstName: 'Pat', lastName: 'Lee', phone: '(216) 555-0142',
     role: 'FAMILY', agreeToTerms: true, ...(smsConsent === undefined ? {} : { smsConsent }),
   });
 

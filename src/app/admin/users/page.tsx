@@ -15,7 +15,7 @@ type User = {
   role: string;
   status: string;
   createdAt: string;
-  lastLogin?: string;
+  lastLoginAt?: string | null;
 };
 
 export default function AdminUsersPage() {
@@ -251,7 +251,7 @@ export default function AdminUsersPage() {
         u.role,
         u.status,
         new Date(u.createdAt).toLocaleDateString(),
-        u.lastLogin ? new Date(u.lastLogin).toLocaleDateString() : 'Never',
+        u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString() : 'Never',
       ].join(',')),
     ].join('\n');
 
@@ -406,7 +406,7 @@ export default function AdminUsersPage() {
                       {new Date(user.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
-                      {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
+                      {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : 'Never'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end space-x-2">

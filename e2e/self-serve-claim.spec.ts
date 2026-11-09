@@ -168,7 +168,7 @@ test.describe('@critical self-serve listing claim', () => {
     await page.getByTestId('claim-page-register').click();
     await expect(page).toHaveURL(/\/auth\/register\?role=OPERATOR&claimIntent=/, SLOW);
     // The register form posts the intent with the account; post the same body the form sends.
-    const res = await page.request.post('/api/auth/register', { timeout: 120_000, data: { email: NEW_OP, password: 'Str0ng!Pass', firstName: 'Casey', lastName: 'Claim', phone: '(216) 555-0199', role: 'OPERATOR', agreeToTerms: true, claimIntent: intent } });
+    const res = await page.request.post('/api/auth/register', { timeout: 120_000, data: { email: NEW_OP, password: 'Str0ng!Pass-2026', firstName: 'Casey', lastName: 'Claim', phone: '(216) 555-0199', role: 'OPERATOR', agreeToTerms: true, claimIntent: intent } });
     expect(res.status(), await res.text()).toBe(201);
     expect((await res.json()).claim).toEqual({ submitted: true });
     const claim = await prisma.homeClaim.findFirstOrThrow({ where: { homeId: home.b }, include: { operator: { select: { user: { select: { email: true } } } } } });

@@ -25,16 +25,15 @@ import {
   FiLogOut,
   FiAlertTriangle
 } from "react-icons/fi";
+import { newPasswordSchema, PASSWORD_RULE_SUMMARY } from "@/lib/password-policy";
 
 // Password schema for validation
 const passwordSchema = z.object({
-  currentPassword: z.string().min(8, "Current password must be at least 8 characters"),
-  newPassword: z.string().min(8, "New password must be at least 8 characters")
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-    .regex(/[0-9]/, "Password must contain at least one number")
-    .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character"),
-  confirmPassword: z.string().min(8, "Please confirm your new password"),
+  // Any existing password is accepted here (older ones may be shorter than today's rule).
+  currentPassword: z.string().min(1, "Enter your current password"),
+  // Same rule as the server (src/lib/password-policy.ts).
+  newPassword: newPasswordSchema,
+  confirmPassword: z.string().min(1, "Please confirm your new password"),
 }).refine(data => data.newPassword === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -618,8 +617,7 @@ export default function AccountSettings() {
                     <p className="mt-1 text-sm text-error-600">{errors.newPassword}</p>
                   )}
                   <p className="mt-1 text-xs text-neutral-500">
-                    Password must be at least 8 characters and include uppercase, lowercase, 
-                    number, and special character.
+                    {PASSWORD_RULE_SUMMARY}
                   </p>
                 </div>
                 

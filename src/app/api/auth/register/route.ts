@@ -22,6 +22,7 @@ import { UserRole, UserStatus, AuditAction } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
 import { z } from "zod";
+import { newPasswordSchema } from "@/lib/password-policy";
 import { v4 as uuidv4 } from "uuid";
 import { randomBytes } from "crypto";
 import { sendVerificationEmail } from "@/lib/email";
@@ -40,11 +41,8 @@ const TOKEN_EXPIRY_HOURS = 24;
 // Input validation schema
 const registrationSchema = z.object({
   email: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters")
-    .regex(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-      "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character"
-    ),
+  // Same rule as every other password form (src/lib/password-policy.ts).
+  password: newPasswordSchema,
   firstName: z.string().min(2, "First name must be at least 2 characters"),
   lastName: z.string().min(2, "Last name must be at least 2 characters"),
   phone: z.string().optional().refine(
