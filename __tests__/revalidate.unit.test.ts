@@ -98,4 +98,12 @@ describe('OL-169 — scripts/post-deploy-verify.sh', () => {
     expect(wf).toContain('run: bash scripts/post-deploy-verify.sh');
     expect(wf).toMatch(/pull_request:\n\s+paths:/);
   });
+
+  it('skips [skip render] pushes (never deployed) and keeps them out of the main concurrency group', () => {
+    const wf = fs.readFileSync(path.join(root, '.github/workflows/post-deploy-revalidate.yml'), 'utf8');
+    const skip = "!contains(github.event.head_commit.message, '[skip render]')";
+    expect(wf).toContain(`if: \${{ github.event_name != 'push' || ${skip} }}`);
+    expect(wf).toContain(`github.event_name == 'push' && ${skip} && 'main' || github.run_id`);
+    expect(wf).toContain(`cancel-in-progress: \${{ github.event_name == 'push' && ${skip} }}`);
+  });
 });

@@ -11,6 +11,11 @@ name: Post-deploy revalidate
 # this workflow or the script it runs verify-only against production (no
 # secret, target = the live commit) so the page list and parsing are proven
 # on the merge preview before the change lands.
+#
+# A push whose head commit message contains [skip render] is not deployed by
+# Render, so waiting for it to go live can only time out: the job is skipped,
+# and the run gets its own concurrency group so it never cancels a real
+# deploy's verification that is still in progress.
 
 on:
   push:
@@ -31,12 +36,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: post-deploy-revalidate-${{ github.event_name == 'push' && 'main' || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'push' }}
+  group: post-deploy-revalidate-${{ github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip render]') && 'main' || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip render]') }}
 
 jobs:
   revalidate:
     name: Purge hub pages + verify
+    if: ${{ github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip render]') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
