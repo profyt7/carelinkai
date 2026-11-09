@@ -17,7 +17,6 @@ import { isEnrolled } from "@/lib/two-factor/secure";
  * - Notification preferences
  * - Last login
  * - Account creation date
- * - Active sessions
  */
 export async function GET(req: NextRequest) {
   try {
@@ -58,25 +57,6 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Get active sessions for the user
-    const activeSessions = await prisma.session.findMany({
-      where: {
-        userId: user.id,
-        expires: {
-          gt: new Date(),
-        },
-      },
-      select: {
-        id: true,
-        userAgent: true,
-        ipAddress: true,
-        createdAt: true,
-        expires: true,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
 
     // Create audit log entry
     await prisma.auditLog.create({
@@ -107,13 +87,6 @@ export async function GET(req: NextRequest) {
         createdAt: user.createdAt,
         role: user.role,
         status: user.status,
-        activeSessions: activeSessions.map(session => ({
-          id: session.id,
-          userAgent: session.userAgent,
-          ipAddress: session.ipAddress,
-          createdAt: session.createdAt,
-          expires: session.expires,
-        })),
       },
     });
   } catch (error) {
