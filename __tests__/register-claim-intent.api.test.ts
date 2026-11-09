@@ -37,7 +37,7 @@ import { POST as postRegister } from '@/app/api/auth/register/route';
 const db = prisma as any;
 const SECRET = 'test-secret-register-claim';
 const body = (extra: Record<string, unknown> = {}) => ({
-  email: 'pat@maplegrove.test', password: 'Str0ng!Pass', firstName: 'Pat', lastName: 'Lee', phone: '(216) 555-0142', role: 'OPERATOR', agreeToTerms: true, ...extra,
+  email: 'pat@maplegrove.test', password: 'Str0ng!Pass-2026', firstName: 'Pat', lastName: 'Lee', phone: '(216) 555-0142', role: 'OPERATOR', agreeToTerms: true, ...extra,
 });
 const req = (b: unknown) => new NextRequest('http://localhost/api/auth/register', { method: 'POST', headers: { 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.20' }, body: JSON.stringify(b) });
 
@@ -93,4 +93,22 @@ describe('the signed outreach claim link (claimToken) is unchanged', () => {
     expect(submitSelfServeClaim).not.toHaveBeenCalled();
     expect((await res.json()).claim).toBeUndefined();
   });
+});
+
+describe('register password rule (src/lib/password-policy.ts)', () => {
+  it.each(['Correct-Horse_Battery9', 'Tr0ub4dor^{2025}', 'Pounds£Sterling7'])(
+    'accepts %s — symbols outside the old @$!%%*?& whitelist (was 400)',
+    async (password) => {
+      const res = await postRegister(req(body({ password })));
+      expect(res.status).toBe(201);
+    },
+  );
+  it.each([['Aa1-aaaaaaa', 'at least 12'], ['correct-horse-9a', 'uppercase'], ['CorrectHorse99x', 'symbol']])(
+    'rejects %s (%s)',
+    async (password) => {
+      const res = await postRegister(req(body({ password })));
+      expect(res.status).toBe(400);
+      expect(db.user.create).not.toHaveBeenCalled();
+    },
+  );
 });

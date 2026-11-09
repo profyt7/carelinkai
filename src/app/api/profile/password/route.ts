@@ -9,6 +9,7 @@ import { AuditAction } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { newPasswordSchema } from "@/lib/password-policy";
 
 
 /**
@@ -38,12 +39,8 @@ const limiter = createRateLimiter(60 * 1000, 5);
 // Password schema for validation
 const passwordChangeSchema = z.object({
   currentPassword: z.string().min(1, "Current password is required"),
-  newPassword: z.string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-    .regex(/[0-9]/, "Password must contain at least one number")
-    .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character"),
+  // Same rule as every other password form (src/lib/password-policy.ts).
+  newPassword: newPasswordSchema,
 });
 
 /**
