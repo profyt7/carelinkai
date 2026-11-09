@@ -20,7 +20,6 @@ import {
   FiEye,
   FiEyeOff,
   FiSave,
-  FiBell,
   FiSlash,
   FiLogOut,
   FiAlertTriangle
@@ -39,14 +38,6 @@ const passwordSchema = z.object({
   path: ["confirmPassword"],
 });
 
-// Notification preferences schema
-const notificationSchema = z.object({
-  emailNotifications: z.boolean(),
-  securityAlerts: z.boolean(),
-  marketingEmails: z.boolean(),
-  accountUpdates: z.boolean(),
-});
-
 export default function AccountSettings() {
   const { data: session, status, update } = useSession();
   const router = useRouter();
@@ -54,19 +45,12 @@ export default function AccountSettings() {
   // State for account data
   const [accountData, setAccountData] = useState<any>(null);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-  const [activeSessions, setActiveSessions] = useState<any[]>([]);
   
   // Form state
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
-  });
-  const [notificationPreferences, setNotificationPreferences] = useState({
-    emailNotifications: true,
-    securityAlerts: true,
-    marketingEmails: false,
-    accountUpdates: true,
   });
   const [errors, setErrors] = useState<any>({});
   
@@ -112,16 +96,7 @@ export default function AccountSettings() {
       if (data.success) {
         setAccountData(data.data);
         setTwoFactorEnabled(data.data.twoFactorEnabled || false);
-        setNotificationPreferences({
-          emailNotifications: data.data.preferences?.emailNotifications ?? true,
-          securityAlerts: data.data.preferences?.securityAlerts ?? true,
-          marketingEmails: data.data.preferences?.marketingEmails ?? false,
-          accountUpdates: data.data.preferences?.accountUpdates ?? true,
-        });
-        
-        if (data.data.activeSessions) {
-          setActiveSessions(data.data.activeSessions);
-        }
+
       }
     } catch (error) {
       console.error("Error fetching account data:", error);
@@ -168,12 +143,6 @@ export default function AccountSettings() {
     console.log("[Account Settings] resolved profileImage:", profileImage);
   }
 
-  // Handle notification preferences changes
-  const handleNotificationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.target;
-    setNotificationPreferences((prev) => ({ ...prev, [name]: checked }));
-  };
-  
   // Validate password form
   const validatePasswordForm = () => {
     try {
@@ -255,49 +224,6 @@ export default function AccountSettings() {
   
 
   
-  // Handle notification preferences save
-  const handleSavePreferences = async () => {
-    try {
-      setSaving(true);
-      
-      const res = await fetch("/api/profile/preferences", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          preferences: notificationPreferences,
-        }),
-      });
-      
-      const data = await res.json();
-      
-      if (data.success) {
-        setMessage({
-          type: "success",
-          text: "Notification preferences saved successfully!",
-        });
-      } else {
-        setMessage({
-          type: "error",
-          text: data.message || "Failed to save notification preferences.",
-        });
-      }
-    } catch (error) {
-      console.error("Error saving preferences:", error);
-      setMessage({
-        type: "error",
-        text: "An error occurred while saving your preferences.",
-      });
-    } finally {
-      setSaving(false);
-      
-      // Clear message after 5 seconds
-      setTimeout(() => {
-        setMessage({ type: "", text: "" });
-      }, 5000);
-    }
-  };
   
   // Handle logout from all devices
   const handleLogoutAllDevices = async () => {
@@ -316,13 +242,10 @@ export default function AccountSettings() {
       if (data.success) {
         setMessage({
           type: "success",
-          text: "Successfully logged out from all other devices!",
+          text: "Signed out of all other devices. This device stays signed in.",
         });
         
-        // Update sessions list
-        setActiveSessions([]);
-        
-        // Update session
+        // Pick up the re-issued session cookie
         await update();
       } else {
         setMessage({
@@ -709,111 +632,6 @@ export default function AccountSettings() {
             </div>
           </div>
           
-          {/* Notification preferences */}
-          <div className="overflow-hidden rounded-lg bg-white shadow">
-            <div className="border-b border-neutral-200 bg-neutral-50 px-4 py-5 sm:px-6">
-              <h3 className="text-lg font-medium text-neutral-800">Notification Preferences</h3>
-            </div>
-            <div className="px-4 py-5 sm:p-6 space-y-4">
-              <div className="flex items-start">
-                <div className="flex items-center h-5">
-                  <input
-                    id="emailNotifications"
-                    name="emailNotifications"
-                    type="checkbox"
-                    checked={notificationPreferences.emailNotifications}
-                    onChange={handleNotificationChange}
-                    className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
-                  />
-                </div>
-                <div className="ml-3 text-sm">
-                  <label htmlFor="emailNotifications" className="font-medium text-neutral-700">
-                    Email Notifications
-                  </label>
-                  <p className="text-neutral-500">Receive notifications via email</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start">
-                <div className="flex items-center h-5">
-                  <input
-                    id="securityAlerts"
-                    name="securityAlerts"
-                    type="checkbox"
-                    checked={notificationPreferences.securityAlerts}
-                    onChange={handleNotificationChange}
-                    className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
-                  />
-                </div>
-                <div className="ml-3 text-sm">
-                  <label htmlFor="securityAlerts" className="font-medium text-neutral-700">
-                    Security Alerts
-                  </label>
-                  <p className="text-neutral-500">Receive alerts about suspicious activities</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start">
-                <div className="flex items-center h-5">
-                  <input
-                    id="marketingEmails"
-                    name="marketingEmails"
-                    type="checkbox"
-                    checked={notificationPreferences.marketingEmails}
-                    onChange={handleNotificationChange}
-                    className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
-                  />
-                </div>
-                <div className="ml-3 text-sm">
-                  <label htmlFor="marketingEmails" className="font-medium text-neutral-700">
-                    Marketing Emails
-                  </label>
-                  <p className="text-neutral-500">Receive promotional emails and updates</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start">
-                <div className="flex items-center h-5">
-                  <input
-                    id="accountUpdates"
-                    name="accountUpdates"
-                    type="checkbox"
-                    checked={notificationPreferences.accountUpdates}
-                    onChange={handleNotificationChange}
-                    className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
-                  />
-                </div>
-                <div className="ml-3 text-sm">
-                  <label htmlFor="accountUpdates" className="font-medium text-neutral-700">
-                    Account Updates
-                  </label>
-                  <p className="text-neutral-500">Receive important updates about your account</p>
-                </div>
-              </div>
-              
-              <div className="pt-4 flex justify-end">
-                <button
-                  type="button"
-                  onClick={handleSavePreferences}
-                  disabled={saving}
-                  className="inline-flex justify-center rounded-md border border-transparent bg-primary-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                >
-                  {saving ? (
-                    <>
-                      <FiLoader className="mr-2 h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <FiBell className="mr-2 h-4 w-4" />
-                      Save Preferences
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-          
           {/* Session management */}
           <div className="overflow-hidden rounded-lg bg-white shadow">
             <div className="border-b border-neutral-200 bg-neutral-50 px-4 py-5 sm:px-6">
@@ -821,7 +639,8 @@ export default function AccountSettings() {
             </div>
             <div className="px-4 py-5 sm:p-6">
               <p className="text-sm text-neutral-500 mb-4">
-                Manage your active sessions across devices. You can log out from all devices except your current one.
+                Signs you out on every other phone, tablet or computer, and keeps this browser signed in.
+                Use it if you signed in on a shared or lost device.
               </p>
               
               <div className="mt-4">

@@ -7,6 +7,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { AuditAction } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { endOtherSessions } from "@/lib/auth/session-version";
 
 
 /**
@@ -43,47 +44,29 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // Get current session token from cookies
-    const sessionToken = req.cookies.get("next-auth.session-token")?.value || 
-                         req.cookies.get("__Secure-next-auth.session-token")?.value;
-
-    if (!sessionToken) {
-      return NextResponse.json(
-        { success: false, message: "Current session not found" },
-        { status: 400 }
-      );
-    }
-
-    // Delete all sessions except the current one
-    const deletedSessions = await prisma.session.deleteMany({
-      where: {
-        userId: user.id,
-        sessionToken: {
-          not: sessionToken,
-        },
-      },
+    // Sessions are JWTs (no Session rows exist), so deleting rows from the Session
+    // table — what this route used to do — signed nobody out. Bump the user's session
+    // version instead: every other token fails the jwt callback's check, and this
+    // device's cookie is re-issued with the new version so it stays signed in.
+    const res = NextResponse.json({
+      success: true,
+      message: "Signed out of all other devices. This device stays signed in.",
     });
+    await endOtherSessions(req, res, user.id);
 
-    // Create audit log entry
     await prisma.auditLog.create({
       data: {
         userId: user.id,
         action: AuditAction.DELETE,
         resourceType: "Session",
         resourceId: user.id,
-        description: `User logged out from all other devices (${deletedSessions.count} sessions deleted)`,
+        description: "User signed out of all other devices (session version bumped)",
         ipAddress: req.headers.get("x-forwarded-for") || "unknown",
         userAgent: req.headers.get("user-agent") || "unknown",
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      message: "Successfully logged out from all other devices",
-      data: {
-        sessionsRemoved: deletedSessions.count,
-      },
-    });
+    return res;
   } catch (error) {
     console.error("Error managing sessions:", error);
     return NextResponse.json(
