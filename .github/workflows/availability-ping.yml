@@ -18,7 +18,7 @@ on:
 jobs:
   availability-ping:
     name: Weekly one-tap availability ping
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Call availability-ping cron endpoint
         run: |

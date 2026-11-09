@@ -15,7 +15,7 @@ on:
 jobs:
   availability-sms:
     name: Weekly availability SMS poll
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Call availability-SMS cron endpoint
         run: |

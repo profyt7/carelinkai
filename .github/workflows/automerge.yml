@@ -16,7 +16,7 @@ permissions:
 jobs:
   auto-merge:
     name: Attempt auto-merge when conditions satisfied
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Merge if eligible (label=automerge, base=main, checks=success, not draft)
         uses: actions/github-script@v7

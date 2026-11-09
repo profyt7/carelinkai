@@ -18,7 +18,7 @@ on:
 jobs:
   dp-followups:
     name: Advance due DP follow-ups
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Call DP-Followups Cron Endpoint
         run: |

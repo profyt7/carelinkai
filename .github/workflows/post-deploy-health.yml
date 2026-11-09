@@ -25,7 +25,7 @@ concurrency:
 jobs:
   health:
     name: Ping /api/health
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Check production health endpoint
