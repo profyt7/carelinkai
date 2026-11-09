@@ -13,7 +13,7 @@ concurrency:
 jobs:
   changes:
     name: Detect code changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       pull-requests: read
@@ -41,7 +41,7 @@ jobs:
   quality:
     needs: changes
     if: ${{ needs.changes.outputs.code == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
       contents: read

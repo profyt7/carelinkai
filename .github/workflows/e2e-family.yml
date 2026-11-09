@@ -31,7 +31,7 @@ env:
 jobs:
   changes:
     name: Detect code changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       pull-requests: read
@@ -61,7 +61,7 @@ jobs:
     # Gate the steps, not the job (OL-207 follow-up): a job skipped by a job-level
     # `if` never expands its matrix, so the required "(1)"/"(2)" shard checks would
     # never report on a docs-only PR and branch protection would block it forever.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -233,7 +233,7 @@ jobs:
     # Gate the steps, not the job (OL-207 follow-up): a job skipped by a job-level
     # `if` never expands its matrix, so the required "(1)"/"(2)" shard checks would
     # never report on a docs-only PR and branch protection would block it forever.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -386,7 +386,7 @@ jobs:
     # Scoped to the named operator-portal specs so it does not inherit any
     # staleness from the other (not-yet-CI-wired) operator-*/auth-*/marketplace-*
     # e2e specs.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     services:
       postgres:
@@ -513,7 +513,7 @@ jobs:
     # Split in the W5 follow-up: one dev server running all 81 public specs sat
     # at its memory ceiling (OL-146 residual restarts mid-test, 26–29 min runs).
     # The logged-out directory / SEO specs now run in e2e-public-directory.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     services:
       postgres:
@@ -661,7 +661,7 @@ jobs:
     # Self-seeds via /api/dev/* (ALLOW_DEV_ENDPOINTS=1).
     # OL-211: runs against the production standalone build (as e2e-concierge,
     # OL-153), never `next dev`.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     services:
       postgres:
@@ -819,7 +819,7 @@ jobs:
     # This redirect regressed twice (#675, #681). Scoped to the single self-contained
     # spec so it does not inherit staleness from the other (not-yet-CI-wired) auth-*
     # specs (e.g. the claim-token test that assumes the removed auto-signin).
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     services:
       postgres:
@@ -930,7 +930,7 @@ jobs:
 
   e2e-merge-reports:
     name: Merge Playwright reports
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [changes, e2e-residents, e2e-family]
     if: ${{ needs.changes.outputs.code == 'true' && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}
     steps:
@@ -997,7 +997,7 @@ jobs:
 
   e2e-notify-failure:
     name: Nightly failure notifier
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [e2e-residents, e2e-family, e2e-merge-reports]
     if: ${{ always() && github.event_name == 'schedule' && (needs.e2e-residents.result == 'failure' || needs.e2e-family.result == 'failure' || needs.e2e-merge-reports.result == 'failure') }}
     steps:
