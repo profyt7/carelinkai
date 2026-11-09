@@ -18,7 +18,7 @@ on:
         default: 'https://getcarelinkai.com'
         required: true
       probes:
-        description: 'Comma list: p0-1,p0-2,p0-3,p0-4,p0-5,p0-6,p0-7 (or "all")'
+        description: 'Comma list: p0-1,p0-2,p0-3,p0-4,p0-5,p0-6,p0-7,2fa-enforce,logout-others (or "all")'
         default: 'all'
         required: true
 
@@ -44,6 +44,10 @@ jobs:
           B_PASSWORD: ${{ secrets.PROD_PROBE_B_PASSWORD }}
           TFA_EMAIL: ${{ secrets.PROD_PROBE_2FA_EMAIL }}
           TFA_PASSWORD: ${{ secrets.PROD_PROBE_2FA_PASSWORD }}
+          # Synthetic ADMIN/STAFF/OPERATOR/DISCHARGE_PLANNER account that has NOT set up 2FA
+          # (never enrol it: the probe checks the forced-setup gate on every run).
+          PRIV_EMAIL: ${{ secrets.PROD_PROBE_PRIV_EMAIL }}
+          PRIV_PASSWORD: ${{ secrets.PROD_PROBE_PRIV_PASSWORD }}
         run: |
           cat > probe.mjs <<'EOF'
           const BASE = process.env.BASE.replace(/\/$/, '');
@@ -159,6 +163,39 @@ jobs:
               const session = await (await req(j, '/api/auth/session')).json().catch(() => ({}));
               const ok = !session?.user && /TWO_FACTOR_REQUIRED/.test(decodeURIComponent(loc));
               record('p0-2', ok ? 'PASS' : 'FAIL', `password only → session ${session?.user ? 'ISSUED' : 'none'}, error=${(decodeURIComponent(loc).match(/error=([^&]+)/) || [])[1] || 'none'} (want none + TWO_FACTOR_REQUIRED)`);
+            }
+          }
+
+          // 2FA enforcement (#72): a privileged account without 2FA is signed in but every
+          // page goes to /auth/setup-2fa and every API outside /api/auth/* answers 403.
+          if (on('2fa-enforce')) {
+            const P = await signIn(process.env.PRIV_EMAIL, process.env.PRIV_PASSWORD).catch((e) => { record('2fa-enforce', 'FAIL', e.message); return undefined; });
+            if (P === null) record('2fa-enforce', 'SKIP', 'PROD_PROBE_PRIV_* secrets not set');
+            else if (P) {
+              const s = await (await req(P, '/api/auth/session')).json().catch(() => ({}));
+              const page = await req(P, '/dashboard');
+              const loc = page.headers.get('location') || '';
+              const api = await req(P, '/api/profile/account');
+              const setupApi = await req(P, '/api/auth/session');
+              const ok = s?.user?.twoFactorSetupRequired === true && page.status === 307 && loc.includes('/auth/setup-2fa') && api.status === 403 && setupApi.status === 200;
+              record('2fa-enforce', ok ? 'PASS' : 'FAIL', `role=${s?.user?.role} claim=${s?.user?.twoFactorSetupRequired} /dashboard → ${page.status} ${loc.replace(BASE, '')}, /api/profile/account → ${api.status}, /api/auth/session → ${setupApi.status} (want true, 307 → /auth/setup-2fa, 403, 200)`);
+            }
+          }
+
+          // "Log Out From All Other Devices" (#72/#73): two fresh sessions of probe A; signing
+          // out the others from one ends the second, the first keeps working. Runs last
+          // because it signs out every other session of account A.
+          if (on('logout-others')) {
+            if (!process.env.A_EMAIL || !process.env.A_PASSWORD) record('logout-others', 'SKIP', 'PROD_PROBE_A_* secrets not set');
+            else {
+              const one = await signIn(process.env.A_EMAIL, process.env.A_PASSWORD);
+              const two = await signIn(process.env.A_EMAIL, process.env.A_PASSWORD);
+              const r = await req(one, '/api/profile/sessions', { method: 'DELETE' });
+              const s1 = await (await req(one, '/api/auth/session')).json().catch(() => ({}));
+              const s2 = await (await req(two, '/api/auth/session')).json().catch(() => ({}));
+              const api2 = await req(two, '/api/profile/account');
+              const ok = r.status === 200 && !!s1?.user && !s2?.user && api2.status === 401;
+              record('logout-others', ok ? 'PASS' : 'FAIL', `DELETE /api/profile/sessions → ${r.status}; this device ${s1?.user ? 'signed in' : 'SIGNED OUT'}; other device ${s2?.user ? 'STILL SIGNED IN' : 'signed out'}, its API → ${api2.status} (want 200, signed in, signed out, 401)`);
             }
           }
 
