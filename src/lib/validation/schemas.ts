@@ -4,6 +4,7 @@
  */
 
 import { z } from 'zod';
+import { newPasswordSchema as policyPasswordSchema } from '@/lib/password-policy';
 import { UserRole, LeadTargetType, LeadStatus } from '@prisma/client';
 
 // ============================================================================
@@ -16,13 +17,8 @@ export const emailSchema = z
   .toLowerCase()
   .trim();
 
-export const passwordSchema = z
-  .string()
-  .min(8, 'Password must be at least 8 characters')
-  .max(128, 'Password is too long')
-  .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-  .regex(/[0-9]/, 'Password must contain at least one number');
+// Same rule as every password form (src/lib/password-policy.ts).
+export const passwordSchema = policyPasswordSchema;
 
 export const phoneSchema = z
   .string()
