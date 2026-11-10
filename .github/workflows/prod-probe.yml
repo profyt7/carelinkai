@@ -70,14 +70,22 @@ jobs:
             if (j) j.take(res);
             return res;
           }
+          // NextAuth answers a json=true credentials POST with { url }, so a sign-in error is the
+          // `error` query param of that url (a Location header only without json=true).
+          async function callbackError(res) {
+            let url = res.headers.get('location') || '';
+            try { url = (await res.json()).url || url; } catch {}
+            return (decodeURIComponent(url).match(/[?&]error=([^&]+)/) || [])[1] || '';
+          }
           async function signIn(email, password) {
             if (!email || !password) return null;
             const j = jar();
             const csrf = await (await req(j, '/api/auth/csrf')).json();
             const body = new URLSearchParams({ csrfToken: csrf.csrfToken, email, password, callbackUrl: BASE + '/dashboard', json: 'true' });
-            await req(j, '/api/auth/callback/credentials', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body });
+            const r = await req(j, '/api/auth/callback/credentials', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body });
+            const err = await callbackError(r);
             const session = await (await req(j, '/api/auth/session')).json().catch(() => ({}));
-            if (!session?.user) throw new Error(`sign-in failed for probe account (${email.replace(/(.).*@/, '$1***@')})`);
+            if (!session?.user) throw new Error(`sign-in failed for probe account (${email.replace(/(.).*@/, '$1***@')}): ${err || 'no error given'}`);
             return j;
           }
           const count = (x) => (Array.isArray(x) ? x.length : x && typeof x === 'object' ? Object.keys(x).length : 0);
@@ -131,13 +139,19 @@ jobs:
           }
 
           // P0-6: dashboards/reports are not platform-wide for a FAMILY caller.
+          // P0-6: a FAMILY caller's dashboards are scoped to its own residents (200, zero counts for
+          // the probe family, which has none — never platform-wide); operator dashboard and report
+          // generation refuse it.
           if (on('p0-6') && needA('p0-6')) {
-            const paths = ['/api/dashboard/activity', '/api/dashboard/metrics', '/api/dashboard/alerts', '/api/dashboard/charts', '/api/operator/dashboard'];
             const st = [];
-            for (const p of paths) st.push(`${p.split('/').pop()}=${(await req(A, p)).status}`);
-            const rep = await req(A, '/api/reports/generate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ type: 'RESIDENT_CENSUS', format: 'CSV', homeIds: [] }) });
-            const ok = st.every((s) => /=(401|403)$/.test(s)) && [401, 403].includes(rep.status);
-            record('p0-6', ok ? 'PASS' : 'FAIL', `family: ${st.join(', ')}, reports/generate=${rep.status} (want 403)`);
+            for (const p of ['/api/dashboard/activity', '/api/dashboard/alerts', '/api/dashboard/charts']) st.push(`${p.split('/').pop()}=${(await req(A, p)).status}`);
+            const mRes = await req(A, '/api/dashboard/metrics');
+            const m = await mRes.json().catch(() => ({}));
+            const residents = m?.totalResidents?.value, caregivers = m?.activeCaregivers?.value;
+            const op = await req(A, '/api/operator/dashboard');
+            const rep = await req(A, '/api/reports/generate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ type: 'RESIDENT_CENSUS', title: 'probe', format: 'CSV', homeIds: [] }) });
+            const ok = mRes.status === 200 && residents === 0 && caregivers === 0 && st.every((x) => /=(200|401|403)$/.test(x)) && op.status === 403 && [401, 403].includes(rep.status);
+            record('p0-6', ok ? 'PASS' : 'FAIL', `family: metrics ${mRes.status} residents=${residents} caregivers=${caregivers}, ${st.join(', ')}, operator/dashboard=${op.status}, reports/generate=${rep.status} (want 200 with 0/0, operator 403, reports 401/403)`);
           }
 
           // P0-7: unsigned Twilio webhooks are rejected (no account needed).
@@ -159,10 +173,10 @@ jobs:
               const csrf = await (await req(j, '/api/auth/csrf')).json();
               const body = new URLSearchParams({ csrfToken: csrf.csrfToken, email: process.env.TFA_EMAIL, password: process.env.TFA_PASSWORD, callbackUrl: BASE + '/dashboard', json: 'true' });
               const r = await req(j, '/api/auth/callback/credentials', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body });
-              const loc = r.headers.get('location') || '';
+              const err = await callbackError(r);
               const session = await (await req(j, '/api/auth/session')).json().catch(() => ({}));
-              const ok = !session?.user && /TWO_FACTOR_REQUIRED/.test(decodeURIComponent(loc));
-              record('p0-2', ok ? 'PASS' : 'FAIL', `password only → session ${session?.user ? 'ISSUED' : 'none'}, error=${(decodeURIComponent(loc).match(/error=([^&]+)/) || [])[1] || 'none'} (want none + TWO_FACTOR_REQUIRED)`);
+              const ok = !session?.user && err === 'TWO_FACTOR_REQUIRED';
+              record('p0-2', ok ? 'PASS' : 'FAIL', `password only → session ${session?.user ? 'ISSUED' : 'none'}, error=${err || 'none'} (want none + TWO_FACTOR_REQUIRED)`);
             }
           }
 
