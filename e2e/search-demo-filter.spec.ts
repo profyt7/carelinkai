@@ -14,7 +14,7 @@
  */
 import { test, expect } from '@playwright/test';
 
-const OPERATOR_EMAIL = 'e2e-demo-filter-op@test.carelinkai.com';
+const OPERATOR_EMAIL = 'e2e-demo-filter-op@test.carelinkai.test';
 const LIVE_NAME = 'E2E Live Directory Home';
 const DEMO_NAME = 'E2E Tutorial Demo Home';
 

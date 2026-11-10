@@ -28,7 +28,7 @@ async function devLogin(page: Page, email: string) {
 
 test.describe('@critical Family Concierge — pay when ready (admin actions + family visibility)', () => {
   test.beforeAll(async ({ request }) => {
-    const adminEmail = `pwr-admin-${ts}@test.carelinkai.com`;
+    const adminEmail = `pwr-admin-${ts}@test.carelinkai.test`;
     expect((await request.post('/api/dev/upsert-admin', { data: { email: adminEmail } })).ok()).toBe(true);
     const admin = await prisma.user.findUniqueOrThrow({ where: { email: adminEmail }, select: { id: true } });
     const lastMonth = new Date(Date.now() - 40 * 24 * 3600 * 1000);
@@ -44,14 +44,14 @@ test.describe('@critical Family Concierge — pay when ready (admin actions + fa
         conciergeSubmittedAt: lastMonth,
         conciergeRespondedAt: lastMonth,
         curatedHomes: [{ homeId: `pwr-home-${ts}`, name: HOME_NAME, address: '1 Test St, Cleveland, OH 44114', note: 'Quiet unit', confirmedAvailability: '' }],
-        patientInfo: { contactName: 'E2E Family', contactEmail: `pwr-family-${ts}@test.carelinkai.com`, source: 'concierge_page' },
+        patientInfo: { contactName: 'E2E Family', contactEmail: `pwr-family-${ts}@test.carelinkai.test`, source: 'concierge_page' },
         createdAt: lastMonth,
       },
       select: { id: true },
     });
     searchId = ps.id;
     const order = await prisma.conciergeOrder.create({
-      data: { placementSearchId: ps.id, email: `pwr-family-${ts}@test.carelinkai.com`, status: 'REQUESTED_UNPAID', createdAt: lastMonth },
+      data: { placementSearchId: ps.id, email: `pwr-family-${ts}@test.carelinkai.test`, status: 'REQUESTED_UNPAID', createdAt: lastMonth },
       select: { id: true },
     });
     orderId = order.id;
@@ -87,7 +87,7 @@ test.describe('@critical Family Concierge — pay when ready (admin actions + fa
       } catch {}
     });
     const admin = await ctx.newPage();
-    await devLogin(admin, `pwr-admin-${ts}@test.carelinkai.com`);
+    await devLogin(admin, `pwr-admin-${ts}@test.carelinkai.test`);
     await admin.goto(`/admin/concierge/${searchId}`, { waitUntil: 'domcontentloaded' });
     const panel = admin.getByTestId('concierge-order-panel');
     await expect(panel).toHaveAttribute('data-order-status', 'REQUESTED_UNPAID', { timeout: 60_000 });
@@ -108,7 +108,7 @@ test.describe('@critical Family Concierge — pay when ready (admin actions + fa
     const stored = new URL(afterLink.paymentLinkUrl!);
     expect(stored.origin + stored.pathname).toBe(LINK);
     expect(stored.searchParams.get('client_reference_id')).toBe(orderId);
-    expect(stored.searchParams.get('prefilled_email')).toBe(`pwr-family-${ts}@test.carelinkai.com`);
+    expect(stored.searchParams.get('prefilled_email')).toBe(`pwr-family-${ts}@test.carelinkai.test`);
     expect(afterLink.status).toBe('REQUESTED_UNPAID');
 
     // Still locked for the family.

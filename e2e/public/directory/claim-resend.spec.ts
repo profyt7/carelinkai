@@ -14,10 +14,10 @@ import { test, expect, type Browser, type Page } from '@playwright/test';
 
 const ts = Date.now();
 const SENTINEL = 'directory-unclaimed@carelinkai.system';
-const ADMIN = 'admin@carelinkai.com';
-const NEVER = `never-registered-${ts}@test.carelinkai.com`;
-const CLICKED = `clicked-${ts}@test.carelinkai.com`;
-const REGISTERED = `op-registered-${ts}@test.carelinkai.com`;
+const ADMIN = 'admin@seed.carelinkai.test';
+const NEVER = `never-registered-${ts}@test.carelinkai.test`;
+const CLICKED = `clicked-${ts}@test.carelinkai.test`;
+const REGISTERED = `op-registered-${ts}@test.carelinkai.test`;
 const NUDGED = `E2E Nudged Never Registered ${ts}`;
 const NUDGED_CLICKED = `E2E Nudged Clicked ${ts}`;
 const NUDGED_REGISTERED = `E2E Nudged But Registered ${ts}`;

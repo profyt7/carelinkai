@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { createGuardedResend } from '@/lib/email/recipient-guard';
 import { brandEmailArgs } from '@/lib/email';
 import { COMPANY_EMAIL, CONTACT_PHONE_DISPLAY } from '@/lib/contact';
 
@@ -21,7 +22,7 @@ export class InquiryEmailService {
       if (!apiKey) {
         throw new Error('RESEND_API_KEY environment variable is not set');
       }
-      this.resend = new Resend(apiKey);
+      this.resend = createGuardedResend(apiKey);
     }
     return this.resend;
   }

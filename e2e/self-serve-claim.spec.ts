@@ -18,11 +18,11 @@ import { signClaimToken } from '../src/lib/claim-token';
 const prisma = new PrismaClient();
 const ts = Date.now();
 const DIRECTORY = 'directory-unclaimed@carelinkai.system';
-const OP_X = `claim-x-${ts}@test.carelinkai.com`;
-const OP_Y = `claim-y-${ts}@test.carelinkai.com`;
-const OWNER = `claim-owner-${ts}@test.carelinkai.com`;
-const ADMIN = `claim-admin-${ts}@test.carelinkai.com`;
-const NEW_OP = `claim-new-${ts}@test.carelinkai.com`;
+const OP_X = `claim-x-${ts}@test.carelinkai.test`;
+const OP_Y = `claim-y-${ts}@test.carelinkai.test`;
+const OWNER = `claim-owner-${ts}@test.carelinkai.test`;
+const ADMIN = `claim-admin-${ts}@test.carelinkai.test`;
+const NEW_OP = `claim-new-${ts}@test.carelinkai.test`;
 const SHOTS = process.env['CLAIM_SHOTS_DIR'];
 const home: Record<'a' | 'b' | 'c' | 'd' | 'e', string> = { a: '', b: '', c: '', d: '', e: '' };
 
@@ -242,7 +242,7 @@ test.describe('@critical self-serve listing claim', () => {
     const secret = process.env['NEXTAUTH_SECRET'];
     expect(secret, 'NEXTAUTH_SECRET must match the server').toBeTruthy();
     const now = Math.floor(Date.now() / 1000);
-    const token = signClaimToken({ operatorEmail: `outreach-${ts}@test.carelinkai.com`, homeId: home.c, clevelandFounder: true, iat: now, exp: now + 3600 }, secret!);
+    const token = signClaimToken({ operatorEmail: `outreach-${ts}@test.carelinkai.test`, homeId: home.c, clevelandFounder: true, iat: now, exp: now + 3600 }, secret!);
     const page = await ctxPage(browser, 1280);
     await go(page, `/claim?token=${encodeURIComponent(token)}`);
     await expect(page).toHaveURL(/\/auth\/register\?role=OPERATOR&claimToken=/, SLOW);

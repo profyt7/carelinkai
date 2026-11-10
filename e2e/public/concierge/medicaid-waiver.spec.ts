@@ -14,8 +14,8 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
 
 const ts = Date.now();
-const OP = `op-waiver-${ts}@test.carelinkai.com`;
-const ADMIN = 'admin@carelinkai.com';
+const OP = `op-waiver-${ts}@test.carelinkai.test`;
+const ADMIN = 'admin@seed.carelinkai.test';
 const ACCEPT = `E2E Waiver Accepting ${ts}`;
 const CURRENT = `E2E Waiver Current Only ${ts}`;
 const NONE = `E2E Waiver Unknown ${ts}`;

@@ -65,7 +65,7 @@ async function seedMarketplaceTaxonomy() {
  */
 async function upsertAdminUser() {
   // Read credentials from env or fall back to sensible defaults
-  const email = process.env.ADMIN_EMAIL ?? 'admin@carelinkai.com';
+  const email = process.env.ADMIN_EMAIL ?? 'admin@seed.carelinkai.test';
   const rawPassword = process.env.ADMIN_PASSWORD ?? demoAccountPassword();
 
   // Hash password (bcrypt, 10 rounds)
@@ -94,7 +94,7 @@ async function upsertAdminUser() {
  * Ensure a development DISCHARGE_PLANNER user exists
  */
 async function upsertDischargePlannerUser() {
-  const email = process.env.DISCHARGE_PLANNER_EMAIL ?? 'demo.discharge@carelinkai.com';
+  const email = process.env.DISCHARGE_PLANNER_EMAIL ?? 'demo.discharge@seed.carelinkai.test';
   const rawPassword = process.env.DISCHARGE_PLANNER_PASSWORD ?? demoAccountPassword();
 
   // Hash password (bcrypt, 10 rounds)

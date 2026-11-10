@@ -22,7 +22,7 @@ import { test, expect, type APIRequestContext, type Browser, type Page } from '@
  */
 
 const ts = Date.now();
-const uniq = (p: string) => `${p}-${ts}-${Math.floor(Math.random() * 1e4)}@test.carelinkai.com`;
+const uniq = (p: string) => `${p}-${ts}-${Math.floor(Math.random() * 1e4)}@test.carelinkai.test`;
 const QUERY_MARKER = `E2ECONCIERGE${ts}`; // distinctive token to locate the request in the admin UI
 
 async function login(page: Page, email: string) {
@@ -66,7 +66,7 @@ test.describe('@critical DP concierge placement flow', () => {
     const dpEmail = uniq('dp-concierge');
     const dp2Email = uniq('dp-other');
     const opEmail = uniq('op-seed');
-    const adminEmail = 'admin@carelinkai.com';
+    const adminEmail = 'admin@seed.carelinkai.test';
 
     // ---- Seed (dev endpoints; no auth) ----
     const opRes = await request.post('/api/dev/upsert-operator', {

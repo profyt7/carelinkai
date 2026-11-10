@@ -7,7 +7,7 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 
 const ts = Date.now();
-const OP_EMAIL = `first-screen-op-${ts}@test.carelinkai.com`;
+const OP_EMAIL = `first-screen-op-${ts}@test.carelinkai.test`;
 const HOME = `E2E First Screen Home ${ts}`;
 let homeId = '';
 

@@ -14,6 +14,7 @@
 export const dynamic = 'force-dynamic';
 
 import { founderUpdateFromClaim } from '@/lib/claim-founder';
+import { createGuardedResend } from '@/lib/email/recipient-guard';
 import { brandEmailArgs } from '@/lib/email';
 import { verifyClaimIntent } from '@/lib/claims/claim-intent';
 import { submitSelfServeClaim } from '@/lib/claims/self-serve';
@@ -446,7 +447,7 @@ export async function POST(request: NextRequest) {
     // Provider onboarding welcome email (fire-and-forget)
     if (role === "PROVIDER" && process.env.RESEND_API_KEY) {
       const { Resend } = await import("resend");
-      const resend = new Resend(process.env.RESEND_API_KEY);
+      const resend = createGuardedResend(process.env.RESEND_API_KEY);
       const appUrl = process.env.NEXTAUTH_URL || "https://getcarelinkai.com";
       resend.emails.send(brandEmailArgs({
         from: `CareLinkAI <${process.env.EMAIL_FROM || "noreply@getcarelinkai.com"}>`,

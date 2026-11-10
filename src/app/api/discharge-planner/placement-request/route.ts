@@ -12,6 +12,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth, requireRole } from "@/lib/auth-utils";
 import { UserRole } from "@prisma/client";
 import { Resend } from "resend";
+import { createGuardedResend } from '@/lib/email/recipient-guard';
 import { isPayerSource } from "@/lib/payer/payer-source";
 
 const placementRequestSchema = z.object({
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest) {
     console.log("📧 [PLACEMENT-REQUEST] Sending to ${homes?.length ?? 0} homes");
 
     // Initialize Resend
-    const resend = new Resend(process.env?.RESEND_API_KEY);
+    const resend = createGuardedResend(process.env?.RESEND_API_KEY);
 
     // Get discharge planner info
     const dpUser = await prisma.user.findUnique({

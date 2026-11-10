@@ -24,7 +24,8 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { DEMO_EMAIL_RE, demoAccountPassword } from '../src/lib/admin/demo-identity';
 
-// Every fixed @carelinkai.com login a seed script or setup.sh has created.
+// Every fixed login a seed script or setup.sh has created: the legacy @carelinkai.com addresses (existing
+// rows) and their current @seed.carelinkai.test replacements.
 const SEED_LOGINS = [
   'admin@carelinkai.com',
   'operator@carelinkai.com',
@@ -35,7 +36,7 @@ const SEED_LOGINS = [
   'operator.test@carelinkai.com',
   'caregiver.test@carelinkai.com',
   'family.test@carelinkai.com',
-];
+].flatMap((e) => [e, e.replace('@carelinkai.com', '@seed.carelinkai.test')]);
 
 const prisma = new PrismaClient();
 const FORCE = process.argv.includes('--force');

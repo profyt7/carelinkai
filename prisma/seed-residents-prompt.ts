@@ -22,10 +22,10 @@ const prisma = new PrismaClient();
 async function upsertOperatorWithHomes() {
   const pwd = await bcrypt.hash(demoAccountPassword(), 10);
   const user = await prisma.user.upsert({
-    where: { email: 'operator+seed@carelinkai.com' },
+    where: { email: 'operator+seed@carelinkai.test' },
     update: { status: UserStatus.ACTIVE, passwordHash: pwd, firstName: 'Olivia', lastName: 'Operator' },
     create: {
-      email: 'operator+seed@carelinkai.com',
+      email: 'operator+seed@carelinkai.test',
       firstName: 'Olivia',
       lastName: 'Operator',
       passwordHash: pwd,
@@ -68,7 +68,7 @@ async function upsertOperatorWithHomes() {
 
 async function upsertFamilies() {
   const pwd = await bcrypt.hash(demoAccountPassword(), 10);
-  const emails = ['family.seed1@carelinkai.com', 'family.seed2@carelinkai.com', 'family.seed3@carelinkai.com'];
+  const emails = ['family.seed1@carelinkai.test', 'family.seed2@carelinkai.test', 'family.seed3@carelinkai.test'];
   const families = [] as Array<{ userId: string; id: string }>;
   for (const email of emails) {
     const u = await prisma.user.upsert({

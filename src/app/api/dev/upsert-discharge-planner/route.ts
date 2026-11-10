@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   }
   try {
     const body = await req.json().catch(() => ({} as any));
-    const email: string = ((body.email as string) || 'dp+e2e@carelinkai.com').toLowerCase();
+    const email: string = ((body.email as string) || 'dp+e2e@seed.carelinkai.test').toLowerCase();
     const rawPassword: string = (body.password as string) || demoAccountPassword();
     const firstName: string = (body.firstName as string) || 'Demo';
     const lastName: string = (body.lastName as string) || 'Planner';
