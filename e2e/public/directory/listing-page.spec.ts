@@ -22,7 +22,7 @@
 import { test, expect } from '@playwright/test';
 
 const ts = Date.now();
-const OP_EMAIL = `listing-page-op-${ts}@test.carelinkai.com`;
+const OP_EMAIL = `listing-page-op-${ts}@test.carelinkai.test`;
 const HOME_NAME = `Windsor Heights Assisted Living ${ts}`;
 
 const CONSENT_INIT = () => {

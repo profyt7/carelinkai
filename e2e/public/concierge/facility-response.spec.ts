@@ -18,9 +18,9 @@
 import { test, expect, type APIRequestContext, type Browser, type Page } from '@playwright/test';
 
 const ts = Date.now();
-const uniq = (p: string) => `${p}-${ts}@test.carelinkai.com`;
+const uniq = (p: string) => `${p}-${ts}@test.carelinkai.test`;
 const MARKER = `E2EFACRESP${ts}`;
-const ADMIN = 'admin@carelinkai.com';
+const ADMIN = 'admin@seed.carelinkai.test';
 const DP = uniq('dp-facresp');
 const OP = uniq('op-facresp');
 const HOME_A = `E2E FacResp Declines ${ts}`;

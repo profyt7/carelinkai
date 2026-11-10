@@ -11,14 +11,14 @@ test.describe('[non-bypass] Auth: Credentials login (real flow)', () => {
 
     // Make sure admin user exists and is active (dev-only endpoint)
     const res = await page.request.post('/api/dev/upsert-admin', {
-      data: { email: process.env.ADMIN_EMAIL || 'admin@carelinkai.com', password: process.env.ADMIN_PASSWORD || demoPassword() }
+      data: { email: process.env.ADMIN_EMAIL || 'admin@seed.carelinkai.test', password: process.env.ADMIN_PASSWORD || demoPassword() }
     });
     expect(res.ok()).toBeTruthy();
 
     await page.goto('/auth/login');
     await expect(page.getByRole('heading', { name: 'Sign in to your account' })).toBeVisible();
 
-    await page.getByLabel('Email address').fill(process.env.ADMIN_EMAIL || 'admin@carelinkai.com');
+    await page.getByLabel('Email address').fill(process.env.ADMIN_EMAIL || 'admin@seed.carelinkai.test');
     await page.getByLabel('Password').fill(process.env.ADMIN_PASSWORD || demoPassword());
     await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 

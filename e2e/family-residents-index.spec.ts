@@ -4,7 +4,7 @@ import { upsertFamily, seedFamilyResident, loginAs } from './_helpers';
 test.describe('Family Portal - Residents Index', () => {
   test('lists residents and navigates to detail', async ({ page }) => {
     await page.goto('/');
-    const famEmail = `family.index+${Date.now()}@carelinkai.com`;
+    const famEmail = `family.index+${Date.now()}@seed.carelinkai.test`;
     // Upsert family
     const up = await upsertFamily(page.request, famEmail);
     expect(up.success).toBeTruthy();

@@ -8,7 +8,7 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 
 const ts = Date.now();
-const OP_EMAIL = `dock-op-${ts}@test.carelinkai.com`;
+const OP_EMAIL = `dock-op-${ts}@test.carelinkai.test`;
 const HOME = `E2E Dock Home ${ts}`;
 const PROVIDER_EMAIL = `dock-provider-${ts}@carelinkai.test`;
 let homeId = '';

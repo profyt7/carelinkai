@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
+import { createGuardedResend } from '@/lib/email/recipient-guard';
 import { brandEmailArgs } from '@/lib/email';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -51,7 +52,7 @@ async function notifyRideComplete(ride: any) {
   if (!bookerEmail) return;
 
   const { Resend } = await import("resend");
-  const resend = new Resend(process.env.RESEND_API_KEY);
+  const resend = createGuardedResend(process.env.RESEND_API_KEY);
   const APP_URL = process.env.NEXTAUTH_URL || "https://getcarelinkai.com";
 
   await resend.emails.send(brandEmailArgs({

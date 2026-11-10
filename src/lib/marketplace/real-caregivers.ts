@@ -21,6 +21,7 @@ import type { Prisma } from '@prisma/client';
 /** Seed, demo and test account email endings (case-insensitive). */
 export const DEMO_CAREGIVER_EMAIL_SUFFIXES = [
   '@carelinkai.test',
+  '@test.carelinkai.test',
   '@test.carelinkai.com',
   '+seed@carelinkai.com',
   '@carelink.demo',

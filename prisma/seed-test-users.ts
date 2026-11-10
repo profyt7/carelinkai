@@ -8,7 +8,7 @@
  * - FAMILY: View-only access to specific resident
  * 
  * Test Credentials:
- * - admin.test@carelinkai.com, operator.test@, caregiver.test@, family.test@
+ * - admin.test@seed.carelinkai.test, operator.test@, caregiver.test@, family.test@
  *   (all with the DEMO_ACCOUNT_PASSWORD env var)
  */
 
@@ -34,10 +34,10 @@ async function main() {
   // ===== 1. CREATE ADMIN TEST USER =====
   console.log('Creating admin test user...');
   const adminUser = await prisma.user.upsert({
-    where: { email: 'admin.test@carelinkai.com' },
+    where: { email: 'admin.test@seed.carelinkai.test' },
     update: {},
     create: {
-      email: 'admin.test@carelinkai.com',
+      email: 'admin.test@seed.carelinkai.test',
       passwordHash: testPassword,
       firstName: 'Admin',
       lastName: 'Test User',
@@ -54,10 +54,10 @@ async function main() {
   // ===== 2. CREATE OPERATOR TEST USER WITH HOME =====
   console.log('Creating operator test user...');
   const operatorUser = await prisma.user.upsert({
-    where: { email: 'operator.test@carelinkai.com' },
+    where: { email: 'operator.test@seed.carelinkai.test' },
     update: {},
     create: {
-      email: 'operator.test@carelinkai.com',
+      email: 'operator.test@seed.carelinkai.test',
       passwordHash: testPassword,
       firstName: 'Operator',
       lastName: 'Test User',
@@ -105,10 +105,10 @@ async function main() {
   // ===== 3. CREATE CAREGIVER TEST USER =====
   console.log('Creating caregiver test user...');
   const caregiverUser = await prisma.user.upsert({
-    where: { email: 'caregiver.test@carelinkai.com' },
+    where: { email: 'caregiver.test@seed.carelinkai.test' },
     update: {},
     create: {
-      email: 'caregiver.test@carelinkai.com',
+      email: 'caregiver.test@seed.carelinkai.test',
       passwordHash: testPassword,
       firstName: 'Caregiver',
       lastName: 'Test User',
@@ -152,10 +152,10 @@ async function main() {
   // ===== 4. CREATE FAMILY TEST USER WITH RESIDENT =====
   console.log('Creating family test user...');
   const familyUser = await prisma.user.upsert({
-    where: { email: 'family.test@carelinkai.com' },
+    where: { email: 'family.test@seed.carelinkai.test' },
     update: {},
     create: {
-      email: 'family.test@carelinkai.com',
+      email: 'family.test@seed.carelinkai.test',
       passwordHash: testPassword,
       firstName: 'Family',
       lastName: 'Test User',
@@ -213,7 +213,7 @@ async function main() {
       name: 'Family Test User',
       relationship: 'Daughter',
       phone: '+1-555-0103',
-      email: 'family.test@carelinkai.com',
+      email: 'family.test@seed.carelinkai.test',
       isPrimaryContact: true,
       permissionLevel: 'FULL_ACCESS',
       contactPreference: 'EMAIL',
@@ -284,10 +284,10 @@ async function main() {
 
   console.log('\n🎉 Test users seed completed!\n');
   console.log('Test Credentials:');
-  console.log('  Admin: admin.test@carelinkai.com');
-  console.log('  Operator: operator.test@carelinkai.com');
-  console.log('  Caregiver: caregiver.test@carelinkai.com');
-  console.log('  Family: family.test@carelinkai.com\n');
+  console.log('  Admin: admin.test@seed.carelinkai.test');
+  console.log('  Operator: operator.test@seed.carelinkai.test');
+  console.log('  Caregiver: caregiver.test@seed.carelinkai.test');
+  console.log('  Family: family.test@seed.carelinkai.test\n');
 }
 
 main()

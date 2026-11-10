@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
+import { createGuardedResend } from '@/lib/email/recipient-guard';
 import { brandEmailArgs } from '@/lib/email';
 import { prisma } from "@/lib/prisma";
 import { purgeExpiredAnalyticsEvents } from "@/lib/analytics/retention";
@@ -71,7 +72,7 @@ export async function GET(req: NextRequest) {
   // Send expiry warning emails
   if (expiringSoon.length > 0 && process.env.RESEND_API_KEY) {
     const { Resend } = await import("resend");
-    const resend = new Resend(process.env.RESEND_API_KEY);
+    const resend = createGuardedResend(process.env.RESEND_API_KEY);
 
     // Group by provider to send one email per provider
     const byProvider = new Map<string, typeof expiringSoon>();

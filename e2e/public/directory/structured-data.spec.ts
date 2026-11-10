@@ -12,7 +12,7 @@
 import { test, expect, type APIRequestContext } from '@playwright/test';
 
 const ts = Date.now();
-const OP_EMAIL = `jsonld-op-${ts}@test.carelinkai.com`;
+const OP_EMAIL = `jsonld-op-${ts}@test.carelinkai.test`;
 const REAL = `E2E JSONLD Manor ${ts}`;
 const DEMO = `E2E JSONLD Demo ${ts}`;
 const LICENSE = `JL${ts % 100000}R`;

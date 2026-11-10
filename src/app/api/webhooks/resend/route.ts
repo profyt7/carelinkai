@@ -23,6 +23,7 @@ export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { createGuardedResend } from '@/lib/email/recipient-guard';
 import { addSuppressions } from '@/lib/email/suppression';
 import { captureError } from '@/lib/sentry';
 
@@ -30,7 +31,7 @@ import { captureError } from '@/lib/sentry';
 // time ("Collecting page data") where RESEND_API_KEY may be unset (OL-149).
 let resendClient: Resend | null = null;
 function getResend(): Resend {
-  if (!resendClient) resendClient = new Resend(process.env.RESEND_API_KEY);
+  if (!resendClient) resendClient = createGuardedResend(process.env.RESEND_API_KEY);
   return resendClient;
 }
 
