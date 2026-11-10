@@ -117,15 +117,15 @@ npx ts-node --transpile-only prisma/seed-residents-demo.ts
 ```
 
 This creates:
-- 2 demo family accounts (family@carelinkai.com, family2@carelinkai.com)
+- 2 demo family accounts (family@seed.carelinkai.test, family2@seed.carelinkai.test)
 - 12 demo residents distributed between the families
 - 2 contacts per resident
 - 2 compliance items per resident (1 open, 1 completed)
 - 1 assessment, 1 incident, and 1 note per resident
 
 **Related Accounts:**
-- family@carelinkai.com / `DEMO_ACCOUNT_PASSWORD`
-- family2@carelinkai.com / `DEMO_ACCOUNT_PASSWORD`
+- family@seed.carelinkai.test / `DEMO_ACCOUNT_PASSWORD`
+- family2@seed.carelinkai.test / `DEMO_ACCOUNT_PASSWORD`
 
 ---
 

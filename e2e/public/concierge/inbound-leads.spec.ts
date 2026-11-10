@@ -10,8 +10,8 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
 
 const ts = Date.now();
-const ADMIN = 'admin@carelinkai.com';
-const DP = `inbound-dp-${ts}@test.carelinkai.com`;
+const ADMIN = 'admin@seed.carelinkai.test';
+const DP = `inbound-dp-${ts}@test.carelinkai.test`;
 const CONV_PREFIX = `e2e_inbound_${ts}_`;
 const CONV = `${CONV_PREFIX}planner`;
 const NAME = `Pat Planner ${ts}`;

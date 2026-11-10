@@ -18,8 +18,8 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
 
 const ts = Date.now();
-const OP = `op-contact-${ts}@test.carelinkai.com`;
-const ADMIN = 'admin@carelinkai.com';
+const OP = `op-contact-${ts}@test.carelinkai.test`;
+const ADMIN = 'admin@seed.carelinkai.test';
 const HOME = `E2E Contact Home ${ts}`;
 const OPT_IN_LABEL = 'Send me a weekly one-line email asking how many beds are open. Reply with a number or STOP.';
 
@@ -90,7 +90,7 @@ test.describe('@critical operator availability-contact card', () => {
     await expect(card.getByText(OPT_IN_LABEL)).toBeVisible();
 
     await card.getByLabel('Contact name').fill('Pat Admissions');
-    await card.locator('input[name="email"]').fill(`pat-${ts}@test.carelinkai.com`);
+    await card.locator('input[name="email"]').fill(`pat-${ts}@test.carelinkai.test`);
     await card.getByTestId('availability-contact-optin').check();
     let saved: any = null;
     await expect(async () => {
@@ -102,7 +102,7 @@ test.describe('@critical operator availability-contact card', () => {
       saved = await res.json();
     }).toPass({ timeout: 120_000, intervals: [2000, 5000] });
     expect(saved.ok).toBe(true);
-    expect(saved.contact).toMatchObject({ homeId, optedIn: true, optedInSource: 'operator_portal', preferredChannel: 'EMAIL', email: `pat-${ts}@test.carelinkai.com` });
+    expect(saved.contact).toMatchObject({ homeId, optedIn: true, optedInSource: 'operator_portal', preferredChannel: 'EMAIL', email: `pat-${ts}@test.carelinkai.test` });
     expect(saved.contact.optedInAt).toBeTruthy();
     await expect(card.getByTestId('availability-contact-status')).toHaveText('Opted in');
     await expect(card.getByTestId('availability-contact-msg')).toContainText('opted in');
@@ -138,7 +138,7 @@ test.describe('@critical operator availability-contact card', () => {
     const evt = (events.json.events as any[]).find((e) => e.eventType === 'contact.opted_in');
     expect(evt).toMatchObject({ entityType: 'AVAILABILITY_PING', entityId: homeId, source: 'OPERATOR', field: 'optedIn', newValue: { optedIn: true, optedInSource: 'OPERATOR' } });
     expect(evt.newValue.optedInAt).toBeTruthy();
-    expect(JSON.stringify(evt)).not.toContain('test.carelinkai.com');
+    expect(JSON.stringify(evt)).not.toContain('test.carelinkai.test');
     expect(JSON.stringify(evt)).not.toContain('Pat Admissions');
     await admin.context().close();
   });

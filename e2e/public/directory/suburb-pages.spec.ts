@@ -23,7 +23,7 @@ const SUBURBS = [
 ] as const;
 
 const ts = Date.now();
-const OP_EMAIL = `suburb-op-${ts}@test.carelinkai.com`;
+const OP_EMAIL = `suburb-op-${ts}@test.carelinkai.test`;
 const homeName = (city: string, kind: string) => `E2E ${city} ${kind} ${ts}`;
 
 test.describe('@critical suburb assisted-living pages', () => {
@@ -92,7 +92,7 @@ test.describe('@critical suburb assisted-living pages', () => {
       expect(html).toMatch(/Verified [A-Z][a-z]{2} \d{1,2}/);
       expect(html).toContain('ODH survey Feb 18, 2026 · 1 citation');
       expect(html).toContain(`ODH license ${s.slug.slice(0, 3).toUpperCase()}${ts % 10000}R`);
-      expect(html).not.toContain('@test.carelinkai.com');
+      expect(html).not.toContain('@test.carelinkai.test');
     });
   }
 

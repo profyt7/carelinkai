@@ -10,7 +10,7 @@
 import { test, expect } from '@playwright/test';
 
 const ts = Date.now();
-const OP_EMAIL = `listing-nomock-op-${ts}@test.carelinkai.com`;
+const OP_EMAIL = `listing-nomock-op-${ts}@test.carelinkai.test`;
 const HOME_NAME = `E2E No Mock Home ${ts}`;
 
 let homeId = '';

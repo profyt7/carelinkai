@@ -22,7 +22,7 @@ import { signClaimToken } from '../../../src/lib/claim-token';
 
 const PAGE = '/cleveland/home-care-agencies';
 const ts = Date.now();
-const uniq = (p: string) => `${p}-${ts}-${Math.floor(Math.random() * 1e4)}@test.carelinkai.com`;
+const uniq = (p: string) => `${p}-${ts}-${Math.floor(Math.random() * 1e4)}@test.carelinkai.test`;
 
 // /api/claim/request is rate-limited per client IP (30 / 10 min). Give each
 // run its own forwarded IP so repeated local runs / CI retries never trip it.

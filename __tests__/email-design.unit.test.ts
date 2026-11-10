@@ -24,7 +24,7 @@ const EMOJI = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/u;
 beforeAll(() => {
   process.env.RESEND_API_KEY = 're_test';
   process.env.NEXT_PUBLIC_APP_URL = 'https://getcarelinkai.com';
-  process.env.ADMIN_NOTIFY_EMAIL = 'admin@example.test';
+  process.env.ADMIN_NOTIFY_EMAIL = 'admin@example.com';
 });
 beforeEach(() => { sent.length = 0; filterSuppressed.mockClear(); });
 
@@ -35,22 +35,22 @@ async function capture(fn: () => Promise<unknown>) {
 }
 
 const CASES: { name: string; run: () => Promise<unknown>; cta: string | null; marketing?: boolean }[] = [
-  { name: 'concierge confirmation (family)', cta: null, run: () => email.sendConciergeFamilyEmail({ toEmail: 'fam@example.test', email: conciergeConfirmationEmail({ waitlisted: false }), kind: 'confirmation' } as any) },
-  { name: 'payment link (family)', cta: 'Pay $399 securely', run: () => email.sendConciergeFamilyEmail({ toEmail: 'fam@example.test', email: conciergePaymentLinkEmail({ paymentLinkUrl: 'https://buy.stripe.com/test_x?client_reference_id=ord1' }), kind: 'payment_link' } as any) },
-  { name: 'payment reminder (family)', cta: 'Pay $399 securely', run: () => email.sendConciergeFamilyEmail({ toEmail: 'fam@example.test', email: conciergePaymentReminderEmail({ paymentLinkUrl: 'https://buy.stripe.com/test_x' }), kind: 'payment_reminder' } as any) },
-  { name: 'shortlist released (family)', cta: 'View your shortlist', run: () => email.sendConciergeFamilyEmail({ toEmail: 'fam@example.test', email: conciergeShortlistReleasedEmail({ shortlistUrl: 'https://getcarelinkai.com/concierge/shortlist/tok' }), kind: 'shortlist_released' } as any) },
+  { name: 'concierge confirmation (family)', cta: null, run: () => email.sendConciergeFamilyEmail({ toEmail: 'fam@example.com', email: conciergeConfirmationEmail({ waitlisted: false }), kind: 'confirmation' } as any) },
+  { name: 'payment link (family)', cta: 'Pay $399 securely', run: () => email.sendConciergeFamilyEmail({ toEmail: 'fam@example.com', email: conciergePaymentLinkEmail({ paymentLinkUrl: 'https://buy.stripe.com/test_x?client_reference_id=ord1' }), kind: 'payment_link' } as any) },
+  { name: 'payment reminder (family)', cta: 'Pay $399 securely', run: () => email.sendConciergeFamilyEmail({ toEmail: 'fam@example.com', email: conciergePaymentReminderEmail({ paymentLinkUrl: 'https://buy.stripe.com/test_x' }), kind: 'payment_reminder' } as any) },
+  { name: 'shortlist released (family)', cta: 'View your shortlist', run: () => email.sendConciergeFamilyEmail({ toEmail: 'fam@example.com', email: conciergeShortlistReleasedEmail({ shortlistUrl: 'https://getcarelinkai.com/concierge/shortlist/tok' }), kind: 'shortlist_released' } as any) },
   { name: 'admin new concierge request', cta: 'Review & build the shortlist', run: () => email.sendConciergeRequestNotification({ requestId: 'ps-1', dpName: 'Dana Planner', dpOrganization: 'Metro Hospital' }) },
-  { name: 'claim approved (operator)', cta: 'Open your listing', run: () => email.sendHomeClaimDecisionEmail({ to: 'op@example.test', firstName: 'Pat', homeName: 'Maple Grove', decision: 'approved', homeId: 'h-1' }) },
-  { name: 'claim rejected (operator)', cta: null, run: () => email.sendHomeClaimDecisionEmail({ to: 'op@example.test', firstName: 'Pat', homeName: 'Maple Grove', decision: 'rejected', homeId: 'h-1' }) },
-  { name: 'new claim (admin)', cta: 'Review claim', run: () => email.sendHomeClaimAdminNotice({ homeName: 'Maple Grove', operatorEmail: 'op@example.test', claimId: 'c-1' }) },
-  { name: 'operator claim notice (admin)', cta: 'Review claim', run: () => email.sendOperatorClaimNotification({ facilityName: 'Maple Grove', operatorEmail: 'op@example.test', homeId: 'h-1', status: 'PENDING_REVIEW' }) },
+  { name: 'claim approved (operator)', cta: 'Open your listing', run: () => email.sendHomeClaimDecisionEmail({ to: 'op@example.com', firstName: 'Pat', homeName: 'Maple Grove', decision: 'approved', homeId: 'h-1' }) },
+  { name: 'claim rejected (operator)', cta: null, run: () => email.sendHomeClaimDecisionEmail({ to: 'op@example.com', firstName: 'Pat', homeName: 'Maple Grove', decision: 'rejected', homeId: 'h-1' }) },
+  { name: 'new claim (admin)', cta: 'Review claim', run: () => email.sendHomeClaimAdminNotice({ homeName: 'Maple Grove', operatorEmail: 'op@example.com', claimId: 'c-1' }) },
+  { name: 'operator claim notice (admin)', cta: 'Review claim', run: () => email.sendOperatorClaimNotification({ facilityName: 'Maple Grove', operatorEmail: 'op@example.com', homeId: 'h-1', status: 'PENDING_REVIEW' }) },
   { name: 'concierge paid (admin)', cta: null, run: () => email.sendConciergePaidNotification({ requestId: 'ps-1', orderId: 'ord1', amountCents: 39900 }) },
-  { name: 'shortlist ready (DP)', cta: null, run: () => email.sendConciergeShortlistReadyEmail({ toEmail: 'dp@example.test', count: 3 }) },
+  { name: 'shortlist ready (DP)', cta: null, run: () => email.sendConciergeShortlistReadyEmail({ toEmail: 'dp@example.com', count: 3 }) },
   { name: 'concierge admin notice', cta: null, run: () => email.sendConciergeAdminNotice({ subject: 'Order expired (unpaid 14 days)', text: 'Order ord1 expired.', requestId: 'ps-1' }) },
-  { name: 'new tour lead (operator)', cta: null, run: () => email.sendNewLeadOperatorEmail({ facilityName: 'Maple Grove', toEmail: 'op@example.test', operatorFirstName: 'Pat', leadType: 'tour', ctaUrl: 'https://getcarelinkai.com/operator/tours' }) },
-  { name: 'facility accept/decline request', cta: null, marketing: true, run: () => email.sendFacilityResponseRequestEmail({ toEmail: 'home@example.test', facilityName: 'Maple Grove', summary: { careLevel: 'Memory care', payerLane: 'Private pay', feeLane: 'FEE_ELIGIBLE', timeline: 'Within 2 weeks' }, token: 'tok', appUrl: 'https://getcarelinkai.com', postalAddress: '123 Test St, Cleveland, OH', unsubscribeUrl: 'https://getcarelinkai.com/u' }) },
-  { name: 'verification', cta: null, run: () => email.sendVerificationEmail('pat@example.test', 'Pat', 'verify-token') },
-  { name: 'password reset', cta: null, run: () => email.sendPasswordResetEmail('pat@example.test', 'Pat', 'reset-token') },
+  { name: 'new tour lead (operator)', cta: null, run: () => email.sendNewLeadOperatorEmail({ facilityName: 'Maple Grove', toEmail: 'op@example.com', operatorFirstName: 'Pat', leadType: 'tour', ctaUrl: 'https://getcarelinkai.com/operator/tours' }) },
+  { name: 'facility accept/decline request', cta: null, marketing: true, run: () => email.sendFacilityResponseRequestEmail({ toEmail: 'home@example.com', facilityName: 'Maple Grove', summary: { careLevel: 'Memory care', payerLane: 'Private pay', feeLane: 'FEE_ELIGIBLE', timeline: 'Within 2 weeks' }, token: 'tok', appUrl: 'https://getcarelinkai.com', postalAddress: '123 Test St, Cleveland, OH', unsubscribeUrl: 'https://getcarelinkai.com/u' }) },
+  { name: 'verification', cta: null, run: () => email.sendVerificationEmail('pat@example.com', 'Pat', 'verify-token') },
+  { name: 'password reset', cta: null, run: () => email.sendPasswordResetEmail('pat@example.com', 'Pat', 'reset-token') },
 ];
 
 describe('every email: layout, one CTA, no emoji in subject/headings, plain text kept, no PHI', () => {
@@ -129,7 +129,7 @@ describe('every email: layout, one CTA, no emoji in subject/headings, plain text
 
 describe('(c) multi-action emails keep every link', () => {
   it('availability ping: all one-tap replies (0–5, other, STOP) and the unsubscribe link survive; no primary button is added', async () => {
-    const msg = await capture(() => email.sendAvailabilityPingEmail({ toEmail: 'home@example.test', contactName: 'Ann Lee', facilityName: 'Maple Grove', token: 'tok123', appUrl: 'https://getcarelinkai.com', postalAddress: '123 Test St, Cleveland, OH' }));
+    const msg = await capture(() => email.sendAvailabilityPingEmail({ toEmail: 'home@example.com', contactName: 'Ann Lee', facilityName: 'Maple Grove', token: 'tok123', appUrl: 'https://getcarelinkai.com', postalAddress: '123 Test St, Cleveland, OH' }));
     const links = [...msg.html.matchAll(/href="([^"]+)"/g)].map((m: RegExpMatchArray) => m[1]!.replace(/&amp;/g, '&'));
     for (const n of ['0', '1', '2', '3', '4', '5', 'STOP']) expect(links.some((l: string) => l.includes('token=tok123') && l.includes(`reply=${n}`))).toBe(true);
     expect(links.some((l: string) => /unsubscribe/i.test(l))).toBe(true);
@@ -138,7 +138,7 @@ describe('(c) multi-action emails keep every link', () => {
   });
 
   it('facility accept/decline request keeps both actions', async () => {
-    const msg = await capture(() => email.sendFacilityResponseRequestEmail({ toEmail: 'home@example.test', facilityName: 'Maple Grove', summary: { careLevel: 'Memory care', payerLane: 'Private pay', feeLane: 'FEE_ELIGIBLE', timeline: 'Within 2 weeks' }, token: 'tokFR', appUrl: 'https://getcarelinkai.com', postalAddress: '123 Test St', unsubscribeUrl: 'https://getcarelinkai.com/u' }));
+    const msg = await capture(() => email.sendFacilityResponseRequestEmail({ toEmail: 'home@example.com', facilityName: 'Maple Grove', summary: { careLevel: 'Memory care', payerLane: 'Private pay', feeLane: 'FEE_ELIGIBLE', timeline: 'Within 2 weeks' }, token: 'tokFR', appUrl: 'https://getcarelinkai.com', postalAddress: '123 Test St', unsubscribeUrl: 'https://getcarelinkai.com/u' }));
     const links = [...msg.html.matchAll(/href="([^"]+)"/g)].map((m: RegExpMatchArray) => m[1]!);
     expect(links.filter((l: string) => l.includes('tokFR')).length).toBeGreaterThanOrEqual(1);
     expect(links).toContain('https://getcarelinkai.com/u');
@@ -147,7 +147,7 @@ describe('(c) multi-action emails keep every link', () => {
 
 describe('claim approved copy', () => {
   it('"We confirmed your claim. The listing is now yours." and the button is the single action (no inline "here: {url}")', async () => {
-    const msg = await capture(() => email.sendHomeClaimDecisionEmail({ to: 'op@example.test', firstName: 'Pat', homeName: 'Maple Grove', decision: 'approved', homeId: 'h-1' }));
+    const msg = await capture(() => email.sendHomeClaimDecisionEmail({ to: 'op@example.com', firstName: 'Pat', homeName: 'Maple Grove', decision: 'approved', homeId: 'h-1' }));
     expect(msg.html).toContain('We confirmed your claim. The listing is now yours.');
     expect(msg.html).not.toContain('We verified it');
     expect(msg.html).not.toMatch(/availability here:/);

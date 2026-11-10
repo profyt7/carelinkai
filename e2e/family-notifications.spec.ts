@@ -3,7 +3,7 @@ import { upsertFamily, seedFamilyResident, loginAs } from './_helpers';
 
 test('Family Portal - Notifications shows due soon and overdue counts', async ({ page }) => {
   await page.goto('/');
-  const famEmail = `family.notify+${Date.now()}@carelinkai.com`;
+  const famEmail = `family.notify+${Date.now()}@seed.carelinkai.test`;
   const up = await upsertFamily(page.request, famEmail);
   expect(up.success).toBeTruthy();
 

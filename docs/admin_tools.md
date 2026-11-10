@@ -178,7 +178,7 @@ The page uses React hooks for state management:
 ### As Admin User
 
 1. **Navigate to Admin Tools**:
-   - Login as admin user (email: `admin@carelinkai.com`)
+   - Login as admin user (email: `admin@seed.carelinkai.test`)
    - Click "Admin Tools" in sidebar
    - Verify page loads with all 4 cards
 
@@ -204,7 +204,7 @@ The page uses React hooks for state management:
 ### As Non-Admin User
 
 1. **Verify Access Restriction**:
-   - Login as non-admin user (e.g., `family@carelinkai.com`)
+   - Login as non-admin user (e.g., `family@seed.carelinkai.test`)
    - Verify "Admin Tools" link does NOT appear in sidebar
    - Try to navigate directly to `/admin/tools`
    - Should be redirected to `/dashboard`

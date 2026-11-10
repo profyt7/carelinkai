@@ -46,7 +46,7 @@ async function scrollFrame(page, id, where) {
     } catch {}
   });
   const page = await ctx.newPage();
-  const email = 'design-review@test.carelinkai.com';
+  const email = 'design-review@test.carelinkai.test';
   await page.request.post(`${base}/api/dev/upsert-family`, { data: { email } });
   await page.goto(`${base}/`, { waitUntil: 'domcontentloaded', timeout: 240000 });
   const st = await page.evaluate(

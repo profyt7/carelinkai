@@ -14,7 +14,7 @@
 import { test, expect, type APIRequestContext } from '@playwright/test';
 
 const ts = Date.now();
-const OP_EMAIL = `seo-pass-op-${ts}@test.carelinkai.com`;
+const OP_EMAIL = `seo-pass-op-${ts}@test.carelinkai.test`;
 const NEW_SUBURBS = ['mentor', 'cuyahoga-falls', 'rocky-river', 'medina', 'hudson', 'north-olmsted', 'avon', 'twinsburg', 'chardon', 'stow', 'lyndhurst', 'mayfield-heights', 'shaker-heights', 'euclid', 'solon'];
 const ALL_SUBURBS = ['westlake', 'strongsville', 'parma', 'beachwood', 'lakewood', ...NEW_SUBURBS];
 

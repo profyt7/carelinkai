@@ -29,7 +29,7 @@ async function main() {
     const passwordHash = await bcrypt.hash(demoAccountPassword(), 10);
     operatorUser = await prisma.user.create({
       data: {
-        email: 'operator@carelinkai.com',
+        email: 'operator@seed.carelinkai.test',
         firstName: 'Demo',
         lastName: 'Operator',
         passwordHash,
