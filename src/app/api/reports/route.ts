@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth, requireAnyPermission, getScopedWhereClause } from '@/lib/auth-utils';
+import { requireAuth, requireAnyPermission, getScopedWhereClause, handleAuthError, UnauthenticatedError, UnauthorizedError } from '@/lib/auth-utils';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
@@ -72,6 +72,8 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: any) {
+    // Not signed in → 401, no permission → 403 (was: every refusal answered 500).
+    if (error instanceof UnauthenticatedError || error instanceof UnauthorizedError) return handleAuthError(error);
     console.error('Error fetching reports:', error);
     return NextResponse.json(
       { error: error?.message || 'Failed to fetch reports' },

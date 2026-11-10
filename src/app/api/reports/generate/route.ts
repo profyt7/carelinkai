@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth, requireAnyPermission } from '@/lib/auth-utils';
+import { requireAuth, requireAnyPermission, handleAuthError, UnauthenticatedError, UnauthorizedError } from '@/lib/auth-utils';
 import { generateReport } from '@/lib/services/reports';
 import { resolveReportHomeIds } from '@/lib/reports/scope';
 import { generatePDF } from '@/lib/utils/pdf-generator';
@@ -152,6 +152,8 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: any) {
+    // Not signed in → 401, no permission → 403 (was: every refusal answered 500).
+    if (error instanceof UnauthenticatedError || error instanceof UnauthorizedError) return handleAuthError(error);
     console.error('Error generating report:', error);
     return NextResponse.json(
       { error: error?.message || 'Failed to generate report' },

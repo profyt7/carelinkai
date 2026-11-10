@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth, requireAnyPermission } from '@/lib/auth-utils';
+import { requireAuth, requireAnyPermission, handleAuthError, UnauthenticatedError, UnauthorizedError } from '@/lib/auth-utils';
 import { prisma } from '@/lib/prisma';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { AuditAction } from '@prisma/client';
@@ -56,6 +56,8 @@ export async function GET(
 
     return NextResponse.json({ scheduledReport });
   } catch (error: any) {
+    // Not signed in → 401, no permission → 403 (was: every refusal answered 500).
+    if (error instanceof UnauthenticatedError || error instanceof UnauthorizedError) return handleAuthError(error);
     console.error('Error fetching scheduled report:', error);
     return NextResponse.json(
       { error: error?.message || 'Failed to fetch scheduled report' },
@@ -131,6 +133,8 @@ export async function PUT(
       scheduledReport: updated,
     });
   } catch (error: any) {
+    // Not signed in → 401, no permission → 403 (was: every refusal answered 500).
+    if (error instanceof UnauthenticatedError || error instanceof UnauthorizedError) return handleAuthError(error);
     console.error('Error updating scheduled report:', error);
     return NextResponse.json(
       { error: error?.message || 'Failed to update scheduled report' },
@@ -191,6 +195,8 @@ export async function DELETE(
       message: 'Scheduled report deleted successfully',
     });
   } catch (error: any) {
+    // Not signed in → 401, no permission → 403 (was: every refusal answered 500).
+    if (error instanceof UnauthenticatedError || error instanceof UnauthorizedError) return handleAuthError(error);
     console.error('Error deleting scheduled report:', error);
     return NextResponse.json(
       { error: error?.message || 'Failed to delete scheduled report' },

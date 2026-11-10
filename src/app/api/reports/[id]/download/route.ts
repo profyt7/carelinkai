@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth, requireAnyPermission } from '@/lib/auth-utils';
+import { requireAuth, requireAnyPermission, handleAuthError, UnauthenticatedError, UnauthorizedError } from '@/lib/auth-utils';
 import { prisma } from '@/lib/prisma';
 import { generateReport } from '@/lib/services/reports';
 import { resolveReportHomeIds } from '@/lib/reports/scope';
@@ -80,6 +80,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       },
     });
   } catch (err: any) {
+    // Not signed in → 401, no permission → 403 (was: every refusal answered 500).
+    if (err instanceof UnauthenticatedError || err instanceof UnauthorizedError) return handleAuthError(err);
     console.error('[Report Download]', err);
     return NextResponse.json({ error: err.message || 'Failed to download report' }, { status: 500 });
   }
