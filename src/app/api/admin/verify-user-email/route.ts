@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { UserStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
@@ -51,6 +52,7 @@ export async function POST(request: NextRequest) {
         lastName: true,
         role: true,
         emailVerified: true,
+        status: true,
       },
     });
 
@@ -65,6 +67,12 @@ export async function POST(request: NextRequest) {
     const updateData: any = {
       emailVerified: new Date(),
     };
+    // A PENDING account is only waiting on email verification, so verifying it activates it
+    // (as the emailed link does). Without this the account stayed PENDING with emailVerified
+    // set: sign-in said "Please verify your email", the link said "already verified".
+    if (user.status === UserStatus.PENDING) {
+      updateData.status = UserStatus.ACTIVE;
+    }
 
     // Update role if provided
     if (role && ['ADMIN', 'OPERATOR', 'CAREGIVER', 'FAMILY', 'DISCHARGE_PLANNER'].includes(role)) {
@@ -81,6 +89,7 @@ export async function POST(request: NextRequest) {
         lastName: true,
         role: true,
         emailVerified: true,
+        status: true,
       },
     });
 
