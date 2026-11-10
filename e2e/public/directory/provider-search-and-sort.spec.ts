@@ -71,15 +71,23 @@ test.describe('provider search: AND filters, honest sort and ratings, card layou
     await expect(page.getByText(/0\.0 \(0\)/)).toHaveCount(0);
 
     await expect(title).toHaveAttribute('title', P.longName.businessName);
-    // The card root holds both the name and the (absolutely positioned) favourite button.
-    const card = page.locator('div').filter({ has: title }).filter({ has: page.getByRole('button', { name: /favorites/ }) }).last();
-    const heart = card.getByRole('button', { name: /favorites/ });
-    await title.scrollIntoViewIfNeeded();
-    await expect(heart).toBeVisible();
-    const [t, h] = [await title.boundingBox(), await heart.boundingBox()];
-    expect(t && h, 'name and heart are laid out').toBeTruthy();
-    if (!t || !h) return;
-    const overlap = !(t.x + t.width <= h.x || h.x + h.width <= t.x || t.y + t.height <= h.y || h.y + h.height <= t.y);
-    expect(overlap, 'name box clear of the heart').toBe(false);
+    // Closing the filters panel can re-run the provider query and re-render the list, which
+    // replaces the card nodes (CI saw "Element is not attached to the DOM" and a null
+    // boundingBox). Let the list settle, then re-query and measure inside toPass so a
+    // re-render retries instead of failing; a real overlap still fails after the timeout.
+    await expect(page.getByRole('heading', { level: 3 }).filter({ hasText: TAG })).toHaveCount(4);
+    await expect(async () => {
+      const name = page.getByRole('heading', { level: 3, name: P.longName.businessName });
+      // The card root holds both the name and the (absolutely positioned) favourite button.
+      const card = page.locator('div').filter({ has: name }).filter({ has: page.getByRole('button', { name: /favorites/ }) }).last();
+      const heart = card.getByRole('button', { name: /favorites/ });
+      await name.scrollIntoViewIfNeeded({ timeout: 2_000 });
+      await expect(heart).toBeVisible({ timeout: 2_000 });
+      const [t, h] = [await name.boundingBox(), await heart.boundingBox()];
+      expect(t && h, 'name and heart are laid out').toBeTruthy();
+      if (!t || !h) return;
+      const overlap = !(t.x + t.width <= h.x || h.x + h.width <= t.x || t.y + t.height <= h.y || h.y + h.height <= t.y);
+      expect(overlap, 'name box clear of the heart').toBe(false);
+    }).toPass({ timeout: 20_000 });
   });
 });
