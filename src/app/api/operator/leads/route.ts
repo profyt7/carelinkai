@@ -26,6 +26,7 @@ import { LeadStatus, LeadTargetType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAnyRole } from "@/lib/rbac";
 import { captureError } from '@/lib/sentry';
+import { REAL_FAMILY_USER } from '@/lib/inquiries/test-inquiry';
 
 
 /**
@@ -78,6 +79,7 @@ export async function GET(request: NextRequest) {
     const isAdmin = session!.user!.role === "ADMIN";
     if (!isAdmin) {
       where.assignedOperatorId = session!.user!.id;
+      where.family = { user: REAL_FAMILY_USER }; // test families' leads are admin-only
     }
 
     // Handle status filter (can be multiple statuses)
