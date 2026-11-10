@@ -2,6 +2,7 @@
 // As a 'use server' file its exports (which do no auth checks) could be exposed as callable server actions.
 
 import { prisma } from '@/lib/prisma';
+import { REAL_INQUIRIES } from '@/lib/inquiries/test-inquiry';
 import { startOfMonth, endOfMonth, subMonths, format } from 'date-fns';
 
 export interface ReportConfig {
@@ -568,6 +569,7 @@ export async function generateInquiryReport(
         lte: endDate,
       },
       ...(homeIds?.length ? { homeId: { in: homeIds } } : {}),
+      ...REAL_INQUIRIES,
     },
     include: {
       home: true,

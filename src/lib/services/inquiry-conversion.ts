@@ -11,6 +11,7 @@ import { z } from 'zod';
 import { stripe } from '@/lib/stripe';
 import { placementFeeCents as getPlacementFeeCents } from '@/lib/billing/fees';
 import { deriveFeeLane, type FeeLane, type PayerSource } from '@/lib/payer/payer-source';
+import { REAL_INQUIRIES } from '@/lib/inquiries/test-inquiry';
 
 
 /**
@@ -544,11 +545,12 @@ export async function canConvertInquiry(inquiryId: string): Promise<{
 export async function getConversionStats(operatorId?: string) {
   const whereClause = operatorId
     ? {
+        ...REAL_INQUIRIES,
         home: {
           operatorId: operatorId,
         },
       }
-    : {};
+    : { ...REAL_INQUIRIES };
 
   const [
     totalInquiries,

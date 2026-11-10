@@ -13,6 +13,7 @@
  */
 
 import { prisma } from '@/lib/prisma';
+import { REAL_INQUIRIES } from '@/lib/inquiries/test-inquiry';
 import { BOOST_PRICE_CENTS } from '@/lib/providers/boost';
 
 export interface AdminStats {
@@ -52,7 +53,7 @@ export async function getAdminStats(showDemo = false): Promise<AdminStats> {
     prisma.user.count({ where: { ...userDemo } }),
     prisma.assistedLivingHome.count({ where: { ...homeDemo } }),
     prisma.user.count({ where: { role: 'CAREGIVER', ...userDemo } }),
-    prisma.inquiry.count({ where: { ...inquiryDemo } }),
+    prisma.inquiry.count({ where: { ...inquiryDemo, ...REAL_INQUIRIES } }),
     prisma.placementSearch.count({ where: { ...placementDemo } }),
     prisma.user.count({
       where: { lastLoginAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }, ...userDemo },

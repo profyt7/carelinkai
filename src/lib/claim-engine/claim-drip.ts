@@ -23,6 +23,7 @@ import { signClaimToken, DEFAULT_CLAIM_TOKEN_TTL_HOURS } from '@/lib/claim-token
 import { signUnsubscribeToken } from '@/lib/unsubscribe-token';
 import { sendClaimDripEmail } from '@/lib/email';
 import { captureError } from '@/lib/sentry';
+import { REAL_INQUIRIES } from '@/lib/inquiries/test-inquiry';
 
 /** Sentinel operator that owns unclaimed/directory listings. Inlined to keep this
  *  module free of a cycle with inquiry-claim-notification (which imports the drip). */
@@ -65,7 +66,7 @@ function unsubscribeUrl(email: string, secret: string): string {
   return `${appUrl()}/api/outreach/unsubscribe?token=${encodeURIComponent(signUnsubscribeToken(email, secret))}`;
 }
 async function waitingCount(homeId: string): Promise<number> {
-  return prisma.inquiry.count({ where: { homeId, status: 'NEW' } });
+  return prisma.inquiry.count({ where: { ...REAL_INQUIRIES, homeId, status: 'NEW' } });
 }
 /** Returns the suppression reason ('unsubscribe'|'bounce'|'manual') if suppressed, else null. */
 async function suppressionReason(email: string): Promise<string | null> {
