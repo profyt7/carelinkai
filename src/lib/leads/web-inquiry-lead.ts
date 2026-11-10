@@ -53,6 +53,12 @@ export type UnclaimedInquiryInput = {
   /** Inquiry.additionalInfo — the form stores "Move-in timeframe: <choice>" there. */
   additionalInfo: string | null;
   receivedAt?: Date;
+  /**
+   * 'demo': the listing is a demo/tutorial fixture (home.isDemo). Same admin-only route
+   * as an unclaimed listing, but the admin email is marked "[TEST]" and says no operator
+   * or facility was notified. Default 'unclaimed'.
+   */
+  listingKind?: 'unclaimed' | 'demo';
 };
 
 export type UnclaimedInquiryResult = {
@@ -96,14 +102,27 @@ export function urgencyFromRequestedTimes(times: ReadonlyArray<string | Date> | 
   return Number.isFinite(soonest) && soonest - now.getTime() <= 7 * 86_400_000 ? 'THIS_WEEK' : 'PLANNING';
 }
 
+function isDemoListing(input: Pick<UnclaimedInquiryInput, 'listingKind'>): boolean {
+  return input.listingKind === 'demo';
+}
+function listingLabel(input: Pick<UnclaimedInquiryInput, 'listingKind'>): string {
+  return isDemoListing(input) ? 'demo listing' : 'unclaimed listing';
+}
+function aListing(input: Pick<UnclaimedInquiryInput, 'listingKind'>): string {
+  return isDemoListing(input) ? 'a demo listing' : 'an unclaimed listing';
+}
+function testPrefix(input: Pick<UnclaimedInquiryInput, 'listingKind'>): string {
+  return isDemoListing(input) ? '[TEST] ' : '';
+}
+
 /** The queue row's one-line reason (≤ 280): home, payer lane, timeframe — or, for a tour, home, requested time, lane if given. */
-export function webInquiryReason(input: Pick<UnclaimedInquiryInput, 'homeName' | 'payerSource' | 'additionalInfo' | 'tourRequestId' | 'requestedTimes'>): string {
+export function webInquiryReason(input: Pick<UnclaimedInquiryInput, 'homeName' | 'payerSource' | 'additionalInfo' | 'tourRequestId' | 'requestedTimes' | 'listingKind'>): string {
   if (isTourRequest(input)) {
     const lane = isPayerSource(input.payerSource) ? ` · ${payerLaneLabel(input.payerSource)}` : '';
-    return `Web tour request on unclaimed listing: ${input.homeName} · requested ${requestedTimesLabel(input.requestedTimes)}${lane}`.slice(0, 280);
+    return `${testPrefix(input)}Web tour request on ${listingLabel(input)}: ${input.homeName} · requested ${requestedTimesLabel(input.requestedTimes)}${lane}`.slice(0, 280);
   }
   const tf = timeframeFrom(input.additionalInfo) ?? 'timeframe not given';
-  return `Web inquiry on unclaimed listing: ${input.homeName} · ${payerLaneLabel(input.payerSource)} · ${tf}`.slice(0, 280);
+  return `${testPrefix(input)}Web inquiry on ${listingLabel(input)}: ${input.homeName} · ${payerLaneLabel(input.payerSource)} · ${tf}`.slice(0, 280);
 }
 
 function esc(s: string): string {
@@ -118,20 +137,27 @@ function appUrl(): string {
 export function adminAlertContent(input: UnclaimedInquiryInput): { subject: string; text: string; html: string } {
   const name = input.contactName?.trim() || 'name not given';
   const queue = `${appUrl()}/admin/inbound-leads`;
+  const label = listingLabel(input);
+  const pre = testPrefix(input);
+  const nobody = isDemoListing(input)
+    ? 'This is a demo listing: no operator or facility was notified.'
+    : 'The home has not claimed its listing, so no one else received this.';
   if (isTourRequest(input)) {
     const rows: Array<[string, string]> = [
       ['Family', name],
       ['Email', input.contactEmail?.trim() || '—'],
       ['Phone', input.contactPhone?.trim() || '—'],
-      ['Home', `${input.homeName} (unclaimed listing)`],
+      ['Home', `${input.homeName} (${label})`],
       ['Requested', requestedTimesLabel(input.requestedTimes)],
       ...(isPayerSource(input.payerSource) ? [['Payer lane', payerLaneLabel(input.payerSource)] as [string, string]] : []),
     ];
     return {
-      subject: `🗓️ Tour request (unclaimed listing): ${name} → ${input.homeName}`,
-      text: `${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}\n\nThe home has not claimed its listing, so no one else received this. Nothing is confirmed to the family yet.\nInbound queue: ${queue}\n`,
+      subject: `${pre}🗓️ Tour request (${label}): ${name} → ${input.homeName}`,
+      text: `${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}\n\n${nobody} Nothing is confirmed to the family yet.\nInbound queue: ${queue}\n`,
       html:
-        `<p><strong>Tour request on an unclaimed listing</strong> — no one else received this; nothing is confirmed to the family yet.</p>` +
+        (isDemoListing(input)
+          ? `<p><strong>${pre}Tour request on ${aListing(input)}</strong> — ${esc(nobody)} Nothing is confirmed to the family yet.</p>`
+          : `<p><strong>Tour request on an unclaimed listing</strong> — no one else received this; nothing is confirmed to the family yet.</p>`) +
         `<table style="font-size:14px">${rows.map(([k, v]) => `<tr><td style="color:#6b7280;padding-right:12px">${esc(k)}</td><td>${esc(v)}</td></tr>`).join('')}</table>` +
         `<p><a href="${esc(queue)}">Open the inbound queue →</a></p>`,
     };
@@ -140,15 +166,17 @@ export function adminAlertContent(input: UnclaimedInquiryInput): { subject: stri
     ['Family', name],
     ['Email', input.contactEmail?.trim() || '—'],
     ['Phone', input.contactPhone?.trim() || '—'],
-    ['Home', `${input.homeName} (unclaimed listing)`],
+    ['Home', `${input.homeName} (${label})`],
     ['Payer lane', payerLaneLabel(input.payerSource)],
     ['Timeframe', timeframeFrom(input.additionalInfo) ?? 'not given'],
   ];
   return {
-    subject: `📝 Family inquiry (unclaimed listing): ${name} → ${input.homeName}`,
-    text: `${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}\n\nThe home has not claimed its listing, so no one else received this.\nInbound queue: ${queue}\n`,
+    subject: `${pre}📝 Family inquiry (${label}): ${name} → ${input.homeName}`,
+    text: `${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}\n\n${nobody}\nInbound queue: ${queue}\n`,
     html:
-      `<p><strong>Family inquiry on an unclaimed listing</strong> — no one else received this.</p>` +
+      (isDemoListing(input)
+        ? `<p><strong>${pre}Family inquiry on ${aListing(input)}</strong> — ${esc(nobody)}</p>`
+        : `<p><strong>Family inquiry on an unclaimed listing</strong> — no one else received this.</p>`) +
       `<table style="font-size:14px">${rows.map(([k, v]) => `<tr><td style="color:#6b7280;padding-right:12px">${esc(k)}</td><td>${esc(v)}</td></tr>`).join('')}</table>` +
       `<p><a href="${esc(queue)}">Open the inbound queue →</a></p>`,
   };
