@@ -55,7 +55,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
     const home = await prisma.assistedLivingHome.findUnique({
       where: { id: homeId },
-      select: { id: true, name: true, operator: { select: { user: { select: { email: true, firstName: true } } } } },
+      select: { id: true, name: true, isDemo: true, operator: { select: { user: { select: { email: true, firstName: true } } } } },
     });
     if (!home) {
       return NextResponse.json({ error: 'Home not found' }, { status: 404 });
@@ -77,11 +77,15 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const dpOrganization = search.user?.dischargePlannerProfile?.organization || undefined;
 
     // Always loop in the care team (Chris) so the tour gets coordinated.
-    void sendConciergeTourNotification({ requestId: params.id, facilityName: home.name, claimed, dpName, dpOrganization });
+    const demoListing = home.isDemo === true;
+    void sendConciergeTourNotification({
+      requestId: params.id, facilityName: home.name, claimed, dpName, dpOrganization, demoListing, isTest: search.isTest === true,
+    });
 
-    if (search.isTest) {
-      // fix/concierge-outbound-safety: a TEST request never contacts a facility (no operator email, no claim drip).
-      console.warn(`[concierge tour] ${SUPPRESSED_TEST}: search ${params.id} home ${homeId}`);
+    if (search.isTest || demoListing) {
+      // fix/concierge-outbound-safety: a TEST request — or any request on a DEMO listing — never contacts a
+      // facility (no operator email, no claim drip).
+      console.warn(`[concierge tour] ${SUPPRESSED_TEST}: search ${params.id} home ${homeId}${demoListing ? ' (demo listing)' : ''}`);
     } else if (claimed && operatorEmail) {
       // Operator gets the lead directly (generic copy, no PHI).
       const appUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://getcarelinkai.com').replace(/\/$/, '');

@@ -236,6 +236,8 @@ export async function POST(request: NextRequest) {
         requesterUserId: session.user.id,
         facilityName: inquiry.home?.name ?? 'a facility',
         claimed: !adminOnly && !!(operatorEmail && !isUnclaimedHome(operatorEmail)),
+        demoListing,
+        isTest: testInquiry,
       }).catch(() => {});
     }
 
