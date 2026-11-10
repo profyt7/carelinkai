@@ -7,6 +7,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
+import { REAL_FAMILY_USER } from '@/lib/inquiries/test-inquiry';
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -44,6 +45,8 @@ export async function GET(request: NextRequest) {
 
     if (operator) {
       whereClause.operatorId = operator.id;
+      // Test families' tour requests (+cltest@) are admin-only — never in an operator's queue.
+      whereClause.family = { user: REAL_FAMILY_USER };
     }
 
     if (status) {
