@@ -183,8 +183,9 @@ export async function POST(request: NextRequest) {
     }); res.headers.set('X-RateLimit-Limit', String(MAX_VERIFICATION_ATTEMPTS)); return res; }
     }
     
-    // Check if email is already verified
-    if (user.emailVerified) {
+    // Check if email is already verified. A verified account still stuck in PENDING gets a
+    // fresh link instead (clicking it activates the account in /api/auth/verify-email).
+    if (user.emailVerified && user.status !== UserStatus.PENDING) {
       // Log the attempt
       
       return NextResponse.json({

@@ -177,6 +177,15 @@ export async function GET(request: NextRequest) {
     
     // Check if email is already verified
     if (user.emailVerified) {
+      // Self-heal: verified but still PENDING (e.g. verified by an admin before that route
+      // activated accounts) could never sign in — "please verify" on login, "already
+      // verified" here. Verification means the account is active.
+      if (user.status === UserStatus.PENDING) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { status: UserStatus.ACTIVE, verificationToken: null, verificationTokenExpiry: null },
+        });
+      }
       // Log the attempt
       await prisma.auditLog.create({
         data: {
@@ -376,6 +385,15 @@ export async function POST(request: NextRequest) {
     
     // Check if email is already verified
     if (user.emailVerified) {
+      // Self-heal: verified but still PENDING (e.g. verified by an admin before that route
+      // activated accounts) could never sign in — "please verify" on login, "already
+      // verified" here. Verification means the account is active.
+      if (user.status === UserStatus.PENDING) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { status: UserStatus.ACTIVE, verificationToken: null, verificationTokenExpiry: null },
+        });
+      }
       // Log the attempt
       await prisma.auditLog.create({
         data: {
