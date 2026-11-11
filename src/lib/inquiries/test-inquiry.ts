@@ -14,3 +14,10 @@ export function isTestInquiryEmail(email: string | null | undefined): boolean {
 
 /** Spread into any operator-facing or metrics `where` on Inquiry. */
 export const REAL_INQUIRIES = { isTest: false } as const;
+
+/**
+ * Records with no isTest column of their own (TourRequest, Lead) are test when the family's account email
+ * matches TEST_EMAIL_PATTERN. Prisma filter on that User: keeps only real (non-test) families.
+ * Keep in sync with TEST_EMAIL_PATTERN (/\+cltest@/i).
+ */
+export const REAL_FAMILY_USER = { NOT: { email: { contains: '+cltest@', mode: 'insensitive' as const } } };

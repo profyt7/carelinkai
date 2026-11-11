@@ -159,10 +159,15 @@ function isClaimedCopy(input: KindInput): boolean {
 /** Admin alert body — the fields listed in the header comment, nothing else. */
 export function adminAlertContent(input: UnclaimedInquiryInput): { subject: string; text: string; html: string } {
   const name = input.contactName?.trim() || 'name not given';
-  const claimedCopy = isClaimedCopy(input) && !!input.inquiryId;
-  const queue = claimedCopy ? `${appUrl()}/admin/inquiries/${encodeURIComponent(input.inquiryId!)}` : `${appUrl()}/admin/inbound-leads`;
-  const queueLabel = claimedCopy ? 'Inquiry' : 'Inbound queue';
-  const queueCta = claimedCopy ? 'Open the inquiry →' : 'Open the inbound queue →';
+  // Claimed copy: no queue row — link the inquiry, or for a tour request the home (there is no admin tours page).
+  const claimedCopy = isClaimedCopy(input);
+  const queue = !claimedCopy
+    ? `${appUrl()}/admin/inbound-leads`
+    : input.inquiryId
+      ? `${appUrl()}/admin/inquiries/${encodeURIComponent(input.inquiryId)}`
+      : `${appUrl()}/admin/homes/${encodeURIComponent(input.homeId)}`;
+  const queueLabel = !claimedCopy ? 'Inbound queue' : input.inquiryId ? 'Inquiry' : 'Home';
+  const queueCta = !claimedCopy ? 'Open the inbound queue →' : input.inquiryId ? 'Open the inquiry →' : 'Open the home →';
   const generic = isTestOnly(input) || isClaimedCopy(input);
   const label = listingLabel(input);
   const pre = testPrefix(input);
@@ -247,17 +252,18 @@ async function sendFamilyConfirmation(input: UnclaimedInquiryInput, leadId: stri
 
 /** Queue the inquiry + alert admin + confirm to the family. Never throws. */
 /**
- * Admin copy of an inquiry on a CLAIMED home (task: admin sees every inquiry). The operator still gets
+ * Admin copy of an inquiry or tour request on a CLAIMED home (task: admin sees every inquiry). The operator still gets
  * their own SMS/email; this adds no inbound-queue row and sends nothing to the family. Same fields as
  * the unclaimed alert (form fields only — no care needs, no free-text notes). Never throws.
  */
 export async function sendClaimedInquiryAdminCopy(
-  input: Omit<UnclaimedInquiryInput, 'listingKind' | 'isTest'> & { inquiryId: string }
+  input: Omit<UnclaimedInquiryInput, 'listingKind' | 'isTest'>
 ): Promise<'sent' | 'failed' | 'skipped'> {
+  const ref = input.inquiryId ?? input.tourRequestId ?? input.homeId;
   try {
-    return await sendAdminLeadEmail({ leadId: input.inquiryId, feature: 'inquiry-admin-copy', ...adminAlertContent({ ...input, listingKind: 'claimed' }) });
+    return await sendAdminLeadEmail({ leadId: ref, feature: 'inquiry-admin-copy', ...adminAlertContent({ ...input, listingKind: 'claimed' }) });
   } catch (e) {
-    captureError(e instanceof Error ? e : new Error(String(e)), { tags: { feature: 'inquiry-admin-copy' }, extra: { inquiryId: input.inquiryId } });
+    captureError(e instanceof Error ? e : new Error(String(e)), { tags: { feature: 'inquiry-admin-copy' }, extra: { inquiryId: input.inquiryId, tourRequestId: input.tourRequestId } });
     return 'failed';
   }
 }

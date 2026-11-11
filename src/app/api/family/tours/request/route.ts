@@ -21,7 +21,8 @@ import { notifyUnclaimedHomeInquiry, isUnclaimedHome } from "@/lib/claim-engine/
 import { recordLeadConsent } from "@/lib/consent/lead-consent";
 import { LEAD_CONSENT_FORMS } from "@/lib/consent/lead-consent-text";
 import { sendNewLeadOperatorEmail } from "@/lib/email";
-import { routeUnclaimedInquiry } from "@/lib/leads/web-inquiry-lead";
+import { routeUnclaimedInquiry, sendClaimedInquiryAdminCopy } from "@/lib/leads/web-inquiry-lead";
+import { isTestInquiryEmail } from "@/lib/inquiries/test-inquiry";
 
 const tourRequestSchema = z.object({
   homeId: z.string(),
@@ -350,7 +351,12 @@ export async function POST(request: NextRequest) {
     });
 
     // === STEP 9: Send Notification ===
-    const operatorPhone = tourRequest.operator?.user?.phone;
+    // Demo listing (home.isDemo) or test family (account email matches TEST_EMAIL_PATTERN): admin-only —
+    // no operator SMS/email and no claim engine; it goes to the admin queue marked [TEST].
+    const demoListing = tourRequest.home?.isDemo === true;
+    const testFamily = isTestInquiryEmail(tourRequest.family?.user?.email);
+    const adminOnly = demoListing || testFamily;
+    const operatorPhone = adminOnly ? null : tourRequest.operator?.user?.phone;
     if (operatorPhone) {
       const familyName = tourRequest.family?.user
         ? `${tourRequest.family.user.firstName} ${tourRequest.family.user.lastName}`
@@ -366,7 +372,7 @@ export async function POST(request: NextRequest) {
     // Email backup of the operator tour alert — CLAIMED homes only (never the
     // directory sentinel). SMS can be missing/undeliverable; email is reliable.
     const operatorEmail = tourRequest.operator?.user?.email;
-    if (operatorEmail && !isUnclaimedHome(operatorEmail)) {
+    if (!adminOnly && operatorEmail && !isUnclaimedHome(operatorEmail)) {
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://getcarelinkai.com';
       sendNewLeadOperatorEmail({
         facilityName: tourRequest.home.name,
@@ -380,7 +386,7 @@ export async function POST(request: NextRequest) {
     // Tour→claim "pull" engine: a tour is the HOTTEST lead — nudge an UNCLAIMED
     // facility to claim with urgent copy ("confirm the visit"). Self-filters to
     // unclaimed homes with a known outreach email; non-blocking, generic (no PHI).
-    notifyUnclaimedHomeInquiry({
+    if (!adminOnly) notifyUnclaimedHomeInquiry({
       homeId: tourRequest.homeId,
       inquiryId: tourRequest.id,
       trigger: 'tour',
@@ -388,10 +394,11 @@ export async function POST(request: NextRequest) {
 
     // OL-179: an UNCLAIMED home has no operator to confirm the visit and the claim
     // drip is paused — queue it in the admin inbound queue ("web tour request"),
-    // alert ADMIN_NOTIFY_EMAIL and confirm to the family. Contact is the family's
-    // account (this form types none). Never throws.
+    // alert ADMIN_NOTIFY_EMAIL and confirm to the family. Demo/test tours take the
+    // same admin-only path ([TEST]); a real CLAIMED tour sends the admin a copy.
+    // Contact is the family's account (this form types none). Never throws.
     const homeUnclaimed = isUnclaimedHome(operatorEmail);
-    if (homeUnclaimed) {
+    {
       const u = tourRequest.family?.user;
       // Payer lane only if this family gave one: their latest inquiry or concierge-search answer.
       const lastPayer =
@@ -403,7 +410,7 @@ export async function POST(request: NextRequest) {
               .findFirst({ where: { userId: u.id, payerSource: { not: null } }, orderBy: { createdAt: 'desc' }, select: { payerSource: true } })
               .catch(() => null)
           : null);
-      await routeUnclaimedInquiry({
+      const lead = {
         inquiryId: null,
         tourRequestId: tourRequest.id,
         homeId: tourRequest.homeId,
@@ -415,7 +422,17 @@ export async function POST(request: NextRequest) {
         additionalInfo: null,
         requestedTimes: Array.isArray(tourRequest.requestedTimes) ? (tourRequest.requestedTimes as string[]) : [],
         receivedAt: tourRequest.createdAt,
-      });
+      };
+      if (homeUnclaimed || adminOnly) {
+        await routeUnclaimedInquiry({
+          ...lead,
+          listingKind: demoListing ? 'demo' : homeUnclaimed ? 'unclaimed' : 'claimed',
+          isTest: testFamily,
+        });
+      } else {
+        // Claimed, real: the operator was alerted above; ADMIN_NOTIFY_EMAIL gets a copy ("claimed listing").
+        await sendClaimedInquiryAdminCopy(lead);
+      }
     }
 
     // === STEP 10: Prepare Response ===
