@@ -18,6 +18,8 @@ import { errorSummary } from '@/lib/log-safe';
 import { isPaidFeatureEnabled } from "@/lib/billing/paid-features";
 import { isBoosted } from "@/lib/providers/boost";
 import { sendNewLeadOperatorEmail } from "@/lib/email";
+import { isTestInquiryEmail } from "@/lib/inquiries/test-inquiry";
+import { sendMarketplaceLeadAdminCopy } from "@/lib/leads/marketplace-lead-admin";
 
 // Validation schema
 const createLeadSchema = z.object({
@@ -112,6 +114,9 @@ export async function POST(req: NextRequest) {
     let targetName = "";
     // Provider Boost perk: instant lead alert (set below when the target provider is boosted).
     let boostAlert: { businessName: string; toEmail: string; contactName: string } | null = null;
+    // Demo target (the caregiver's/provider's account is a demo account) or test family: admin-only.
+    let demoTarget = false;
+    const testFamily = isTestInquiryEmail(family.user.email);
 
     if (data.targetType === "AIDE") {
       const aide = await prisma.caregiver.findUnique({
@@ -121,6 +126,7 @@ export async function POST(req: NextRequest) {
             select: {
               firstName: true,
               lastName: true,
+              isDemo: true,
             },
           },
         },
@@ -128,6 +134,7 @@ export async function POST(req: NextRequest) {
 
       if (aide) {
         targetExists = true;
+        demoTarget = aide.user.isDemo === true;
         targetName = `${aide.user.firstName} ${aide.user.lastName}`;
       }
     } else if (data.targetType === "PROVIDER") {
@@ -140,13 +147,15 @@ export async function POST(req: NextRequest) {
           contactName: true,
           boostStatus: true,
           founderBoostEndsAt: true,
+          user: { select: { isDemo: true } },
         },
       });
 
       if (provider) {
         targetExists = true;
         targetName = provider.businessName;
-        if (isPaidFeatureEnabled("PROVIDER_BOOST") && isBoosted(provider) && provider.contactEmail) {
+        demoTarget = provider.user?.isDemo === true;
+        if (!testFamily && !demoTarget && isPaidFeatureEnabled("PROVIDER_BOOST") && isBoosted(provider) && provider.contactEmail) {
           boostAlert = { businessName: provider.businessName, toEmail: provider.contactEmail, contactName: provider.contactName };
         }
       }
@@ -219,6 +228,22 @@ export async function POST(req: NextRequest) {
         ctaUrl: `${appUrl}/provider`,
       }).catch(() => {});
     }
+
+    // 7c. ADMIN_NOTIFY_EMAIL gets a copy of every lead ("[TEST]" for a test family or demo profile). Never throws.
+    await sendMarketplaceLeadAdminCopy({
+      leadId: lead.id,
+      targetType: data.targetType,
+      targetId: data.targetId,
+      targetName,
+      contactName: `${family.user.firstName ?? ''} ${family.user.lastName ?? ''}`.trim() || null,
+      contactEmail: family.user.email,
+      contactPhone: family.user.phone ?? null,
+      preferredStartDate: lead.preferredStartDate,
+      expectedHoursPerWeek: lead.expectedHoursPerWeek,
+      isTest: testFamily,
+      demoTarget,
+      targetEmailed: !!boostAlert,
+    });
 
     // 8. Return success response
     return NextResponse.json(

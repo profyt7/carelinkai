@@ -13,6 +13,7 @@ import { requireAnyRole } from '@/lib/rbac';
 import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import { UserRole, LeadStatus, LeadTargetType, BackgroundCheckStatus } from '@prisma/client';
+import { REAL_FAMILY_USER } from '@/lib/inquiries/test-inquiry';
 
 /**
  * GET /api/admin/metrics
@@ -84,6 +85,7 @@ export async function GET(req: NextRequest) {
     // Total leads
     const totalLeads = await prisma.lead.count({
       where: {
+        family: { user: REAL_FAMILY_USER }, // metrics never count test families' leads
         deletedAt: null, // Exclude soft-deleted leads
       },
     });
@@ -92,6 +94,7 @@ export async function GET(req: NextRequest) {
     const leadsByStatus = await prisma.lead.groupBy({
       by: ['status'],
       where: {
+        family: { user: REAL_FAMILY_USER }, // metrics never count test families' leads
         deletedAt: null,
       },
       _count: true,
@@ -106,6 +109,7 @@ export async function GET(req: NextRequest) {
     const leadsByTargetType = await prisma.lead.groupBy({
       by: ['targetType'],
       where: {
+        family: { user: REAL_FAMILY_USER }, // metrics never count test families' leads
         deletedAt: null,
       },
       _count: true,
@@ -119,6 +123,7 @@ export async function GET(req: NextRequest) {
     // Leads created in last 7 days
     const leadsLast7Days = await prisma.lead.count({
       where: {
+        family: { user: REAL_FAMILY_USER }, // metrics never count test families' leads
         deletedAt: null,
         createdAt: {
           gte: last7Days,
@@ -129,6 +134,7 @@ export async function GET(req: NextRequest) {
     // Leads created in last 30 days
     const leadsLast30Days = await prisma.lead.count({
       where: {
+        family: { user: REAL_FAMILY_USER }, // metrics never count test families' leads
         deletedAt: null,
         createdAt: {
           gte: last30Days,
