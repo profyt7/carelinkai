@@ -9,6 +9,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserScope } from '@/lib/auth-utils';
+import { REAL_INQUIRIES } from '@/lib/inquiries/test-inquiry';
 
 /** Matches no row (every scoped model has an `id`). */
 export const NONE = { id: { in: [] as string[] } };
@@ -23,7 +24,14 @@ export type DashboardScope = {
   caregiver: any;
 };
 
+/** Dashboards never count or list test inquiries (isTest), for any role. */
 export async function dashboardScope(user: { id: string; role: string }): Promise<DashboardScope | NextResponse> {
+  const s = await baseScope(user);
+  if (s instanceof NextResponse) return s;
+  return { ...s, inquiry: { ...s.inquiry, ...REAL_INQUIRIES } };
+}
+
+async function baseScope(user: { id: string; role: string }): Promise<DashboardScope | NextResponse> {
   if (user.role === 'ADMIN' || user.role === 'STAFF') {
     return { resident: {}, inquiry: {}, incident: {}, assess: {}, home: {}, cert: {}, caregiver: { employmentStatus: 'ACTIVE' } };
   }

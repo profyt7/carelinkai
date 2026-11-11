@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { UserRole } from "@prisma/client";
+import { REAL_INQUIRIES } from '@/lib/inquiries/test-inquiry';
 
 export const dynamic = "force-dynamic";
 
@@ -105,7 +106,7 @@ export async function GET(request: NextRequest) {
         
         const [inquiries, residents] = await Promise.all([
           prisma.inquiry.count({
-            where: homeIds.length > 0 ? { homeId: { in: homeIds } } : { homeId: "none" },
+            where: homeIds.length > 0 ? { ...REAL_INQUIRIES, homeId: { in: homeIds } } : { homeId: "none" },
           }),
           prisma.resident.count({
             where: homeIds.length > 0 ? { homeId: { in: homeIds }, status: "ACTIVE" } : { homeId: "none" },

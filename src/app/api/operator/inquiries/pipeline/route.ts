@@ -13,6 +13,7 @@ import { getConversionStats } from '@/lib/services/inquiry-conversion';
 import { prisma } from '@/lib/prisma';
 import { UserRole } from '@prisma/client';
 import { captureError, isExpectedAuthError } from '@/lib/sentry';
+import { REAL_INQUIRIES } from '@/lib/inquiries/test-inquiry';
 
 export async function GET(request: NextRequest) {
   try {
@@ -46,6 +47,7 @@ export async function GET(request: NextRequest) {
       }
     }
     // Admins see all inquiries (no where clause)
+    whereClause = { ...whereClause, ...REAL_INQUIRIES }; // metrics never count test inquiries
 
     // Get conversion statistics scoped to operator.
     // scope.operatorId is the Operator record ID — getConversionStats filters by home.operatorId.

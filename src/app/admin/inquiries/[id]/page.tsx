@@ -14,6 +14,7 @@ import { PayerLaneRow } from '@/components/admin/PayerLaneBadge';
 interface InquiryDetail {
   id: string;
   status: string;
+  isTest?: boolean;
   urgency: string;
   source: string;
   contactName: string | null;
@@ -194,6 +195,20 @@ export default function AdminInquiryDetailPage() {
     }
   };
 
+  const deleteTestInquiry = async () => {
+    if (!inquiry?.isTest) return;
+    if (!confirm('Delete this test inquiry and its inbound-lead row? This cannot be undone.')) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/inquiries/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error((await res.json().catch(() => null))?.error || 'Failed to delete');
+      router.push('/admin/inquiries');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to delete');
+      setSaving(false);
+    }
+  };
+
   const addNote = async () => {
     if (!newNote.trim()) return;
     setSaving(true);
@@ -257,6 +272,19 @@ export default function AdminInquiryDetailPage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {inquiry.isTest && (
+                <>
+                  <span className="px-3 py-1 rounded-full text-sm font-medium bg-warning-100 text-warning-800">TEST</span>
+                  <button
+                    type="button"
+                    onClick={deleteTestInquiry}
+                    disabled={saving}
+                    className="px-3 py-1 rounded-md text-sm font-medium border border-error-300 text-error-700 hover:bg-error-50 disabled:opacity-50"
+                  >
+                    Delete test inquiry
+                  </button>
+                </>
+              )}
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(inquiry.status)}`}>
                 {inquiry.status.replace(/_/g, ' ')}
               </span>

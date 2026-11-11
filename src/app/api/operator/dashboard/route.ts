@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { UserRole } from "@prisma/client";
+import { REAL_INQUIRIES } from '@/lib/inquiries/test-inquiry';
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -68,7 +69,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Construct filters for related models
-    const inquiryFilter = homeIds ? { homeId: { in: homeIds } } : {};
+    const inquiryFilter = homeIds ? { ...REAL_INQUIRIES, homeId: { in: homeIds } } : { ...REAL_INQUIRIES };
     const residentFilter = homeIds ? { homeId: { in: homeIds } } : {};
     const licenseFilter = homeIds ? { homeId: { in: homeIds } } : {};
 

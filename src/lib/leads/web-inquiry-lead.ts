@@ -58,7 +58,13 @@ export type UnclaimedInquiryInput = {
    * as an unclaimed listing, but the admin email is marked "[TEST]" and says no operator
    * or facility was notified. Default 'unclaimed'.
    */
-  listingKind?: 'unclaimed' | 'demo';
+  listingKind?: 'unclaimed' | 'demo' | 'claimed';
+  /**
+   * The inquiry is a test (contact email matches TEST_EMAIL_PATTERN, Inquiry.isTest): routed
+   * admin-only like a demo listing — "[TEST]" subject, no operator or facility notified.
+   * listingKind then says which kind of home it was sent to ('claimed' is only used here).
+   */
+  isTest?: boolean;
 };
 
 export type UnclaimedInquiryResult = {
@@ -102,21 +108,31 @@ export function urgencyFromRequestedTimes(times: ReadonlyArray<string | Date> | 
   return Number.isFinite(soonest) && soonest - now.getTime() <= 7 * 86_400_000 ? 'THIS_WEEK' : 'PLANNING';
 }
 
-function isDemoListing(input: Pick<UnclaimedInquiryInput, 'listingKind'>): boolean {
+type KindInput = Pick<UnclaimedInquiryInput, 'listingKind' | 'isTest'>;
+function isDemoListing(input: KindInput): boolean {
   return input.listingKind === 'demo';
 }
-function listingLabel(input: Pick<UnclaimedInquiryInput, 'listingKind'>): string {
-  return isDemoListing(input) ? 'demo listing' : 'unclaimed listing';
+/** Demo listing or test inquiry: admin-only, "[TEST]" everywhere. */
+function isTestOnly(input: KindInput): boolean {
+  return isDemoListing(input) || input.isTest === true;
 }
-function aListing(input: Pick<UnclaimedInquiryInput, 'listingKind'>): string {
-  return isDemoListing(input) ? 'a demo listing' : 'an unclaimed listing';
+function listingLabel(input: KindInput): string {
+  return input.listingKind === 'demo' ? 'demo listing' : input.listingKind === 'claimed' ? 'claimed listing' : 'unclaimed listing';
 }
-function testPrefix(input: Pick<UnclaimedInquiryInput, 'listingKind'>): string {
-  return isDemoListing(input) ? '[TEST] ' : '';
+function aListing(input: KindInput): string {
+  return input.listingKind === 'demo' ? 'a demo listing' : input.listingKind === 'claimed' ? 'a claimed listing' : 'an unclaimed listing';
+}
+function testPrefix(input: KindInput): string {
+  return isTestOnly(input) ? '[TEST] ' : '';
+}
+function nobodyNotified(input: KindInput): string {
+  if (isDemoListing(input)) return 'This is a demo listing: no operator or facility was notified.';
+  if (input.isTest) return 'This is a test inquiry (contact email matches the test pattern): no operator or facility was notified.';
+  return 'The home has not claimed its listing, so no one else received this.';
 }
 
 /** The queue row's one-line reason (≤ 280): home, payer lane, timeframe — or, for a tour, home, requested time, lane if given. */
-export function webInquiryReason(input: Pick<UnclaimedInquiryInput, 'homeName' | 'payerSource' | 'additionalInfo' | 'tourRequestId' | 'requestedTimes' | 'listingKind'>): string {
+export function webInquiryReason(input: Pick<UnclaimedInquiryInput, 'homeName' | 'payerSource' | 'additionalInfo' | 'tourRequestId' | 'requestedTimes' | 'listingKind' | 'isTest'>): string {
   if (isTourRequest(input)) {
     const lane = isPayerSource(input.payerSource) ? ` · ${payerLaneLabel(input.payerSource)}` : '';
     return `${testPrefix(input)}Web tour request on ${listingLabel(input)}: ${input.homeName} · requested ${requestedTimesLabel(input.requestedTimes)}${lane}`.slice(0, 280);
@@ -139,9 +155,7 @@ export function adminAlertContent(input: UnclaimedInquiryInput): { subject: stri
   const queue = `${appUrl()}/admin/inbound-leads`;
   const label = listingLabel(input);
   const pre = testPrefix(input);
-  const nobody = isDemoListing(input)
-    ? 'This is a demo listing: no operator or facility was notified.'
-    : 'The home has not claimed its listing, so no one else received this.';
+  const nobody = nobodyNotified(input);
   if (isTourRequest(input)) {
     const rows: Array<[string, string]> = [
       ['Family', name],
@@ -155,7 +169,7 @@ export function adminAlertContent(input: UnclaimedInquiryInput): { subject: stri
       subject: `${pre}🗓️ Tour request (${label}): ${name} → ${input.homeName}`,
       text: `${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}\n\n${nobody} Nothing is confirmed to the family yet.\nInbound queue: ${queue}\n`,
       html:
-        (isDemoListing(input)
+        (isTestOnly(input)
           ? `<p><strong>${pre}Tour request on ${aListing(input)}</strong> — ${esc(nobody)} Nothing is confirmed to the family yet.</p>`
           : `<p><strong>Tour request on an unclaimed listing</strong> — no one else received this; nothing is confirmed to the family yet.</p>`) +
         `<table style="font-size:14px">${rows.map(([k, v]) => `<tr><td style="color:#6b7280;padding-right:12px">${esc(k)}</td><td>${esc(v)}</td></tr>`).join('')}</table>` +
@@ -174,7 +188,7 @@ export function adminAlertContent(input: UnclaimedInquiryInput): { subject: stri
     subject: `${pre}📝 Family inquiry (${label}): ${name} → ${input.homeName}`,
     text: `${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}\n\n${nobody}\nInbound queue: ${queue}\n`,
     html:
-      (isDemoListing(input)
+      (isTestOnly(input)
         ? `<p><strong>${pre}Family inquiry on ${aListing(input)}</strong> — ${esc(nobody)}</p>`
         : `<p><strong>Family inquiry on an unclaimed listing</strong> — no one else received this.</p>`) +
       `<table style="font-size:14px">${rows.map(([k, v]) => `<tr><td style="color:#6b7280;padding-right:12px">${esc(k)}</td><td>${esc(v)}</td></tr>`).join('')}</table>` +

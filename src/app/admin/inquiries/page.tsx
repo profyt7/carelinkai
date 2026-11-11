@@ -16,6 +16,7 @@ import toast from 'react-hot-toast';
 interface Inquiry {
   id: string;
   status: string;
+  isTest?: boolean;
   urgency: string;
   source: string;
   contactName: string | null;
@@ -509,6 +510,9 @@ export default function AdminInquiriesPage() {
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(inquiry.status)}`}>
                           {inquiry.status.replace(/_/g, ' ')}
                         </span>
+                        {inquiry.isTest && (
+                          <span className="ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-warning-100 text-warning-800">TEST</span>
+                        )}
                         {inquiry.convertedResident && (
                           <div className="mt-1 flex items-center text-xs text-success-600">
                             <FiCheckCircle className="w-3 h-3 mr-1" />

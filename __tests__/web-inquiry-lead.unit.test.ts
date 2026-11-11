@@ -182,7 +182,7 @@ describe('/api/inquiries wiring + confirmation screen', () => {
 
   it('routes only unclaimed homes into the inbound queue', () => {
     // Demo listings (home.isDemo) take the same admin-only route, marked "[TEST]" (demo-safe-inquiries.api.test.ts).
-    expect(route).toMatch(/const unclaimed = isUnclaimedHome\(operatorEmail\);\s*if \(unclaimed \|\| demoListing\) \{\s*await routeUnclaimedInquiry\(\{\s*listingKind: demoListing \? 'demo' : 'unclaimed',/);
+    expect(route).toMatch(/const unclaimed = isUnclaimedHome\(operatorEmail\);\s*if \(unclaimed \|\| adminOnly\) \{\s*await routeUnclaimedInquiry\(\{\s*listingKind: demoListing \? 'demo' : unclaimed \? 'unclaimed' : 'claimed',\s*isTest: testInquiry,/);
   });
 
   it('the unclaimed confirmation screen promises an advisor, not the home or a time', () => {
