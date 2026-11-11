@@ -37,10 +37,10 @@ npm run test:e2e:report
 
 | Role | Email | Password |
 |------|-------|----------|
-| Admin | admin.test@carelinkai.com | `DEMO_ACCOUNT_PASSWORD` |
-| Operator | operator.test@carelinkai.com | `DEMO_ACCOUNT_PASSWORD` |
-| Caregiver | caregiver.test@carelinkai.com | `DEMO_ACCOUNT_PASSWORD` |
-| Family | family.test@carelinkai.com | `DEMO_ACCOUNT_PASSWORD` |
+| Admin | admin.test@seed.carelinkai.test | `DEMO_ACCOUNT_PASSWORD` |
+| Operator | operator.test@seed.carelinkai.test | `DEMO_ACCOUNT_PASSWORD` |
+| Caregiver | caregiver.test@seed.carelinkai.test | `DEMO_ACCOUNT_PASSWORD` |
+| Family | family.test@seed.carelinkai.test | `DEMO_ACCOUNT_PASSWORD` |
 
 ## Test Files
 

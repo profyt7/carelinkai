@@ -17,7 +17,7 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
 
 const ts = Date.now();
-const OP = `op-featured-${ts}@test.carelinkai.com`;
+const OP = `op-featured-${ts}@test.carelinkai.test`;
 const HOME = `E2E Featured Home ${ts}`;
 
 const CONSENT_INIT = () => {

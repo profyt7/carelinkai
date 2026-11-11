@@ -9,7 +9,7 @@ test.describe('[non-bypass] Credentials: Caregiver credential upload (real flow)
   // Skip in CI for now; this uses real login and dev-only endpoints
   test.skip(!!process.env.CI, 'Run locally only');
 
-  const CAREGIVER_EMAIL = process.env.CAREGIVER_EMAIL || 'caregiver+e2e@carelinkai.com';
+  const CAREGIVER_EMAIL = process.env.CAREGIVER_EMAIL || 'caregiver+e2e@seed.carelinkai.test';
   const CAREGIVER_PASSWORD = process.env.CAREGIVER_PASSWORD || demoPassword();
 
   test('creates caregiver, logs in, uploads credential, and sees it listed', async ({ page, context }) => {

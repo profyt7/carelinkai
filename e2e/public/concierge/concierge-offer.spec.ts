@@ -96,7 +96,7 @@ test.describe('@critical /concierge offer + payer screener', () => {
     await expect(form).toHaveAttribute('data-mode-loaded', 'true');
     await expect(form).toHaveAttribute('data-mode', 'request');
     await expect(form.getByTestId('concierge-request-cta')).toHaveText('Request your shortlist');
-    const email = `family-${ts}@test.carelinkai.com`;
+    const email = `family-${ts}@test.carelinkai.test`;
     await form.locator('input[name="contactName"]').fill('E2E Family');
     await form.locator('input[name="contactEmail"]').fill(email);
     await form.locator('input[name="contactPhone"]').fill('216-555-0199');
@@ -115,7 +115,7 @@ test.describe('@critical /concierge offer + payer screener', () => {
     await expect(page.getByTestId('concierge-request-success')).toBeVisible();
 
     // The request is in the EXISTING DP concierge queue (/admin/concierge), tagged + carrying the lane + the order.
-    const adminEmail = 'admin@carelinkai.com';
+    const adminEmail = 'admin@seed.carelinkai.test';
     await request.post('/api/dev/upsert-admin', { data: { email: adminEmail } });
     const ctx = await browser.newContext();
     const admin = await ctx.newPage();
@@ -210,7 +210,7 @@ test.describe('@critical /concierge offer + payer screener', () => {
   }
 
   test('the API refuses a free-lane request even if posted directly (request + checkout)', async ({ request }) => {
-    const data = { payerSource: 'MEDICAID_WAIVER', contactName: 'X Y', contactEmail: `x-${ts}@test.carelinkai.com`, careNeeds: 'memory care please' };
+    const data = { payerSource: 'MEDICAID_WAIVER', contactName: 'X Y', contactEmail: `x-${ts}@test.carelinkai.test`, careNeeds: 'memory care please' };
     const res = await request.post('/api/concierge/request', { headers: { 'x-forwarded-for': `203.0.113.${(ts % 200) + 1}` }, data });
     expect(res.status()).toBe(400);
     expect((await res.json()).freeHelp).toBe('/cleveland/assisted-living?waiver=1');
@@ -225,7 +225,7 @@ test.describe('@critical /concierge offer + payer screener', () => {
     expect(await offer.json()).toMatchObject({ mode: 'request', checkoutEnabled: false, priceDisplay: '$399' });
     const co = await request.post('/api/concierge/checkout', {
       headers: { 'x-forwarded-for': `203.0.113.${(ts % 200) + 3}` },
-      data: { payerSource: 'PRIVATE_FUNDS', contactName: 'X Y', contactEmail: `co-${ts}@test.carelinkai.com`, careNeeds: 'memory care please' },
+      data: { payerSource: 'PRIVATE_FUNDS', contactName: 'X Y', contactEmail: `co-${ts}@test.carelinkai.test`, careNeeds: 'memory care please' },
     });
     expect(co.status()).toBe(410);
     expect((await co.json()).fallback).toBe('request');

@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json().catch(() => ({} as any));
-    const email = ((body.email as string) || 'provider+e2e@carelinkai.com').toLowerCase();
+    const email = ((body.email as string) || 'provider+e2e@seed.carelinkai.test').toLowerCase();
     const businessName = (body.businessName as string) || 'E2E Provider';
     const serviceTypes = Array.isArray(body.serviceTypes) ? (body.serviceTypes as string[]).map(String) : [];
     const deliveryModes = Array.isArray(body.deliveryModes) ? (body.deliveryModes as string[]).map(String) : [];

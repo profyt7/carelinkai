@@ -20,8 +20,8 @@
 import { test, expect, type Page } from '@playwright/test';
 
 const ts = Date.now();
-const OP_EMAIL = `search-cards-op-${ts}@test.carelinkai.com`;
-const FAMILY_EMAIL = `search-cards-family-${ts}@test.carelinkai.com`;
+const OP_EMAIL = `search-cards-op-${ts}@test.carelinkai.test`;
+const FAMILY_EMAIL = `search-cards-family-${ts}@test.carelinkai.test`;
 const CITY = `Cardtown${ts}`;
 const NAMES = [`E2E Cards Alder ${ts}`, `E2E Cards Birch ${ts}`, `E2E Cards Cedar ${ts}`];
 const PROFILE = encodeURIComponent(JSON.stringify({ careLevelNeeded: ['ASSISTED'], budget: { min: 2000, max: 8000 }, mobilityLevel: 4 }));

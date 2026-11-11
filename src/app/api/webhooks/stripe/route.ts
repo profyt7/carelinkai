@@ -3,6 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
+import { createGuardedResend } from '@/lib/email/recipient-guard';
 import { brandEmailArgs } from '@/lib/email';
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
@@ -612,7 +613,7 @@ async function notifyProviderRidePaid(ride: {
 }) {
   if (!process.env.RESEND_API_KEY) return;
   const { Resend } = await import("resend");
-  const resend = new Resend(process.env.RESEND_API_KEY);
+  const resend = createGuardedResend(process.env.RESEND_API_KEY);
   const APP_URL = process.env.NEXTAUTH_URL || "https://getcarelinkai.com";
   const passengerLabel = ride.residentName ?? (ride.family ? `${ride.family.user.firstName} ${ride.family.user.lastName}` : "Passenger");
   const scheduledStr = ride.scheduledAt.toLocaleString("en-US", {

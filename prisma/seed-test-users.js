@@ -9,7 +9,7 @@
  * - FAMILY: View-only access to specific resident
  *
  * Test Credentials:
- * - admin.test@carelinkai.com, operator.test@, caregiver.test@, family.test@
+ * - admin.test@seed.carelinkai.test, operator.test@, caregiver.test@, family.test@
  *   (all with the DEMO_ACCOUNT_PASSWORD env var)
  */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
@@ -65,10 +65,10 @@ function main() {
                     // ===== 1. CREATE ADMIN TEST USER =====
                     console.log('Creating admin test user...');
                     return [4 /*yield*/, prisma.user.upsert({
-                            where: { email: 'admin.test@carelinkai.com' },
+                            where: { email: 'admin.test@seed.carelinkai.test' },
                             update: {},
                             create: {
-                                email: 'admin.test@carelinkai.com',
+                                email: 'admin.test@seed.carelinkai.test',
                                 passwordHash: testPassword,
                                 firstName: 'Admin',
                                 lastName: 'Test User',
@@ -86,10 +86,10 @@ function main() {
                     // ===== 2. CREATE OPERATOR TEST USER WITH HOME =====
                     console.log('Creating operator test user...');
                     return [4 /*yield*/, prisma.user.upsert({
-                            where: { email: 'operator.test@carelinkai.com' },
+                            where: { email: 'operator.test@seed.carelinkai.test' },
                             update: {},
                             create: {
-                                email: 'operator.test@carelinkai.com',
+                                email: 'operator.test@seed.carelinkai.test',
                                 passwordHash: testPassword,
                                 firstName: 'Operator',
                                 lastName: 'Test User',
@@ -139,10 +139,10 @@ function main() {
                     // ===== 3. CREATE CAREGIVER TEST USER =====
                     console.log('Creating caregiver test user...');
                     return [4 /*yield*/, prisma.user.upsert({
-                            where: { email: 'caregiver.test@carelinkai.com' },
+                            where: { email: 'caregiver.test@seed.carelinkai.test' },
                             update: {},
                             create: {
-                                email: 'caregiver.test@carelinkai.com',
+                                email: 'caregiver.test@seed.carelinkai.test',
                                 passwordHash: testPassword,
                                 firstName: 'Caregiver',
                                 lastName: 'Test User',
@@ -190,10 +190,10 @@ function main() {
                     // ===== 4. CREATE FAMILY TEST USER WITH RESIDENT =====
                     console.log('Creating family test user...');
                     return [4 /*yield*/, prisma.user.upsert({
-                            where: { email: 'family.test@carelinkai.com' },
+                            where: { email: 'family.test@seed.carelinkai.test' },
                             update: {},
                             create: {
-                                email: 'family.test@carelinkai.com',
+                                email: 'family.test@seed.carelinkai.test',
                                 passwordHash: testPassword,
                                 firstName: 'Family',
                                 lastName: 'Test User',
@@ -253,7 +253,7 @@ function main() {
                                 name: 'Family Test User',
                                 relationship: 'Daughter',
                                 phone: '+1-555-0103',
-                                email: 'family.test@carelinkai.com',
+                                email: 'family.test@seed.carelinkai.test',
                                 isPrimaryContact: true,
                                 permissionLevel: 'FULL_ACCESS',
                                 contactPreference: 'EMAIL',
@@ -329,10 +329,10 @@ function main() {
                     console.log('✅ Test data created successfully');
                     console.log('\n🎉 Test users seed completed!\n');
                     console.log('Test Credentials:');
-                    console.log('  Admin: admin.test@carelinkai.com');
-                    console.log('  Operator: operator.test@carelinkai.com');
-                    console.log('  Caregiver: caregiver.test@carelinkai.com');
-                    console.log('  Family: family.test@carelinkai.com\n');
+                    console.log('  Admin: admin.test@seed.carelinkai.test');
+                    console.log('  Operator: operator.test@seed.carelinkai.test');
+                    console.log('  Caregiver: caregiver.test@seed.carelinkai.test');
+                    console.log('  Family: family.test@seed.carelinkai.test\n');
                     return [2 /*return*/];
             }
         });

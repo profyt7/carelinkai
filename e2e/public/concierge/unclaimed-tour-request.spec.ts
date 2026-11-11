@@ -14,11 +14,11 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
 
 const ts = Date.now();
-const ADMIN = 'admin@carelinkai.com';
-const FAMILY_EMAIL = `tour-family-${ts}@test.carelinkai.com`;
-const OP_EMAIL = `unclaimed-tour-op-${ts}@test.carelinkai.com`;
+const ADMIN = 'admin@seed.carelinkai.test';
+const FAMILY_EMAIL = `tour-family-${ts}@test.carelinkai.test`;
+const OP_EMAIL = `unclaimed-tour-op-${ts}@test.carelinkai.test`;
 const HOME = `E2E Unclaimed Tour Home ${ts}`;
-const ANON = { name: `Casey Visitor ${ts}`, email: `casey-${ts}@test.carelinkai.com` };
+const ANON = { name: `Casey Visitor ${ts}`, email: `casey-${ts}@test.carelinkai.test` };
 
 let homeId = '';
 

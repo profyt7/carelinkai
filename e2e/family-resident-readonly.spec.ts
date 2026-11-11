@@ -12,7 +12,7 @@ test.describe('Family Portal - Resident Read-only Views', () => {
   // correct: Open=2, Completed=1, Due Soon (14d)=1, Overdue=1.
   test('shows contacts and compliance summary for family member', async ({ page, request }) => {
     // 1) Upsert a family account
-    const famEmail = `family.e2e+${Date.now()}@carelinkai.com`;
+    const famEmail = `family.e2e+${Date.now()}@seed.carelinkai.test`;
     await page.goto('/');
     const upsertRes = await upsertFamily(page.request, famEmail);
     expect(upsertRes.success).toBeTruthy();

@@ -8,7 +8,7 @@
  */
 import { test, expect } from '@playwright/test';
 
-const EMAIL = `design-preview-${Date.now()}@test.carelinkai.com`;
+const EMAIL = `design-preview-${Date.now()}@test.carelinkai.test`;
 const FORBIDDEN = /\b\d+ Available\b|Waitlist/i;
 const PREVIEWS = ['family-search', 'family-dashboard', 'facility-profile', 'operator-dashboard'];
 
