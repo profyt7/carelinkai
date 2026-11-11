@@ -9,9 +9,9 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
 
 const ts = Date.now();
-const ADMIN = 'admin@carelinkai.com';
-const OP = `metrics-op-${ts}@test.carelinkai.com`;
-const DP = `metrics-dp-${ts}@test.carelinkai.com`;
+const ADMIN = 'admin@seed.carelinkai.test';
+const OP = `metrics-op-${ts}@test.carelinkai.test`;
+const DP = `metrics-dp-${ts}@test.carelinkai.test`;
 
 async function login(browser: Browser, email: string): Promise<Page> {
   const ctx = await browser.newContext();

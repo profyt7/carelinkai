@@ -163,7 +163,7 @@ async function seed() {
 
   // 1) Operator user and profile
   const operatorUser = await upsertUser({
-    email: 'operator@carelinkai.com',
+    email: 'operator@seed.carelinkai.test',
     firstName: 'Olivia',
     lastName: 'Operator',
     role: UserRole.OPERATOR,
@@ -208,7 +208,7 @@ async function seed() {
     });
   }
 
-  console.log('Done. Operator login: operator@carelinkai.com (password: $DEMO_ACCOUNT_PASSWORD)');
+  console.log('Done. Operator login: operator@seed.carelinkai.test (password: $DEMO_ACCOUNT_PASSWORD)');
 }
 
 seed()

@@ -98,7 +98,7 @@ export function normalizeCity(city: string | null | undefined): string {
 // test/demo signature (no isDemo column exists on AssistedLivingHome).
 const DEMO_NAME_SIGNATURE = /\b(test|demo|sample|example|dummy|fixture|founder co|chris senior care)\b/i;
 const DEMO_DESC_SIGNATURE = /e2e|lorem ipsum|dev home for|test home/i;
-const DEMO_OPERATOR_EMAIL = /@(carelinkai\.test|test\.carelinkai\.com)$/i;
+const DEMO_OPERATOR_EMAIL = /@(carelinkai\.test|test\.carelinkai\.test|test\.carelinkai\.com)$/i;
 
 /** Demo/test listings are excluded from ingestion entirely (OL-113 guardrail). */
 export function isExcludedDemoHome(home: {

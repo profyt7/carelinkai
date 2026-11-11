@@ -122,7 +122,7 @@ function upsertAdminUser() {
         return __generator(this, function (_c) {
             switch (_c.label) {
                 case 0:
-                    email = (_a = process.env.ADMIN_EMAIL) !== null && _a !== void 0 ? _a : 'admin@carelinkai.com';
+                    email = (_a = process.env.ADMIN_EMAIL) !== null && _a !== void 0 ? _a : 'admin@seed.carelinkai.test';
                     rawPassword = (_b = process.env.ADMIN_PASSWORD) !== null && _b !== void 0 ? _b : process.env.DEMO_ACCOUNT_PASSWORD;
                     return [4 /*yield*/, bcryptjs_1.default.hash(rawPassword, 10)];
                 case 1:
@@ -160,7 +160,7 @@ function upsertDischargePlannerUser() {
         return __generator(this, function (_c) {
             switch (_c.label) {
                 case 0:
-                    email = (_a = process.env.DISCHARGE_PLANNER_EMAIL) !== null && _a !== void 0 ? _a : 'demo.discharge@carelinkai.com';
+                    email = (_a = process.env.DISCHARGE_PLANNER_EMAIL) !== null && _a !== void 0 ? _a : 'demo.discharge@seed.carelinkai.test';
                     rawPassword = (_b = process.env.DISCHARGE_PLANNER_PASSWORD) !== null && _b !== void 0 ? _b : process.env.DEMO_ACCOUNT_PASSWORD;
                     return [4 /*yield*/, bcryptjs_1.default.hash(rawPassword, 10)];
                 case 1:

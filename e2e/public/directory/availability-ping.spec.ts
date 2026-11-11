@@ -20,8 +20,8 @@ import { test, expect, type Browser, type Page } from '@playwright/test';
 const ts = Date.now();
 const CRON = 'e2e-cron-secret';
 const SENTINEL = 'directory-unclaimed@carelinkai.system';
-const ADMIN = 'admin@carelinkai.com';
-const OP = `ping-op-${ts}@test.carelinkai.com`;
+const ADMIN = 'admin@seed.carelinkai.test';
+const OP = `ping-op-${ts}@test.carelinkai.test`;
 const H = {
   claimed: `E2E Ping Claimed ${ts}`,
   stop: `E2E Ping Stop ${ts}`,
@@ -80,7 +80,7 @@ test.describe('@critical one-tap availability ping', () => {
     // Contacts: opted-in everywhere except NoConsent. Unclaimed opt-in came via the portal (NOT admin_call) → must never be pinged.
     for (const [name, optedIn] of [[H.claimed, true], [H.stop, true], [H.garbage, true], [H.expire, true], [H.noConsent, false], [H.demo, true], [H.unclaimed, true]] as const) {
       const r = await request.post('/api/dev/availability-ping', {
-        data: { action: 'contact', homeId: ids[name], name: 'Pat Admissions', email: `contact-${ids[name]}@test.carelinkai.com`, optedIn, source: 'operator_portal' },
+        data: { action: 'contact', homeId: ids[name], name: 'Pat Admissions', email: `contact-${ids[name]}@test.carelinkai.test`, optedIn, source: 'operator_portal' },
       });
       expect(r.status(), `contact ${name}`).toBe(200);
     }

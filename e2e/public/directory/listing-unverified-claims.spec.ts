@@ -16,7 +16,7 @@
 import { test, expect } from '@playwright/test';
 
 const ts = Date.now();
-const OP_EMAIL = `listing-claims-op-${ts}@test.carelinkai.com`;
+const OP_EMAIL = `listing-claims-op-${ts}@test.carelinkai.test`;
 const HOME_NAME = `E2E Unclaimed Claims Home ${ts}`;
 const AMENITIES = ['24/7 on-site support', 'Chef-prepared MIND-diet dining', 'Sensory spa', 'Fitness room'];
 const DESCRIPTION = `${HOME_NAME} offers private suites, 24/7 support and chef-created MIND-diet dining.`;
