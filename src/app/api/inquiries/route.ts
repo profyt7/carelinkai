@@ -17,7 +17,7 @@ import { isPayerSource } from '@/lib/payer/payer-source';
 import { notifyUnclaimedHomeInquiry, isUnclaimedHome } from '@/lib/claim-engine/inquiry-claim-notification';
 import { sendNewLeadOperatorEmail } from '@/lib/email';
 import { coordinateConciergeInquiry } from '@/lib/concierge/tour-coordination';
-import { routeUnclaimedInquiry } from '@/lib/leads/web-inquiry-lead';
+import { routeUnclaimedInquiry, sendClaimedInquiryAdminCopy } from '@/lib/leads/web-inquiry-lead';
 import { isTestInquiryEmail, REAL_INQUIRIES } from '@/lib/inquiries/test-inquiry';
 import { errorSummary } from '@/lib/log-safe';
 
@@ -206,6 +206,20 @@ export async function POST(request: NextRequest) {
         // OL-179: a tour date makes it a "web tour request" in the queue.
         requestedTimes: inquiry.tourDate ? [inquiry.tourDate] : null,
         receivedAt: inquiry.createdAt,
+      });
+    } else {
+      // Claimed, real inquiry: the operator was alerted above; ADMIN_NOTIFY_EMAIL gets a copy
+      // ("claimed listing" in the subject). No queue row — the operator owns the lead.
+      await sendClaimedInquiryAdminCopy({
+        inquiryId: inquiry.id,
+        homeId: inquiry.homeId,
+        homeName: inquiry.home?.name ?? 'a listed home',
+        contactName: inquiry.contactName,
+        contactEmail: inquiry.contactEmail,
+        contactPhone: inquiry.contactPhone,
+        payerSource: inquiry.payerSource,
+        additionalInfo: inquiry.additionalInfo,
+        requestedTimes: inquiry.tourDate ? [inquiry.tourDate] : null,
       });
     }
 

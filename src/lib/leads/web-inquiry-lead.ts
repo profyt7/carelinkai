@@ -62,7 +62,8 @@ export type UnclaimedInquiryInput = {
   /**
    * The inquiry is a test (contact email matches TEST_EMAIL_PATTERN, Inquiry.isTest): routed
    * admin-only like a demo listing — "[TEST]" subject, no operator or facility notified.
-   * listingKind then says which kind of home it was sent to ('claimed' is only used here).
+   * listingKind then says which kind of home it was sent to. 'claimed' + no isTest is the
+   * admin copy of a real claimed-home inquiry (sendClaimedInquiryAdminCopy).
    */
   isTest?: boolean;
 };
@@ -128,6 +129,7 @@ function testPrefix(input: KindInput): string {
 function nobodyNotified(input: KindInput): string {
   if (isDemoListing(input)) return 'This is a demo listing: no operator or facility was notified.';
   if (input.isTest) return 'This is a test inquiry (contact email matches the test pattern): no operator or facility was notified.';
+  if (input.listingKind === 'claimed') return 'The operator was notified directly; this is your admin copy.';
   return 'The home has not claimed its listing, so no one else received this.';
 }
 
@@ -149,10 +151,19 @@ function appUrl(): string {
   return (process.env['NEXT_PUBLIC_APP_URL'] || process.env['NEXTAUTH_URL'] || 'https://getcarelinkai.com').replace(/\/$/, '');
 }
 
+/** A real inquiry on a claimed home: the operator owns it, so the admin copy links to the inquiry, not the inbound queue. */
+function isClaimedCopy(input: KindInput): boolean {
+  return input.listingKind === 'claimed' && !isTestOnly(input);
+}
+
 /** Admin alert body — the fields listed in the header comment, nothing else. */
 export function adminAlertContent(input: UnclaimedInquiryInput): { subject: string; text: string; html: string } {
   const name = input.contactName?.trim() || 'name not given';
-  const queue = `${appUrl()}/admin/inbound-leads`;
+  const claimedCopy = isClaimedCopy(input) && !!input.inquiryId;
+  const queue = claimedCopy ? `${appUrl()}/admin/inquiries/${encodeURIComponent(input.inquiryId!)}` : `${appUrl()}/admin/inbound-leads`;
+  const queueLabel = claimedCopy ? 'Inquiry' : 'Inbound queue';
+  const queueCta = claimedCopy ? 'Open the inquiry →' : 'Open the inbound queue →';
+  const generic = isTestOnly(input) || isClaimedCopy(input);
   const label = listingLabel(input);
   const pre = testPrefix(input);
   const nobody = nobodyNotified(input);
@@ -167,13 +178,13 @@ export function adminAlertContent(input: UnclaimedInquiryInput): { subject: stri
     ];
     return {
       subject: `${pre}🗓️ Tour request (${label}): ${name} → ${input.homeName}`,
-      text: `${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}\n\n${nobody} Nothing is confirmed to the family yet.\nInbound queue: ${queue}\n`,
+      text: `${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}\n\n${nobody} Nothing is confirmed to the family yet.\n${queueLabel}: ${queue}\n`,
       html:
-        (isTestOnly(input)
+        (generic
           ? `<p><strong>${pre}Tour request on ${aListing(input)}</strong> — ${esc(nobody)} Nothing is confirmed to the family yet.</p>`
           : `<p><strong>Tour request on an unclaimed listing</strong> — no one else received this; nothing is confirmed to the family yet.</p>`) +
         `<table style="font-size:14px">${rows.map(([k, v]) => `<tr><td style="color:#6b7280;padding-right:12px">${esc(k)}</td><td>${esc(v)}</td></tr>`).join('')}</table>` +
-        `<p><a href="${esc(queue)}">Open the inbound queue →</a></p>`,
+        `<p><a href="${esc(queue)}">${queueCta}</a></p>`,
     };
   }
   const rows: Array<[string, string]> = [
@@ -186,13 +197,13 @@ export function adminAlertContent(input: UnclaimedInquiryInput): { subject: stri
   ];
   return {
     subject: `${pre}📝 Family inquiry (${label}): ${name} → ${input.homeName}`,
-    text: `${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}\n\n${nobody}\nInbound queue: ${queue}\n`,
+    text: `${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}\n\n${nobody}\n${queueLabel}: ${queue}\n`,
     html:
-      (isTestOnly(input)
+      (generic
         ? `<p><strong>${pre}Family inquiry on ${aListing(input)}</strong> — ${esc(nobody)}</p>`
         : `<p><strong>Family inquiry on an unclaimed listing</strong> — no one else received this.</p>`) +
       `<table style="font-size:14px">${rows.map(([k, v]) => `<tr><td style="color:#6b7280;padding-right:12px">${esc(k)}</td><td>${esc(v)}</td></tr>`).join('')}</table>` +
-      `<p><a href="${esc(queue)}">Open the inbound queue →</a></p>`,
+      `<p><a href="${esc(queue)}">${queueCta}</a></p>`,
   };
 }
 
@@ -235,6 +246,22 @@ async function sendFamilyConfirmation(input: UnclaimedInquiryInput, leadId: stri
 }
 
 /** Queue the inquiry + alert admin + confirm to the family. Never throws. */
+/**
+ * Admin copy of an inquiry on a CLAIMED home (task: admin sees every inquiry). The operator still gets
+ * their own SMS/email; this adds no inbound-queue row and sends nothing to the family. Same fields as
+ * the unclaimed alert (form fields only — no care needs, no free-text notes). Never throws.
+ */
+export async function sendClaimedInquiryAdminCopy(
+  input: Omit<UnclaimedInquiryInput, 'listingKind' | 'isTest'> & { inquiryId: string }
+): Promise<'sent' | 'failed' | 'skipped'> {
+  try {
+    return await sendAdminLeadEmail({ leadId: input.inquiryId, feature: 'inquiry-admin-copy', ...adminAlertContent({ ...input, listingKind: 'claimed' }) });
+  } catch (e) {
+    captureError(e instanceof Error ? e : new Error(String(e)), { tags: { feature: 'inquiry-admin-copy' }, extra: { inquiryId: input.inquiryId } });
+    return 'failed';
+  }
+}
+
 export async function routeUnclaimedInquiry(input: UnclaimedInquiryInput): Promise<UnclaimedInquiryResult> {
   const result: UnclaimedInquiryResult = { leadId: null, created: false, adminEmail: 'skipped', familyEmail: 'skipped' };
   try {
