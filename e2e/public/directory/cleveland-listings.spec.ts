@@ -15,7 +15,7 @@
 import { test, expect } from '@playwright/test';
 
 const ts = Date.now();
-const OP_EMAIL = `listings-op-${ts}@test.carelinkai.com`;
+const OP_EMAIL = `listings-op-${ts}@test.carelinkai.test`;
 const VERIFIED = `E2E Verified Manor ${ts}`;
 const PLAIN = `E2E Plain Home ${ts}`;
 const DEMO = `E2E Demo Tutorial Home ${ts}`;

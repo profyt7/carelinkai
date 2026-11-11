@@ -5,7 +5,7 @@ import { upsertOperator, loginAs, getFirstHomeId, getFamilyId, createResident, d
 test.describe('[non-bypass] Operator Residents: Compliance end-to-end', () => {
   test.skip(!!process.env.CI, 'Run locally only');
 
-  const OP_EMAIL = process.env.OP_EMAIL || 'operator+e2e@carelinkai.com';
+  const OP_EMAIL = process.env.OP_EMAIL || 'operator+e2e@seed.carelinkai.test';
   const OP_PASSWORD = process.env.OP_PASSWORD || demoPassword();
 
   test('create resident, add compliance item, mark complete, verify summary', async ({ page, context }) => {

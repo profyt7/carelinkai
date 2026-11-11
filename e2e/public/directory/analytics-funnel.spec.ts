@@ -24,14 +24,14 @@ import http from 'http';
 import { test, expect, type Browser, type Page, type Request } from '@playwright/test';
 
 const ts = Date.now();
-const ADMIN = 'admin@carelinkai.com';
-const OP_EMAIL = `funnel-op-${ts}@test.carelinkai.com`;
-const FAMILY_EMAIL = `funnel-family-${ts}@test.carelinkai.com`;
+const ADMIN = 'admin@seed.carelinkai.test';
+const OP_EMAIL = `funnel-op-${ts}@test.carelinkai.test`;
+const FAMILY_EMAIL = `funnel-family-${ts}@test.carelinkai.test`;
 const CITY = `Funneltown${ts}`;
 const HOME = `E2E Funnel Home ${ts}`;
 const SENTINEL = `zebra${ts}`;
 const QUERY = `quiet place for grandma ${SENTINEL}`;
-const PERSON = { name: `Fictional Person ${ts}`, email: `fictional-${ts}@test.carelinkai.com`, phone: '(216) 555-0142', message: `Fictional note ${SENTINEL} — please ignore.` };
+const PERSON = { name: `Fictional Person ${ts}`, email: `fictional-${ts}@test.carelinkai.test`, phone: '(216) 555-0142', message: `Fictional note ${SENTINEL} — please ignore.` };
 let homeId = '';
 
 /** The OL-226 allowlist, restated independently of the app code. */
@@ -288,9 +288,9 @@ test.describe('@critical OL-226 conversion measurement', () => {
     expect(html).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/);
     await admin.context().close();
 
-    const opRes = await (await browser.newContext()).request.post('/api/dev/upsert-operator', { data: { email: `funnel-op2-${ts}@test.carelinkai.com`, companyName: `Funnel Ops2 ${ts}` } });
+    const opRes = await (await browser.newContext()).request.post('/api/dev/upsert-operator', { data: { email: `funnel-op2-${ts}@test.carelinkai.test`, companyName: `Funnel Ops2 ${ts}` } });
     expect(opRes.status()).toBe(200);
-    for (const email of [FAMILY_EMAIL, `funnel-op2-${ts}@test.carelinkai.com`]) {
+    for (const email of [FAMILY_EMAIL, `funnel-op2-${ts}@test.carelinkai.test`]) {
       const page = await signedIn(browser, email);
       await page.goto('/admin/analytics/funnel', { waitUntil: 'domcontentloaded' });
       await expect(page).not.toHaveURL(/\/admin\/analytics\/funnel/, { timeout: 30_000 });

@@ -6,7 +6,7 @@ test.describe('Operator Notifications (SSE)', () => {
     await page.goto('/');
     const ok = await page.evaluate(async () => {
       try {
-        const r = await fetch('/api/dev/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'operator+e2e@carelinkai.com' }) });
+        const r = await fetch('/api/dev/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'operator+e2e@seed.carelinkai.test' }) });
         return r.ok;
       } catch { return false; }
     });

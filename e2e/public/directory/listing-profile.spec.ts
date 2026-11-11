@@ -23,9 +23,9 @@
 import { test, expect, type Browser, type Locator, type Page } from '@playwright/test';
 
 const ts = Date.now();
-const ADMIN = 'admin@carelinkai.com';
-const OP_EMAIL = `listing-profile-op-${ts}@test.carelinkai.com`;
-const FAMILY_EMAIL = `listing-profile-family-${ts}@test.carelinkai.com`;
+const ADMIN = 'admin@seed.carelinkai.test';
+const OP_EMAIL = `listing-profile-op-${ts}@test.carelinkai.test`;
+const FAMILY_EMAIL = `listing-profile-family-${ts}@test.carelinkai.test`;
 const HOME = `E2E Profile Home ${ts}`;
 const CLAIMED = `E2E Profile Claimed ${ts}`;
 let homeId = '';
@@ -102,7 +102,7 @@ const exposedPanels = (page: Page) => page.getByRole('region', { name: `Contact 
 
 async function fillAndSubmit(page: Page, who: string) {
   await page.locator('#name').fill(who);
-  await page.locator('#email').fill(`${who.toLowerCase().replace(/\s+/g, '-')}@test.carelinkai.com`);
+  await page.locator('#email').fill(`${who.toLowerCase().replace(/\s+/g, '-')}@test.carelinkai.test`);
   await page.locator('#phone').fill('(216) 555-0199');
   await page.locator('#moveInTimeframe').selectOption('1-3 months');
   await page.getByRole('checkbox', { name: 'Assisted Living' }).check();

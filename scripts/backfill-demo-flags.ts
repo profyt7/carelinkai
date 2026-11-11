@@ -9,7 +9,7 @@
  * What gets flagged:
  *   USERS whose email matches the demo/seed conventions:
  *     - demo.*@carelinkai.test           (docs/DEMO_ACCOUNTS.md tutorial accounts)
- *     - *@test.carelinkai.com            (e2e harness operators)
+ *     - *@test.carelinkai.test / legacy *@test.carelinkai.com (e2e harness operators)
  *     - *+seed@carelinkai.com            (runDemoSeed operator/caregiver accounts)
  *     - family.seed*@carelinkai.com      (runDemoSeed families)
  *   HOMES that are owned by a flagged demo user's operator, OR match the

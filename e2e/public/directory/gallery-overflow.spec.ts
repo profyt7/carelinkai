@@ -15,8 +15,8 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 const ts = Date.now();
-const OP_EMAIL = `gallery-op-${ts}@test.carelinkai.com`;
-const FAMILY_EMAIL = `gallery-family-${ts}@test.carelinkai.com`;
+const OP_EMAIL = `gallery-op-${ts}@test.carelinkai.test`;
+const FAMILY_EMAIL = `gallery-family-${ts}@test.carelinkai.test`;
 const NAMES = { eight: `E2E Gallery Eight ${ts}`, one: `E2E Gallery One ${ts}`, zero: `E2E Gallery Zero ${ts}` };
 const ids: Record<keyof typeof NAMES, string> = { eight: '', one: '', zero: '' };
 

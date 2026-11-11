@@ -5,7 +5,7 @@ import path from 'path';
 test.describe('[non-bypass] Operator Compliance: upload license and inspection (real flow)', () => {
   test.skip(!!process.env.CI, 'Run locally only');
 
-  const OP_EMAIL = process.env.OP_EMAIL || 'operator+e2e@carelinkai.com';
+  const OP_EMAIL = process.env.OP_EMAIL || 'operator+e2e@seed.carelinkai.test';
   const OP_PASSWORD = process.env.OP_PASSWORD || demoPassword();
 
   test('seed operator, login, create license and inspection, verify download + delete flows', async ({ page, context }) => {

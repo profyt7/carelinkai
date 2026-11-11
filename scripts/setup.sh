@@ -326,7 +326,7 @@ async function main() {
   // Check if admin user already exists
   const existingAdmin = await prisma.user.findFirst({
     where: {
-      email: 'admin@carelinkai.com',
+      email: 'admin@seed.carelinkai.test',
       role: UserRole.ADMIN,
     },
   });
@@ -337,7 +337,7 @@ async function main() {
     
     const admin = await prisma.user.create({
       data: {
-        email: 'admin@carelinkai.com',
+        email: 'admin@seed.carelinkai.test',
         passwordHash: hashedPassword,
         firstName: 'Admin',
         lastName: 'User',
@@ -367,7 +367,7 @@ echo -e "${BLUE}ℹ️  Running database seed script...${RESET}"
 npx ts-node "$PROJECT_ROOT/prisma/seed.ts"
 
 echo -e "${GREEN}✅ Created initial admin user${RESET}"
-echo -e "${BLUE}ℹ️  Admin credentials: admin@carelinkai.com (password: the DEMO_ACCOUNT_PASSWORD env var)${RESET}"
+echo -e "${BLUE}ℹ️  Admin credentials: admin@seed.carelinkai.test (password: the DEMO_ACCOUNT_PASSWORD env var)${RESET}"
 echo -e "${YELLOW}⚠️  Please change this password after first login!${RESET}"
 echo ""
 
@@ -391,7 +391,7 @@ This file contains instructions for local development after running the setup sc
 
 ## Admin Access
 
-- Email: admin@carelinkai.com
+- Email: admin@seed.carelinkai.test
 - Password: the DEMO_ACCOUNT_PASSWORD env var you set before running setup
 
 **Important:** Change this password after first login!
@@ -452,7 +452,7 @@ echo ""
 echo -e "${BOLD}Next Steps:${RESET}"
 echo -e "1. Start the development server: ${BLUE}npm run dev${RESET}"
 echo -e "2. Access the application at ${BLUE}http://localhost:5000${RESET}"
-echo -e "3. Log in with admin credentials: ${BLUE}admin@carelinkai.com (password: the DEMO_ACCOUNT_PASSWORD env var)${RESET}"
+echo -e "3. Log in with admin credentials: ${BLUE}admin@seed.carelinkai.test (password: the DEMO_ACCOUNT_PASSWORD env var)${RESET}"
 echo -e "4. Read ${BLUE}README.local.md${RESET} for more information about local development"
 echo ""
 echo -e "${YELLOW}Note: For security reasons, please change the admin password after first login!${RESET}"

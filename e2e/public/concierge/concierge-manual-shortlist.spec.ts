@@ -15,7 +15,7 @@ const DIRECTORY = 'directory-unclaimed@carelinkai.system';
 const ZIP = '44107';
 const HOME_A = `Manual Pick Alder ${ts}`;
 const HOME_B = `Manual Pick Birch ${ts}`;
-const ADMIN = `manual-shortlist-admin-${ts}@test.carelinkai.com`;
+const ADMIN = `manual-shortlist-admin-${ts}@test.carelinkai.test`;
 const SHOTS = process.env['CONCIERGE_SHOTS_DIR'];
 let searchId = '';
 let orderId = '';
@@ -48,13 +48,13 @@ test.describe('@critical concierge — manual shortlist with zero stored matches
         conciergeSubmittedAt: lastMonth,
         intakeZip: ZIP,
         careLevel: 'Assisted living',
-        patientInfo: { contactName: 'E2E Family', contactEmail: `manual-family-${ts}@test.carelinkai.com`, location: `Lakewood, OH ${ZIP}`, source: 'concierge_page' },
+        patientInfo: { contactName: 'E2E Family', contactEmail: `manual-family-${ts}@test.carelinkai.test`, location: `Lakewood, OH ${ZIP}`, source: 'concierge_page' },
         createdAt: lastMonth,
       },
       select: { id: true },
     });
     searchId = ps.id;
-    orderId = (await prisma.conciergeOrder.create({ data: { placementSearchId: ps.id, email: `manual-family-${ts}@test.carelinkai.com`, status: 'REQUESTED_UNPAID', createdAt: lastMonth }, select: { id: true } })).id;
+    orderId = (await prisma.conciergeOrder.create({ data: { placementSearchId: ps.id, email: `manual-family-${ts}@test.carelinkai.test`, status: 'REQUESTED_UNPAID', createdAt: lastMonth }, select: { id: true } })).id;
   });
 
   test.afterAll(async () => {
