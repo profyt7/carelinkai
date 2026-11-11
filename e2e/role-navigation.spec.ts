@@ -103,7 +103,7 @@ test.beforeEach(async ({ context }) => {
 for (const c of CASES) {
   test(`${c.role}: role navigation on the app shell`, async ({ page }) => {
     test.setTimeout(480_000); // cold compiles on the shared CI dev server
-    const email = `ol206-e2e-${c.role.toLowerCase()}@test.carelinkai.com`;
+    const email = `ol206-e2e-${c.role.toLowerCase()}@test.carelinkai.test`;
     await c.seed(page, email);
 
     await page.setViewportSize({ width: 1280, height: 900 });

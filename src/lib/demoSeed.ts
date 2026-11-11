@@ -17,9 +17,9 @@ export async function runDemoSeed() {
   }
   const pwdOp = await bcrypt.hash(demoAccountPassword(), 10);
   const opUser = await prisma.user.upsert({
-    where: { email: 'operator+seed@carelinkai.com' },
+    where: { email: 'operator+seed@carelinkai.test' },
     update: { status: UserStatus.ACTIVE, passwordHash: pwdOp, firstName: 'Olivia', lastName: 'Operator' },
-    create: { email: 'operator+seed@carelinkai.com', firstName: 'Olivia', lastName: 'Operator', passwordHash: pwdOp, role: UserRole.OPERATOR, status: UserStatus.ACTIVE },
+    create: { email: 'operator+seed@carelinkai.test', firstName: 'Olivia', lastName: 'Operator', passwordHash: pwdOp, role: UserRole.OPERATOR, status: UserStatus.ACTIVE },
   });
   const operator = await prisma.operator.upsert({ where: { userId: opUser.id }, update: { companyName: 'CareLink Seed Ops' }, create: { userId: opUser.id, companyName: 'CareLink Seed Ops' } });
 
@@ -30,7 +30,7 @@ export async function runDemoSeed() {
 
   // Families
   const pwdFam = await bcrypt.hash(demoAccountPassword(), 10);
-  const emails = ['family.seed1@carelinkai.com','family.seed2@carelinkai.com','family.seed3@carelinkai.com'];
+  const emails = ['family.seed1@carelinkai.test','family.seed2@carelinkai.test','family.seed3@carelinkai.test'];
   const families: Array<{ id: string }> = [];
   for (const email of emails) {
     const u = await prisma.user.upsert({ where: { email }, update: { passwordHash: pwdFam, status: UserStatus.ACTIVE, role: UserRole.FAMILY }, create: { email, firstName: 'Family', lastName: email.split('@')[0]!, passwordHash: pwdFam, role: UserRole.FAMILY, status: UserStatus.ACTIVE } });

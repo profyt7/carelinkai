@@ -17,8 +17,8 @@
 import { test, expect, type Page } from '@playwright/test';
 
 const ts = Date.now();
-const OP_EMAIL = `avail-labels-op-${ts}@test.carelinkai.com`;
-const FAMILY_EMAIL = `avail-labels-family-${ts}@test.carelinkai.com`;
+const OP_EMAIL = `avail-labels-op-${ts}@test.carelinkai.test`;
+const FAMILY_EMAIL = `avail-labels-family-${ts}@test.carelinkai.test`;
 const CITY = `Availtown${ts}`;
 const UNCLAIMED = `E2E Avail Unclaimed ${ts}`;
 const FULL = `E2E Avail Full ${ts}`;
@@ -96,7 +96,7 @@ test.describe('@critical search cards show only verified availability (OL-200)',
     const text = await res.text();
     // fix/public-api-truth-privacy: no capacity-derived `availability`, no operator email in a logged-out response.
     expect(text).not.toContain(OP_EMAIL);
-    expect(text).not.toMatch(/@test\.carelinkai\.com/);
+    expect(text).not.toMatch(/@test\.carelinkai\.test/);
     const byId = new Map((JSON.parse(text).results as any[]).map((r) => [r.id, r]));
     for (const id of Object.values(ids)) expect(byId.get(id)).not.toHaveProperty('availability');
     expect(byId.get(ids[UNCLAIMED]).availabilityFreshness.fresh).toBe(false);

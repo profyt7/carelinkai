@@ -2,7 +2,7 @@
  * Simple Database Seed Script for CareLinkAI
  * 
  * This script creates:
- * 1. An admin user (admin@carelinkai.com / $DEMO_ACCOUNT_PASSWORD)
+ * 1. An admin user (admin@seed.carelinkai.test / $DEMO_ACCOUNT_PASSWORD)
  * 2. One assisted living home for testing
  */
 
@@ -35,7 +35,7 @@ async function main() {
   
   const adminUser = await prisma.user.create({
     data: {
-      email: 'admin@carelinkai.com',
+      email: 'admin@seed.carelinkai.test',
       firstName: 'Admin',
       lastName: 'User',
       passwordHash,
@@ -50,7 +50,7 @@ async function main() {
   // Create operator user
   const operatorUser = await prisma.user.create({
     data: {
-      email: 'operator@carelinkai.com',
+      email: 'operator@seed.carelinkai.test',
       firstName: 'John',
       lastName: 'Operator',
       passwordHash,

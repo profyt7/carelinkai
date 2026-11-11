@@ -14,7 +14,7 @@ import { test, expect, type Request } from '@playwright/test';
 
 const KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY ?? '';
 const ts = Date.now();
-const OP_EMAIL = `map-tiles-op-${ts}@test.carelinkai.com`;
+const OP_EMAIL = `map-tiles-op-${ts}@test.carelinkai.test`;
 const HOME_NAME = `E2E Map Tiles Home ${ts}`;
 // 1×1 transparent PNG.
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');

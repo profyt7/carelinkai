@@ -12,7 +12,7 @@ import { test, expect, type Page } from '@playwright/test';
 
 const ts = Date.now();
 const CITY = `Dockville${ts}`;
-const OP_EMAIL = `dock-acc-op-${ts}@test.carelinkai.com`;
+const OP_EMAIL = `dock-acc-op-${ts}@test.carelinkai.test`;
 const FAMILY_EMAIL = `dock-acc-family-${ts}@carelinkai.test`;
 const TAG = `dockacc${ts}`;
 let homeId = '';

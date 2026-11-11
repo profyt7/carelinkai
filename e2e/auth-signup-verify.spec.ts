@@ -18,7 +18,7 @@ test.describe('@critical Signup → verify-email state', () => {
   test('after signup the user lands on /auth/login?verify=1 with the verification-sent message + resend control', async ({
     page,
   }) => {
-    const email = `signup-verify-${Date.now()}@test.carelinkai.com`;
+    const email = `signup-verify-${Date.now()}@test.carelinkai.test`;
 
     // Pre-seed cookie consent so the consent banner (a fixed bottom overlay) never
     // renders — otherwise it intercepts the click on the "Create Account" button.

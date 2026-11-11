@@ -12,7 +12,7 @@ test.describe('Operator Residents - CSV export', () => {
   test('exports CSV with at least one resident row', async ({ page }) => {
     await page.goto('/');
 
-    const OP_EMAIL = 'operator+csv@carelinkai.com';
+    const OP_EMAIL = 'operator+csv@seed.carelinkai.test';
     // 1) Ensure operator + home
     await upsertOperator(page.request, OP_EMAIL, { companyName: 'CSV Co', homes: [{ name: 'CSV Home', capacity: 5 }] });
     // 2) Dev login as operator

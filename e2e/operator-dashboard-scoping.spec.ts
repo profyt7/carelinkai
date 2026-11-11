@@ -18,8 +18,8 @@ async function seedOperator(request: any, email: string, name: string) {
 
 test.describe('@critical Operator dashboard scoping (regression 2026-05-18)', () => {
   test('operator A sees only their residents/inquiries — /api/dashboard/metrics isolated', async ({ page, request }) => {
-    const opA = `scope-metrics-a-${Date.now()}@test.carelinkai.com`;
-    const opB = `scope-metrics-b-${Date.now()}@test.carelinkai.com`;
+    const opA = `scope-metrics-a-${Date.now()}@test.carelinkai.test`;
+    const opB = `scope-metrics-b-${Date.now()}@test.carelinkai.test`;
 
     await seedOperator(request, opA, 'Scope Metrics A');
     await seedOperator(request, opB, 'Scope Metrics B');
@@ -45,7 +45,7 @@ test.describe('@critical Operator dashboard scoping (regression 2026-05-18)', ()
   });
 
   test('/api/dashboard/charts conversion funnel is zero for brand-new operator', async ({ page, request }) => {
-    const opEmail = `scope-charts-${Date.now()}@test.carelinkai.com`;
+    const opEmail = `scope-charts-${Date.now()}@test.carelinkai.test`;
     await seedOperator(request, opEmail, 'Scope Charts Op');
     await loginAs(page, opEmail);
 
@@ -60,7 +60,7 @@ test.describe('@critical Operator dashboard scoping (regression 2026-05-18)', ()
   });
 
   test('/api/operator/leads returns empty list for brand-new operator (Bug 2026-05-31)', async ({ page, request }) => {
-    const opEmail = `scope-leads-${Date.now()}@test.carelinkai.com`;
+    const opEmail = `scope-leads-${Date.now()}@test.carelinkai.test`;
     await seedOperator(request, opEmail, 'Leads Scope Op');
     await loginAs(page, opEmail);
 
@@ -74,7 +74,7 @@ test.describe('@critical Operator dashboard scoping (regression 2026-05-18)', ()
   });
 
   test('/api/operator/inquiries/pipeline returns zero stats for brand-new operator (Bug 2026-05-31)', async ({ page, request }) => {
-    const opEmail = `scope-pipeline-${Date.now()}@test.carelinkai.com`;
+    const opEmail = `scope-pipeline-${Date.now()}@test.carelinkai.test`;
     await seedOperator(request, opEmail, 'Pipeline Scope Op');
     await loginAs(page, opEmail);
 

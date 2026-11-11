@@ -27,7 +27,7 @@ test.describe('@critical Register — Family path', () => {
   test('full flow: email/pw → pick Family → fill care-recipient fields → land on family onboarding', async ({
     page,
   }) => {
-    const email = `reg-family-${Date.now()}@test.carelinkai.com`;
+    const email = `reg-family-${Date.now()}@test.carelinkai.test`;
 
     await page.goto('/auth/register', { waitUntil: 'domcontentloaded' });
 
@@ -64,7 +64,7 @@ test.describe('@critical Register — Operator path (manual role select)', () =>
   test('email/pw → manually pick Operator on Step 2 → minimal Step 3 → land on /operator/onboarding/1', async ({
     page,
   }) => {
-    const email = `reg-op-${Date.now()}@test.carelinkai.com`;
+    const email = `reg-op-${Date.now()}@test.carelinkai.test`;
 
     await page.goto('/auth/register', { waitUntil: 'domcontentloaded' });
 
@@ -98,7 +98,7 @@ test.describe('@critical Register — Operator path (?role=OPERATOR deep-link)',
   test('?role=OPERATOR: Step 1 Next auto-advances to Step 3, skipping Step 2', async ({
     page,
   }) => {
-    const email = `reg-op-link-${Date.now()}@test.carelinkai.com`;
+    const email = `reg-op-link-${Date.now()}@test.carelinkai.test`;
 
     await page.goto('/auth/register?role=OPERATOR', { waitUntil: 'domcontentloaded' });
 
@@ -128,7 +128,7 @@ test.describe('@critical Register — Operator path (?role=OPERATOR deep-link)',
     await page.goto('/auth/register?role=OPERATOR', { waitUntil: 'domcontentloaded' });
 
     // Step 1 → auto-advance to Step 3
-    await fillStep1(page, `reg-back-${Date.now()}@test.carelinkai.com`);
+    await fillStep1(page, `reg-back-${Date.now()}@test.carelinkai.test`);
     await expect(page.getByText(/tell us about yourself/i)).toBeVisible({ timeout: 8000 });
 
     // Hit Back
@@ -148,17 +148,17 @@ test.describe('@critical Register — Cleveland founder claim-token flow', () =>
     page,
     request,
   }) => {
-    const opEmail = `reg-founder-${Date.now()}@test.carelinkai.com`;
+    const opEmail = `reg-founder-${Date.now()}@test.carelinkai.test`;
 
     // Seed a home so admin can generate a claim link against it
     await request.post('/api/dev/upsert-admin', {
-      data: { email: 'admin@carelinkai.com' },
+      data: { email: 'admin@seed.carelinkai.test' },
     });
 
     // We need a homeId — seed a dummy operator record to get one
     const seedRes = await request.post('/api/dev/upsert-operator', {
       data: {
-        email: `seed-home-${Date.now()}@test.carelinkai.com`,
+        email: `seed-home-${Date.now()}@test.carelinkai.test`,
         companyName: 'Seed Co',
         homes: [{ name: 'Seed Home', capacity: 5 }],
       },
@@ -169,7 +169,7 @@ test.describe('@critical Register — Cleveland founder claim-token flow', () =>
     expect(homeId).toBeTruthy();
 
     // Admin generates claim link for the new operator's email
-    await loginAs(page, 'admin@carelinkai.com');
+    await loginAs(page, 'admin@seed.carelinkai.test');
     const claimRes = await page.evaluate(
       async ({ hid, email }: { hid: string; email: string }) => {
         const r = await fetch(`/api/admin/homes/${hid}/claim-link`, {
