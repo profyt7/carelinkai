@@ -29,7 +29,7 @@ test.describe('@critical Operator onboarding wizard (4-step)', () => {
     page,
     request,
   }) => {
-    const email = `login-redirect-${Date.now()}@test.carelinkai.com`;
+    const email = `login-redirect-${Date.now()}@test.carelinkai.test`;
     await registerOperator(request, email);
     await loginAs(page, email);
     // Should land in the operator area (wizard or dashboard, not /dashboard)
@@ -40,7 +40,7 @@ test.describe('@critical Operator onboarding wizard (4-step)', () => {
     page,
     request,
   }) => {
-    const email = `onboard-${Date.now()}@test.carelinkai.com`;
+    const email = `onboard-${Date.now()}@test.carelinkai.test`;
     await registerOperator(request, email);
     await loginAs(page, email);
 
@@ -89,7 +89,7 @@ test.describe('@critical Cleveland founder claim flow', () => {
     page,
     request,
   }) => {
-    const opEmail = `founder-${Date.now()}@test.carelinkai.com`;
+    const opEmail = `founder-${Date.now()}@test.carelinkai.test`;
 
     // Seed operator and a home via dev endpoint
     const seedRes = await request.post('/api/dev/upsert-operator', {
@@ -101,8 +101,8 @@ test.describe('@critical Cleveland founder claim flow', () => {
     expect(homeId).toBeTruthy();
 
     // Ensure admin account exists
-    await request.post('/api/dev/upsert-admin', { data: { email: 'admin@carelinkai.com' } });
-    await loginAs(page, 'admin@carelinkai.com');
+    await request.post('/api/dev/upsert-admin', { data: { email: 'admin@seed.carelinkai.test' } });
+    await loginAs(page, 'admin@seed.carelinkai.test');
 
     // Generate claim link
     const claimLinkRes = await page.evaluate(
@@ -156,19 +156,19 @@ test.describe('@critical Cleveland founder claim flow', () => {
     page,
     request,
   }) => {
-    const opEmail = `founder-signup-${Date.now()}@test.carelinkai.com`;
+    const opEmail = `founder-signup-${Date.now()}@test.carelinkai.test`;
 
     // Seed a home for the claim token
-    await request.post('/api/dev/upsert-admin', { data: { email: 'admin@carelinkai.com' } });
+    await request.post('/api/dev/upsert-admin', { data: { email: 'admin@seed.carelinkai.test' } });
     const seedRes = await request.post('/api/dev/upsert-operator', {
-      data: { email: `seed-only-${Date.now()}@test.carelinkai.com`, companyName: 'Seed Co', homes: [{ name: 'Seed Home', capacity: 8 }] },
+      data: { email: `seed-only-${Date.now()}@test.carelinkai.test`, companyName: 'Seed Co', homes: [{ name: 'Seed Home', capacity: 8 }] },
     });
     expect(seedRes.ok()).toBeTruthy();
     const seedData = await seedRes.json();
     const homeId = seedData.homes?.[0]?.id ?? seedData.homeId;
 
     // Admin generates claim link for the new operator's email
-    await loginAs(page, 'admin@carelinkai.com');
+    await loginAs(page, 'admin@seed.carelinkai.test');
     const claimRes = await page.evaluate(
       async ({ hid, email }: { hid: string; email: string }) => {
         const r = await fetch(`/api/admin/homes/${hid}/claim-link`, {
@@ -212,16 +212,16 @@ test.describe('@critical Cleveland founder claim flow', () => {
     page,
     request,
   }) => {
-    const opEmail = `founder-step2-${Date.now()}@test.carelinkai.com`;
+    const opEmail = `founder-step2-${Date.now()}@test.carelinkai.test`;
 
-    await request.post('/api/dev/upsert-admin', { data: { email: 'admin@carelinkai.com' } });
+    await request.post('/api/dev/upsert-admin', { data: { email: 'admin@seed.carelinkai.test' } });
     const seedRes = await request.post('/api/dev/upsert-operator', {
-      data: { email: `seed-s2-${Date.now()}@test.carelinkai.com`, companyName: 'S2 Co', homes: [{ name: 'Canterbury Commons', capacity: 12 }] },
+      data: { email: `seed-s2-${Date.now()}@test.carelinkai.test`, companyName: 'S2 Co', homes: [{ name: 'Canterbury Commons', capacity: 12 }] },
     });
     const seedData = await seedRes.json();
     const homeId = seedData.homes?.[0]?.id ?? seedData.homeId;
 
-    await loginAs(page, 'admin@carelinkai.com');
+    await loginAs(page, 'admin@seed.carelinkai.test');
     const claimRes = await page.evaluate(
       async ({ hid, email }: { hid: string; email: string }) => {
         const r = await fetch(`/api/admin/homes/${hid}/claim-link`, {
@@ -252,8 +252,8 @@ test.describe('@critical Cleveland founder claim flow', () => {
     page,
     request,
   }) => {
-    const targetEmail = `founder-target-${Date.now()}@test.carelinkai.com`;
-    const otherEmail = `founder-other-${Date.now()}@test.carelinkai.com`;
+    const targetEmail = `founder-target-${Date.now()}@test.carelinkai.test`;
+    const otherEmail = `founder-other-${Date.now()}@test.carelinkai.test`;
 
     await request.post('/api/dev/upsert-operator', {
       data: { email: targetEmail, companyName: 'Target Co', homes: [{ name: 'Target Home', capacity: 5 }] },
@@ -261,10 +261,10 @@ test.describe('@critical Cleveland founder claim flow', () => {
     await request.post('/api/dev/upsert-operator', {
       data: { email: otherEmail, companyName: 'Other Co', homes: [{ name: 'Other Home', capacity: 5 }] },
     });
-    await request.post('/api/dev/upsert-admin', { data: { email: 'admin@carelinkai.com' } });
+    await request.post('/api/dev/upsert-admin', { data: { email: 'admin@seed.carelinkai.test' } });
 
     // Admin generates token for targetEmail
-    await loginAs(page, 'admin@carelinkai.com');
+    await loginAs(page, 'admin@seed.carelinkai.test');
     const seedData = await (await request.post('/api/dev/upsert-operator', {
       data: { email: targetEmail, companyName: 'Target Co', homes: [{ name: 'Seed', capacity: 3 }] },
     })).json();

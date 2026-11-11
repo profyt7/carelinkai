@@ -12,8 +12,8 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
 
 const ts = Date.now();
-const OP = `op-events-${ts}@test.carelinkai.com`;
-const ADMIN = 'admin@carelinkai.com';
+const OP = `op-events-${ts}@test.carelinkai.test`;
+const ADMIN = 'admin@seed.carelinkai.test';
 const HOME = `E2E History Home ${ts}`;
 
 // Two fixed overlays intercept clicks in a fresh context (OL-154): the

@@ -14,11 +14,11 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
 
 const ts = Date.now();
-const ADMIN = 'admin@carelinkai.com';
-const OP_EMAIL = `unclaimed-inquiry-op-${ts}@test.carelinkai.com`;
+const ADMIN = 'admin@seed.carelinkai.test';
+const OP_EMAIL = `unclaimed-inquiry-op-${ts}@test.carelinkai.test`;
 const UNCLAIMED_HOME = `E2E Unclaimed Inquiry Home ${ts}`;
 const CLAIMED_HOME = `E2E Claimed Inquiry Home ${ts}`;
-const FAMILY = { name: `Jordan Family ${ts}`, email: `jordan-${ts}@test.carelinkai.com`, phone: '(216) 555-0142' };
+const FAMILY = { name: `Jordan Family ${ts}`, email: `jordan-${ts}@test.carelinkai.test`, phone: '(216) 555-0142' };
 
 let unclaimedId = '';
 let claimedId = '';
@@ -130,7 +130,7 @@ test.describe('@critical OL-177 unclaimed-home inquiry → admin inbound queue',
   test('claimed home: the inquiry goes to its operator, not the inbound queue', async ({ request, browser }) => {
     const name = `Claimed Control ${ts}`;
     const res = await request.post('/api/inquiries', {
-      data: { homeId: claimedId, contactName: name, contactEmail: `claimed-${ts}@test.carelinkai.com`, careNeeds: [], source: 'WEBSITE' },
+      data: { homeId: claimedId, contactName: name, contactEmail: `claimed-${ts}@test.carelinkai.test`, careNeeds: [], source: 'WEBSITE' },
     });
     expect(res.status()).toBe(201);
     expect((await res.json()).unclaimed).toBe(false);

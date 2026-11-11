@@ -459,7 +459,7 @@ This domain can serve as a **reference implementation** for other areas of CareL
 
 **Seed Script Enhancement:**
 - Script location: `prisma/seed-residents-demo.ts`
-- Creates 2 demo family accounts (family@carelinkai.com, family2@carelinkai.com)
+- Creates 2 demo family accounts (family@seed.carelinkai.test, family2@seed.carelinkai.test)
 - Residents distributed between families
 - Each resident includes:
   - Realistic name and demographics

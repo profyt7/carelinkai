@@ -16,10 +16,10 @@ import { loginAs } from './_helpers';
  * and the post-onboarding gate. Self-seeds via dev endpoints (ALLOW_DEV_ENDPOINTS=1).
  */
 
-const ADMIN_EMAIL = 'admin@carelinkai.com';
+const ADMIN_EMAIL = 'admin@seed.carelinkai.test';
 
 function uniqueEmail(prefix: string) {
-  return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1e4)}@test.carelinkai.com`;
+  return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1e4)}@test.carelinkai.test`;
 }
 
 /**

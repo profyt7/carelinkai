@@ -15,10 +15,10 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
 
 const ts = Date.now();
-const FAM_PRIVATE = `fam-private-${ts}@test.carelinkai.com`;
-const FAM_UNSURE = `fam-unsure-${ts}@test.carelinkai.com`;
-const FAM_MEDICAID = `fam-medicaid-${ts}@test.carelinkai.com`;
-const FAM_ORDERED = `fam-ordered-${ts}@test.carelinkai.com`;
+const FAM_PRIVATE = `fam-private-${ts}@test.carelinkai.test`;
+const FAM_UNSURE = `fam-unsure-${ts}@test.carelinkai.test`;
+const FAM_MEDICAID = `fam-medicaid-${ts}@test.carelinkai.test`;
+const FAM_ORDERED = `fam-ordered-${ts}@test.carelinkai.test`;
 
 const CONSENT_INIT = () => {
   try {

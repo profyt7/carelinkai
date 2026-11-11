@@ -22,10 +22,10 @@ async function main() {
   // Create a family owner
   const pwd = await bcrypt.hash(demoAccountPassword(), 10);
   const familyUser = await prisma.user.upsert({
-    where: { email: 'family@carelinkai.com' },
+    where: { email: 'family@seed.carelinkai.test' },
     update: { passwordHash: pwd, status: UserStatus.ACTIVE },
     create: {
-      email: 'family@carelinkai.com',
+      email: 'family@seed.carelinkai.test',
       firstName: 'Pat',
       lastName: 'Family',
       passwordHash: pwd,
@@ -49,9 +49,9 @@ async function main() {
 
   // Additional family to meet prompt target
   const familyUser2 = await prisma.user.upsert({
-    where: { email: 'family2@carelinkai.com' },
+    where: { email: 'family2@seed.carelinkai.test' },
     update: { passwordHash: pwd, status: UserStatus.ACTIVE },
-    create: { email: 'family2@carelinkai.com', firstName: 'Alex', lastName: 'Family', passwordHash: pwd, role: UserRole.FAMILY, status: UserStatus.ACTIVE }
+    create: { email: 'family2@seed.carelinkai.test', firstName: 'Alex', lastName: 'Family', passwordHash: pwd, role: UserRole.FAMILY, status: UserStatus.ACTIVE }
   });
   const family2 = await prisma.family.upsert({ where: { userId: familyUser2.id }, update: {}, create: { userId: familyUser2.id } });
 

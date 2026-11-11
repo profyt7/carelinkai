@@ -12,6 +12,7 @@
  */
 
 import { Resend } from 'resend';
+import { createGuardedResend } from '@/lib/email/recipient-guard';
 import { captureError } from '@/lib/sentry';
 import { VIDEO_LINK_TEXT, VIDEO_LINK_TOKEN } from '@/lib/dp-outreach/copy';
 import { filterSuppressed } from '@/lib/email/suppression';
@@ -26,7 +27,7 @@ import { emailButton, DISCLAIMER_STYLE, renderEmailLayout, stripEmoji, BRAND_BLU
 // the real environment (Render) and its absence must only affect sending.
 let resendClient: Resend | null = null;
 function getResend(): Resend {
-  if (!resendClient) resendClient = new Resend(process.env.RESEND_API_KEY);
+  if (!resendClient) resendClient = createGuardedResend(process.env.RESEND_API_KEY);
   return resendClient;
 }
 

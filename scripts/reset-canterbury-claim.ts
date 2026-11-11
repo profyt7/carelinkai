@@ -34,7 +34,7 @@ const DIRECTORY_EMAIL = 'directory-unclaimed@carelinkai.system';
 const DIRECTORY_OPERATOR_NAME = 'CareLinkAI Directory - Unclaimed Listings';
 
 // Only auto-delete a detached founder when its email clearly looks test/smoke.
-const TEST_EMAIL = /(@test\.carelinkai\.com$)|(^profyt7\+.*@gmail\.com$)|(smoke)|(claim-founder-)/i;
+const TEST_EMAIL = /(@test\.carelinkai\.(com|test)$)|(^profyt7\+.*@gmail\.com$)|(smoke)|(claim-founder-)/i;
 
 async function main() {
   const force = process.argv.includes('--force');
