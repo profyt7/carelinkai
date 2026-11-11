@@ -17,7 +17,8 @@ import { isPayerSource } from '@/lib/payer/payer-source';
 import { notifyUnclaimedHomeInquiry, isUnclaimedHome } from '@/lib/claim-engine/inquiry-claim-notification';
 import { sendNewLeadOperatorEmail } from '@/lib/email';
 import { coordinateConciergeInquiry } from '@/lib/concierge/tour-coordination';
-import { routeUnclaimedInquiry } from '@/lib/leads/web-inquiry-lead';
+import { routeUnclaimedInquiry, sendClaimedInquiryAdminCopy } from '@/lib/leads/web-inquiry-lead';
+import { isTestInquiryEmail, REAL_INQUIRIES } from '@/lib/inquiries/test-inquiry';
 import { errorSummary } from '@/lib/log-safe';
 
 /**
@@ -84,6 +85,7 @@ export async function POST(request: NextRequest) {
         // OL-179: the tour date/time the family picked on the listing form.
         tourDate: data.tourDate ? new Date(data.tourDate) : null,
         status: 'NEW',
+        isTest: isTestInquiryEmail(data.contactEmail),
       },
       include: {
         family: {
@@ -102,6 +104,7 @@ export async function POST(request: NextRequest) {
           select: {
             id: true,
             name: true,
+            isDemo: true,
             operator: {
               select: {
                 id: true,
@@ -138,13 +141,21 @@ export async function POST(request: NextRequest) {
     });
 
     // Trigger follow-up scheduling hook (non-blocking)
-    afterInquiryCreated(inquiry.id).catch(err => {
+    // Demo/tutorial listing (home.isDemo): nothing operator- or facility-facing may fire —
+    // no operator SMS/email, no claim drip, no automated family follow-ups. It goes to the
+    // admin inbound queue + an admin email marked "[TEST]" (see the routing below).
+    const demoListing = inquiry.home?.isDemo === true;
+    // Test inquiry (contact email matches TEST_EMAIL_PATTERN): same admin-only routing.
+    const testInquiry = inquiry.isTest === true;
+    const adminOnly = demoListing || testInquiry;
+
+    if (!adminOnly) afterInquiryCreated(inquiry.id).catch(err => {
       console.error('Failed to schedule follow-ups:', errorSummary(err));
     });
 
     // SMS alert to operator (non-blocking) — claimed homes only (the directory
     // sentinel operator on unclaimed homes has no phone, so this no-ops there).
-    const operatorPhone = inquiry.home?.operator?.user?.phone;
+    const operatorPhone = adminOnly ? null : inquiry.home?.operator?.user?.phone;
     if (operatorPhone) {
       smsService.sendNewInquiryAlert(
         operatorPhone,
@@ -159,7 +170,7 @@ export async function POST(request: NextRequest) {
     // sentinel). SMS can be missing/wrong/undeliverable; email is the reliable
     // channel. Generic copy only — no PHI.
     const operatorEmail = inquiry.home?.operator?.user?.email;
-    if (operatorEmail && !isUnclaimedHome(operatorEmail)) {
+    if (!adminOnly && operatorEmail && !isUnclaimedHome(operatorEmail)) {
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://getcarelinkai.com';
       sendNewLeadOperatorEmail({
         facilityName: inquiry.home.name,
@@ -173,15 +184,17 @@ export async function POST(request: NextRequest) {
     // Inquiry→claim "pull" engine (OL-083): if the home is UNCLAIMED, best-effort
     // nudge the operator to claim (generic copy only — no PHI). Self-filters to
     // unclaimed homes with a known outreach email; non-blocking.
-    notifyUnclaimedHomeInquiry({ homeId: inquiry.homeId, inquiryId: inquiry.id }).catch(() => {});
+    if (!adminOnly) notifyUnclaimedHomeInquiry({ homeId: inquiry.homeId, inquiryId: inquiry.id }).catch(() => {});
 
     // OL-177: an UNCLAIMED home has no operator to receive this, and the claim
     // drip is paused — so it lands in the admin inbound queue (same table as
     // inbound calls), ADMIN_NOTIFY_EMAIL gets an alert, and the family gets an
     // "a CareLinkAI advisor will follow up" confirmation. Never throws.
     const unclaimed = isUnclaimedHome(operatorEmail);
-    if (unclaimed) {
+    if (unclaimed || adminOnly) {
       await routeUnclaimedInquiry({
+        listingKind: demoListing ? 'demo' : unclaimed ? 'unclaimed' : 'claimed',
+        isTest: testInquiry,
         inquiryId: inquiry.id,
         homeId: inquiry.homeId,
         homeName: inquiry.home?.name ?? 'a listed home',
@@ -193,6 +206,20 @@ export async function POST(request: NextRequest) {
         // OL-179: a tour date makes it a "web tour request" in the queue.
         requestedTimes: inquiry.tourDate ? [inquiry.tourDate] : null,
         receivedAt: inquiry.createdAt,
+      });
+    } else {
+      // Claimed, real inquiry: the operator was alerted above; ADMIN_NOTIFY_EMAIL gets a copy
+      // ("claimed listing" in the subject). No queue row — the operator owns the lead.
+      await sendClaimedInquiryAdminCopy({
+        inquiryId: inquiry.id,
+        homeId: inquiry.homeId,
+        homeName: inquiry.home?.name ?? 'a listed home',
+        contactName: inquiry.contactName,
+        contactEmail: inquiry.contactEmail,
+        contactPhone: inquiry.contactPhone,
+        payerSource: inquiry.payerSource,
+        additionalInfo: inquiry.additionalInfo,
+        requestedTimes: inquiry.tourDate ? [inquiry.tourDate] : null,
       });
     }
 
@@ -208,7 +235,9 @@ export async function POST(request: NextRequest) {
         homeId: inquiry.homeId,
         requesterUserId: session.user.id,
         facilityName: inquiry.home?.name ?? 'a facility',
-        claimed: !!(operatorEmail && !isUnclaimedHome(operatorEmail)),
+        claimed: !adminOnly && !!(operatorEmail && !isUnclaimedHome(operatorEmail)),
+        demoListing,
+        isTest: testInquiry,
       }).catch(() => {});
     }
 
@@ -294,6 +323,7 @@ export async function GET(request: NextRequest) {
       }
       
       where.homeId = { in: operator.homes.map(h => h.id) };
+      Object.assign(where, REAL_INQUIRIES); // test inquiries are admin-only
     }
     // ADMIN can see all inquiries (no additional filter)
     

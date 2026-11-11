@@ -33,7 +33,7 @@ describe('dashboardScope', () => {
     scope = { role: 'FAMILY', residentIds: ['r1'], familyId: 'f1', homeIds: [] };
     const s: any = await dashboardScope({ id: 'fam', role: 'FAMILY' });
     expect(s.resident).toEqual({ id: { in: ['r1'] } });
-    expect(s.inquiry).toEqual({ familyId: 'f1' });
+    expect(s.inquiry).toEqual({ familyId: 'f1', isTest: false }); // test inquiries never on dashboards
     expect(s.incident).toEqual({ residentId: { in: ['r1'] } });
     expect(s.caregiver).toEqual(NONE);
   });
@@ -47,7 +47,8 @@ describe('dashboardScope', () => {
     scope = { role: 'PROVIDER', homeIds: [], residentIds: [] };
     for (const role of ['PROVIDER', 'DISCHARGE_PLANNER', 'AFFILIATE']) {
       const s: any = await dashboardScope({ id: 'x', role });
-      for (const k of ['resident', 'inquiry', 'incident', 'assess', 'home', 'cert', 'caregiver']) expect(s[k]).toEqual(NONE);
+      for (const k of ['resident', 'incident', 'assess', 'home', 'cert', 'caregiver']) expect(s[k]).toEqual(NONE);
+      expect(s.inquiry).toEqual({ ...NONE, isTest: false });
     }
   });
 });

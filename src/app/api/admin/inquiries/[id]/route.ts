@@ -153,3 +153,64 @@ export async function PATCH(
     return NextResponse.json({ error: 'Failed to update inquiry' }, { status: 500 });
   }
 }
+
+/**
+ * DELETE — admin only, and only for test inquiries (isTest). Real inquiries are closed
+ * (PATCH status CLOSED_LOST), never deleted. Removes the admin inbound-lead row too
+ * (InboundLead.inquiryId has no FK); documents, responses and follow-ups cascade.
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (!user || user.role !== UserRole.ADMIN) {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+    }
+
+    const { id } = await params;
+    const inquiry = await prisma.inquiry.findUnique({
+      where: { id },
+      select: { id: true, isTest: true, convertedToResidentId: true, booking: { select: { id: true } } },
+    });
+    if (!inquiry) {
+      return NextResponse.json({ error: 'Inquiry not found' }, { status: 404 });
+    }
+    if (!inquiry.isTest) {
+      return NextResponse.json(
+        { error: 'Only test inquiries can be deleted. Close real inquiries instead.' },
+        { status: 409 }
+      );
+    }
+    if (inquiry.booking || inquiry.convertedToResidentId) {
+      return NextResponse.json(
+        { error: 'Test inquiry has a booking or converted resident; remove those first.' },
+        { status: 409 }
+      );
+    }
+
+    await prisma.$transaction([
+      prisma.inboundLead.deleteMany({ where: { inquiryId: id } }),
+      prisma.inquiry.delete({ where: { id } }),
+    ]);
+
+    await createAuditLogFromRequest(
+      request,
+      AuditAction.DELETE,
+      'INQUIRY',
+      id,
+      `Admin deleted test inquiry ${id}`,
+      { isTest: true }
+    );
+
+    return NextResponse.json({ deleted: true, id });
+  } catch (error) {
+    console.error('Admin inquiry delete error:', error);
+    return NextResponse.json({ error: 'Failed to delete inquiry' }, { status: 500 });
+  }
+}

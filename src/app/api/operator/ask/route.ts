@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getAnthropicClient } from '@/lib/ai/claude';
+import { REAL_INQUIRIES } from '@/lib/inquiries/test-inquiry';
 
 // Tool definitions for Claude
 const tools = [
@@ -62,7 +63,7 @@ async function runTool(toolName: string, input: any, operatorId: string) {
           where: { home: { operatorId }, status: 'ACTIVE' },
         }),
         prisma.inquiry.count({
-          where: { home: { operatorId }, status: { notIn: ['CLOSED_LOST', 'CONVERTED'] } },
+          where: { ...REAL_INQUIRIES, home: { operatorId }, status: { notIn: ['CLOSED_LOST', 'CONVERTED'] } },
         }),
         prisma.caregiverShift.count({
           where: { home: { operatorId }, status: 'OPEN' },

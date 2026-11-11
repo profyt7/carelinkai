@@ -44,9 +44,9 @@ function seedSearch(over: any = {}) {
     ...over,
   });
 }
-function seedHome(email: string | null) {
+function seedHome(email: string | null, isDemo = false) {
   (prisma.assistedLivingHome.findUnique as jest.Mock).mockResolvedValue({
-    id: 'h1', name: 'Lakeview', operator: { user: { email, firstName: 'Olivia' } },
+    id: 'h1', name: 'Lakeview', isDemo, operator: { user: { email, firstName: 'Olivia' } },
   });
 }
 
@@ -69,6 +69,19 @@ describe('POST /api/discharge-planner/concierge/[id]/tour', () => {
     expect(startClaimDripOnLead).not.toHaveBeenCalled();
     // status persisted
     expect((prisma.placementSearch.update as jest.Mock).mock.calls[0][0].data.curatedHomes[0].tourStatus).toBe('REQUESTED');
+  });
+
+  it('DEMO listing (claimed or unclaimed) → admin notify marked demo, no operator email, no claim drip', async () => {
+    for (const email of ['operator@realhome.com', SENTINEL]) {
+      jest.clearAllMocks();
+      (prisma.placementSearch.update as jest.Mock).mockResolvedValue({});
+      seedSearch();
+      seedHome(email, true);
+      expect((await POST(req({ homeId: 'h1' }), ctx)).status).toBe(200);
+      expect((sendConciergeTourNotification as jest.Mock).mock.calls[0][0]).toMatchObject({ demoListing: true, isTest: false });
+      expect(sendNewLeadOperatorEmail).not.toHaveBeenCalled();
+      expect(startClaimDripOnLead).not.toHaveBeenCalled();
+    }
   });
 
   it('UNCLAIMED home → admin notify + claim signal, no operator email', async () => {

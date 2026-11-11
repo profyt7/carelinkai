@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { REAL_INQUIRIES } from '@/lib/inquiries/test-inquiry';
 import { PaymentType, PaymentStatus } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
@@ -49,15 +50,15 @@ export async function GET(request: NextRequest) {
         FROM "User" WHERE "createdAt" >= ${startDate}
         GROUP BY DATE("createdAt") ORDER BY date ASC
       `,
-      prisma.inquiry.count(),
-      prisma.inquiry.groupBy({ by: ['status'], _count: { id: true } }),
-      prisma.inquiry.count({ where: { createdAt: { gte: startDate } } }),
+      prisma.inquiry.count({ where: REAL_INQUIRIES }),
+      prisma.inquiry.groupBy({ by: ['status'], _count: { id: true }, where: REAL_INQUIRIES }),
+      prisma.inquiry.count({ where: { createdAt: { gte: startDate }, ...REAL_INQUIRIES } }),
       prisma.$queryRaw`
         SELECT DATE("createdAt") as date, COUNT(*)::int as count
-        FROM "Inquiry" WHERE "createdAt" >= ${startDate}
+        FROM "Inquiry" WHERE "createdAt" >= ${startDate} AND "isTest" = false
         GROUP BY DATE("createdAt") ORDER BY date ASC
       `,
-      prisma.inquiry.count({ where: { conversionDate: { not: null } } }),
+      prisma.inquiry.count({ where: { conversionDate: { not: null }, ...REAL_INQUIRIES } }),
       prisma.assistedLivingHome.count(),
       prisma.assistedLivingHome.groupBy({ by: ['status'], _count: { id: true } }),
       prisma.assistedLivingHome.aggregate({ _sum: { capacity: true } }),

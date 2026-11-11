@@ -14,6 +14,7 @@ import { pricingView, computeFamilyAvg } from '@/lib/pricing/pricing';
 import { medicaidWaiverPublicView } from '@/lib/medicaid/waiver';
 import { verifiedFieldsFromEvents, PROVENANCE_FIELDS, VERIFIED_FIELD_SOURCES } from '@/lib/homes/listing-facts';
 import { isFeaturedActive } from '@/lib/directory/featured-rank';
+import { REAL_INQUIRIES } from '@/lib/inquiries/test-inquiry';
 
 /**
  * City coordinates lookup for homes without geo data
@@ -244,7 +245,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     // inquiry/health details are exposed publicly.
     const unclaimed = isUnclaimedHome(home.operator?.user?.email);
     const pendingInquiryCount = unclaimed
-      ? await prisma.inquiry.count({ where: { homeId: home.id, status: 'NEW' } })
+      ? await prisma.inquiry.count({ where: { ...REAL_INQUIRIES, homeId: home.id, status: 'NEW' } })
       : 0;
     // Self-serve claim (fix/self-serve-claim): open / under review / managed by its community. No claimant details.
     const claimState = await listingClaimState({ id: home.id, operatorEmail: home.operator?.user?.email });

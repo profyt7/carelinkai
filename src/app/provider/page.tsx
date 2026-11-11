@@ -7,6 +7,7 @@ import { FiInbox, FiMessageCircle, FiEdit, FiCheckCircle, FiAlertCircle, FiCredi
 import { computeProviderRideStats, scoreLabel, type RideStats } from "@/lib/rideStats";
 import { isPaidFeatureEnabled } from "@/lib/billing/paid-features";
 import { isBoosted } from "@/lib/providers/boost";
+import { REAL_FAMILY_USER } from '@/lib/inquiries/test-inquiry';
 
 async function getProviderDashboardData(userId: string) {
   const provider = await prisma.provider.findUnique({
@@ -41,13 +42,13 @@ async function getProviderDashboardData(userId: string) {
 
   const [newLeads, activeLeads, recentLeads, rideStats] = await Promise.all([
     prisma.lead.count({
-      where: { providerId: provider.id, targetType: "PROVIDER", createdAt: { gte: sevenDaysAgo } },
+      where: { providerId: provider.id, targetType: "PROVIDER", family: { user: REAL_FAMILY_USER }, createdAt: { gte: sevenDaysAgo } },
     }),
     prisma.lead.count({
-      where: { providerId: provider.id, targetType: "PROVIDER", status: { notIn: ["CLOSED", "CANCELLED"] } },
+      where: { providerId: provider.id, targetType: "PROVIDER", family: { user: REAL_FAMILY_USER }, status: { notIn: ["CLOSED", "CANCELLED"] } },
     }),
     prisma.lead.findMany({
-      where: { providerId: provider.id, targetType: "PROVIDER" },
+      where: { providerId: provider.id, targetType: "PROVIDER", family: { user: REAL_FAMILY_USER } },
       orderBy: { createdAt: "desc" },
       take: 5,
       include: {

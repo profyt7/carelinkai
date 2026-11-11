@@ -5,6 +5,7 @@
  */
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
+import { REAL_INQUIRIES } from '@/lib/inquiries/test-inquiry';
 import { FUNNEL_EVENT_NAMES } from '@/lib/analytics/events';
 import {
   EVENT_LABELS,
@@ -66,7 +67,7 @@ export default async function FunnelPage({ searchParams }: { searchParams: Promi
       select: { name: true, anonSessionId: true, listingId: true, propsJson: true },
       take: 200_000,
     }),
-    prisma.inquiry.count({ where: { createdAt: { gte: since } } }),
+    prisma.inquiry.count({ where: { createdAt: { gte: since }, ...REAL_INQUIRIES } }),
   ]);
   const totals = totalsByEvent(rows);
   const rates = funnelRates(rows);

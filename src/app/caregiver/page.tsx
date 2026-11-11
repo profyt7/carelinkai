@@ -8,6 +8,7 @@ import { FiStar } from "react-icons/fi";
 import { StatTile } from "@/components/dashboard/StatTile";
 import { QuickActionCard } from "@/components/dashboard/QuickActionCard";
 import { isPaidFeatureEnabled } from "@/lib/billing/paid-features";
+import { REAL_FAMILY_USER } from '@/lib/inquiries/test-inquiry';
 
 async function getCaregiverDashboardData(userId: string) {
   const caregiver = await prisma.caregiver.findUnique({
@@ -38,7 +39,7 @@ async function getCaregiverDashboardData(userId: string) {
 
   const [recentLeads, reviewAgg, recentReviews] = await Promise.all([
     prisma.lead.findMany({
-      where: { aideId: caregiver.id, targetType: 'AIDE' },
+      where: { aideId: caregiver.id, targetType: 'AIDE', family: { user: REAL_FAMILY_USER } },
       orderBy: { createdAt: 'desc' },
       take: 5,
       include: {

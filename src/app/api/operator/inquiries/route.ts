@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma';
 import { UserRole, InquiryStatus, Prisma } from '@prisma/client';
 import { differenceInDays, subDays, startOfWeek, endOfWeek } from 'date-fns';
 import { captureError } from '@/lib/sentry';
+import { REAL_INQUIRIES } from '@/lib/inquiries/test-inquiry';
 
 export async function GET(request: NextRequest) {
   try {
@@ -61,7 +62,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const where: Prisma.InquiryWhereInput = {};
+    // Test inquiries (Inquiry.isTest) are admin-only.
+    const where: Prisma.InquiryWhereInput = { ...REAL_INQUIRIES };
 
     // ROLE-BASED FILTERING: Family users only see their own inquiries
     if (isFamily) {

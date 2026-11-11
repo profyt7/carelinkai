@@ -53,6 +53,19 @@ export type UnclaimedInquiryInput = {
   /** Inquiry.additionalInfo — the form stores "Move-in timeframe: <choice>" there. */
   additionalInfo: string | null;
   receivedAt?: Date;
+  /**
+   * 'demo': the listing is a demo/tutorial fixture (home.isDemo). Same admin-only route
+   * as an unclaimed listing, but the admin email is marked "[TEST]" and says no operator
+   * or facility was notified. Default 'unclaimed'.
+   */
+  listingKind?: 'unclaimed' | 'demo' | 'claimed';
+  /**
+   * The inquiry is a test (contact email matches TEST_EMAIL_PATTERN, Inquiry.isTest): routed
+   * admin-only like a demo listing — "[TEST]" subject, no operator or facility notified.
+   * listingKind then says which kind of home it was sent to. 'claimed' + no isTest is the
+   * admin copy of a real claimed-home inquiry (sendClaimedInquiryAdminCopy).
+   */
+  isTest?: boolean;
 };
 
 export type UnclaimedInquiryResult = {
@@ -96,14 +109,38 @@ export function urgencyFromRequestedTimes(times: ReadonlyArray<string | Date> | 
   return Number.isFinite(soonest) && soonest - now.getTime() <= 7 * 86_400_000 ? 'THIS_WEEK' : 'PLANNING';
 }
 
+type KindInput = Pick<UnclaimedInquiryInput, 'listingKind' | 'isTest'>;
+function isDemoListing(input: KindInput): boolean {
+  return input.listingKind === 'demo';
+}
+/** Demo listing or test inquiry: admin-only, "[TEST]" everywhere. */
+function isTestOnly(input: KindInput): boolean {
+  return isDemoListing(input) || input.isTest === true;
+}
+function listingLabel(input: KindInput): string {
+  return input.listingKind === 'demo' ? 'demo listing' : input.listingKind === 'claimed' ? 'claimed listing' : 'unclaimed listing';
+}
+function aListing(input: KindInput): string {
+  return input.listingKind === 'demo' ? 'a demo listing' : input.listingKind === 'claimed' ? 'a claimed listing' : 'an unclaimed listing';
+}
+function testPrefix(input: KindInput): string {
+  return isTestOnly(input) ? '[TEST] ' : '';
+}
+function nobodyNotified(input: KindInput): string {
+  if (isDemoListing(input)) return 'This is a demo listing: no operator or facility was notified.';
+  if (input.isTest) return 'This is a test inquiry (contact email matches the test pattern): no operator or facility was notified.';
+  if (input.listingKind === 'claimed') return 'The operator was notified directly; this is your admin copy.';
+  return 'The home has not claimed its listing, so no one else received this.';
+}
+
 /** The queue row's one-line reason (≤ 280): home, payer lane, timeframe — or, for a tour, home, requested time, lane if given. */
-export function webInquiryReason(input: Pick<UnclaimedInquiryInput, 'homeName' | 'payerSource' | 'additionalInfo' | 'tourRequestId' | 'requestedTimes'>): string {
+export function webInquiryReason(input: Pick<UnclaimedInquiryInput, 'homeName' | 'payerSource' | 'additionalInfo' | 'tourRequestId' | 'requestedTimes' | 'listingKind' | 'isTest'>): string {
   if (isTourRequest(input)) {
     const lane = isPayerSource(input.payerSource) ? ` · ${payerLaneLabel(input.payerSource)}` : '';
-    return `Web tour request on unclaimed listing: ${input.homeName} · requested ${requestedTimesLabel(input.requestedTimes)}${lane}`.slice(0, 280);
+    return `${testPrefix(input)}Web tour request on ${listingLabel(input)}: ${input.homeName} · requested ${requestedTimesLabel(input.requestedTimes)}${lane}`.slice(0, 280);
   }
   const tf = timeframeFrom(input.additionalInfo) ?? 'timeframe not given';
-  return `Web inquiry on unclaimed listing: ${input.homeName} · ${payerLaneLabel(input.payerSource)} · ${tf}`.slice(0, 280);
+  return `${testPrefix(input)}Web inquiry on ${listingLabel(input)}: ${input.homeName} · ${payerLaneLabel(input.payerSource)} · ${tf}`.slice(0, 280);
 }
 
 function esc(s: string): string {
@@ -114,43 +151,64 @@ function appUrl(): string {
   return (process.env['NEXT_PUBLIC_APP_URL'] || process.env['NEXTAUTH_URL'] || 'https://getcarelinkai.com').replace(/\/$/, '');
 }
 
+/** A real inquiry on a claimed home: the operator owns it, so the admin copy links to the inquiry, not the inbound queue. */
+function isClaimedCopy(input: KindInput): boolean {
+  return input.listingKind === 'claimed' && !isTestOnly(input);
+}
+
 /** Admin alert body — the fields listed in the header comment, nothing else. */
 export function adminAlertContent(input: UnclaimedInquiryInput): { subject: string; text: string; html: string } {
   const name = input.contactName?.trim() || 'name not given';
-  const queue = `${appUrl()}/admin/inbound-leads`;
+  // Claimed copy: no queue row — link the inquiry, or for a tour request the home (there is no admin tours page).
+  const claimedCopy = isClaimedCopy(input);
+  const queue = !claimedCopy
+    ? `${appUrl()}/admin/inbound-leads`
+    : input.inquiryId
+      ? `${appUrl()}/admin/inquiries/${encodeURIComponent(input.inquiryId)}`
+      : `${appUrl()}/admin/homes/${encodeURIComponent(input.homeId)}`;
+  const queueLabel = !claimedCopy ? 'Inbound queue' : input.inquiryId ? 'Inquiry' : 'Home';
+  const queueCta = !claimedCopy ? 'Open the inbound queue →' : input.inquiryId ? 'Open the inquiry →' : 'Open the home →';
+  const generic = isTestOnly(input) || isClaimedCopy(input);
+  const label = listingLabel(input);
+  const pre = testPrefix(input);
+  const nobody = nobodyNotified(input);
   if (isTourRequest(input)) {
     const rows: Array<[string, string]> = [
       ['Family', name],
       ['Email', input.contactEmail?.trim() || '—'],
       ['Phone', input.contactPhone?.trim() || '—'],
-      ['Home', `${input.homeName} (unclaimed listing)`],
+      ['Home', `${input.homeName} (${label})`],
       ['Requested', requestedTimesLabel(input.requestedTimes)],
       ...(isPayerSource(input.payerSource) ? [['Payer lane', payerLaneLabel(input.payerSource)] as [string, string]] : []),
     ];
     return {
-      subject: `🗓️ Tour request (unclaimed listing): ${name} → ${input.homeName}`,
-      text: `${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}\n\nThe home has not claimed its listing, so no one else received this. Nothing is confirmed to the family yet.\nInbound queue: ${queue}\n`,
+      subject: `${pre}🗓️ Tour request (${label}): ${name} → ${input.homeName}`,
+      text: `${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}\n\n${nobody} Nothing is confirmed to the family yet.\n${queueLabel}: ${queue}\n`,
       html:
-        `<p><strong>Tour request on an unclaimed listing</strong> — no one else received this; nothing is confirmed to the family yet.</p>` +
+        (generic
+          ? `<p><strong>${pre}Tour request on ${aListing(input)}</strong> — ${esc(nobody)} Nothing is confirmed to the family yet.</p>`
+          : `<p><strong>Tour request on an unclaimed listing</strong> — no one else received this; nothing is confirmed to the family yet.</p>`) +
         `<table style="font-size:14px">${rows.map(([k, v]) => `<tr><td style="color:#6b7280;padding-right:12px">${esc(k)}</td><td>${esc(v)}</td></tr>`).join('')}</table>` +
-        `<p><a href="${esc(queue)}">Open the inbound queue →</a></p>`,
+        `<p><a href="${esc(queue)}">${queueCta}</a></p>`,
     };
   }
   const rows: Array<[string, string]> = [
     ['Family', name],
     ['Email', input.contactEmail?.trim() || '—'],
     ['Phone', input.contactPhone?.trim() || '—'],
-    ['Home', `${input.homeName} (unclaimed listing)`],
+    ['Home', `${input.homeName} (${label})`],
     ['Payer lane', payerLaneLabel(input.payerSource)],
     ['Timeframe', timeframeFrom(input.additionalInfo) ?? 'not given'],
   ];
   return {
-    subject: `📝 Family inquiry (unclaimed listing): ${name} → ${input.homeName}`,
-    text: `${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}\n\nThe home has not claimed its listing, so no one else received this.\nInbound queue: ${queue}\n`,
+    subject: `${pre}📝 Family inquiry (${label}): ${name} → ${input.homeName}`,
+    text: `${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}\n\n${nobody}\n${queueLabel}: ${queue}\n`,
     html:
-      `<p><strong>Family inquiry on an unclaimed listing</strong> — no one else received this.</p>` +
+      (generic
+        ? `<p><strong>${pre}Family inquiry on ${aListing(input)}</strong> — ${esc(nobody)}</p>`
+        : `<p><strong>Family inquiry on an unclaimed listing</strong> — no one else received this.</p>`) +
       `<table style="font-size:14px">${rows.map(([k, v]) => `<tr><td style="color:#6b7280;padding-right:12px">${esc(k)}</td><td>${esc(v)}</td></tr>`).join('')}</table>` +
-      `<p><a href="${esc(queue)}">Open the inbound queue →</a></p>`,
+      `<p><a href="${esc(queue)}">${queueCta}</a></p>`,
   };
 }
 
@@ -193,6 +251,23 @@ async function sendFamilyConfirmation(input: UnclaimedInquiryInput, leadId: stri
 }
 
 /** Queue the inquiry + alert admin + confirm to the family. Never throws. */
+/**
+ * Admin copy of an inquiry or tour request on a CLAIMED home (task: admin sees every inquiry). The operator still gets
+ * their own SMS/email; this adds no inbound-queue row and sends nothing to the family. Same fields as
+ * the unclaimed alert (form fields only — no care needs, no free-text notes). Never throws.
+ */
+export async function sendClaimedInquiryAdminCopy(
+  input: Omit<UnclaimedInquiryInput, 'listingKind' | 'isTest'>
+): Promise<'sent' | 'failed' | 'skipped'> {
+  const ref = input.inquiryId ?? input.tourRequestId ?? input.homeId;
+  try {
+    return await sendAdminLeadEmail({ leadId: ref, feature: 'inquiry-admin-copy', ...adminAlertContent({ ...input, listingKind: 'claimed' }) });
+  } catch (e) {
+    captureError(e instanceof Error ? e : new Error(String(e)), { tags: { feature: 'inquiry-admin-copy' }, extra: { inquiryId: input.inquiryId, tourRequestId: input.tourRequestId } });
+    return 'failed';
+  }
+}
+
 export async function routeUnclaimedInquiry(input: UnclaimedInquiryInput): Promise<UnclaimedInquiryResult> {
   const result: UnclaimedInquiryResult = { leadId: null, created: false, adminEmail: 'skipped', familyEmail: 'skipped' };
   try {

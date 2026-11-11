@@ -953,6 +953,9 @@ model Inquiry {
   familyId               String?
   homeId                 String
   status                 InquiryStatus      @default(NEW)
+  /// Test inquiry (contact email matches TEST_EMAIL_PATTERN, src/lib/inquiries/test-inquiry.ts):
+  /// admin-only — never shown to operators, counted in metrics or emailed to a facility.
+  isTest                 Boolean            @default(false)
   message                String?
   tourDate               DateTime?
   aiMatchScore           Float?

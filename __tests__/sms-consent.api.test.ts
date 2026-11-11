@@ -25,7 +25,7 @@ jest.mock('@/lib/claim-engine/inquiry-claim-notification', () => ({
   notifyUnclaimedHomeInquiry: jest.fn(async () => undefined),
   isUnclaimedHome: jest.fn(() => false),
 }));
-jest.mock('@/lib/leads/web-inquiry-lead', () => ({ routeUnclaimedInquiry: jest.fn(async () => undefined) }));
+jest.mock('@/lib/leads/web-inquiry-lead', () => ({ routeUnclaimedInquiry: jest.fn(async () => undefined), sendClaimedInquiryAdminCopy: jest.fn(async () => 'skipped') }));
 jest.mock('@/lib/concierge/tour-coordination', () => ({ coordinateConciergeInquiry: jest.fn(async () => undefined) }));
 jest.mock('@/lib/email', () => ({
   sendNewLeadOperatorEmail: jest.fn(async () => undefined),
