@@ -102,6 +102,7 @@ export async function POST(request: NextRequest) {
           select: {
             id: true,
             name: true,
+            isDemo: true,
             operator: {
               select: {
                 id: true,
@@ -138,13 +139,18 @@ export async function POST(request: NextRequest) {
     });
 
     // Trigger follow-up scheduling hook (non-blocking)
-    afterInquiryCreated(inquiry.id).catch(err => {
+    // Demo/tutorial listing (home.isDemo): nothing operator- or facility-facing may fire —
+    // no operator SMS/email, no claim drip, no automated family follow-ups. It goes to the
+    // admin inbound queue + an admin email marked "[TEST]" (see the routing below).
+    const demoListing = inquiry.home?.isDemo === true;
+
+    if (!demoListing) afterInquiryCreated(inquiry.id).catch(err => {
       console.error('Failed to schedule follow-ups:', errorSummary(err));
     });
 
     // SMS alert to operator (non-blocking) — claimed homes only (the directory
     // sentinel operator on unclaimed homes has no phone, so this no-ops there).
-    const operatorPhone = inquiry.home?.operator?.user?.phone;
+    const operatorPhone = demoListing ? null : inquiry.home?.operator?.user?.phone;
     if (operatorPhone) {
       smsService.sendNewInquiryAlert(
         operatorPhone,
@@ -159,7 +165,7 @@ export async function POST(request: NextRequest) {
     // sentinel). SMS can be missing/wrong/undeliverable; email is the reliable
     // channel. Generic copy only — no PHI.
     const operatorEmail = inquiry.home?.operator?.user?.email;
-    if (operatorEmail && !isUnclaimedHome(operatorEmail)) {
+    if (!demoListing && operatorEmail && !isUnclaimedHome(operatorEmail)) {
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://getcarelinkai.com';
       sendNewLeadOperatorEmail({
         facilityName: inquiry.home.name,
@@ -173,15 +179,16 @@ export async function POST(request: NextRequest) {
     // Inquiry→claim "pull" engine (OL-083): if the home is UNCLAIMED, best-effort
     // nudge the operator to claim (generic copy only — no PHI). Self-filters to
     // unclaimed homes with a known outreach email; non-blocking.
-    notifyUnclaimedHomeInquiry({ homeId: inquiry.homeId, inquiryId: inquiry.id }).catch(() => {});
+    if (!demoListing) notifyUnclaimedHomeInquiry({ homeId: inquiry.homeId, inquiryId: inquiry.id }).catch(() => {});
 
     // OL-177: an UNCLAIMED home has no operator to receive this, and the claim
     // drip is paused — so it lands in the admin inbound queue (same table as
     // inbound calls), ADMIN_NOTIFY_EMAIL gets an alert, and the family gets an
     // "a CareLinkAI advisor will follow up" confirmation. Never throws.
     const unclaimed = isUnclaimedHome(operatorEmail);
-    if (unclaimed) {
+    if (unclaimed || demoListing) {
       await routeUnclaimedInquiry({
+        listingKind: demoListing ? 'demo' : 'unclaimed',
         inquiryId: inquiry.id,
         homeId: inquiry.homeId,
         homeName: inquiry.home?.name ?? 'a listed home',
@@ -208,7 +215,7 @@ export async function POST(request: NextRequest) {
         homeId: inquiry.homeId,
         requesterUserId: session.user.id,
         facilityName: inquiry.home?.name ?? 'a facility',
-        claimed: !!(operatorEmail && !isUnclaimedHome(operatorEmail)),
+        claimed: !demoListing && !!(operatorEmail && !isUnclaimedHome(operatorEmail)),
       }).catch(() => {});
     }
 
