@@ -602,6 +602,10 @@ export async function sendConciergeTourNotification(args: {
   claimed: boolean;
   dpName?: string;
   dpOrganization?: string;
+  /** Demo listing (home.isDemo): no operator or facility was contacted; subject marked [TEST]. */
+  demoListing?: boolean;
+  /** Test concierge request (PlacementSearch.isTest) or test inquiry: no facility contacted; [TEST]. */
+  isTest?: boolean;
 }): Promise<boolean> {
   const to = process.env.ADMIN_NOTIFY_EMAIL || process.env.CLAIM_NOTIFY_EMAIL || 'chris@getcarelinkai.com';
   try {
@@ -611,16 +615,22 @@ export async function sendConciergeTourNotification(args: {
     }
     const who = [args.dpName?.trim(), args.dpOrganization?.trim()].filter(Boolean).join(' · ') || 'A discharge planner';
     const facility = args.facilityName?.trim() || 'a facility';
-    const claimLine = args.claimed
-      ? 'This home is CLAIMED — the operator was notified directly; you are cc’d to help coordinate.'
-      : 'This home is UNCLAIMED — please coordinate the tour on the family’s behalf (the operator was also nudged to claim).';
+    const testOnly = args.demoListing === true || args.isTest === true;
+    const listing = args.demoListing ? 'demo listing' : args.claimed ? 'claimed listing' : 'unclaimed listing';
+    const claimLine = args.demoListing
+      ? 'This is a DEMO listing — no operator or facility was contacted.'
+      : args.isTest
+        ? 'This is a TEST request — no operator or facility was contacted.'
+        : args.claimed
+          ? 'This home is CLAIMED — the operator was notified directly; you are cc’d to help coordinate.'
+          : 'This home is UNCLAIMED — please coordinate the tour on the family’s behalf (the operator was also nudged to claim).';
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://getcarelinkai.com').replace(/\/$/, '');
     const adminLink = `${appUrl}/admin/concierge/${args.requestId}`;
     const { data, error } = await guardedResendSend({
       from: `${APP_NAME} <${FROM_EMAIL}>`,
       to: [to],
       replyTo: OUTREACH_REPLY_TO,
-      subject: `🗓️ Concierge tour request — ${facility}`,
+      subject: `${testOnly ? '[TEST] ' : ''}🗓️ Concierge tour request (${listing}) — ${facility}`,
       text:
         `${who} requested a tour at ${facility} from their CareLinkAI concierge shortlist.\n\n` +
         `${claimLine}\n\n` +

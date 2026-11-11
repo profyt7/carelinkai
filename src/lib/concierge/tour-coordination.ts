@@ -84,6 +84,8 @@ export async function coordinateConciergeInquiry(params: {
   requesterUserId: string;
   facilityName: string;
   claimed: boolean;
+  demoListing?: boolean;
+  isTest?: boolean;
 }): Promise<void> {
   try {
     const search = await prisma.placementSearch.findUnique({
@@ -104,6 +106,8 @@ export async function coordinateConciergeInquiry(params: {
       requestId: params.searchId,
       facilityName: params.facilityName,
       claimed: params.claimed,
+      demoListing: params.demoListing,
+      isTest: params.isTest,
       dpName,
       dpOrganization: search.user?.dischargePlannerProfile?.organization || undefined,
     });
