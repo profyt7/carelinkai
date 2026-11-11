@@ -36,6 +36,8 @@ const SEED_LOGINS = [
   'operator.test@carelinkai.com',
   'caregiver.test@carelinkai.com',
   'family.test@carelinkai.com',
+  'caregiver@carelinkai.com', // marketplace demo seed (2025-09); found in prod 2026-11-11
+  'family.demo1@carelinkai.com', // e2e staging family default (2025-12); found in prod 2026-11-11
 ].flatMap((e) => [e, e.replace('@carelinkai.com', '@seed.carelinkai.test')]);
 
 const prisma = new PrismaClient();

@@ -20,6 +20,9 @@ export const LEGACY_SEED_LOGINS = [
   'operator.test@carelinkai.com',
   'caregiver.test@carelinkai.com',
   'family.test@carelinkai.com',
+  // Found in prod (2026-11-11 dry-run); created by old code in the archive repo:
+  'caregiver@carelinkai.com', // marketplace demo seed (b6ccd939, 2025-09) — "Sarah Johnson"
+  'family.demo1@carelinkai.com', // e2e staging family default (fa9c36f7, 2025-12) via /api/dev/upsert-family
 ] as const;
 
 /** True for an address on carelinkai.com or one of its subdomains (never getcarelinkai.com). */
@@ -50,11 +53,24 @@ export type RenamePlanRow = RenameCandidate & { to: string | null; action: 'rena
  * fixed seed login). Skipped (listed, never touched): any other carelinkai.com user, an --exclude'd address, or a
  * target address that already exists.
  */
-export function planDemoEmailRenames(rows: RenameCandidate[], existing: ReadonlySet<string>, exclude: ReadonlySet<string> = new Set()): RenamePlanRow[] {
+export function planDemoEmailRenames(
+  rows: RenameCandidate[],
+  existing: ReadonlySet<string>,
+  exclude: ReadonlySet<string> = new Set(),
+  /** --map: explicit new address for a login (e.g. a real ADMIN moving to an inbox the owner controls). */
+  overrides: ReadonlyMap<string, string> = new Map(),
+): RenamePlanRow[] {
   const claimed = new Set<string>();
   return rows.map((r) => {
     const email = r.email.trim().toLowerCase();
-    const to = renamedDemoEmail(email);
+    const mapped = overrides.get(email);
+    const to = mapped ?? renamedDemoEmail(email);
+    if (mapped && renamedDemoEmail(email)) {
+      if (exclude.has(email)) return { ...r, to, action: 'skip', why: 'excluded (--exclude)' };
+      if (existing.has(mapped) || claimed.has(mapped)) return { ...r, to, action: 'skip', why: 'target address already exists' };
+      claimed.add(mapped);
+      return { ...r, to, action: 'rename', why: 'mapped (--map)' };
+    }
     const known = r.isDemo || DEMO_EMAIL_RE.test(email) || (LEGACY_SEED_LOGINS as readonly string[]).includes(email);
     if (!to) return { ...r, to, action: 'skip', why: 'not on carelinkai.com' };
     if (exclude.has(email)) return { ...r, to, action: 'skip', why: 'excluded (--exclude)' };
@@ -63,4 +79,18 @@ export function planDemoEmailRenames(rows: RenameCandidate[], existing: Readonly
     claimed.add(to);
     return { ...r, to, action: 'rename', why: r.isDemo ? 'isDemo' : DEMO_EMAIL_RE.test(email) ? 'demo email pattern' : 'fixed seed login' };
   });
+}
+
+/** Parse --map=old=new[,old2=new2]. Throws on a malformed pair or a target on carelinkai.com. */
+export function parseRenameMap(arg: string | undefined): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const pair of (arg ?? '').split(',').map((s) => s.trim()).filter(Boolean)) {
+    const [from, to, extra] = pair.split('=').map((s) => s.trim().toLowerCase());
+    if (!from || !to || extra !== undefined || !from.includes('@') || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) {
+      throw new Error(`--map: expected old@domain=new@domain, got "${pair}"`);
+    }
+    if (isLegacyCarelinkaiDomain(to)) throw new Error(`--map: target ${to} is on carelinkai.com (not our domain)`);
+    map.set(from, to);
+  }
+  return map;
 }
