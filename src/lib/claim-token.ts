@@ -70,3 +70,31 @@ export function verifyClaimToken(token: string, secret: string): ClaimTokenPaylo
     return null;
   }
 }
+
+export type ClaimTokenInspection =
+  | { state: 'valid'; payload: ClaimTokenPayload }
+  | { state: 'expired'; payload: ClaimTokenPayload }
+  | { state: 'invalid' };
+
+/**
+ * Like verifyClaimToken, but tells an EXPIRED (correctly signed) link apart from an invalid or
+ * tampered one, so the claim page can say which. Never trusts an unsigned payload.
+ */
+export function inspectClaimToken(token: string | null | undefined, secret: string): ClaimTokenInspection {
+  if (!token || !secret) return { state: 'invalid' };
+  const parts = token.split('.');
+  if (parts.length !== 2) return { state: 'invalid' };
+  const [data, sig] = parts;
+  try {
+    const expected = Buffer.from(hmac(data, secret), 'base64url');
+    const given = Buffer.from(sig, 'base64url');
+    if (given.length !== expected.length || !crypto.timingSafeEqual(given, expected)) return { state: 'invalid' };
+    const payload = JSON.parse(fromBase64url(data)) as ClaimTokenPayload;
+    if (!payload || typeof payload.operatorEmail !== 'string') return { state: 'invalid' };
+    if (payload.exp && Math.floor(Date.now() / 1000) > payload.exp) return { state: 'expired', payload };
+    return { state: 'valid', payload };
+  } catch {
+    return { state: 'invalid' };
+  }
+}
+

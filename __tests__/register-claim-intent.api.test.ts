@@ -112,3 +112,19 @@ describe('register password rule (src/lib/password-policy.ts)', () => {
     },
   );
 });
+
+describe('claim link email lock (claim landing → "Create your free account")', () => {
+  it('a valid claim token for another address is refused before any account is created', async () => {
+    verifyClaimToken.mockReturnValue({ operatorEmail: 'kfuller@arden-courts.com', homeId: 'h-arden', clevelandFounder: true, iat: 0, exp: 9e9 });
+    const res = await postRegister(req(body({ email: 'someone@else.test', claimToken: 'tok' })));
+    expect(res.status).toBe(400);
+    expect((await res.json()).message).toMatch(/sent to a different email address/);
+    expect(db.user.create).not.toHaveBeenCalled();
+  });
+  it('the matching address (any case) registers normally', async () => {
+    verifyClaimToken.mockReturnValue({ operatorEmail: 'pat@maplegrove.test', homeId: 'h-1', clevelandFounder: true, iat: 0, exp: 9e9 });
+    const res = await postRegister(req(body({ email: 'Pat@MapleGrove.test', claimToken: 'tok' })));
+    expect(res.status).toBe(201);
+    expect(db.user.create).toHaveBeenCalled();
+  });
+});

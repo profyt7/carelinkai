@@ -238,13 +238,20 @@ test.describe('@critical self-serve listing claim', () => {
     await expect(guest.getByTestId('claim-page-signed-out')).toBeVisible(SLOW);
   });
 
-  test('the signed outreach claim link still goes to the register/redeem path', async ({ browser }) => {
+  test('the signed outreach claim link shows the branded landing, then the register/redeem path', async ({ browser }) => {
     const secret = process.env['NEXTAUTH_SECRET'];
     expect(secret, 'NEXTAUTH_SECRET must match the server').toBeTruthy();
     const now = Math.floor(Date.now() / 1000);
-    const token = signClaimToken({ operatorEmail: `outreach-${ts}@test.carelinkai.test`, homeId: home.c, clevelandFounder: true, iat: now, exp: now + 3600 }, secret!);
-    const page = await ctxPage(browser, 1280);
+    const recipient = `outreach-${ts}@test.carelinkai.test`;
+    const token = signClaimToken({ operatorEmail: recipient, homeId: home.c, clevelandFounder: true, iat: now, exp: now + 3600 }, secret!);
+    const page = await ctxPage(browser, 390);
     await go(page, `/claim?token=${encodeURIComponent(token)}`);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(`Claim Claim Test C ${ts}`, SLOW);
+    await expect(page.getByTestId('claim-place')).toContainText('Cleveland');
+    await expect(page.getByTestId('claim-sign-in')).toBeVisible();
+    await page.getByTestId('claim-create-account').click();
     await expect(page).toHaveURL(/\/auth\/register\?role=OPERATOR&claimToken=/, SLOW);
+    await expect(page.locator('#email')).toHaveValue(recipient, SLOW);
+    await expect(page.locator('#email')).not.toBeEditable();
   });
 });

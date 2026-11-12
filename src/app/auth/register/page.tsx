@@ -4,6 +4,7 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { claimTokenRecipientUnverified } from "@/lib/claim-token-recipient";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -180,6 +181,8 @@ export default function RegisterPage() {
   const roleFromUrl =
     rawRoleParam && VALID_ROLES.includes(rawRoleParam) ? rawRoleParam : null;
   const claimTokenFromUrl = searchParams?.get("claimToken") ?? null;
+  // Claim link: the email is prefilled and locked to the link's recipient (the API enforces it too).
+  const claimRecipient = roleFromUrl === "OPERATOR" ? claimTokenRecipientUnverified(claimTokenFromUrl) : null;
   // Self-serve "Claim this listing" (fix/self-serve-claim): signed home id, redeemed by the register API.
   const claimIntentFromUrl = roleFromUrl === "OPERATOR" ? searchParams?.get("claimIntent") ?? null : null;
 
@@ -221,6 +224,7 @@ export default function RegisterPage() {
     mode: "onChange",
     defaultValues: {
       role: roleFromUrl ?? "FAMILY",
+      ...(claimRecipient ? { email: claimRecipient } : {}),
       agreeToTerms: false,
       preferredContactMethod: "EMAIL",
     },
@@ -231,6 +235,7 @@ export default function RegisterPage() {
     if (roleFromUrl) {
       setValue("role", roleFromUrl);
     }
+    if (claimRecipient) setValue("email", claimRecipient, { shouldValidate: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -470,8 +475,10 @@ export default function RegisterPage() {
                     id="email"
                     type="email"
                     autoComplete="email"
-                    autoFocus
-                    className={`form-input block w-full pl-10 py-2 rounded-md shadow-sm ${
+                    autoFocus={!claimRecipient}
+                    readOnly={!!claimRecipient}
+                    aria-describedby={claimRecipient ? "email-locked" : undefined}
+                    className={`form-input block w-full pl-10 py-2 rounded-md shadow-sm ${claimRecipient ? "bg-neutral-100 text-neutral-700 cursor-not-allowed " : ""}${
                       errors.email
                         ? "border-error-300 focus:ring-error-500 focus:border-error-500"
                         : "border-neutral-300 focus:ring-primary-500 focus:border-primary-500"
@@ -487,6 +494,11 @@ export default function RegisterPage() {
                     })}
                   />
                 </div>
+                {claimRecipient && (
+                  <p id="email-locked" className="mt-1 text-sm text-neutral-600" data-testid="email-locked">
+                    This claim link was sent to this address, so your account uses it.
+                  </p>
+                )}
                 {errors.email && (
                   <p className="mt-1 text-sm text-error-600 flex items-center">
                     <FiAlertCircle className="h-4 w-4 mr-1" />

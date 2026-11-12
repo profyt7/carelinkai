@@ -33,17 +33,17 @@ export default function ClaimConfirm({ token, homeName }: { token: string; homeN
   }
 
   return (
-    <div className="text-center">
-      <h1 className="text-2xl font-semibold text-slate-900">Claim {homeName}</h1>
-      <p className="mt-3 text-slate-600">
+    <div className="px-6 py-8 text-center">
+      <h1 className="text-2xl font-semibold text-neutral-900">Claim {homeName}</h1>
+      <p className="mt-3 text-neutral-600">
         You’re claiming this CareLinkAI listing for your account. On the next screen you’ll review the
         details and confirm — there’s no cost to claim or keep your listing.
       </p>
-      {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-4 text-sm text-error-600">{error}</p>}
       <button
         onClick={start}
         disabled={loading}
-        className="mt-6 inline-block rounded-lg bg-teal-600 px-6 py-3 font-semibold text-white hover:bg-teal-700 disabled:opacity-60"
+        className="btn btn-primary mt-6 w-full py-3 text-base disabled:opacity-60 sm:w-auto"
       >
         {loading ? 'Starting…' : `Claim ${homeName}`}
       </button>
