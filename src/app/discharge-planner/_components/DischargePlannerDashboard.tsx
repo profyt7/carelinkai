@@ -14,6 +14,9 @@ import {
   FiFileText
 } from "react-icons/fi";
 import { motion } from "framer-motion";
+import { useSession } from "next-auth/react";
+import { isStepUpResponse } from "@/lib/auth/step-up-client";
+import DischargePlannerSecureLanding from "./DischargePlannerSecureLanding";
 
 type DashboardData = {
   recentSearches: any[];
@@ -32,13 +35,19 @@ type DashboardData = {
 
 export default function DischargePlannerDashboard() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // PHI step-up: without 2FA the case list (dashboard API) is refused; show the secure landing instead.
+  const [stepUp, setStepUp] = useState(false);
+  const needsStepUp = stepUp || (session?.user as { twoFactorStepUpRequired?: boolean } | undefined)?.twoFactorStepUpRequired === true;
 
   useEffect(() => {
+    if (status === "loading" || needsStepUp) return;
     fetchDashboardData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, needsStepUp]);
 
   const fetchDashboardData = async () => {
     try {
@@ -49,6 +58,10 @@ export default function DischargePlannerDashboard() {
         cache: "no-store",
       });
 
+      if (response && (await isStepUpResponse(response))) {
+        setStepUp(true);
+        return;
+      }
       if (!response?.ok) {
         throw new Error("Failed to fetch dashboard data");
       }
@@ -62,6 +75,10 @@ export default function DischargePlannerDashboard() {
       setLoading(false);
     }
   };
+
+  if (needsStepUp) {
+    return <DischargePlannerSecureLanding />;
+  }
 
   if (loading) {
     return (

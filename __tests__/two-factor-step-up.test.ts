@@ -63,14 +63,14 @@ describe('which routes are PHI', () => {
     '/api/operator/homes/h1', '/api/operator/homes/h1/photos', '/api/operator/availability-contact', '/api/operator/inquiries',
     '/api/operator/inquiries/i1', '/api/operator/inquiries/pipeline', '/api/operator/tours', '/api/operator/claim',
     '/api/operator/caregivers', '/api/operator/caregivers/c1', '/api/operator/dashboard', '/api/dashboard/metrics',
-    '/api/discharge-planner/availability', '/api/discharge-planner/analytics', '/api/residentsx', '/api/homes/h1',
+    '/api/discharge-planner/availability', '/api/discharge-planner/availability/summary', '/api/discharge-planner/analytics', '/api/residentsx', '/api/homes/h1',
   ])('not PHI: %s', (p) => expect(isPhiApiPath(p)).toBe(false));
 
   it('pages', () => {
-    for (const p of ['/operator/residents', '/operator/residents/r1', '/operator/documents', '/discharge-planner', '/discharge-planner/search', '/discharge-planner/requests', '/discharge-planner/concierge', '/discharge-planner/history']) {
+    for (const p of ['/operator/residents', '/operator/residents/r1', '/operator/documents', '/discharge-planner/search', '/discharge-planner/requests', '/discharge-planner/concierge', '/discharge-planner/history']) {
       expect({ p, phi: isPhiPagePath(p) }).toEqual({ p, phi: true });
     }
-    for (const p of ['/operator', '/operator/homes/h1/edit', '/operator/inquiries', '/operator/tours', '/operator/caregivers', '/discharge-planner/analytics', '/discharge-planner/billing', '/dashboard']) {
+    for (const p of ['/operator', '/operator/homes/h1/edit', '/operator/inquiries', '/operator/tours', '/operator/caregivers', '/discharge-planner', '/discharge-planner/analytics', '/discharge-planner/billing', '/dashboard']) {
       expect({ p, phi: isPhiPagePath(p) }).toEqual({ p, phi: false });
     }
   });
@@ -131,6 +131,13 @@ describe('middleware (server-side, before any handler)', () => {
     expect(passes(await run(await req('/api/discharge-planner/availability', DP_NO_2FA)))).toBe(true);
     expect((await run(await req('/discharge-planner/search', DP_NO_2FA))).status).toBe(307);
     expect(passes(await run(await req('/discharge-planner/analytics', DP_NO_2FA)))).toBe(true);
+    // Landing page is not gated (secure landing with aggregate availability); its case-list API still is.
+    expect(passes(await run(await req('/discharge-planner', DP_NO_2FA)))).toBe(true);
+    expect(passes(await run(await req('/api/discharge-planner/availability/summary', DP_NO_2FA)))).toBe(true);
+    expect((await run(await req('/api/discharge-planner/dashboard', DP_NO_2FA))).status).toBe(403);
+    for (const p of ['/discharge-planner/requests', '/discharge-planner/history', '/discharge-planner/concierge']) {
+      expect({ p, status: (await run(await req(p, DP_NO_2FA))).status }).toEqual({ p, status: 307 });
+    }
   });
 
   it('ADMIN / STAFF keep the hard gate (every page and API until enrolled)', async () => {

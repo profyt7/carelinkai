@@ -81,8 +81,10 @@ const PHI_PAGE_PREFIXES = [
 ] as const;
 
 export function isPhiPagePath(pathname: string): boolean {
-  // The DP home (/discharge-planner) is their case dashboard; its sub-pages billing/analytics are not PHI.
-  return pathname === '/discharge-planner' || underAny(pathname, PHI_PAGE_PREFIXES);
+  // The DP landing page (/discharge-planner) is NOT gated: without 2FA it shows aggregate
+  // availability and a "secure your account" card instead of the case list (its API,
+  // /api/discharge-planner/dashboard, stays PHI). Billing / analytics are not PHI either.
+  return underAny(pathname, PHI_PAGE_PREFIXES);
 }
 
 /**
