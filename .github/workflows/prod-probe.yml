@@ -21,6 +21,14 @@ on:
         description: 'Comma list: p0-1,p0-2,p0-3,p0-4,p0-5,p0-6,p0-7,2fa-enforce,logout-others (or "all")'
         default: 'all'
         required: true
+      claim_home_ids:
+        description: 'ONE-OFF (branch only): comma-separated home ids for claim-precheck'
+        default: ''
+        required: false
+      claim_urls:
+        description: 'ONE-OFF (branch only): space-separated /auth/register?…claimToken=… URLs for claim-urls'
+        default: ''
+        required: false
 
 permissions:
   contents: read
@@ -38,6 +46,8 @@ jobs:
         env:
           BASE: ${{ inputs.base_url }}
           PROBES: ${{ inputs.probes }}
+          CLAIM_HOME_IDS: ${{ inputs.claim_home_ids }}
+          CLAIM_URLS: ${{ inputs.claim_urls }}
           A_EMAIL: ${{ secrets.PROD_PROBE_A_EMAIL }}
           A_PASSWORD: ${{ secrets.PROD_PROBE_A_PASSWORD }}
           B_EMAIL: ${{ secrets.PROD_PROBE_B_EMAIL }}
@@ -227,6 +237,50 @@ jobs:
               const api2 = await req(two, '/api/profile/account');
               const ok = r.status === 200 && !!s1?.user && !s2?.user && api2.status === 401;
               record('logout-others', ok ? 'PASS' : 'FAIL', `DELETE /api/profile/sessions → ${r.status}; this device ${s1?.user ? 'signed in' : 'SIGNED OUT'}; other device ${s2?.user ? 'STILL SIGNED IN' : 'signed out'}, its API → ${api2.status} (want 200, signed in, signed out, 401)`);
+            }
+          }
+
+          // ONE-OFF, BRANCH ONLY (never merged), opt-in by name ('all' never runs these). Logged-out
+          // GETs only — never submits or completes a claim, never opens /claim (that page records a visit).
+          const homeInfo = async (id) => {
+            const r = await fetch(`${BASE}/api/homes/${encodeURIComponent(id)}`, { redirect: 'manual' });
+            const j = await r.json().catch(() => ({}));
+            const h = j?.home ?? j?.data ?? j;
+            return { status: r.status, name: h?.name, unclaimed: h?.unclaimed, address: h?.address };
+          };
+          const pageTitle = async (path) => {
+            const r = await fetch(`${BASE}${path}`, { redirect: 'manual' });
+            const html = await r.text().catch(() => '');
+            return { status: r.status, title: ((html.match(/<title[^>]*>([^<]*)<\/title>/i) || [])[1] || '').trim() };
+          };
+          if (want.has('claim-precheck')) {
+            for (const id of (process.env.CLAIM_HOME_IDS || '').split(',').map((x) => x.trim()).filter(Boolean)) {
+              const h = await homeInfo(id);
+              const t = await pageTitle(`/homes/${id}`);
+              const a = h.address || {};
+              record('claim-precheck', h.status === 200 && h.unclaimed === true ? 'PASS' : 'FAIL',
+                `${id} → API ${h.status} name="${h.name}" unclaimed=${h.unclaimed} address="${[a.street, a.city, a.state, a.zipCode].filter(Boolean).join(', ')}" | page ${t.status} title="${t.title}"`);
+            }
+          }
+          if (want.has('claim-urls')) {
+            const mask = (e) => String(e || '').replace(/^(.).*(@.*)$/, '$1***$2');
+            for (const u of (process.env.CLAIM_URLS || '').split(/\s+/).filter(Boolean)) {
+              let url;
+              try { url = new URL(u); } catch { record('claim-urls', 'FAIL', `not a URL: ${u.slice(0, 60)}`); continue; }
+              const token = url.searchParams.get('claimToken');
+              if (url.origin !== new URL(BASE).origin || url.pathname !== '/auth/register' || !token) {
+                record('claim-urls', 'FAIL', `refused (only ${BASE}/auth/register?claimToken=… — /claim records a visit): ${url.pathname}`);
+                continue;
+              }
+              let p = null;
+              try { p = JSON.parse(Buffer.from(token.split('.')[0], 'base64url').toString('utf8')); } catch {}
+              const page = await fetch(url.toString(), { redirect: 'manual' });
+              const h = p?.homeId ? await homeInfo(p.homeId) : {};
+              const now = Math.floor(Date.now() / 1000);
+              const exp = p?.exp ? new Date(p.exp * 1000).toISOString() : '?';
+              const ok = page.status === 200 && !!p?.homeId && p.exp > now && h.status === 200 && h.unclaimed === true && token.split('.').length === 2;
+              record('claim-urls', ok ? 'PASS' : 'FAIL',
+                `GET /auth/register → ${page.status}; token homeId=${p?.homeId} → "${h.name}" (API ${h.status}, unclaimed=${h.unclaimed}); to=${mask(p?.operatorEmail)}; expires ${exp} (${p?.exp > now ? `${Math.round((p.exp - now) / 86400)} days left` : 'EXPIRED'}); founder=${p?.clevelandFounder}`);
             }
           }
 
