@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { requireRole } from '@/lib/auth-utils';
+import { requireRole, phiStepUpResponse } from '@/lib/auth-utils';
 import { UserRole } from '@prisma/client';
 import { sendConciergeRequestNotification } from '@/lib/email';
 import { captureError } from '@/lib/sentry';
@@ -50,6 +50,9 @@ const submitSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const user = await requireRole([UserRole.DISCHARGE_PLANNER, UserRole.ADMIN]);
+    // Patient case data is PHI: a DP without 2FA is sent to setup first (step-up).
+    const stepUp = phiStepUpResponse(user);
+    if (stepUp) return stepUp;
     const body = await request.json().catch(() => ({}));
     const { searchId, patientInfo, payerSource } = submitSchema.parse(body);
 
@@ -133,6 +136,9 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   try {
     const user = await requireRole([UserRole.DISCHARGE_PLANNER, UserRole.ADMIN]);
+    // Patient case data is PHI: a DP without 2FA is sent to setup first (step-up).
+    const stepUp = phiStepUpResponse(user);
+    if (stepUp) return stepUp;
     const rows = await prisma.placementSearch.findMany({
       where: { userId: user.id, isConcierge: true },
       select: {

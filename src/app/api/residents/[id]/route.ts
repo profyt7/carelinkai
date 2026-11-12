@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 ﻿import { NextRequest, NextResponse } from 'next/server';
 import { UserRole, ResidentStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { requireOperatorOrAdmin } from '@/lib/rbac';
+import { requireOperatorOrAdminForPhi } from '@/lib/rbac';
 import { updateHomeCapacity } from '@/lib/utils/capacity-tracker';
 import { auditPhiRead, logPhiAccess } from '@/lib/phi-audit';
 import { getDownloadUrl } from '@/lib/storage/download';
@@ -29,7 +29,7 @@ async function ensureAccess(userEmail: string, residentId: string) {
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
     console.log('Resident API GET start', params.id);
-    const { session, error } = await requireOperatorOrAdmin();
+    const { session, error } = await requireOperatorOrAdminForPhi();
     if (error) return error;
     const access = await ensureAccess(session!.user!.email!, params.id);
     if (access.status !== 200) return NextResponse.json({ error: 'Forbidden' }, { status: access.status });
@@ -62,7 +62,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { session, error } = await requireOperatorOrAdmin();
+    const { session, error } = await requireOperatorOrAdminForPhi();
     if (error) return error;
     const access = await ensureAccess(session!.user!.email!, params.id);
     if (access.status !== 200) return NextResponse.json({ error: 'Forbidden' }, { status: access.status });

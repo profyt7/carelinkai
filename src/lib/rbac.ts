@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import type { UserRole } from "@prisma/client";
 import { cookies } from 'next/headers';
 import { decode } from 'next-auth/jwt';
+import { TWO_FACTOR_SETUP_PATH, TWO_FACTOR_STEP_UP_CODE } from "@/lib/auth/two-factor-routes";
 
 // RBAC helpers for App Router routes
 // Assumptions:
@@ -75,4 +76,22 @@ export async function requireOperatorOrAdmin() {
   const { session, error } = await requireAnyRole(["OPERATOR" as UserRole, "ADMIN" as UserRole]);
   if (error) return { error } as const;
   return { session } as const;
+}
+
+/**
+ * requireOperatorOrAdmin for routes that return or change PHI (residents and everything attached).
+ * An OPERATOR without 2FA gets 403 TWO_FACTOR_STEP_UP_REQUIRED (step-up; the UI sends them to setup).
+ */
+export async function requireOperatorOrAdminForPhi() {
+  const res = await requireOperatorOrAdmin();
+  if ('error' in res && res.error) return res;
+  if ((res.session?.user as { twoFactorStepUpRequired?: unknown } | undefined)?.twoFactorStepUpRequired === true) {
+    return {
+      error: NextResponse.json(
+        { error: TWO_FACTOR_STEP_UP_CODE, code: TWO_FACTOR_STEP_UP_CODE, setupUrl: TWO_FACTOR_SETUP_PATH },
+        { status: 403 },
+      ),
+    } as const;
+  }
+  return res;
 }

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { withAuth } from 'next-auth/middleware';
 import { getToken } from 'next-auth/jwt';
-import { apiAllowedDuringTwoFactorSetup, twoFactorSetupUrl } from '@/lib/auth/two-factor-routes';
+import { apiAllowedDuringTwoFactorSetup, isPhiApiPath, isPhiPagePath, TWO_FACTOR_SETUP_PATH, TWO_FACTOR_STEP_UP_CODE, twoFactorSetupUrl } from '@/lib/auth/two-factor-routes';
 import { middlewareRateLimitFor, rateLimitExceeded } from '@/lib/edge-rate-limit';
 import { isKnownAppPath, isPublicPage } from '@/lib/routing/public-routes';
 import { isPageMethodAllowed, methodNotAllowedHeaders } from '@/lib/routing/page-methods';
@@ -110,8 +110,9 @@ export default async function middleware(req: NextRequest) {
   /* ------------------------------------------------------------------
    * 2FA ENFORCEMENT FOR APIs (security package §3). Route handlers do their
    * own auth; this only refuses a signed-in user whose token says they must
-   * set up 2FA first (ADMIN / STAFF / OPERATOR / DISCHARGE_PLANNER without an
-   * authenticator). /api/auth/* stays open so they can enrol and sign out.
+   * set up 2FA first: ADMIN / STAFF without an authenticator → every API but
+   * /api/auth/*; OPERATOR / DISCHARGE_PLANNER without one → PHI APIs only
+   * (step-up, isPhiApiPath). /api/auth/* stays open so they can enrol and sign out.
    * ---------------------------------------------------------------- */
   if (pathname.startsWith('/api/')) {
     if (!apiAllowedDuringTwoFactorSetup(pathname)) {
@@ -121,6 +122,12 @@ export default async function middleware(req: NextRequest) {
           status: 403,
           headers: { 'content-type': 'application/json' },
         });
+      }
+      if (token && (token as any).twoFactorStepUpRequired === true && isPhiApiPath(pathname)) {
+        return new NextResponse(
+          JSON.stringify({ error: TWO_FACTOR_STEP_UP_CODE, code: TWO_FACTOR_STEP_UP_CODE, setupUrl: TWO_FACTOR_SETUP_PATH }),
+          { status: 403, headers: { 'content-type': 'application/json' } },
+        );
       }
     }
     return NextResponse.next();
@@ -229,7 +236,11 @@ export default async function middleware(req: NextRequest) {
 
         // 2FA enforcement for pages: a user who must set up 2FA sees nothing else first.
         const tok = req?.nextauth?.token;
-        if (tok && tok.twoFactorSetupRequired === true && !isPublicPage(pathname)) {
+        // Step-up (OPERATOR / DISCHARGE_PLANNER without 2FA): only PHI pages need it.
+        const needsSetup = tok && !isPublicPage(pathname) && (
+          tok.twoFactorSetupRequired === true || (tok.twoFactorStepUpRequired === true && isPhiPagePath(pathname))
+        );
+        if (needsSetup) {
           const to = req.nextUrl.clone();
           const target = twoFactorSetupUrl(pathname, req.nextUrl.search);
           to.pathname = target.split('?')[0];

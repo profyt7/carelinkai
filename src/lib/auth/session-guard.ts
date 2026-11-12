@@ -9,9 +9,10 @@
  *   - revokes the token when the user is gone, is not ACTIVE, or its `sv`
  *     (session version) no longer matches User.sessionVersion;
  *   - refreshes role / name / image from the database (a demotion is immediate);
- *   - sets `twoFactorSetupRequired` for roles that must use 2FA and have not
- *     enrolled yet; middleware then sends every page to /auth/setup-2fa and
- *     refuses every API except /api/auth/*.
+ *   - sets `twoFactorSetupRequired` for ADMIN / STAFF without 2FA; middleware then sends
+ *     every page to /auth/setup-2fa and refuses every API except /api/auth/*;
+ *   - sets `twoFactorStepUpRequired` for OPERATOR / DISCHARGE_PLANNER without 2FA; only
+ *     PHI routes are refused / sent to setup (two-factor-routes.ts isPhiApiPath/isPhiPagePath).
  *
  * Revocation throws SessionRevokedError: NextAuth then clears the session cookie
  * and getServerSession() returns null (so routes 401 and pages redirect to login).
@@ -19,8 +20,8 @@
  */
 import { isEnrolled } from '@/lib/two-factor/secure';
 
-export { TWO_FACTOR_REQUIRED_ROLES, roleRequiresTwoFactor, twoFactorEnforced } from './two-factor-routes';
-import { roleRequiresTwoFactor, twoFactorEnforced } from './two-factor-routes';
+export { TWO_FACTOR_REQUIRED_ROLES, TWO_FACTOR_STEP_UP_ROLES, roleRequiresTwoFactor, roleNeedsTwoFactorForPhi, twoFactorEnforced } from './two-factor-routes';
+import { roleNeedsTwoFactorForPhi, roleRequiresTwoFactor, twoFactorEnforced } from './two-factor-routes';
 
 export class SessionRevokedError extends Error {
   constructor(public reason: 'missing' | 'inactive' | 'version') {
@@ -85,6 +86,7 @@ export function applyUserToToken<T extends Record<string, unknown>>(
   const enrolled = isEnrolled(db);
   t.twoFactorEnabled = enrolled;
   t.twoFactorSetupRequired = twoFactorEnforced(env) && roleRequiresTwoFactor(db.role) && !enrolled;
+  t.twoFactorStepUpRequired = twoFactorEnforced(env) && roleNeedsTwoFactorForPhi(db.role) && !enrolled;
   return token;
 }
 

@@ -10,6 +10,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserScope } from '@/lib/auth-utils';
 import { REAL_INQUIRIES } from '@/lib/inquiries/test-inquiry';
+import { roleNeedsTwoFactorForPhi, twoFactorEnforced } from '@/lib/auth/two-factor-routes';
+import { isEnrolled } from '@/lib/two-factor/secure';
 
 /** Matches no row (every scoped model has an `id`). */
 export const NONE = { id: { in: [] as string[] } };
@@ -28,7 +30,18 @@ export type DashboardScope = {
 export async function dashboardScope(user: { id: string; role: string }): Promise<DashboardScope | NextResponse> {
   const s = await baseScope(user);
   if (s instanceof NextResponse) return s;
-  return { ...s, inquiry: { ...s.inquiry, ...REAL_INQUIRIES } };
+  const scoped = { ...s, inquiry: { ...s.inquiry, ...REAL_INQUIRIES } };
+  // PHI step-up: an OPERATOR / DISCHARGE_PLANNER without 2FA still gets the dashboard (listings,
+  // inquiries, tours, caregivers) but no resident, incident or assessment rows — counts read 0.
+  if (await phiStepUpPending(user)) return { ...scoped, resident: NONE, incident: NONE, assess: NONE };
+  return scoped;
+}
+
+async function phiStepUpPending(user: { id: string; role: string }): Promise<boolean> {
+  // A DISCHARGE_PLANNER's dashboard scope is already NONE; only OPERATOR needs the lookup.
+  if (!twoFactorEnforced() || user.role !== 'OPERATOR' || !roleNeedsTwoFactorForPhi(user.role)) return false;
+  const u = await prisma.user.findUnique({ where: { id: user.id }, select: { twoFactorEnabled: true, twoFactorSecret: true } });
+  return !u || !isEnrolled(u);
 }
 
 async function baseScope(user: { id: string; role: string }): Promise<DashboardScope | NextResponse> {

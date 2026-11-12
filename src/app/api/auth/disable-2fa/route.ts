@@ -15,7 +15,8 @@ import { captureError } from '@/lib/sentry';
 import { errorSummary } from '@/lib/log-safe';
 import { consumeBackupCode, decryptTotpSecret, verifyTotp } from '@/lib/two-factor/secure';
 import { audit2fa, clientIp, limited } from '@/lib/two-factor/route-helpers';
-import { roleRequiresTwoFactor, twoFactorEnforced } from '@/lib/auth/session-guard';
+import { twoFactorEnforced } from '@/lib/auth/session-guard';
+import { roleMayNotDisableTwoFactor } from '@/lib/auth/two-factor-routes';
 import { endOtherSessions } from '@/lib/auth/session-version';
 
 const disableSchema = z.object({
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Security package §3: these roles must keep 2FA on.
-    if (twoFactorEnforced() && roleRequiresTwoFactor(user.role)) {
+    if (twoFactorEnforced() && roleMayNotDisableTwoFactor(user.role)) {
       return NextResponse.json(
         { success: false, message: 'Two-factor authentication is required for your account role and cannot be turned off.' },
         { status: 403 },

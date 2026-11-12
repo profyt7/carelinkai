@@ -162,7 +162,10 @@ export async function GET(request: NextRequest) {
       },
       pipeline: pipelineData,
       stageMetrics,
-      recentConversions,
+      // PHI step-up: without 2FA an operator sees conversions but not the resident they became.
+      recentConversions: user.twoFactorStepUpRequired
+        ? recentConversions.map(({ convertedResident: _resident, ...rest }) => ({ ...rest, convertedResident: null }))
+        : recentConversions,
     });
   } catch (error) {
     // 401/403 are expected responses (logged-out caller, stale tab) — answer

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { FiX, FiUserPlus, FiSearch } from 'react-icons/fi';
 
+import { redirectIfStepUp } from '@/lib/auth/step-up-client';
 interface AssignResidentModalProps {
   caregiverId: string;
   caregiverName?: string;
@@ -45,6 +46,7 @@ export function AssignResidentModal({
     try {
       setLoading(true);
       const res = await fetch('/api/residents?status=ACTIVE&limit=100');
+      if (await redirectIfStepUp(res)) return; // resident list is PHI: 2FA first
       if (!res.ok) throw new Error('Failed to fetch residents');
       
       const data = await res.json();
@@ -89,6 +91,7 @@ export function AssignResidentModal({
         }),
       });
 
+      if (await redirectIfStepUp(res)) return;
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || 'Failed to create assignment');

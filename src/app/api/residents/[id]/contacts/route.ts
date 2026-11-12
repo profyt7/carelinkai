@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { requireOperatorOrAdmin } from '@/lib/rbac';
+import { requireOperatorOrAdminForPhi } from '@/lib/rbac';
 import { prisma } from '@/lib/prisma';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { captureError, addBreadcrumb, Sentry } from '@/lib/sentry';
@@ -24,7 +24,7 @@ const ContactSchema = z.object({
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { session, error } = await requireOperatorOrAdmin();
+    const { session, error } = await requireOperatorOrAdminForPhi();
     if (error) return error;
 
     const resident = await prisma.resident.findUnique({
@@ -50,7 +50,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { session, error } = await requireOperatorOrAdmin();
+    const { session, error } = await requireOperatorOrAdminForPhi();
     if (error) return error;
 
     const resident = await prisma.resident.findUnique({

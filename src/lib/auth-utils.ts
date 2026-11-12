@@ -18,6 +18,7 @@ import {
   canPerformAction,
 } from "@/lib/permissions";
 import { errorSummary } from '@/lib/log-safe';
+import { TWO_FACTOR_SETUP_PATH, TWO_FACTOR_STEP_UP_CODE } from '@/lib/auth/two-factor-routes';
 
 /**
  * Error thrown when authorization fails
@@ -45,6 +46,43 @@ export type UserScope = {
 /**
  * Error thrown when user is not authenticated
  */
+/**
+ * OPERATOR / DISCHARGE_PLANNER without 2FA asked for PHI (step-up, see two-factor-routes.ts).
+ * A 403 like UnauthorizedError, but handleAuthError answers with TWO_FACTOR_STEP_UP_CODE so the
+ * UI sends them to /auth/setup-2fa. src/middleware.ts refuses the PHI API prefixes first; this
+ * is the same rule inside the handlers (PHI permissions + requirePhiAccess).
+ */
+export class TwoFactorStepUpRequiredError extends UnauthorizedError {
+  constructor() {
+    super(TWO_FACTOR_STEP_UP_CODE);
+    this.name = "TwoFactorStepUpRequiredError";
+  }
+}
+
+/** Permissions that read or change PHI: residents and everything attached to them. */
+const PHI_PERMISSION_PREFIXES = ["residents.", "assessments.", "incidents.", "compliance.", "family_contacts.", "documents."];
+const PHI_PERMISSIONS = new Set<string>(["caregivers.assign", "inquiries.convert"]);
+
+export function isPhiPermission(permission: string): boolean {
+  return PHI_PERMISSIONS.has(permission) || PHI_PERMISSION_PREFIXES.some((p) => permission.startsWith(p));
+}
+
+/** Throws TwoFactorStepUpRequiredError when this session must enrol 2FA before PHI. */
+export function requirePhiAccess(user: unknown): void {
+  if ((user as { twoFactorStepUpRequired?: unknown } | null | undefined)?.twoFactorStepUpRequired === true) {
+    throw new TwoFactorStepUpRequiredError();
+  }
+}
+
+/** Non-throwing form for routes whose catch blocks map errors to 500: `const r = phiStepUpResponse(user); if (r) return r;` */
+export function phiStepUpResponse(user: unknown): Response | null {
+  if ((user as { twoFactorStepUpRequired?: unknown } | null | undefined)?.twoFactorStepUpRequired !== true) return null;
+  return Response.json(
+    { error: TWO_FACTOR_STEP_UP_CODE, code: TWO_FACTOR_STEP_UP_CODE, setupUrl: TWO_FACTOR_SETUP_PATH },
+    { status: 403 },
+  );
+}
+
 export class UnauthenticatedError extends Error {
   constructor(message: string = "Not authenticated") {
     super(message);
@@ -68,6 +106,8 @@ export async function getCurrentUser() {
     firstName: session.user.firstName,
     lastName: session.user.lastName,
     role: session.user.role as UserRole,
+    /** OPERATOR / DISCHARGE_PLANNER without 2FA: PHI is refused (requirePhiAccess). */
+    twoFactorStepUpRequired: (session.user as { twoFactorStepUpRequired?: boolean }).twoFactorStepUpRequired === true,
   };
 }
 
@@ -112,6 +152,7 @@ export async function requirePermission(permission: Permission) {
       `Access denied. Required permission: ${permission}`
     );
   }
+  if (isPhiPermission(permission)) requirePhiAccess(user);
   
   return user;
 }
@@ -456,6 +497,13 @@ export function handleAuthError(error: unknown) {
     );
   }
   
+  if (error instanceof TwoFactorStepUpRequiredError) {
+    return Response.json(
+      { error: TWO_FACTOR_STEP_UP_CODE, code: TWO_FACTOR_STEP_UP_CODE, setupUrl: TWO_FACTOR_SETUP_PATH },
+      { status: 403 }
+    );
+  }
+
   if (error instanceof UnauthorizedError) {
     return Response.json(
       { error: error.message },

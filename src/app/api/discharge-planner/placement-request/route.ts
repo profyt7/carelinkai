@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { brandEmailArgs } from '@/lib/email';
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, requireRole } from "@/lib/auth-utils";
+import { requireAuth, requireRole, phiStepUpResponse } from "@/lib/auth-utils";
 import { UserRole } from "@prisma/client";
 import { Resend } from "resend";
 import { createGuardedResend } from '@/lib/email/recipient-guard';
@@ -38,6 +38,9 @@ export async function POST(request: NextRequest) {
   try {
     // Require DISCHARGE_PLANNER role
     const user = await requireRole([UserRole.DISCHARGE_PLANNER, UserRole.ADMIN]);
+    // Patient case data is PHI: a DP without 2FA is sent to setup first (step-up).
+    const stepUp = phiStepUpResponse(user);
+    if (stepUp) return stepUp;
 
     // Validate request
     const body = await request?.json?.();

@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/auth-utils";
+import { requireRole, phiStepUpResponse } from "@/lib/auth-utils";
 import { UserRole } from "@prisma/client";
 import { captureError } from "@/lib/sentry";
 import { getAnthropicClient, requireAnthropicKey } from "@/lib/ai/claude";
@@ -42,6 +42,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const user = await requireRole([UserRole.DISCHARGE_PLANNER, UserRole.ADMIN]);
+    // Patient case data is PHI: a DP without 2FA is sent to setup first (step-up).
+    const stepUp = phiStepUpResponse(user);
+    if (stepUp) return stepUp;
 
     const body = await request.json();
     const { query } = searchRequestSchema.parse(body);

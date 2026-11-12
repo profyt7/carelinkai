@@ -29,6 +29,7 @@ jest.mock('@/lib/concierge/tour-coordination', () => ({
 jest.mock('@/lib/sentry', () => ({ captureError: jest.fn() }));
 jest.mock('@/lib/auth-utils', () => ({
   requireRole: jest.fn(async () => ({ id: 'dp-user-1', role: 'DISCHARGE_PLANNER' })),
+  phiStepUpResponse: () => null,
 }));
 jest.mock('@/lib/prisma', () => {
   // Sprint W5-1: writes now commit alongside an EntityEvent row inside

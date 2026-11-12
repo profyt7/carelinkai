@@ -180,19 +180,36 @@ jobs:
             }
           }
 
-          // 2FA enforcement (#72): a privileged account without 2FA is signed in but every
-          // page goes to /auth/setup-2fa and every API outside /api/auth/* answers 403.
+          // 2FA enforcement: a privileged account without 2FA, checked on a PHI route (not just the
+          // login redirect). ADMIN / STAFF: hard gate — every API outside /api/auth/* answers 403
+          // TWO_FACTOR_SETUP_REQUIRED. OPERATOR / DISCHARGE_PLANNER: step-up — signed in and a non-PHI
+          // API works, but the PHI route answers 403 TWO_FACTOR_STEP_UP_REQUIRED and a PHI page goes
+          // to /auth/setup-2fa?callbackUrl=<that page>. Status codes and the error code only.
           if (on('2fa-enforce')) {
             const P = await signIn(process.env.PRIV_EMAIL, process.env.PRIV_PASSWORD).catch((e) => { record('2fa-enforce', 'FAIL', e.message); return undefined; });
             if (P === null) record('2fa-enforce', 'SKIP', 'PROD_PROBE_PRIV_* secrets not set');
             else if (P) {
               const s = await (await req(P, '/api/auth/session')).json().catch(() => ({}));
-              const page = await req(P, '/dashboard');
+              const role = s?.user?.role;
+              const dp = role === 'DISCHARGE_PLANNER';
+              const phiApi = dp ? '/api/discharge-planner/requests' : '/api/residents';
+              const phiPage = dp ? '/discharge-planner/requests' : '/operator/residents';
+              const phi = await req(P, phiApi);
+              const code = (await phi.json().catch(() => ({})))?.error;
+              const page = await req(P, phiPage);
               const loc = page.headers.get('location') || '';
-              const api = await req(P, '/api/profile/account');
+              const toSetup = page.status === 307 && loc.includes('/auth/setup-2fa') && decodeURIComponent(loc).includes(`callbackUrl=${phiPage}`);
               const setupApi = await req(P, '/api/auth/session');
-              const ok = s?.user?.twoFactorSetupRequired === true && page.status === 307 && loc.includes('/auth/setup-2fa') && api.status === 403 && setupApi.status === 200;
-              record('2fa-enforce', ok ? 'PASS' : 'FAIL', `role=${s?.user?.role} claim=${s?.user?.twoFactorSetupRequired} /dashboard → ${page.status} ${loc.replace(BASE, '')}, /api/profile/account → ${api.status}, /api/auth/session → ${setupApi.status} (want true, 307 → /auth/setup-2fa, 403, 200)`);
+              let ok, want;
+              if (role === 'ADMIN' || role === 'STAFF') {
+                ok = s?.user?.twoFactorSetupRequired === true && phi.status === 403 && code === 'TWO_FACTOR_SETUP_REQUIRED' && setupApi.status === 200;
+                want = 'hard gate: setupRequired=true, PHI API 403 TWO_FACTOR_SETUP_REQUIRED, /api/auth/session 200';
+              } else {
+                const open = await req(P, '/api/profile/account'); // non-PHI: must work without 2FA
+                ok = s?.user?.twoFactorStepUpRequired === true && s?.user?.twoFactorSetupRequired !== true && phi.status === 403 && code === 'TWO_FACTOR_STEP_UP_REQUIRED' && toSetup && open.status === 200;
+                want = `step-up: stepUpRequired=true, ${phiApi} 403 TWO_FACTOR_STEP_UP_REQUIRED, ${phiPage} 307 → setup?callbackUrl, /api/profile/account 200 (got ${open.status})`;
+              }
+              record('2fa-enforce', ok ? 'PASS' : 'FAIL', `role=${role} setupRequired=${s?.user?.twoFactorSetupRequired} stepUpRequired=${s?.user?.twoFactorStepUpRequired} ${phiApi} → ${phi.status} ${code}, ${phiPage} → ${page.status} ${loc.replace(BASE, '').split('?')[0]} (want ${want})`);
             }
           }
 

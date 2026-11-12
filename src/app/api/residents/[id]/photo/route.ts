@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireOperatorOrAdmin } from '@/lib/rbac';
+import { requireOperatorOrAdminForPhi } from '@/lib/rbac';
 import { prisma } from '@/lib/prisma';
 import { uploadBuffer, deleteObject, getBucket, toS3Url, parseS3Url } from '@/lib/storage';
 
@@ -17,7 +17,7 @@ const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
  */
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { error } = await requireOperatorOrAdmin();
+    const { error } = await requireOperatorOrAdminForPhi();
     if (error) return error;
 
     const formData = await req.formData();
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
  */
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { error } = await requireOperatorOrAdmin();
+    const { error } = await requireOperatorOrAdminForPhi();
     if (error) return error;
 
     const resident = await prisma.resident.findUnique({

@@ -58,15 +58,22 @@ describe('applyUserToToken', () => {
     expect(t).toMatchObject({ role: 'FAMILY', name: 'New Name', firstName: 'New', profileImageUrl: 'm.jpg' });
   });
 
-  it.each(['ADMIN', 'STAFF', 'OPERATOR', 'DISCHARGE_PLANNER'])('%s without 2FA must set it up; with 2FA does not', (role) => {
-    expect(applyUserToToken({ sv: 0 }, dbUser({ role })).twoFactorSetupRequired).toBe(true);
+  it.each(['ADMIN', 'STAFF'])('%s without 2FA must set it up before anything; with 2FA does not', (role) => {
+    expect(applyUserToToken({ sv: 0 }, dbUser({ role }))).toMatchObject({ twoFactorSetupRequired: true, twoFactorStepUpRequired: false });
     // flag alone (the old toggle) is not enrolment
     expect(applyUserToToken({ sv: 0 }, dbUser({ role, twoFactorEnabled: true })).twoFactorSetupRequired).toBe(true);
     expect(applyUserToToken({ sv: 0 }, dbUser({ role, twoFactorEnabled: true, twoFactorSecret: ENROLLED_SECRET() })).twoFactorSetupRequired).toBe(false);
   });
 
+  it.each(['OPERATOR', 'DISCHARGE_PLANNER'])('%s without 2FA may sign in; PHI needs step-up; with 2FA neither', (role) => {
+    expect(applyUserToToken({ sv: 0 }, dbUser({ role }))).toMatchObject({ twoFactorSetupRequired: false, twoFactorStepUpRequired: true });
+    expect(applyUserToToken({ sv: 0 }, dbUser({ role, twoFactorEnabled: true })).twoFactorStepUpRequired).toBe(true);
+    expect(applyUserToToken({ sv: 0 }, dbUser({ role, twoFactorEnabled: true, twoFactorSecret: ENROLLED_SECRET() }))).toMatchObject({ twoFactorSetupRequired: false, twoFactorStepUpRequired: false });
+    expect(applyUserToToken({ sv: 0 }, dbUser({ role }), { TWO_FACTOR_ENFORCEMENT: 'off' } as any).twoFactorStepUpRequired).toBe(false);
+  });
+
   it.each(['FAMILY', 'CAREGIVER', 'PROVIDER', 'AFFILIATE'])('%s: 2FA is optional', (role) => {
-    expect(applyUserToToken({ sv: 0 }, dbUser({ role })).twoFactorSetupRequired).toBe(false);
+    expect(applyUserToToken({ sv: 0 }, dbUser({ role }))).toMatchObject({ twoFactorSetupRequired: false, twoFactorStepUpRequired: false });
   });
 
   it('TWO_FACTOR_ENFORCEMENT=off turns the requirement off (e2e only)', () => {
@@ -83,7 +90,7 @@ describe('authOptions jwt callback', () => {
   it('at sign-in stores sv + authTime and computes the 2FA claim', async () => {
     findUnique.mockResolvedValue(dbUser({ role: 'OPERATOR', sessionVersion: 3 }));
     const t: any = await jwt({ token: {}, user: { id: 'u1', email: 'a@b.c', role: 'OPERATOR', sessionVersion: 3 } });
-    expect(t).toMatchObject({ id: 'u1', sv: 3, role: 'OPERATOR', twoFactorSetupRequired: true });
+    expect(t).toMatchObject({ id: 'u1', sv: 3, role: 'OPERATOR', twoFactorSetupRequired: false, twoFactorStepUpRequired: true });
     expect(typeof t.authTime).toBe('number');
   });
 
@@ -109,6 +116,8 @@ describe('authOptions jwt callback', () => {
     const { authOptions } = await import('@/lib/auth');
     const s: any = await authOptions.callbacks!.session!({ session: { user: {} } as any, token: { id: 'u1', twoFactorSetupRequired: true } as any } as any);
     expect(s.user.twoFactorSetupRequired).toBe(true);
+    const s2: any = await authOptions.callbacks!.session!({ session: { user: {} } as any, token: { id: 'u1', twoFactorStepUpRequired: true } as any } as any);
+    expect(s2.user).toMatchObject({ twoFactorSetupRequired: false, twoFactorStepUpRequired: true });
   });
 });
 

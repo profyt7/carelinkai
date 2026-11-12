@@ -11,7 +11,7 @@
  * Uses the REAL persistence helper (markConciergeTourRequested) with prisma mocked.
  */
 
-jest.mock('@/lib/auth-utils', () => ({ requireRole: jest.fn() }));
+jest.mock('@/lib/auth-utils', () => ({ requireRole: jest.fn(), phiStepUpResponse: () => null }));
 jest.mock('@/lib/prisma', () => ({
   prisma: {
     placementSearch: { findUnique: jest.fn(), update: jest.fn() },

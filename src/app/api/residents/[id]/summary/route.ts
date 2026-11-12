@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requireOperatorOrAdmin } from '@/lib/rbac';
+import { requireOperatorOrAdminForPhi } from '@/lib/rbac';
 import PDFDocument from 'pdfkit';
 
 export const dynamic = 'force-dynamic';
@@ -28,7 +28,7 @@ async function canAccess(sessionEmail: string | null | undefined, residentId: st
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { session, error } = await requireOperatorOrAdmin();
+    const { session, error } = await requireOperatorOrAdminForPhi();
     if (error) return error;
     if (!(await canAccess(session!.user!.email, params.id))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 

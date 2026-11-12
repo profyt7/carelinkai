@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import TwoFactorPanel from "@/components/settings/TwoFactorPanel";
-import { roleRequiresTwoFactor } from "@/lib/auth/two-factor-routes";
+import { roleMayNotDisableTwoFactor } from "@/lib/auth/two-factor-routes";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -624,7 +624,7 @@ export default function AccountSettings() {
                   </p>
                   <TwoFactorPanel
                     enabled={twoFactorEnabled}
-                    required={roleRequiresTwoFactor(accountData?.role)}
+                    required={roleMayNotDisableTwoFactor(accountData?.role)}
                     onChange={async (v) => { setTwoFactorEnabled(v); await update(); }}
                   />
                 </div>

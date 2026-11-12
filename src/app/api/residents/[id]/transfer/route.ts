@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { AuditAction, UserRole } from '@prisma/client';
-import { requireOperatorOrAdmin } from '@/lib/rbac';
+import { requireOperatorOrAdminForPhi } from '@/lib/rbac';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
@@ -25,7 +25,7 @@ const BodySchema = z.object({
  */
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { session, error } = await requireOperatorOrAdmin();
+    const { session, error } = await requireOperatorOrAdminForPhi();
     if (error) return error;
 
     const body = await req.json().catch(() => ({}));

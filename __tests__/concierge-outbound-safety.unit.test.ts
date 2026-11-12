@@ -15,7 +15,7 @@ const facilityEmail = jest.fn(async () => 'sent');
 const operatorLeadEmail = jest.fn(async () => true);
 const claimDrip = jest.fn(async () => undefined);
 
-jest.mock('@/lib/auth-utils', () => ({ requireRole: jest.fn(async () => ({ id: 'admin-1', role: 'ADMIN' })) }));
+jest.mock('@/lib/auth-utils', () => ({ requireRole: jest.fn(async () => ({ id: 'admin-1', role: 'ADMIN' })), phiStepUpResponse: () => null }));
 jest.mock('@/lib/sentry', () => ({ captureError: jest.fn() }));
 jest.mock('@/lib/logger', () => ({ logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() } }));
 jest.mock('@/lib/services/notifications', () => ({ createInAppNotification: jest.fn().mockResolvedValue({ success: true }) }));

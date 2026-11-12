@@ -8,6 +8,8 @@ import { FiPlus, FiTrash2, FiUser, FiCalendar, FiStar } from 'react-icons/fi';
 import { PermissionGuard } from '@/hooks/usePermissions';
 import { PERMISSIONS } from '@/lib/permissions';
 import { AssignResidentModal } from './AssignResidentModal';
+import { isStepUpResponse } from '@/lib/auth/step-up-client';
+import { twoFactorStepUpUrl } from '@/lib/auth/two-factor-routes';
 
 interface AssignmentsTabProps {
   caregiverId: string;
@@ -34,6 +36,7 @@ export function AssignmentsTab({ caregiverId }: AssignmentsTabProps) {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [stepUp, setStepUp] = useState(false); // resident assignments are PHI: 2FA first
 
   useEffect(() => {
     fetchAssignments();
@@ -43,6 +46,7 @@ export function AssignmentsTab({ caregiverId }: AssignmentsTabProps) {
     try {
       setLoading(true);
       const res = await fetch(`/api/operator/caregivers/${caregiverId}/assignments`);
+      if (await isStepUpResponse(res)) { setStepUp(true); return; }
       if (!res.ok) throw new Error('Failed to fetch assignments');
       const data = await res.json();
       setAssignments(data.assignments || []);
@@ -78,6 +82,17 @@ export function AssignmentsTab({ caregiverId }: AssignmentsTabProps) {
     setShowModal(false);
     router.refresh();
   };
+
+  if (stepUp) {
+    const here = typeof window !== 'undefined' ? twoFactorStepUpUrl(window.location.pathname, window.location.search) : '/auth/setup-2fa?reason=phi';
+    return (
+      <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-6 text-sm text-neutral-700">
+        Resident assignments are protected health information.{' '}
+        <Link href={here} className="font-medium text-primary-600 hover:underline">Set up two-factor authentication</Link>{' '}
+        to see and manage them.
+      </div>
+    );
+  }
 
   if (loading) {
     return (
