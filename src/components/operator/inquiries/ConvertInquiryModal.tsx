@@ -4,6 +4,7 @@ import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiX, FiUser, FiHome, FiCalendar, FiAlertCircle } from 'react-icons/fi';
 
+import { redirectIfStepUp } from '@/lib/auth/step-up-client';
 interface ConvertInquiryModalProps {
   inquiry: {
     id: string;
@@ -92,6 +93,7 @@ export default function ConvertInquiryModal({
         body: JSON.stringify(formData),
       });
 
+      if (await redirectIfStepUp(response)) return; // creates a resident (PHI): 2FA first
       const data = await response.json();
 
       if (!response.ok) {

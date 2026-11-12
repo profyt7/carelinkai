@@ -3,7 +3,7 @@ export const revalidate = 0;
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { requireOperatorOrAdmin } from '@/lib/rbac';
+import { requireOperatorOrAdminForPhi } from '@/lib/rbac';
 import { captureError, addBreadcrumb, captureMessage } from '@/lib/sentry';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { getDownloadUrl } from '@/lib/storage/download';
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   try {
     const t0 = Date.now();
     addBreadcrumb('documents_get_start', 'api', { residentId: params.id }, 'info');
-    const { session, error } = await requireOperatorOrAdmin();
+    const { session, error } = await requireOperatorOrAdminForPhi();
     if (error) return error;
 
     const resident = await prisma.resident.findUnique({
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const dur = Date.now() - t0;
     addBreadcrumb('documents_get_ok', 'api', { residentId: resident.id, count: items.length, dur }, 'info');
 
-    // AUTHZ: requireOperatorOrAdmin + operator home check above ensures authorization
+    // AUTHZ: requireOperatorOrAdminForPhi + operator home check above ensures authorization
     const resolvedItems = await Promise.all(
       items.map(async (item) => ({
         ...item,
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   try {
     const t0 = Date.now();
     addBreadcrumb('documents_post_start', 'api', { residentId: params.id }, 'info');
-    const { session, error } = await requireOperatorOrAdmin();
+    const { session, error } = await requireOperatorOrAdminForPhi();
     if (error) return error;
 
     const resident = await prisma.resident.findUnique({

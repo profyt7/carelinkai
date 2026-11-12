@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuditAction } from '@prisma/client';
-import { requireOperatorOrAdmin } from '@/lib/rbac';
+import { requireOperatorOrAdminForPhi } from '@/lib/rbac';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
@@ -23,7 +23,7 @@ async function canAccess(sessionEmail: string | null | undefined, residentId: st
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string; assessmentId: string } }) {
   try {
-    const { session, error } = await requireOperatorOrAdmin();
+    const { session, error } = await requireOperatorOrAdminForPhi();
     if (error) return error;
     if (!(await canAccess(session!.user!.email, params.id))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const body = await req.json().catch(() => ({}));
@@ -57,7 +57,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string; assessmentId: string } }) {
   try {
-    const { session, error } = await requireOperatorOrAdmin();
+    const { session, error } = await requireOperatorOrAdminForPhi();
     if (error) return error;
     if (!(await canAccess(session!.user!.email, params.id))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const found = await prisma.assessmentResult.findUnique({ where: { id: params.assessmentId }, select: { id: true, residentId: true } });

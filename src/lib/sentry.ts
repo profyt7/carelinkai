@@ -21,7 +21,7 @@ export function isSentryInitialized(): boolean {
  * Matched by name so it also covers instances from a different bundle copy of
  * auth-utils (instanceof is not reliable across Next server chunks).
  */
-const EXPECTED_AUTH_ERROR_NAMES = new Set(['UnauthenticatedError', 'UnauthorizedError']);
+const EXPECTED_AUTH_ERROR_NAMES = new Set(['UnauthenticatedError', 'UnauthorizedError', 'TwoFactorStepUpRequiredError']);
 
 export function isExpectedAuthError(error: unknown): boolean {
   return (

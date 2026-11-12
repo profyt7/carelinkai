@@ -17,7 +17,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SUPPRESSED_TEST } from '@/lib/concierge/test-orders';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { requireRole } from '@/lib/auth-utils';
+import { requireRole, phiStepUpResponse } from '@/lib/auth-utils';
 import { UserRole } from '@prisma/client';
 import { sendConciergeTourNotification, sendNewLeadOperatorEmail } from '@/lib/email';
 import { startClaimDripOnLead } from '@/lib/claim-engine/claim-drip';
@@ -30,6 +30,8 @@ const bodySchema = z.object({ homeId: z.string().min(1) });
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const user = await requireRole([UserRole.DISCHARGE_PLANNER, UserRole.ADMIN]);
+    const stepUp = phiStepUpResponse(user); // patient case: PHI step-up
+    if (stepUp) return stepUp;
     const { homeId } = bodySchema.parse(await request.json().catch(() => ({})));
 
     const search = await prisma.placementSearch.findUnique({

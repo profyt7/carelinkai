@@ -288,6 +288,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).image = token["profileImageUrl"] as string | null;
         (session.user as any).profileImageUrl = token["profileImageUrl"] as string | null;
         (session.user as any).twoFactorSetupRequired = token["twoFactorSetupRequired"] === true;
+        (session.user as any).twoFactorStepUpRequired = token["twoFactorStepUpRequired"] === true;
       }
       return session;
     },

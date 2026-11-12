@@ -8,7 +8,8 @@ import path from 'path';
 
 let scope: any;
 const operatorFindUnique = jest.fn();
-jest.mock('@/lib/prisma', () => ({ prisma: { operator: { findUnique: (a: any) => operatorFindUnique(a) } } }));
+const userFindUnique = jest.fn<any>(async () => ({ twoFactorEnabled: true, twoFactorSecret: 'enc' })); // enrolled by default
+jest.mock('@/lib/prisma', () => ({ prisma: { operator: { findUnique: (a: any) => operatorFindUnique(a) }, user: { findUnique: (a: any) => userFindUnique(a) } } }));
 jest.mock('@/lib/auth-utils', () => ({ getUserScope: async () => scope }));
 
 import { dashboardScope, NONE } from '@/lib/dashboard/scope';
@@ -28,6 +29,13 @@ describe('dashboardScope', () => {
     expect(await dashboardScope({ id: 'u', role: 'OPERATOR' })).toMatchObject({ resident: { home: { operatorId: 'op1' } }, home: { operatorId: 'op1' } });
     operatorFindUnique.mockResolvedValue(null);
     expect(((await dashboardScope({ id: 'u', role: 'OPERATOR' })) as Response).status).toBe(404);
+  });
+  it('OPERATOR without 2FA (PHI step-up) → dashboard still loads, but no resident/incident/assessment rows', async () => {
+    operatorFindUnique.mockResolvedValue({ id: 'op1' });
+    userFindUnique.mockResolvedValueOnce({ twoFactorEnabled: false, twoFactorSecret: null });
+    const s: any = await dashboardScope({ id: 'u', role: 'OPERATOR' });
+    expect(s).toMatchObject({ resident: NONE, incident: NONE, assess: NONE, home: { operatorId: 'op1' } });
+    expect(s.inquiry).toEqual({ home: { operatorId: 'op1' }, isTest: false });
   });
   it('FAMILY → only its own residents and inquiries (was: platform-wide)', async () => {
     scope = { role: 'FAMILY', residentIds: ['r1'], familyId: 'f1', homeIds: [] };

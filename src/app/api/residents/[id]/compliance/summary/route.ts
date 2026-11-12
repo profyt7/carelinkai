@@ -4,7 +4,7 @@ export const fetchCache = 'force-no-store';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requireOperatorOrAdmin } from '@/lib/rbac';
+import { requireOperatorOrAdminForPhi } from '@/lib/rbac';
 import { createAuditLogFromRequest } from '@/lib/audit';
 
 async function assertOperatorAccess(userId: string, residentId: string) {
@@ -21,7 +21,7 @@ async function assertOperatorAccess(userId: string, residentId: string) {
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { session, error } = await requireOperatorOrAdmin();
+    const { session, error } = await requireOperatorOrAdminForPhi();
     if (error) return error;
     const userId = (session as any)?.user?.id as string | undefined;
     const role = (session as any)?.user?.role as string | undefined;

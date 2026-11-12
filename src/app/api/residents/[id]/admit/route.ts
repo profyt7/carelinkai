@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { ResidentStatus, AuditAction, UserRole } from '@prisma/client';
-import { requireOperatorOrAdmin } from '@/lib/rbac';
+import { requireOperatorOrAdminForPhi } from '@/lib/rbac';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { prisma } from '@/lib/prisma';
 
@@ -15,7 +15,7 @@ import { prisma } from '@/lib/prisma';
 // - Optionally accepts homeId; operators can only admit into their own homes
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { session, error } = await requireOperatorOrAdmin();
+    const { session, error } = await requireOperatorOrAdminForPhi();
     if (error) return error;
     const body = await req.json().catch(() => ({} as any));
     const { homeId, admissionDate } = body || {};

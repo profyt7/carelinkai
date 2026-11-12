@@ -4,14 +4,14 @@ export const dynamic = 'force-dynamic';
 
 ﻿import { NextRequest, NextResponse } from "next/server";
 import { AuditAction } from "@prisma/client";
-import { requireOperatorOrAdmin } from "@/lib/rbac";
+import { requireOperatorOrAdminForPhi } from "@/lib/rbac";
 import { createAuditLogFromRequest } from "@/lib/audit";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { error } = await requireOperatorOrAdmin();
+    const { error } = await requireOperatorOrAdminForPhi();
     if (error) return error;
     const url = new URL(req.url);
     const limit = Math.min(Number(url.searchParams.get("limit") || "25"), 100);
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { session, error } = await requireOperatorOrAdmin();
+    const { session, error } = await requireOperatorOrAdminForPhi();
     if (error) return error;
     const me = await prisma.user.findUnique({ where: { email: session!.user!.email! } });
     if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

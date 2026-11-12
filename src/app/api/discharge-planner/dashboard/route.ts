@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, requireRole } from "@/lib/auth-utils";
+import { requireAuth, requireRole, phiStepUpResponse } from "@/lib/auth-utils";
 import { UserRole } from "@prisma/client";
 
 export async function GET(request: NextRequest) {
@@ -16,6 +16,9 @@ export async function GET(request: NextRequest) {
   try {
     // Require DISCHARGE_PLANNER role
     const user = await requireRole([UserRole.DISCHARGE_PLANNER, UserRole.ADMIN]);
+    // Patient case data is PHI: a DP without 2FA is sent to setup first (step-up).
+    const stepUp = phiStepUpResponse(user);
+    if (stepUp) return stepUp;
 
     // Get recent searches
     const recentSearches = await prisma.placementSearch.findMany({

@@ -10,7 +10,7 @@
  *    — structurally impossible to leak patient data.
  */
 
-jest.mock('@/lib/auth-utils', () => ({ requireRole: jest.fn() }));
+jest.mock('@/lib/auth-utils', () => ({ requireRole: jest.fn(), phiStepUpResponse: () => null }));
 jest.mock('@/lib/prisma', () => {
   // Sprint W5-1: writes now commit alongside an EntityEvent row inside
   // prisma.$transaction(callback); the mock runs the callback against itself.

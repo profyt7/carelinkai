@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { ResidentStatus, AuditAction } from '@prisma/client';
-import { requireOperatorOrAdmin } from '@/lib/rbac';
+import { requireOperatorOrAdminForPhi } from '@/lib/rbac';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { prisma } from '@/lib/prisma';
 
@@ -15,7 +15,7 @@ import { prisma } from '@/lib/prisma';
 // - Optionally accepts status=DECEASED to record end-of-life discharge
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { error } = await requireOperatorOrAdmin();
+    const { error } = await requireOperatorOrAdminForPhi();
     if (error) return error;
     const body = await req.json().catch(() => ({} as any));
     const { dischargeDate, status } = body || {};

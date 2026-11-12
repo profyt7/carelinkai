@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { FiZap, FiSend, FiLoader } from 'react-icons/fi';
 
+import { redirectIfStepUp } from '@/lib/auth/step-up-client';
 const EXAMPLE_QUESTIONS = [
   'How many residents do I have?',
   'Show me caregivers with reliability below 60',
@@ -28,6 +29,7 @@ export default function AskAIWidget() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: q }),
       });
+      if (await redirectIfStepUp(res)) return; // resident questions are PHI: 2FA first
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed');
       setAnswer(data.answer);

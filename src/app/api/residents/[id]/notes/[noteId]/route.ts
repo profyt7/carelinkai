@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { AuditAction } from '@prisma/client';
-import { requireOperatorOrAdmin } from '@/lib/rbac';
+import { requireOperatorOrAdminForPhi } from '@/lib/rbac';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
@@ -15,7 +15,7 @@ const UpdateSchema = z.object({
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string; noteId: string } }) {
   try {
-    const { session, error } = await requireOperatorOrAdmin();
+    const { session, error } = await requireOperatorOrAdminForPhi();
     if (error) return error;
 
     const me = await prisma.user.findUnique({ where: { email: session!.user!.email! } });
@@ -74,7 +74,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string; noteId: string } }) {
   try {
-    const { session, error } = await requireOperatorOrAdmin();
+    const { session, error } = await requireOperatorOrAdminForPhi();
     if (error) return error;
 
     const me = await prisma.user.findUnique({ where: { email: session!.user!.email! } });

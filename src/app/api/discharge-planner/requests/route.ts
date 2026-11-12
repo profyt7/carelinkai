@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/auth-utils";
+import { requireRole, phiStepUpResponse } from "@/lib/auth-utils";
 import { UserRole } from "@prisma/client";
 
 export async function GET(request: NextRequest) {
@@ -19,6 +19,9 @@ export async function GET(request: NextRequest) {
   try {
     // Require DISCHARGE_PLANNER or ADMIN role
     const user = await requireRole([UserRole.DISCHARGE_PLANNER, UserRole.ADMIN]);
+    // Patient case data is PHI: a DP without 2FA is sent to setup first (step-up).
+    const stepUp = phiStepUpResponse(user);
+    if (stepUp) return stepUp;
 
     const { searchParams } = new URL(request.url);
     const searchId = searchParams.get("searchId");
@@ -113,6 +116,9 @@ export async function PATCH(request: NextRequest) {
   try {
     // Require DISCHARGE_PLANNER or ADMIN role
     const user = await requireRole([UserRole.DISCHARGE_PLANNER, UserRole.ADMIN]);
+    // Patient case data is PHI: a DP without 2FA is sent to setup first (step-up).
+    const stepUp = phiStepUpResponse(user);
+    if (stepUp) return stepUp;
 
     const body = await request.json();
     const { requestId, status, notes } = body;

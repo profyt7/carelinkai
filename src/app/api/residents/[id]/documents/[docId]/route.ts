@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requireOperatorOrAdmin } from '@/lib/rbac';
+import { requireOperatorOrAdminForPhi } from '@/lib/rbac';
 import { captureError, addBreadcrumb, captureMessage } from '@/lib/sentry';
 import { createAuditLogFromRequest } from '@/lib/audit';
 
@@ -10,7 +10,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string; d
   try {
     const t0 = Date.now();
     addBreadcrumb('documents_delete_start', 'api', { residentId: params.id, documentId: params.docId }, 'info');
-    const { session, error } = await requireOperatorOrAdmin();
+    const { session, error } = await requireOperatorOrAdminForPhi();
     if (error) return error;
 
     // Ensure resident exists and is within operator scope

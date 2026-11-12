@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { AuditAction } from '@prisma/client';
-import { requireOperatorOrAdmin } from '@/lib/rbac';
+import { requireOperatorOrAdminForPhi } from '@/lib/rbac';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
@@ -23,7 +23,7 @@ const BodySchema = z.object({
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { error } = await requireOperatorOrAdmin();
+    const { error } = await requireOperatorOrAdminForPhi();
     if (error) return error;
     const parsed = QuerySchema.safeParse({ limit: req.nextUrl.searchParams.get('limit') ?? undefined });
     if (!parsed.success) return NextResponse.json({ error: 'Invalid query' }, { status: 400 });
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { error } = await requireOperatorOrAdmin();
+    const { error } = await requireOperatorOrAdminForPhi();
     if (error) return error;
     const body = await req.json().catch(() => ({}));
     const parsed = BodySchema.safeParse(body);

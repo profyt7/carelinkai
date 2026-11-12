@@ -1,9 +1,10 @@
 "use client";
 
 /**
- * Forced 2FA enrolment (security package §3). ADMIN / STAFF / OPERATOR /
- * DISCHARGE_PLANNER accounts without an authenticator are sent here by
- * src/middleware.ts before any page loads (APIs answer 403 until done).
+ * 2FA enrolment (security package §3). ADMIN / STAFF accounts without an authenticator
+ * are sent here by src/middleware.ts before any page loads (APIs answer 403 until done).
+ * OPERATOR / DISCHARGE_PLANNER accounts are sent here only on the way to a PHI page
+ * (step-up); they come back to the requested page via callbackUrl.
  *
  * Steps: scan QR (or type the key) → enter a 6-digit code → save the 10 backup
  * codes, which are shown once → tick "I've saved them" → continue. Continuing
@@ -13,14 +14,16 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FiLoader, FiShield } from "react-icons/fi";
-import { safeCallbackUrl } from "@/lib/auth/two-factor-routes";
+import { isPhiPagePath, safeCallbackUrl } from "@/lib/auth/two-factor-routes";
 
 type Step = "loading" | "scan" | "codes" | "error";
 
 function SetupTwoFactor() {
   const { data: session, status, update } = useSession();
   const router = useRouter();
-  const callbackUrl = safeCallbackUrl(useSearchParams().get("callbackUrl"));
+  const params = useSearchParams();
+  const callbackUrl = safeCallbackUrl(params.get("callbackUrl"));
+  const phiReason = params.get("reason") === "phi"; // step-up started by a PHI widget on a non-PHI page
 
   const [step, setStep] = useState<Step>("loading");
   const [qr, setQr] = useState<string | null>(null);
@@ -34,7 +37,7 @@ function SetupTwoFactor() {
 
   const finish = async () => {
     setBusy(true);
-    await update(); // re-runs the jwt callback: twoFactorSetupRequired is now false
+    await update(); // re-runs the jwt callback: twoFactorSetupRequired / twoFactorStepUpRequired are now false
     router.replace(callbackUrl);
   };
 
@@ -44,7 +47,11 @@ function SetupTwoFactor() {
       return;
     }
     if (status !== "authenticated" || step !== "loading") return;
-    if (!(session?.user as any)?.twoFactorSetupRequired) {
+    // Hard gate (ADMIN/STAFF) always enrols here. PHI step-up (OPERATOR/DISCHARGE_PLANNER) only when
+    // heading to a PHI page — otherwise (e.g. a session cookie issued before step-up) go straight on.
+    const u = session?.user as any;
+    const target = callbackUrl.split("?")[0];
+    if (!u?.twoFactorSetupRequired && !(u?.twoFactorStepUpRequired && (phiReason || isPhiPagePath(target)))) {
       router.replace(callbackUrl);
       return;
     }
@@ -103,7 +110,9 @@ function SetupTwoFactor() {
           <h1 className="text-xl font-semibold text-neutral-900">Set up two-factor authentication</h1>
         </div>
         <p className="mt-2 text-sm text-neutral-600">
-          Your account role requires an authenticator app. This takes about a minute, and you only do it once.
+          {(session?.user as any)?.twoFactorStepUpRequired
+            ? "Resident records, documents and patient cases are protected health information, so they need an authenticator app. This takes about a minute, and you only do it once."
+            : "Your account role requires an authenticator app. This takes about a minute, and you only do it once."}
         </p>
 
         {error && <p className="mt-4 text-sm text-error-700" role="alert">{error}</p>}
