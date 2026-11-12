@@ -1,8 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import { FiX, FiShield } from 'react-icons/fi';
 import { getConsent, setConsent, type ConsentPreferences } from '@/lib/consent';
+
+/**
+ * Pages whose primary call to action must never sit under the banner: the claim landing and the
+ * claim-token signup. There the banner renders compact and the page gets bottom padding equal to
+ * the banner's height while it shows. Same choices and same consent handling as everywhere else.
+ */
+export function isCompactConsentPage(pathname: string | null, search: string): boolean {
+  if (pathname === '/claim') return true;
+  if (pathname === '/auth/register') return new URLSearchParams(search).has('claimToken');
+  return false;
+}
 
 export default function CookieConsent() {
   const [showBanner, setShowBanner] = useState(false);
@@ -12,6 +24,31 @@ export default function CookieConsent() {
     analytics: false,
     marketing: false,
   });
+  const pathname = usePathname();
+  const [compact, setCompact] = useState(false);
+  const bannerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // window.location (not useSearchParams) so the root layout needs no Suspense boundary.
+    setCompact(isCompactConsentPage(pathname, window.location.search));
+  }, [pathname]);
+
+  // Compact pages: pad the page bottom by the banner's live height so nothing is ever covered.
+  useEffect(() => {
+    const el = bannerRef.current;
+    if (!showBanner || !compact || !el) return undefined;
+    const body = document.body;
+    const previous = body.style.getPropertyValue('padding-bottom');
+    const apply = () => body.style.setProperty('padding-bottom', `${el.offsetHeight}px`);
+    apply();
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(apply) : null;
+    ro?.observe(el);
+    return () => {
+      ro?.disconnect();
+      if (previous) body.style.setProperty('padding-bottom', previous);
+      else body.style.removeProperty('padding-bottom');
+    };
+  }, [showBanner, compact, showDetails]);
 
   useEffect(() => {
     // Show the banner only until the user makes an explicit choice. No tracker
@@ -56,6 +93,43 @@ export default function CookieConsent() {
   };
 
   if (!showBanner) return null;
+
+  if (compact) {
+    return (
+      <div ref={bannerRef} data-testid="cookie-consent-compact" className="fixed inset-x-0 bottom-0 z-50 border-t border-neutral-200 bg-white px-4 py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
+        <div className="mx-auto max-w-lg">
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-xs text-neutral-700">
+              We use cookies to run the site and, with your OK, to analyze traffic. &ldquo;Accept All&rdquo; allows analytics.
+            </p>
+            <button onClick={acceptNecessary} className="text-neutral-500 hover:text-neutral-800" aria-label="Close">
+              <FiX className="text-lg" />
+            </button>
+          </div>
+          {showDetails && (
+            <label className="mt-2 flex items-center gap-2 text-xs text-neutral-700">
+              <input type="checkbox" checked disabled className="rounded border-neutral-300" /> Necessary (always on)
+              <input
+                type="checkbox"
+                checked={preferences.analytics}
+                onChange={(e) => setPreferences({ ...preferences, analytics: e.target.checked })}
+                className="ml-3 rounded border-neutral-300 text-primary-500 focus:ring-primary-500"
+              /> Analytics
+            </label>
+          )}
+          <div className="mt-2 flex gap-2">
+            <button onClick={acceptAll} className="flex-1 rounded-md bg-primary-500 px-3 py-2 text-xs font-medium text-white hover:bg-[#3167d4]">Accept All</button>
+            <button onClick={acceptNecessary} className="flex-1 rounded-md bg-neutral-200 px-3 py-2 text-xs font-medium text-neutral-800 hover:bg-neutral-300">Necessary Only</button>
+            {showDetails ? (
+              <button onClick={saveCustom} className="flex-1 rounded-md border border-primary-500 px-3 py-2 text-xs font-medium text-primary-600">Save</button>
+            ) : (
+              <button onClick={() => setShowDetails(true)} className="flex-1 rounded-md border border-neutral-300 px-3 py-2 text-xs font-medium text-neutral-700">Customize</button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 pb-4 px-4 sm:px-6 lg:px-8 animate-slide-up">
