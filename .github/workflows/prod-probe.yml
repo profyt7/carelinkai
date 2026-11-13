@@ -206,8 +206,10 @@ jobs:
                 want = 'hard gate: setupRequired=true, PHI API 403 TWO_FACTOR_SETUP_REQUIRED, /api/auth/session 200';
               } else {
                 const open = await req(P, '/api/profile/account'); // non-PHI: must work without 2FA
-                ok = s?.user?.twoFactorStepUpRequired === true && s?.user?.twoFactorSetupRequired !== true && phi.status === 403 && code === 'TWO_FACTOR_STEP_UP_REQUIRED' && toSetup && open.status === 200;
-                want = `step-up: stepUpRequired=true, ${phiApi} 403 TWO_FACTOR_STEP_UP_REQUIRED, ${phiPage} 307 → setup?callbackUrl, /api/profile/account 200 (got ${open.status})`;
+                // A DP's landing page is not gated (aggregate availability + "secure your account" card).
+                const landing = dp ? (await req(P, '/discharge-planner')).status : 200;
+                ok = s?.user?.twoFactorStepUpRequired === true && s?.user?.twoFactorSetupRequired !== true && phi.status === 403 && code === 'TWO_FACTOR_STEP_UP_REQUIRED' && toSetup && open.status === 200 && landing === 200;
+                want = `step-up: stepUpRequired=true, ${phiApi} 403 TWO_FACTOR_STEP_UP_REQUIRED, ${phiPage} 307 → setup?callbackUrl, /api/profile/account 200 (got ${open.status})${dp ? `, /discharge-planner 200 (got ${landing})` : ''}`;
               }
               record('2fa-enforce', ok ? 'PASS' : 'FAIL', `role=${role} setupRequired=${s?.user?.twoFactorSetupRequired} stepUpRequired=${s?.user?.twoFactorStepUpRequired} ${phiApi} → ${phi.status} ${code}, ${phiPage} → ${page.status} ${loc.replace(BASE, '').split('?')[0]} (want ${want})`);
             }
