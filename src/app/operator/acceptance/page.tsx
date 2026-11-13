@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { FiShield, FiCheckSquare, FiSquare, FiAlertTriangle } from 'react-icons/fi';
-import { BAA_CURRENT_VERSION, DPA_CURRENT_VERSION } from '@/lib/legal';
+import { BAA_CURRENT_VERSION, DPA_CURRENT_VERSION } from '@/lib/legal-versions';
+import { safeAcceptanceCallback } from '@/lib/auth/phi-agreement';
 
 const BAA_SUMMARY = `
 BUSINESS ASSOCIATE AGREEMENT (BAA) — ${BAA_CURRENT_VERSION}
@@ -55,6 +57,7 @@ All personal data is processed and stored within the United States.
 
 export default function OperatorAcceptancePage() {
   const router = useRouter();
+  const { update } = useSession();
   const [acceptedBaa, setAcceptedBaa] = useState(false);
   const [acceptedDpa, setAcceptedDpa] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -79,7 +82,11 @@ export default function OperatorAcceptancePage() {
         return;
       }
 
-      router.push('/operator');
+      // Re-run the jwt callback so the session drops baaAcceptanceRequired before we go back to
+      // the resident page that sent us here (src/middleware.ts reads the session token).
+      await update().catch(() => undefined);
+      const back = safeAcceptanceCallback(new URLSearchParams(window.location.search).get('callbackUrl'));
+      router.push(back);
     } catch {
       setError('Network error. Please try again.');
     } finally {
@@ -97,7 +104,7 @@ export default function OperatorAcceptancePage() {
           </div>
           <h1 className="text-2xl font-bold text-neutral-900">Legal Agreements Required</h1>
           <p className="text-neutral-600 mt-2 text-sm">
-            Before accessing the operator platform, you must review and accept our Business Associate Agreement and Data Processing Agreement as required by HIPAA.
+            Before you work with resident health information, HIPAA requires our Business Associate Agreement and Data Processing Agreement. Your listing, photos, pricing and availability don&rsquo;t need them.
           </p>
         </div>
 

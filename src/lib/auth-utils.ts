@@ -19,6 +19,7 @@ import {
 } from "@/lib/permissions";
 import { errorSummary } from '@/lib/log-safe';
 import { TWO_FACTOR_SETUP_PATH, TWO_FACTOR_STEP_UP_CODE } from '@/lib/auth/two-factor-routes';
+import { BAA_ACCEPTANCE_REQUIRED_CODE, baaAcceptanceResponseBody } from '@/lib/auth/phi-agreement';
 
 /**
  * Error thrown when authorization fails
@@ -59,6 +60,17 @@ export class TwoFactorStepUpRequiredError extends UnauthorizedError {
   }
 }
 
+/**
+ * OPERATOR without the current BAA/DPA asked for PHI (phi-agreement.ts). handleAuthError answers
+ * 403 { code: BAA_ACCEPTANCE_REQUIRED } so the UI sends them to /operator/acceptance.
+ */
+export class BaaAcceptanceRequiredError extends UnauthorizedError {
+  constructor() {
+    super(BAA_ACCEPTANCE_REQUIRED_CODE);
+    this.name = "BaaAcceptanceRequiredError";
+  }
+}
+
 /** Permissions that read or change PHI: residents and everything attached to them. */
 const PHI_PERMISSION_PREFIXES = ["residents.", "assessments.", "incidents.", "compliance.", "family_contacts.", "documents."];
 const PHI_PERMISSIONS = new Set<string>(["caregivers.assign", "inquiries.convert"]);
@@ -67,16 +79,27 @@ export function isPhiPermission(permission: string): boolean {
   return PHI_PERMISSIONS.has(permission) || PHI_PERMISSION_PREFIXES.some((p) => permission.startsWith(p));
 }
 
-/** Throws TwoFactorStepUpRequiredError when this session must enrol 2FA before PHI. */
+type PhiGateUser = { twoFactorStepUpRequired?: unknown; baaAcceptanceRequired?: unknown } | null | undefined;
+
+/**
+ * Throws before PHI when this session must first enrol 2FA (TwoFactorStepUpRequiredError) or,
+ * for an OPERATOR, accept the current BAA/DPA (BaaAcceptanceRequiredError). 2FA is checked first.
+ */
 export function requirePhiAccess(user: unknown): void {
-  if ((user as { twoFactorStepUpRequired?: unknown } | null | undefined)?.twoFactorStepUpRequired === true) {
-    throw new TwoFactorStepUpRequiredError();
-  }
+  if ((user as PhiGateUser)?.twoFactorStepUpRequired === true) throw new TwoFactorStepUpRequiredError();
+  if ((user as PhiGateUser)?.baaAcceptanceRequired === true) throw new BaaAcceptanceRequiredError();
+}
+
+/** True when PHI must be withheld from this session (no 2FA yet, or no current BAA/DPA). */
+export function phiWithheld(user: unknown): boolean {
+  return (user as PhiGateUser)?.twoFactorStepUpRequired === true || (user as PhiGateUser)?.baaAcceptanceRequired === true;
 }
 
 /** Non-throwing form for routes whose catch blocks map errors to 500: `const r = phiStepUpResponse(user); if (r) return r;` */
 export function phiStepUpResponse(user: unknown): Response | null {
-  if ((user as { twoFactorStepUpRequired?: unknown } | null | undefined)?.twoFactorStepUpRequired !== true) return null;
+  if ((user as PhiGateUser)?.twoFactorStepUpRequired !== true) {
+    return (user as PhiGateUser)?.baaAcceptanceRequired === true ? Response.json(baaAcceptanceResponseBody(), { status: 403 }) : null;
+  }
   return Response.json(
     { error: TWO_FACTOR_STEP_UP_CODE, code: TWO_FACTOR_STEP_UP_CODE, setupUrl: TWO_FACTOR_SETUP_PATH },
     { status: 403 },
@@ -108,6 +131,8 @@ export async function getCurrentUser() {
     role: session.user.role as UserRole,
     /** OPERATOR / DISCHARGE_PLANNER without 2FA: PHI is refused (requirePhiAccess). */
     twoFactorStepUpRequired: (session.user as { twoFactorStepUpRequired?: boolean }).twoFactorStepUpRequired === true,
+    /** OPERATOR without the current BAA/DPA: PHI is refused too (requirePhiAccess). */
+    baaAcceptanceRequired: (session.user as { baaAcceptanceRequired?: boolean }).baaAcceptanceRequired === true,
   };
 }
 
@@ -502,6 +527,10 @@ export function handleAuthError(error: unknown) {
       { error: TWO_FACTOR_STEP_UP_CODE, code: TWO_FACTOR_STEP_UP_CODE, setupUrl: TWO_FACTOR_SETUP_PATH },
       { status: 403 }
     );
+  }
+
+  if (error instanceof BaaAcceptanceRequiredError) {
+    return Response.json(baaAcceptanceResponseBody(), { status: 403 });
   }
 
   if (error instanceof UnauthorizedError) {

@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 import { withAuth } from 'next-auth/middleware';
 import { getToken } from 'next-auth/jwt';
 import { apiAllowedDuringTwoFactorSetup, isPhiApiPath, isPhiPagePath, TWO_FACTOR_SETUP_PATH, TWO_FACTOR_STEP_UP_CODE, twoFactorSetupUrl } from '@/lib/auth/two-factor-routes';
+import { baaAcceptanceResponseBody, operatorAcceptanceUrl } from '@/lib/auth/phi-agreement';
 import { middlewareRateLimitFor, rateLimitExceeded } from '@/lib/edge-rate-limit';
 import { isKnownAppPath, isPublicPage } from '@/lib/routing/public-routes';
 import { isPageMethodAllowed, methodNotAllowedHeaders } from '@/lib/routing/page-methods';
@@ -129,6 +130,13 @@ export default async function middleware(req: NextRequest) {
           { status: 403, headers: { 'content-type': 'application/json' } },
         );
       }
+      // OPERATOR without the current BAA/DPA: PHI APIs only (phi-agreement.ts).
+      if (token && (token as any).baaAcceptanceRequired === true && isPhiApiPath(pathname)) {
+        return new NextResponse(JSON.stringify(baaAcceptanceResponseBody()), {
+          status: 403,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
     }
     return NextResponse.next();
   }
@@ -243,6 +251,14 @@ export default async function middleware(req: NextRequest) {
         if (needsSetup) {
           const to = req.nextUrl.clone();
           const target = twoFactorSetupUrl(pathname, req.nextUrl.search);
+          to.pathname = target.split('?')[0];
+          to.search = target.slice(target.indexOf('?'));
+          return applySecurityHeaders(req, NextResponse.redirect(to));
+        }
+        // BAA/DPA (OPERATOR): asked for at the first PHI page, not during onboarding.
+        if (tok && tok.baaAcceptanceRequired === true && !isPublicPage(pathname) && isPhiPagePath(pathname)) {
+          const to = req.nextUrl.clone();
+          const target = operatorAcceptanceUrl(pathname, req.nextUrl.search);
           to.pathname = target.split('?')[0];
           to.search = target.slice(target.indexOf('?'));
           return applySecurityHeaders(req, NextResponse.redirect(to));

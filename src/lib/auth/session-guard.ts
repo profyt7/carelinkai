@@ -12,13 +12,16 @@
  *   - sets `twoFactorSetupRequired` for ADMIN / STAFF without 2FA; middleware then sends
  *     every page to /auth/setup-2fa and refuses every API except /api/auth/*;
  *   - sets `twoFactorStepUpRequired` for OPERATOR / DISCHARGE_PLANNER without 2FA; only
- *     PHI routes are refused / sent to setup (two-factor-routes.ts isPhiApiPath/isPhiPagePath).
+ *     PHI routes are refused / sent to setup (two-factor-routes.ts isPhiApiPath/isPhiPagePath);
+ *   - sets `baaAcceptanceRequired` for an OPERATOR without the current BAA + DPA; the same PHI
+ *     routes are refused / sent to /operator/acceptance (phi-agreement.ts).
  *
  * Revocation throws SessionRevokedError: NextAuth then clears the session cookie
  * and getServerSession() returns null (so routes 401 and pages redirect to login).
  * A database error does NOT revoke (fail open on outages, keep the prior claims).
  */
 import { isEnrolled } from '@/lib/two-factor/secure';
+import { acceptanceIsCurrent, type OperatorAcceptanceFields } from '@/lib/legal-versions';
 
 export { TWO_FACTOR_REQUIRED_ROLES, TWO_FACTOR_STEP_UP_ROLES, roleRequiresTwoFactor, roleNeedsTwoFactorForPhi, twoFactorEnforced } from './two-factor-routes';
 import { roleNeedsTwoFactorForPhi, roleRequiresTwoFactor, twoFactorEnforced } from './two-factor-routes';
@@ -39,6 +42,8 @@ export type GuardUser = {
   firstName: string | null;
   lastName: string | null;
   profileImageUrl: unknown;
+  /** Only read for OPERATOR (BAA/DPA acceptance). */
+  operator?: OperatorAcceptanceFields | null;
 };
 
 export const GUARD_USER_SELECT = {
@@ -50,6 +55,7 @@ export const GUARD_USER_SELECT = {
   firstName: true,
   lastName: true,
   profileImageUrl: true,
+  operator: { select: { baaTemplateVersion: true, baaAcceptedAt: true, dpaTemplateVersion: true, dpaAcceptedAt: true } },
 } as const;
 
 function imageUrl(img: unknown): string | null {
@@ -87,6 +93,7 @@ export function applyUserToToken<T extends Record<string, unknown>>(
   t.twoFactorEnabled = enrolled;
   t.twoFactorSetupRequired = twoFactorEnforced(env) && roleRequiresTwoFactor(db.role) && !enrolled;
   t.twoFactorStepUpRequired = twoFactorEnforced(env) && roleNeedsTwoFactorForPhi(db.role) && !enrolled;
+  t.baaAcceptanceRequired = db.role === 'OPERATOR' && !acceptanceIsCurrent(db.operator);
   return token;
 }
 

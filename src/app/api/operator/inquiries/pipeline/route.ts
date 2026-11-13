@@ -7,7 +7,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requirePermission, requireAuth, handleAuthError, getUserScope } from '@/lib/auth-utils';
+import { requirePermission, requireAuth, handleAuthError, getUserScope, phiWithheld } from '@/lib/auth-utils';
 import { PERMISSIONS } from '@/lib/permissions';
 import { getConversionStats } from '@/lib/services/inquiry-conversion';
 import { prisma } from '@/lib/prisma';
@@ -162,8 +162,8 @@ export async function GET(request: NextRequest) {
       },
       pipeline: pipelineData,
       stageMetrics,
-      // PHI step-up: without 2FA an operator sees conversions but not the resident they became.
-      recentConversions: user.twoFactorStepUpRequired
+      // PHI step-up: without 2FA (or the BAA/DPA) an operator sees conversions but not the resident they became.
+      recentConversions: phiWithheld(user)
         ? recentConversions.map(({ convertedResident: _resident, ...rest }) => ({ ...rest, convertedResident: null }))
         : recentConversions,
     });
