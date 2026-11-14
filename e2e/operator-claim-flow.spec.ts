@@ -7,7 +7,8 @@ import { loginAs } from './_helpers';
  * Mirrors the manual production smoke test run before founder outreach:
  *   - Founding Operator card: "Founding Operator — Free listing. No credit card required." and the verified
  *     tool list — no fixed free duration, "unlimited", "full access" or "priority support" (OL-248)
- *   - Completing onboarding lands on the BAA/DPA gate (NOT a Stripe checkout)
+ *   - Completing onboarding lands on the dashboard (NOT a Stripe checkout, NOT the BAA/DPA page:
+ *     that is asked for at the first PHI route, alongside the 2FA step-up)
  *   - Claiming the admin-seeded home transfers ownership and activates it
  *
  * Complements e2e/operator-onboarding-wizard.spec.ts (which covers token
@@ -193,7 +194,7 @@ test.describe.fixme('@critical Cleveland founder claim flow (post-redemption)', 
     expect(complete.body.ok).toBe(true);
   });
 
-  test('Step 4 shows the free founder card (no paid/Stripe path) and completing it lands on the BAA/DPA gate', async ({
+  test('Step 4 shows the free founder card (no paid/Stripe path) and completing it lands on the dashboard (no BAA/DPA)', async ({
     page,
     request,
   }) => {
@@ -214,14 +215,12 @@ test.describe.fixme('@critical Cleveland founder claim flow (post-redemption)', 
     // The paid-plan / Stripe path must NOT be offered to founders.
     await expect(page.getByRole('button', { name: /start with/i })).toHaveCount(0);
 
-    // Complete setup → no Stripe redirect → lands on the BAA/DPA acceptance gate.
+    // Complete setup → no Stripe redirect → the dashboard; the BAA/DPA page is not part of claiming.
     await page.getByRole('button', { name: /Complete setup/i }).click();
-    await page.waitForURL(/\/operator\/acceptance/, { timeout: 20000 });
-    await expect(page.getByRole('heading', { name: /Legal Agreements Required/i })).toBeVisible({
-      timeout: 15000,
-    });
-    await expect(page.getByText(/Business Associate Agreement/i).first()).toBeVisible();
-    await expect(page.getByText(/Data Processing Agreement/i).first()).toBeVisible();
+    await page.waitForURL(/\/operator(\?|$)/, { timeout: 20000 });
+    await page.waitForTimeout(1500);
+    expect(new URL(page.url()).pathname).toBe('/operator');
+    await expect(page.getByRole('heading', { name: /Legal Agreements Required/i })).toHaveCount(0);
   });
 
   test('Step 2 presents the seeded home as a CLAIM (not create) with the image-rights acknowledgment', async ({

@@ -8,7 +8,7 @@ import { FiPlus, FiTrash2, FiUser, FiCalendar, FiStar } from 'react-icons/fi';
 import { PermissionGuard } from '@/hooks/usePermissions';
 import { PERMISSIONS } from '@/lib/permissions';
 import { AssignResidentModal } from './AssignResidentModal';
-import { isStepUpResponse } from '@/lib/auth/step-up-client';
+import { isStepUpResponse, redirectIfStepUp } from '@/lib/auth/step-up-client';
 import { twoFactorStepUpUrl } from '@/lib/auth/two-factor-routes';
 
 interface AssignmentsTabProps {
@@ -47,6 +47,7 @@ export function AssignmentsTab({ caregiverId }: AssignmentsTabProps) {
       setLoading(true);
       const res = await fetch(`/api/operator/caregivers/${caregiverId}/assignments`);
       if (await isStepUpResponse(res)) { setStepUp(true); return; }
+      if (await redirectIfStepUp(res)) return; // BAA/DPA not yet accepted: accept, then back here
       if (!res.ok) throw new Error('Failed to fetch assignments');
       const data = await res.json();
       setAssignments(data.assignments || []);

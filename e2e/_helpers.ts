@@ -9,7 +9,8 @@ export async function upsertOperator(
 ) {
   const companyName = opts?.companyName ?? 'Ops';
   const homes = opts?.homes ?? [{ name: 'Home A', capacity: 4 }];
-  await request.post('/api/dev/upsert-operator', { data: { email, companyName, homes } });
+  // baaAccepted: resident (PHI) routes require the BAA/DPA (asked at the first PHI route, not onboarding).
+  await request.post('/api/dev/upsert-operator', { data: { email, companyName, homes, baaAccepted: true } });
 }
 
 export async function loginAs(page: Page, email: string) {

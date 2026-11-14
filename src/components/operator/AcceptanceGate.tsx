@@ -5,11 +5,12 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
 /**
- * Client-side gate for operator pages.
- * Order of checks:
- *   1. Onboarding — new operators without onboardingCompletedAt redirect to /operator/onboarding/1
- *   2. HIPAA BAA/DPA acceptance — operators must accept before using the app
- * ADMIN sessions bypass both gates.
+ * Client-side gate for operator pages: new operators without onboardingCompletedAt are sent to
+ * /operator/onboarding/1. ADMIN sessions bypass it.
+ *
+ * The HIPAA BAA/DPA is NOT asked for here: an operator who has only claimed or edited a listing
+ * never touches PHI. It is required server-side at the first PHI route, alongside the 2FA
+ * step-up (src/lib/auth/phi-agreement.ts, src/middleware.ts).
  */
 export function AcceptanceGate({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
@@ -41,7 +42,7 @@ export function AcceptanceGate({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Step 1: Check onboarding completion for new operators
+    // Onboarding completion for new operators
     fetch('/api/operator/onboarding/status')
       .then((r) => r.json())
       .then((data: { completed?: boolean }) => {
@@ -49,16 +50,7 @@ export function AcceptanceGate({ children }: { children: React.ReactNode }) {
           router.push('/operator/onboarding/1');
           return;
         }
-        // Step 2: Check BAA/DPA acceptance
-        return fetch('/api/operator/acceptance')
-          .then((r) => r.json())
-          .then((acceptData: { current?: boolean; adminBypass?: boolean }) => {
-            if (acceptData.current) {
-              setChecked(true);
-            } else {
-              router.push('/operator/acceptance');
-            }
-          });
+        setChecked(true);
       })
       .catch(() => {
         // On network error, allow through — API routes have their own auth
@@ -69,7 +61,7 @@ export function AcceptanceGate({ children }: { children: React.ReactNode }) {
   if (!checked && !isAcceptancePage && !isOnboardingPage) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-neutral-500 text-sm">Checking compliance requirements…</div>
+        <div className="text-neutral-500 text-sm">Loading…</div>
       </div>
     );
   }

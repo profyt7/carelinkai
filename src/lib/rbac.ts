@@ -5,6 +5,7 @@ import type { UserRole } from "@prisma/client";
 import { cookies } from 'next/headers';
 import { decode } from 'next-auth/jwt';
 import { TWO_FACTOR_SETUP_PATH, TWO_FACTOR_STEP_UP_CODE } from "@/lib/auth/two-factor-routes";
+import { baaAcceptanceResponseBody } from "@/lib/auth/phi-agreement";
 
 // RBAC helpers for App Router routes
 // Assumptions:
@@ -80,7 +81,8 @@ export async function requireOperatorOrAdmin() {
 
 /**
  * requireOperatorOrAdmin for routes that return or change PHI (residents and everything attached).
- * An OPERATOR without 2FA gets 403 TWO_FACTOR_STEP_UP_REQUIRED (step-up; the UI sends them to setup).
+ * An OPERATOR without 2FA gets 403 TWO_FACTOR_STEP_UP_REQUIRED (step-up; the UI sends them to setup);
+ * one without the current BAA/DPA gets 403 BAA_ACCEPTANCE_REQUIRED (sent to /operator/acceptance).
  */
 export async function requireOperatorOrAdminForPhi() {
   const res = await requireOperatorOrAdmin();
@@ -92,6 +94,9 @@ export async function requireOperatorOrAdminForPhi() {
         { status: 403 },
       ),
     } as const;
+  }
+  if ((res.session?.user as { baaAcceptanceRequired?: unknown } | undefined)?.baaAcceptanceRequired === true) {
+    return { error: NextResponse.json(baaAcceptanceResponseBody(), { status: 403 }) } as const;
   }
   return res;
 }

@@ -1,7 +1,8 @@
 import { prisma } from '@/lib/prisma';
 
-export const BAA_CURRENT_VERSION = 'draft-2026-05-15';
-export const DPA_CURRENT_VERSION = 'draft-2026-05-15';
+import { acceptanceIsCurrent } from '@/lib/legal-versions';
+
+export { BAA_CURRENT_VERSION, DPA_CURRENT_VERSION, acceptanceIsCurrent } from '@/lib/legal-versions';
 
 /**
  * Returns true if the operator has accepted the current BAA and DPA versions.
@@ -18,12 +19,5 @@ export async function isOperatorAcceptanceCurrent(operatorId: string): Promise<b
     },
   });
 
-  if (!operator) return false;
-
-  return (
-    operator.baaTemplateVersion === BAA_CURRENT_VERSION &&
-    operator.baaAcceptedAt !== null &&
-    operator.dpaTemplateVersion === DPA_CURRENT_VERSION &&
-    operator.dpaAcceptedAt !== null
-  );
+  return acceptanceIsCurrent(operator);
 }

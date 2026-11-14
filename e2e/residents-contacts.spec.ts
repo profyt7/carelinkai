@@ -11,7 +11,7 @@ test.describe('[non-bypass] Operator Residents: Contacts CRUD', () => {
   test('add, save, and reload contacts', async ({ page }) => {
     await page.goto('/');
     const homeId: string = await page.evaluate(async (args) => {
-      const r = await fetch('/api/dev/upsert-operator', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: args.email, password: args.password, companyName: 'E2E Operator Inc.' }) });
+      const r = await fetch('/api/dev/upsert-operator', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: args.email, password: args.password, companyName: 'E2E Operator Inc.', baaAccepted: true }) });
       if (!r.ok) throw new Error('seed failed');
       const j = await r.json();
       return j.homeId as string;

@@ -182,7 +182,7 @@ export async function POST(req: NextRequest) {
   }
   try {
     const body = await req.json().catch(() => ({}));
-    const { email, password, companyName, homes, onboarded } = body || {} as {
+    const { email, password, companyName, homes, onboarded, baaAccepted } = body || {} as {
       email?: string;
       password?: string;
       companyName?: string;
@@ -191,10 +191,13 @@ export async function POST(req: NextRequest) {
       homes?: HomeSeed[];
       /** Sprint W5-5: mark onboarding complete + BAA/DPA accepted so portal pages render (no wizard / gate). */
       onboarded?: boolean;
+      /** BAA/DPA accepted only (no onboarding change): needed before resident/PHI routes. */
+      baaAccepted?: boolean;
     };
-    const onboardedData = onboarded === true
-      ? { onboardingCompletedAt: new Date(), baaTemplateVersion: BAA_CURRENT_VERSION, baaAcceptedAt: new Date(), dpaTemplateVersion: DPA_CURRENT_VERSION, dpaAcceptedAt: new Date() }
+    const baaData = onboarded === true || baaAccepted === true
+      ? { baaTemplateVersion: BAA_CURRENT_VERSION, baaAcceptedAt: new Date(), dpaTemplateVersion: DPA_CURRENT_VERSION, dpaAcceptedAt: new Date() }
       : {};
+    const onboardedData = onboarded === true ? { onboardingCompletedAt: new Date(), ...baaData } : baaData;
     if (!email || !companyName) {
       return NextResponse.json({ error: 'email and companyName required' }, { status: 400 });
     }
