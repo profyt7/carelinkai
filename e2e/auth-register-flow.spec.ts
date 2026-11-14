@@ -15,7 +15,9 @@ const PASSWORD = demoPassword();
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 async function fillStep1(page: any, email: string) {
-  await page.fill('#email', email);
+  // From a claim link the email is prefilled + locked to the link's recipient (read-only).
+  if (await page.locator('#email').isEditable()) await page.fill('#email', email);
+  else await expect(page.locator('#email')).toHaveValue(email.toLowerCase());
   await page.fill('#password', PASSWORD);
   await page.fill('#confirmPassword', PASSWORD);
   await page.getByRole('button', { name: /next/i }).click();

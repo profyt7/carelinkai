@@ -179,6 +179,19 @@ export async function POST(request: NextRequest) {
     
     // Normalize email to lowercase
     const normalizedEmail = email.toLowerCase();
+
+    // A claim link is bound to its recipient: refuse a signup under another address (the form
+    // locks the field; this is the server-side half). Invalid/expired tokens fall through and the
+    // account is created without the claim, as before.
+    if (claimToken) {
+      const claim = verifyClaimToken(claimToken, process.env['NEXTAUTH_SECRET'] ?? '');
+      if (claim?.homeId && claim.operatorEmail.toLowerCase() !== normalizedEmail) {
+        return NextResponse.json(
+          { success: false, message: "This claim link was sent to a different email address. Use that address to create your account." },
+          { status: 400 }
+        );
+      }
+    }
     
     // Check if user already exists
     console.log("[REGISTER API] Checking for existing user...");

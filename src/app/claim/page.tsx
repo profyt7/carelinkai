@@ -2,117 +2,97 @@ import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { verifyClaimToken } from '@/lib/claim-token';
+import { inspectClaimToken } from '@/lib/claim-token';
 import { recordClaimLinkVisit } from '@/lib/claim-engine/claim-link-visit';
 import { COHORT_LANDING_PATH, isClaimCohort } from '@/lib/claim-engine/cohorts';
 import ClaimConfirm from './ClaimConfirm';
+import { ClaimLanding, ClaimProblem, ClaimShell } from './ClaimViews';
 
 /**
- * Public claim landing — the target of the proactive claim-nudge email links
- * (/claim?token=...). Lets ONE operator claim MULTIPLE seeded listings from a single
- * collapsed email (each link carries its own home's signed token).
+ * Public claim landing — the target of claim-link emails (/claim?token=...). One operator can
+ * claim several seeded listings (each link carries its own home's signed token).
  *
- * Routing:
- *   - invalid/expired token        → friendly notice
- *   - cohort token (no homeId)     → the cohort landing page with the token, where the
- *                                    "claim your listing" submit is tagged with the cohort
- *                                    (sprint W3 item 2 — src/lib/claim-engine/cohorts.ts)
- *   - not signed in                → fall through to the existing register/redeem flow
- *                                    (/auth/register?claimToken=…) — unchanged for new operators
- *   - signed in as a DIFFERENT user → notice (use the link from the addressed inbox)
- *   - signed in as the addressed operator → confirm + re-arm seededHomeId via the existing
- *                                    /api/operator/claim, then onboarding step 2 claims it
- *                                    (with the image-rights ack). Safe: only offered when the
- *                                    home is still owned by the directory sentinel (unclaimed).
+ *   - invalid / tampered token     → friendly notice + how to reach us
+ *   - expired token                → friendly "this link has expired" notice + how to reach us
+ *   - cohort token (no homeId)     → the cohort landing page with the token (sprint W3 item 2)
+ *   - valid; listing already claimed → friendly notice (signed in as the recipient: go to dashboard)
+ *   - valid; NOT signed in         → branded landing: "Claim <facility>", city, photo, public-listing
+ *                                    link, one line on what claiming does, "Create your free account"
+ *                                    (register with the token; email prefilled + locked to the
+ *                                    recipient) and "Already have an account? Sign in" (back here).
+ *   - signed in as a DIFFERENT user → notice (use the addressed inbox)
+ *   - signed in as the recipient   → confirm, then the onboarding claim step (image-rights ack)
+ * Every valid token records a claim-link visit (OL-117; wanted). No PHI anywhere on the page.
  */
 
 export const dynamic = 'force-dynamic';
 
 const DIRECTORY_UNCLAIMED_EMAIL = 'directory-unclaimed@carelinkai.system';
 
-function Shell({ children }: { children: React.ReactNode }) {
-  return (
-    <main className="mx-auto flex min-h-[70vh] max-w-lg items-center px-6">
-      <div className="w-full rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">{children}</div>
-    </main>
-  );
+function safePhotoUrl(url: string | null | undefined): string | null {
+  return url && /^https:\/\//i.test(url) ? url : null;
 }
 
-function Notice({ title, body }: { title: string; body: string }) {
-  return (
-    <Shell>
-      <div className="text-center">
-        <h1 className="text-2xl font-semibold text-slate-900">{title}</h1>
-        <p className="mt-3 text-slate-600">{body}</p>
-      </div>
-    </Shell>
-  );
-}
+export default async function ClaimPage({ searchParams }: { searchParams: Promise<{ token?: string }> | { token?: string } }) {
+  const token = (await searchParams)?.token ?? null;
+  const inspected = inspectClaimToken(token, process.env['NEXTAUTH_SECRET'] || '');
 
-export default async function ClaimPage({ searchParams }: { searchParams: { token?: string } }) {
-  const token = searchParams?.token;
-  const secret = process.env['NEXTAUTH_SECRET'] || '';
-  const payload = token ? verifyClaimToken(token, secret) : null;
-
-  // Cohort claim link (no home to claim): hand off to the cohort landing page,
-  // which carries the claim form. The token travels along so the submit is
-  // recorded as a claim-link claim (source 'claim_link', tokenEmail set).
-  if (token && payload && !payload.homeId && isClaimCohort(payload.cohort)) {
-    redirect(`${COHORT_LANDING_PATH[payload.cohort]}?token=${encodeURIComponent(token)}#claim`);
+  // Cohort claim link (no home to claim): hand off to the cohort landing page.
+  if (inspected.state === 'valid' && !inspected.payload.homeId && isClaimCohort(inspected.payload.cohort)) {
+    redirect(`${COHORT_LANDING_PATH[inspected.payload.cohort]}?token=${encodeURIComponent(token as string)}#claim`);
   }
+  if (inspected.state === 'expired') return <ClaimProblem kind="expired" />;
+  if (inspected.state !== 'valid' || !inspected.payload.homeId) return <ClaimProblem kind="invalid" />;
 
-  if (!token || !payload || !payload.homeId) {
-    return <Notice title="This link is invalid" body="The claim link is invalid or has expired. Please use the most recent email we sent, or reply to it and we’ll help." />;
-  }
+  const payload = inspected.payload;
+  const homeId = payload.homeId as string;
 
-  // OL-117: durable "the link was opened" evidence for outreach follow-ups.
+  // OL-117: durable "the link was opened" evidence for outreach follow-ups (wanted).
   // Fire-and-forget — recording never blocks or breaks the render.
-  void recordClaimLinkVisit({
-    homeId: payload.homeId,
-    operatorEmail: payload.operatorEmail,
-    source: 'claim_page',
-  });
-
-  const session = await getServerSession(authOptions);
-
-  // Not signed in → preserve the existing register/redeem path verbatim (new operators
-  // register + redeem here; returning operators get the register page's "already have an
-  // account?" prompt and can sign in, then re-open this link to claim).
-  if (!session?.user?.email) {
-    redirect(`/auth/register?role=OPERATOR&claimToken=${encodeURIComponent(token)}`);
-  }
-
-  if (session.user.email.toLowerCase() !== payload.operatorEmail.toLowerCase()) {
-    return (
-      <Notice
-        title="This link is for a different account"
-        body={`This claim link is addressed to ${payload.operatorEmail}, but you’re signed in as ${session.user.email}. Sign out and open the link again, or forward it to that inbox.`}
-      />
-    );
-  }
+  void recordClaimLinkVisit({ homeId, operatorEmail: payload.operatorEmail, source: 'claim_page' });
 
   const home = await prisma.assistedLivingHome.findUnique({
-    where: { id: payload.homeId },
-    select: { id: true, name: true, operator: { select: { user: { select: { email: true } } } } },
+    where: { id: homeId },
+    select: {
+      id: true,
+      name: true,
+      address: { select: { city: true, state: true } },
+      photos: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }, { createdAt: 'asc' }], take: 1, select: { url: true } },
+      operator: { select: { user: { select: { email: true } } } },
+    },
   });
-  if (!home) {
-    return <Notice title="Listing not found" body="We couldn’t find that listing — it may have been removed." />;
-  }
+  if (!home) return <ClaimProblem kind="not_found" />;
+
+  const session = await getServerSession(authOptions);
+  const signedInEmail = session?.user?.email?.toLowerCase() ?? null;
+  const recipient = payload.operatorEmail.toLowerCase();
 
   // Only claimable while still owned by the directory sentinel (unclaimed).
   const ownerEmail = (home.operator?.user?.email || '').toLowerCase();
   if (ownerEmail !== DIRECTORY_UNCLAIMED_EMAIL) {
+    return <ClaimProblem kind="claimed" homeName={home.name} signedInAsRecipient={signedInEmail === recipient} />;
+  }
+
+  if (!signedInEmail) {
     return (
-      <Notice
-        title="Already claimed"
-        body={`${home.name} has already been claimed. If that was you, you’ll find it in your operator dashboard.`}
+      <ClaimLanding
+        token={token as string}
+        homeId={home.id}
+        homeName={home.name}
+        city={home.address?.city ?? null}
+        state={home.address?.state ?? null}
+        photoUrl={safePhotoUrl(home.photos[0]?.url)}
       />
     );
   }
 
+  if (signedInEmail !== recipient) {
+    return <ClaimProblem kind="wrong_account" homeName={home.name} signedInAs={signedInEmail} />;
+  }
+
   return (
-    <Shell>
-      <ClaimConfirm token={token} homeName={home.name} />
-    </Shell>
+    <ClaimShell>
+      <ClaimConfirm token={token as string} homeName={home.name} />
+    </ClaimShell>
   );
 }

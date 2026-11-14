@@ -132,7 +132,7 @@ test.describe('@critical agency cohort landing', () => {
     expect(await res.text()).not.toContain('You opened a claim link');
   });
 
-  test('operator claim links (homeId, no cohort) keep their register redirect', async ({ request }) => {
+  test('operator claim links (homeId, no cohort) stay on /claim, never the cohort page', async ({ request }) => {
     const secret = process.env.NEXTAUTH_SECRET || '';
     test.skip(!secret, 'NEXTAUTH_SECRET must be set');
     const now = Math.floor(Date.now() / 1000);
@@ -141,8 +141,12 @@ test.describe('@critical agency cohort landing', () => {
       secret
     );
     const res = await request.get(`/claim?token=${encodeURIComponent(token)}`, { maxRedirects: 0 });
-    expect([302, 307]).toContain(res.status());
-    expect(res.headers()['location'] ?? '').toContain('/auth/register?role=OPERATOR&claimToken=');
+    // A home-bound link renders the /claim page itself (branded landing, or here — no such home — a
+    // friendly not-found notice); it is never handed to the cohort landing.
+    expect(res.status()).toBe(200);
+    const html = await res.text();
+    expect(html).toContain('We couldn’t find this listing');
+    expect(html).not.toContain('You opened a claim link');
   });
 });
 
