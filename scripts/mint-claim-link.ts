@@ -18,6 +18,10 @@
  * { operatorEmail, homeId, clevelandFounder, iat, exp } signed with NEXTAUTH_SECRET,
  * exp = iat + 45 days.
  *
+ * Links point at /claim?token=… (the page that greets the operator by facility name and
+ * records the visit). --register-url prints the older /auth/register?…claimToken=… form
+ * (same token). Check minted links without logging a visit: scripts/check-claim-links.ts.
+ *
  * Run on Render (needs DATABASE_URL + NEXTAUTH_SECRET):
  *   # single lead
  *   npx tsx scripts/mint-claim-link.ts --email teresa@x.com --name "Pleasant Pointe" --city Barberton
@@ -30,6 +34,7 @@ import { PrismaClient } from '@prisma/client';
 import { signClaimToken, DEFAULT_CLAIM_TOKEN_TTL_HOURS } from '../src/lib/claim-token';
 import { CLAIM_COHORTS, COHORT_LANDING_PATH, isClaimCohort } from '../src/lib/claim-engine/cohorts';
 import { readFileSync } from 'node:fs';
+import { claimLinkUrl } from '../src/lib/claim-engine/claim-link-url';
 
 const prisma = new PrismaClient();
 const SENTINEL = 'directory-unclaimed@carelinkai.system';
@@ -63,9 +68,12 @@ function iso(d: Date | null | undefined): string {
 function claimed(h: Home): boolean {
   return (h.operator?.user?.email || '').toLowerCase() !== SENTINEL;
 }
+/** Emailed links land on /claim (greets by facility name, records the visit). --register-url keeps the old form. */
+const REGISTER_URL = process.argv.includes('--register-url');
+
 function mintLink(homeId: string, email: string, secret: string, now: number, exp: number): string {
   const token = signClaimToken({ operatorEmail: email.toLowerCase(), homeId, clevelandFounder: true, iat: now, exp }, secret);
-  return `${appUrl()}/auth/register?role=OPERATOR&claimToken=${encodeURIComponent(token)}`;
+  return claimLinkUrl(appUrl(), token, REGISTER_URL);
 }
 
 async function resolve(lead: Lead, secret: string, now: number, exp: number): Promise<Resolved> {
