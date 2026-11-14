@@ -2954,3 +2954,18 @@
 - **New risks/blockers:** none.
 - **Recommended next step:** Chris OKs this PR and #51.
 
+
+### 2026-11-14 — Session wrap (security P0s → 2FA step-up → claim-link flow)
+- **Objective:** close the Nov 2026 security package, make privileged-role 2FA and session revocation real, keep demo/test inquiries away from real facilities, and get the operator claim-link journey ready to send.
+- **Work completed (all merged to main and prod-verified one at a time):**
+  - Security P0s (11/03–04): #53 package, #54–#56, #58–#61 fixes, #57 `prod-probe.yml`, #62 DST fix, #63 OL-260.
+  - Auth/sessions (11/08–09): #67–#78, incl. #72 server-side session revocation + required 2FA for ADMIN/STAFF, #73 "log out other devices", #74/#76 production probes, #77 verification activates PENDING accounts.
+  - Inquiry safety (11/10): #82, #79, #80 (`isTest`, migration), #81, #84, #85, #86, #83/#87 (one-off prod demo-login rename script).
+  - 2FA step-up (11/12–13): #88 OPERATOR/DP need 2FA only for PHI; #89 DP landing without 2FA.
+  - Claim flow (11/13–14): #92 `6edb652` BAA/DPA moved from onboarding to the PHI step-up (server-side, alongside 2FA); #90 `201b440` mint prints `/claim` links + read-only `check-claim-links.ts` + `set-home-city.ts`; #91 `c972747` branded /claim landing for logged-out recipients (email locked at signup, friendly expired/invalid/claimed/wrong-account pages, compact cookie banner on claim pages).
+- **Files changed (this wrap):** `context/DEV_SESSION_SUMMARIES.md`, `context/CARELINKAI_TECHNICAL_STATE.md`, `context/CARELINKAI_TECH_OPEN_LOOPS.md`.
+- **Commands run:** `npx tsc --noEmit`, `npx jest` (last full run: trial merge of #92+#90+#91 on main, 220 suites, 2573 passed, 10 skipped), eslint on changed files, local Playwright checks (390px claim landing, cookie banner, BAA smoke on a local dev server + Postgres), `gh workflow run prod-verify.yml` after each merge, `prod-probe.yml` (all probes).
+- **Tests/build status:** CI green on every merged PR; prod-verify green for #89, #92, #90, #91; prod probes PROBE_RESULT.
+- **Deployment impact:** live. Operators without the current BAA/DPA keep the dashboard and listings and are asked for it at their first PHI route. No env, Render, Resend or Twilio changes.
+- **New risks/blockers:** BAA/DPA still draft text (OL-262); claim links not yet minted/sent (OL-261); OL-263 dev hydration warning; OL-264 full cookie banner on phones elsewhere; OL-265 leftover test branch.
+- **Recommended next step:** Chris mints the six links, runs the Arden Courts city fix (dry run, then `APPLY=1`) and the link checker on Render; send to the two call-confirmed operators (Pleasant Pointe, Eliza Jennings); hold the other four until a yes.
