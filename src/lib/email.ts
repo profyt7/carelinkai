@@ -460,32 +460,6 @@ export async function sendConciergeShortlistReadyEmail(args: {
  * Admin-only Family Concierge notice (phase 2, OL-248), e.g. an order expired unpaid. ONE email to the admin
  * address (ADMIN_NOTIFY_EMAIL → CLAIM_NOTIFY_EMAIL → chris@). PHI-free: a fixed sentence and the admin link.
  */
-/** Self-serve listing claim (fix/self-serve-claim): "New claim: {home} by {operator email}" → the admin queue. */
-export async function sendHomeClaimAdminNotice(args: { homeName: string; operatorEmail: string; claimId: string }): Promise<boolean> {
-  const to = process.env.ADMIN_NOTIFY_EMAIL || process.env.CLAIM_NOTIFY_EMAIL || 'chris@getcarelinkai.com';
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://getcarelinkai.com').replace(/\/$/, '');
-  const queue = `${appUrl}/admin/home-claims`;
-  const subject = `New claim: ${args.homeName} by ${args.operatorEmail}`;
-  try {
-    const { error } = await guardedResendSend({
-      from: `${APP_NAME} <${FROM_EMAIL}>`,
-      to: [to],
-      subject,
-      text: `${subject}\n\nNothing has changed hands yet. Verify the operator, then approve or reject:\n${queue}\n`,
-      html:
-        `<p><strong>${escapeHtml(subject)}</strong></p>` +
-        `<p>Nothing has changed hands yet. Verify the operator, then approve or reject.</p>` +
-        emailButton('Review claim', queue, 'Open the claim queue'),
-      tags: [{ name: 'category', value: 'home-claim-admin' }],
-    });
-    if (error) throw error instanceof Error ? error : new Error(String((error as { message?: string })?.message ?? error));
-    return true;
-  } catch (e) {
-    captureError(e instanceof Error ? e : new Error(String(e)), { tags: { feature: 'home-claim' }, extra: { claimId: args.claimId } });
-    return false;
-  }
-}
-
 /** Self-serve listing claim decision → the operator. Rejections are polite and point to /contact. */
 export async function sendHomeClaimDecisionEmail(args: { to: string; firstName?: string | null; homeName: string; decision: 'approved' | 'rejected'; homeId: string }): Promise<boolean> {
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://getcarelinkai.com').replace(/\/$/, '');

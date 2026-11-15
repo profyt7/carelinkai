@@ -42,7 +42,6 @@ const CASES: { name: string; run: () => Promise<unknown>; cta: string | null; ma
   { name: 'admin new concierge request', cta: 'Review & build the shortlist', run: () => email.sendConciergeRequestNotification({ requestId: 'ps-1', dpName: 'Dana Planner', dpOrganization: 'Metro Hospital' }) },
   { name: 'claim approved (operator)', cta: 'Open your listing', run: () => email.sendHomeClaimDecisionEmail({ to: 'op@example.com', firstName: 'Pat', homeName: 'Maple Grove', decision: 'approved', homeId: 'h-1' }) },
   { name: 'claim rejected (operator)', cta: null, run: () => email.sendHomeClaimDecisionEmail({ to: 'op@example.com', firstName: 'Pat', homeName: 'Maple Grove', decision: 'rejected', homeId: 'h-1' }) },
-  { name: 'new claim (admin)', cta: 'Review claim', run: () => email.sendHomeClaimAdminNotice({ homeName: 'Maple Grove', operatorEmail: 'op@example.com', claimId: 'c-1' }) },
   { name: 'operator claim notice (admin)', cta: 'Review claim', run: () => email.sendOperatorClaimNotification({ facilityName: 'Maple Grove', operatorEmail: 'op@example.com', homeId: 'h-1', status: 'PENDING_REVIEW' }) },
   { name: 'concierge paid (admin)', cta: null, run: () => email.sendConciergePaidNotification({ requestId: 'ps-1', orderId: 'ord1', amountCents: 39900 }) },
   { name: 'shortlist ready (DP)', cta: null, run: () => email.sendConciergeShortlistReadyEmail({ toEmail: 'dp@example.com', count: 3 }) },

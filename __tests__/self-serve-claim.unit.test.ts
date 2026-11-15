@@ -16,8 +16,8 @@ jest.mock('next-auth', () => ({ getServerSession: () => mockSession() }));
 jest.mock('@/lib/auth', () => ({ authOptions: {} }));
 jest.mock('@/lib/audit', () => ({ createAuditLogFromRequest: jest.fn(async () => undefined) }));
 jest.mock('@/lib/sentry', () => ({ captureError: jest.fn() }));
+jest.mock('@/lib/claims/claim-admin-notice', () => ({ notifyAdminOfListingClaim: jest.fn().mockResolvedValue('sent') }));
 jest.mock('@/lib/email', () => ({
-  sendHomeClaimAdminNotice: jest.fn().mockResolvedValue(true),
   sendHomeClaimDecisionEmail: jest.fn().mockResolvedValue(true),
   sendOperatorClaimNotification: jest.fn().mockResolvedValue(true),
 }));
@@ -35,7 +35,8 @@ jest.mock('@/lib/prisma', () => {
 });
 
 import { prisma } from '@/lib/prisma';
-import { sendHomeClaimAdminNotice, sendHomeClaimDecisionEmail, sendOperatorClaimNotification } from '@/lib/email';
+import { sendHomeClaimDecisionEmail, sendOperatorClaimNotification } from '@/lib/email';
+import { notifyAdminOfListingClaim } from '@/lib/claims/claim-admin-notice';
 import { signClaimIntent, verifyClaimIntent, registerUrlWithIntent } from '@/lib/claims/claim-intent';
 import { approveHomeClaim, listingClaimState, rejectHomeClaim, submitSelfServeClaim } from '@/lib/claims/self-serve';
 import { DIRECTORY_UNCLAIMED_EMAIL } from '@/lib/claim-engine/inquiry-claim-notification';
@@ -87,7 +88,8 @@ describe('submitting a claim', () => {
     expect(P.homeClaim.create).toHaveBeenCalledWith({ data: { homeId: 'home-1', operatorId: 'op-1', source: 'listing_button' }, select: { id: true } });
     expect(P.assistedLivingHome.update).not.toHaveBeenCalled();
     await flush();
-    expect(sendHomeClaimAdminNotice).toHaveBeenCalledWith({ homeName: 'Maple Grove', operatorEmail: 'pat@example.test', claimId: 'claim-1' });
+    expect(notifyAdminOfListingClaim).toHaveBeenCalledTimes(1);
+    expect(notifyAdminOfListingClaim).toHaveBeenCalledWith(expect.objectContaining({ claimKey: 'claim-1', kind: 'self_serve', homeId: 'home-1', facility: 'Maple Grove', claimantEmail: 'pat@example.test' }));
     expect(P.notification.createMany.mock.calls[0][0].data[0]).toMatchObject({ title: 'New claim: Maple Grove by pat@example.test', link: '/admin/home-claims' });
   });
 
@@ -98,7 +100,7 @@ describe('submitting a claim', () => {
     P.homeClaim.findFirst.mockResolvedValue(null);
     P.homeClaim.create.mockRejectedValueOnce(Object.assign(new Error('unique'), { code: 'P2002' }));
     expect(await submitSelfServeClaim({ homeId: 'home-1', userId: 'user-2', source: 'listing_button' })).toEqual({ ok: false, reason: 'pending_exists' });
-    expect(sendHomeClaimAdminNotice).not.toHaveBeenCalled();
+    expect(notifyAdminOfListingClaim).not.toHaveBeenCalled();
   });
 
   it('an already-claimed listing is blocked; so is a non-operator and a missing home', async () => {
