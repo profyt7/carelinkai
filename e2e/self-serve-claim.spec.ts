@@ -117,6 +117,8 @@ test.describe('@critical self-serve listing claim', () => {
     const page = await ctxPage(browser, 1280);
     await devLogin(page, OP_X);
     await go(page, `/homes/${home.a}`);
+    // The first listing page cold-compiles on the CI dev server: wait for the button (SLOW), not the 20s click timeout.
+    await expect(page.getByTestId('listing-claim-button').first()).toBeVisible(SLOW);
     await page.getByTestId('listing-claim-button').first().click();
     await expect(page.getByTestId('listing-claim-submitted')).toContainText("Claim submitted — we'll verify and email you.", SLOW);
     await shot(page, 'listing-claim-submitted-1280', 'listing-claim-submitted');
@@ -171,6 +173,7 @@ test.describe('@critical self-serve listing claim', () => {
     }
     const page = await ctxPage(browser, 1280);
     await go(page, `/homes/${home.b}`);
+    await expect(page.getByTestId('listing-claim-button')).toBeVisible(SLOW);
     await page.getByTestId('listing-claim-button').click();
     await expect(page).toHaveURL(new RegExp(`/homes/${home.b}/claim$`), SLOW);
     await expect(page.getByTestId('claim-page-login')).toHaveAttribute('href', `/auth/login?callbackUrl=${encodeURIComponent(`/homes/${home.b}/claim`)}`);
