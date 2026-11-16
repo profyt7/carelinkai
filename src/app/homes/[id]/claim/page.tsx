@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma';
 import { listingClaimState } from '@/lib/claims/self-serve';
 import { registerUrlWithIntent, signClaimIntent } from '@/lib/claims/claim-intent';
 import { ClaimListingButton } from '@/components/homes/ListingClaim';
+import { SwitchToOperator } from '@/components/homes/SwitchToOperator';
 import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from '@/lib/contact';
 
 export const dynamic = 'force-dynamic';
@@ -29,6 +30,8 @@ export default async function ClaimListingPage({ params }: { params: Promise<{ i
   const session = await getServerSession(authOptions);
   const role = session?.user?.role ?? null;
   const place = [home.address?.city, home.address?.state].filter(Boolean).join(', ');
+  const registerHref = registerUrlWithIntent(signClaimIntent(home.id, process.env['NEXTAUTH_SECRET'] ?? ''));
+  const loginHref = `/auth/login?callbackUrl=${encodeURIComponent(`/homes/${home.id}/claim`)}`;
   const card = 'mx-auto max-w-lg rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm';
 
   return (
@@ -60,24 +63,31 @@ export default async function ClaimListingPage({ params }: { params: Promise<{ i
         )}
 
         {state === 'open' && session && role !== 'OPERATOR' && (
-          <p className="mt-5 text-neutral-700" data-testid="claim-page-wrong-role">
-            Claims need a care-home operator account. Questions? Call{' '}
-            <a href={CONTACT_PHONE_TEL} className="font-medium text-primary-700 underline">{CONTACT_PHONE_DISPLAY}</a>.
-          </p>
+          <div className="mt-5 space-y-3" data-testid="claim-page-wrong-role">
+            <p className="text-neutral-700">
+              Claims need a care-home operator account, and you&apos;re signed in with a different kind of account.
+              Sign out, then create an operator account (we&apos;ll file the claim for this listing) or sign in to yours.
+            </p>
+            <SwitchToOperator registerHref={registerHref} loginHref={loginHref} />
+            <p className="text-sm text-neutral-600">
+              Questions? Call{' '}
+              <a href={CONTACT_PHONE_TEL} className="font-medium text-primary-700 underline">{CONTACT_PHONE_DISPLAY}</a>.
+            </p>
+          </div>
         )}
 
         {state === 'open' && !session && (
           <div className="mt-5 space-y-3" data-testid="claim-page-signed-out">
             <p className="text-neutral-700">Create your free operator account and we&apos;ll file the claim for this listing. We verify every claim, then email you when it&apos;s yours.</p>
             <Link
-              href={registerUrlWithIntent(signClaimIntent(home.id, process.env['NEXTAUTH_SECRET'] ?? ''))}
+              href={registerHref}
               className="flex w-full items-center justify-center rounded-lg bg-primary-600 px-4 py-3 font-semibold text-white hover:bg-primary-700"
               data-testid="claim-page-register"
             >
               Create a free operator account
             </Link>
             <Link
-              href={`/auth/login?callbackUrl=${encodeURIComponent(`/homes/${home.id}/claim`)}`}
+              href={loginHref}
               className="flex w-full items-center justify-center rounded-lg border border-neutral-300 px-4 py-3 font-semibold text-neutral-800 hover:bg-neutral-50"
               data-testid="claim-page-login"
             >

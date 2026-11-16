@@ -23,8 +23,10 @@ const OP_Y = `claim-y-${ts}@test.carelinkai.test`;
 const OWNER = `claim-owner-${ts}@test.carelinkai.test`;
 const ADMIN = `claim-admin-${ts}@test.carelinkai.test`;
 const NEW_OP = `claim-new-${ts}@test.carelinkai.test`;
+const FAMILY = `claim-family-${ts}@test.carelinkai.test`;
+const FAMILY_OP = `claim-famop-${ts}@test.carelinkai.test`;
 const SHOTS = process.env['CLAIM_SHOTS_DIR'];
-const home: Record<'a' | 'b' | 'c' | 'd' | 'e', string> = { a: '', b: '', c: '', d: '', e: '' };
+const home: Record<'a' | 'b' | 'c' | 'd' | 'e' | 'f', string> = { a: '', b: '', c: '', d: '', e: '', f: '' };
 
 // CI runs this against a dev server that cold-compiles each route (and can restart on memory), so waits are long.
 const SLOW = { timeout: 120_000 };
@@ -47,12 +49,21 @@ async function postClaim(page: Page, homeId: string) {
   return (await page.request.post(`/api/homes/${homeId}/claim-request`, { timeout: 120_000 })).status();
 }
 
+/** The claim's admin notice is logged exactly once; e2e claimants are *.test, so delivery is skipped (no email). */
+async function expectClaimNoticeLogged(homeId: string, claimId: string) {
+  await expect(async () => {
+    const rows = await prisma.entityEvent.findMany({ where: { entityType: 'LISTING_CLAIM', entityId: homeId, eventType: 'claim.admin_notified' }, select: { newValue: true } });
+    const mine = rows.filter((r) => (r.newValue as { id?: string } | null)?.id === claimId);
+    expect(mine.map((r) => (r.newValue as { delivery?: string }).delivery)).toEqual(['skipped_test']);
+  }).toPass({ timeout: 60_000, intervals: [1000, 2000, 5000] });
+}
+
 async function ctxPage(browser: Browser, width: number) {
   const ctx = await browser.newContext({ viewport: { width, height: 900 } });
   await ctx.addInitScript(() => {
     try {
       localStorage.setItem('carelinkai_cookie_consent', JSON.stringify({ necessary: true, analytics: false, marketing: false }));
-      for (const r of ['OPERATOR', 'ADMIN']) localStorage.setItem(`carelinkai_onboarding_completed_${r}`, 'true');
+      for (const r of ['OPERATOR', 'ADMIN', 'FAMILY']) localStorage.setItem(`carelinkai_onboarding_completed_${r}`, 'true');
       localStorage.setItem('carelinkai_onboarding_completed', 'true');
     } catch {}
   });
@@ -72,17 +83,19 @@ test.describe('@critical self-serve listing claim', () => {
 
   test.beforeAll(async ({ request }) => {
     await expect(async () => {
-      const dir = await request.post('/api/dev/upsert-operator', { data: { email: DIRECTORY, companyName: 'Directory (unclaimed)', homes: [{ name: `Claim Test A ${ts}`, city: 'Cleveland' }, { name: `Claim Test B ${ts}`, city: 'Cleveland' }, { name: `Claim Test C ${ts}`, city: 'Cleveland' }, { name: `Claim Test E ${ts}`, city: 'Cleveland' }] } });
+      const dir = await request.post('/api/dev/upsert-operator', { data: { email: DIRECTORY, companyName: 'Directory (unclaimed)', homes: [{ name: `Claim Test A ${ts}`, city: 'Cleveland' }, { name: `Claim Test B ${ts}`, city: 'Cleveland' }, { name: `Claim Test C ${ts}`, city: 'Cleveland' }, { name: `Claim Test E ${ts}`, city: 'Cleveland' }, { name: `Claim Test F ${ts}`, city: 'Cleveland' }] } });
       expect(dir.status()).toBe(200);
       const hs = (await dir.json()).homes as { id: string; name: string }[];
       home.a = hs.find((h) => h.name.startsWith('Claim Test A'))!.id;
       home.b = hs.find((h) => h.name.startsWith('Claim Test B'))!.id;
       home.c = hs.find((h) => h.name.startsWith('Claim Test C'))!.id;
       home.e = hs.find((h) => h.name.startsWith('Claim Test E'))!.id;
+      home.f = hs.find((h) => h.name.startsWith('Claim Test F'))!.id;
       const owner = await request.post('/api/dev/upsert-operator', { data: { email: OWNER, companyName: `Owner ${ts}`, onboarded: true, homes: [{ name: `Claim Test D ${ts}`, city: 'Cleveland' }] } });
       home.d = (await owner.json()).homes[0].id;
       for (const e of [OP_X, OP_Y]) expect((await request.post('/api/dev/upsert-operator', { data: { email: e, companyName: `Ops ${e.slice(0, 7)}`, onboarded: true } })).status()).toBe(200);
       expect((await request.post('/api/dev/upsert-admin', { data: { email: ADMIN } })).ok()).toBe(true);
+      expect((await request.post('/api/dev/upsert-family', { data: { email: FAMILY } })).ok()).toBe(true);
     }).toPass({ timeout: 90_000, intervals: [2000, 5000, 10000] });
   });
 
@@ -104,6 +117,8 @@ test.describe('@critical self-serve listing claim', () => {
     const page = await ctxPage(browser, 1280);
     await devLogin(page, OP_X);
     await go(page, `/homes/${home.a}`);
+    // The first listing page cold-compiles on the CI dev server: wait for the button (SLOW), not the 20s click timeout.
+    await expect(page.getByTestId('listing-claim-button').first()).toBeVisible(SLOW);
     await page.getByTestId('listing-claim-button').first().click();
     await expect(page.getByTestId('listing-claim-submitted')).toContainText("Claim submitted — we'll verify and email you.", SLOW);
     await shot(page, 'listing-claim-submitted-1280', 'listing-claim-submitted');
@@ -158,6 +173,7 @@ test.describe('@critical self-serve listing claim', () => {
     }
     const page = await ctxPage(browser, 1280);
     await go(page, `/homes/${home.b}`);
+    await expect(page.getByTestId('listing-claim-button')).toBeVisible(SLOW);
     await page.getByTestId('listing-claim-button').click();
     await expect(page).toHaveURL(new RegExp(`/homes/${home.b}/claim$`), SLOW);
     await expect(page.getByTestId('claim-page-login')).toHaveAttribute('href', `/auth/login?callbackUrl=${encodeURIComponent(`/homes/${home.b}/claim`)}`);
@@ -173,6 +189,28 @@ test.describe('@critical self-serve listing claim', () => {
     expect((await res.json()).claim).toEqual({ submitted: true });
     const claim = await prisma.homeClaim.findFirstOrThrow({ where: { homeId: home.b }, include: { operator: { select: { user: { select: { email: true } } } } } });
     expect([claim.status, claim.source, claim.operator.user?.email]).toEqual(['PENDING_REVIEW', 'signup', NEW_OP]);
+    // The admin notice is logged once for the claim; a *.test claimant gets no email (skipped, still logged).
+    await expectClaimNoticeLogged(home.b, claim.id);
+  });
+
+  test('signed in as a FAMILY: the claim page offers to sign out and create an operator account, home carried through', async ({ browser }) => {
+    const page = await ctxPage(browser, 390);
+    await devLogin(page, FAMILY);
+    await go(page, `/homes/${home.f}/claim`);
+    await expect(page.getByTestId('claim-page-wrong-role')).toBeVisible(SLOW);
+    await expect(page.getByTestId('claim-page-switch-login')).toBeVisible();
+    await shot(page, 'claim-page-family-390', 'claim-page-wrong-role');
+    await page.getByTestId('claim-page-switch-register').click();
+    await expect(page).toHaveURL(/\/auth\/register\?role=OPERATOR&claimIntent=/, SLOW);
+    const intent = new URL(page.url()).searchParams.get('claimIntent');
+    expect(intent).toBeTruthy();
+    // Signed out now: the register API takes the intent with the new operator account.
+    expect((await (await page.request.get('/api/auth/session', { timeout: 120_000 })).json())?.user).toBeFalsy();
+    const res = await page.request.post('/api/auth/register', { timeout: 120_000, data: { email: FAMILY_OP, password: 'Str0ng!Pass-2026', firstName: 'Fran', lastName: 'Switch', phone: '(216) 555-0198', role: 'OPERATOR', agreeToTerms: true, claimIntent: intent } });
+    expect(res.status(), await res.text()).toBe(201);
+    const claim = await prisma.homeClaim.findFirstOrThrow({ where: { homeId: home.f }, include: { operator: { select: { user: { select: { email: true } } } } } });
+    expect([claim.status, claim.source, claim.operator.user?.email]).toEqual(['PENDING_REVIEW', 'signup', FAMILY_OP]);
+    await expectClaimNoticeLogged(home.f, claim.id);
   });
 
   test('operator dashboard shows the submitted claim', async ({ browser }) => {

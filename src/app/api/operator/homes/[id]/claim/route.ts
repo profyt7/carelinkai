@@ -6,7 +6,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { recordEvent } from '@/lib/events/record-event';
 import { UserRole } from '@prisma/client';
-import { sendOperatorClaimNotification } from '@/lib/email';
+import { notifyAdminOfListingClaim } from '@/lib/claims/claim-admin-notice';
 
 /**
  * POST /api/operator/homes/[id]/claim
@@ -109,17 +109,15 @@ export async function POST(
     return h;
   });
 
-  // Surface the claim to the founder/admin in real time (non-blocking, OL-079).
-  // Idempotent by construction: the seededHomeId guard above means a given
-  // seeded home can only be successfully claimed once (it's nulled in the same
-  // transaction), so this path never double-sends.
-  void sendOperatorClaimNotification({
-    facilityName: updatedHome.name,
-    operatorEmail: user.email!,
-    operatorName: [user.firstName, user.lastName].filter(Boolean).join(' ') || undefined,
-    homeId: updatedHome.id,
-    status: 'ACTIVE',
-  }).catch((e) => console.error('[claim] founder notification failed', e));
+  // Surface the claim to the founder/admin (non-blocking, OL-079). The seededHomeId guard above already makes
+  // this a one-time path; notifyAdminOfListingClaim is also idempotent per claim key.
+  // The emailed-link (token) claim is complete: one admin email (skipped for test claimants, always logged).
+  void notifyAdminOfListingClaim({
+    claimKey: `token:${updatedHome.id}:${operator.id}`, kind: 'token', homeId: updatedHome.id,
+    facility: updatedHome.name, city: updatedHome.address?.city,
+    claimantName: [user.firstName, user.lastName].filter(Boolean).join(' '), claimantEmail: user.email,
+    actor: { userId: user.id, role: user.role },
+  }).catch((e) => console.error('[claim] admin notification failed', e));
 
   return NextResponse.json({ home: updatedHome });
 }

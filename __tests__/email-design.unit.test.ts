@@ -12,8 +12,11 @@ jest.mock('resend', () => ({ Resend: jest.fn().mockImplementation(() => ({ email
 const filterSuppressed = jest.fn(async (to: string[], _opts?: unknown) => ({ allowed: to, suppressed: [] as string[] }));
 jest.mock('@/lib/email/suppression', () => ({ filterSuppressed: (to: string[], opts?: unknown) => filterSuppressed(to, opts) }));
 jest.mock('@/lib/sentry', () => ({ captureError: jest.fn() }));
+// Listing-claim admin notice: its idempotency/event log is in the database (mocked: no prior notice).
+jest.mock('@/lib/prisma', () => ({ prisma: { entityEvent: { findFirst: jest.fn(async () => null), create: jest.fn(async () => ({ id: 'evt' })) } } }));
 
 import * as email from '@/lib/email';
+import { notifyAdminOfListingClaim } from '@/lib/claims/claim-admin-notice';
 import { conciergeConfirmationEmail, conciergePaymentLinkEmail, conciergePaymentReminderEmail, conciergeShortlistReleasedEmail } from '@/lib/concierge/family-emails';
 import { emailButton, renderEmailLayout, stripEmoji, LAYOUT_MARKER } from '@/lib/email/layout';
 
@@ -40,9 +43,9 @@ const CASES: { name: string; run: () => Promise<unknown>; cta: string | null; ma
   { name: 'payment reminder (family)', cta: 'Pay $399 securely', run: () => email.sendConciergeFamilyEmail({ toEmail: 'fam@example.com', email: conciergePaymentReminderEmail({ paymentLinkUrl: 'https://buy.stripe.com/test_x' }), kind: 'payment_reminder' } as any) },
   { name: 'shortlist released (family)', cta: 'View your shortlist', run: () => email.sendConciergeFamilyEmail({ toEmail: 'fam@example.com', email: conciergeShortlistReleasedEmail({ shortlistUrl: 'https://getcarelinkai.com/concierge/shortlist/tok' }), kind: 'shortlist_released' } as any) },
   { name: 'admin new concierge request', cta: 'Review & build the shortlist', run: () => email.sendConciergeRequestNotification({ requestId: 'ps-1', dpName: 'Dana Planner', dpOrganization: 'Metro Hospital' }) },
+  { name: 'new listing claim (admin)', cta: 'Review claim', run: () => notifyAdminOfListingClaim({ claimKey: 'c-1', kind: 'self_serve', homeId: 'h-1', facility: 'Maple Grove', city: 'Parma', claimantName: 'Pat Lee', claimantEmail: 'op@example.com', actor: { userId: 'u-1', role: 'OPERATOR' }, now: new Date('2026-11-15T15:30:00Z') }) },
   { name: 'claim approved (operator)', cta: 'Open your listing', run: () => email.sendHomeClaimDecisionEmail({ to: 'op@example.com', firstName: 'Pat', homeName: 'Maple Grove', decision: 'approved', homeId: 'h-1' }) },
   { name: 'claim rejected (operator)', cta: null, run: () => email.sendHomeClaimDecisionEmail({ to: 'op@example.com', firstName: 'Pat', homeName: 'Maple Grove', decision: 'rejected', homeId: 'h-1' }) },
-  { name: 'new claim (admin)', cta: 'Review claim', run: () => email.sendHomeClaimAdminNotice({ homeName: 'Maple Grove', operatorEmail: 'op@example.com', claimId: 'c-1' }) },
   { name: 'operator claim notice (admin)', cta: 'Review claim', run: () => email.sendOperatorClaimNotification({ facilityName: 'Maple Grove', operatorEmail: 'op@example.com', homeId: 'h-1', status: 'PENDING_REVIEW' }) },
   { name: 'concierge paid (admin)', cta: null, run: () => email.sendConciergePaidNotification({ requestId: 'ps-1', orderId: 'ord1', amountCents: 39900 }) },
   { name: 'shortlist ready (DP)', cta: null, run: () => email.sendConciergeShortlistReadyEmail({ toEmail: 'dp@example.com', count: 3 }) },

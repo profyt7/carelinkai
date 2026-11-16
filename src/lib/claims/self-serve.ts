@@ -2,7 +2,8 @@ import type { HomeClaimStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { recordEvent } from '@/lib/events/record-event';
 import { captureError } from '@/lib/sentry';
-import { sendHomeClaimAdminNotice, sendHomeClaimDecisionEmail } from '@/lib/email';
+import { sendHomeClaimDecisionEmail } from '@/lib/email';
+import { notifyAdminOfListingClaim } from '@/lib/claims/claim-admin-notice';
 import { isUnclaimedHome } from '@/lib/claim-engine/inquiry-claim-notification';
 import { transferHomeOwnership } from '@/lib/claims/assign-home';
 
@@ -20,10 +21,10 @@ export type SubmitClaimResult =
   | { ok: true; claimId: string }
   | { ok: false; reason: 'not_operator' | 'home_not_found' | 'already_claimed' | 'pending_exists' };
 
-const homeSelect = { id: true, name: true, operatorId: true, status: true, operator: { select: { user: { select: { email: true } } } } } as const;
+const homeSelect = { id: true, name: true, operatorId: true, status: true, address: { select: { city: true } }, operator: { select: { user: { select: { email: true } } } } } as const;
 
 export async function submitSelfServeClaim(args: { homeId: string; userId: string; source: ClaimSource }): Promise<SubmitClaimResult> {
-  const operator = await prisma.operator.findUnique({ where: { userId: args.userId }, select: { id: true, user: { select: { email: true, role: true } } } });
+  const operator = await prisma.operator.findUnique({ where: { userId: args.userId }, select: { id: true, user: { select: { email: true, role: true, firstName: true, lastName: true } } } });
   if (!operator || operator.user?.role !== 'OPERATOR') return { ok: false, reason: 'not_operator' };
 
   const home = await prisma.assistedLivingHome.findUnique({ where: { id: args.homeId }, select: homeSelect });
@@ -50,9 +51,12 @@ export async function submitSelfServeClaim(args: { homeId: string; userId: strin
     throw e;
   }
 
-  void sendHomeClaimAdminNotice({ homeName: home.name, operatorEmail: operator.user?.email ?? 'unknown', claimId }).catch((e) =>
-    captureError(e instanceof Error ? e : new Error(String(e)), { tags: { feature: 'home-claim' }, extra: { claimId } }),
-  );
+  // One admin email per claim (skipped for test claimants, always logged); never blocks the claim.
+  void notifyAdminOfListingClaim({
+    claimKey: claimId, kind: 'self_serve', homeId: home.id, facility: home.name, city: home.address?.city,
+    claimantName: [operator.user?.firstName, operator.user?.lastName].filter(Boolean).join(' '), claimantEmail: operator.user?.email,
+    actor: { userId: args.userId, role: 'OPERATOR' },
+  }).catch((e) => captureError(e instanceof Error ? e : new Error(String(e)), { tags: { feature: 'home-claim' }, extra: { claimId } }));
   void notifyAdminsInApp(home.name, operator.user?.email ?? 'unknown').catch(() => undefined);
   return { ok: true, claimId };
 }
