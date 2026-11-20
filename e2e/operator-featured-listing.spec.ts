@@ -14,7 +14,24 @@
  *
  *  Runs in the e2e-operator-claim CI job, which sets FEATURED_LISTING_ENABLED=1.
  */
-import { test, expect, type Browser, type Page } from '@playwright/test';
+import { test, expect, type Browser, type Page, type APIRequestContext } from '@playwright/test';
+import { createHmac } from 'crypto';
+
+/**
+ * POST a Stripe event the way Stripe does: signed with STRIPE_WEBHOOK_SECRET (header
+ * `stripe-signature: t=<ts>,v1=<hmac>`). The production build refuses unsigned events, so the CI job sets a
+ * fake, CI-only secret. Without one (a local `next dev` run) the event goes unsigned, as dev mode accepts.
+ */
+function postStripeEvent(request: APIRequestContext, event: unknown) {
+  const payload = JSON.stringify(event);
+  const secret = process.env['STRIPE_WEBHOOK_SECRET'];
+  const headers: Record<string, string> = { 'content-type': 'application/json' };
+  if (secret) {
+    const t = Math.floor(Date.now() / 1000);
+    headers['stripe-signature'] = `t=${t},v1=${createHmac('sha256', secret).update(`${t}.${payload}`).digest('hex')}`;
+  }
+  return request.post('/api/webhooks/stripe', { data: payload, headers });
+}
 
 const ts = Date.now();
 const OP = `op-featured-${ts}@test.carelinkai.test`;
@@ -113,7 +130,7 @@ test.describe('@critical OL-190 featured listing checkout (no subscription)', ()
         },
       },
     };
-    const first = await request.post('/api/webhooks/stripe', { data: event });
+    const first = await postStripeEvent(request, event);
     expect(first.status()).toBe(200);
     expect((await first.json()).featuredListing).toBe('fulfilled');
 
@@ -123,7 +140,7 @@ test.describe('@critical OL-190 featured listing checkout (no subscription)', ()
     expect(days).toBeGreaterThan(29.9);
     expect(days).toBeLessThan(30.1);
 
-    const replay = await request.post('/api/webhooks/stripe', { data: event });
+    const replay = await postStripeEvent(request, event);
     expect((await replay.json()).featuredListing).toBe('duplicate');
     expect((await homeFeatured(op, homeId)).featuredUntil).toBe(after.featuredUntil);
 

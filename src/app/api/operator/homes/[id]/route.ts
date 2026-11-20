@@ -37,7 +37,8 @@ const updateSchema = z.object({
   }).optional(),
 });
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params: paramsIn }: { params: Promise<{ id: string }> | { id: string } }) {
+  const params = await paramsIn;
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -144,7 +145,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 }
 
-export async function POST(req: Request, ctx: { params: { id: string } }) {
+export async function POST(req: Request, ctx: { params: Promise<{ id: string }> | { id: string } }) {
+  const params = await ctx.params;
   // Support form-encoded quick updates from Manage Home page
   try {
     const contentType = req.headers.get('content-type') || '';
@@ -160,7 +162,7 @@ export async function POST(req: Request, ctx: { params: { id: string } }) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const home = await prisma.assistedLivingHome.findUnique({ where: { id: ctx.params.id } });
+    const home = await prisma.assistedLivingHome.findUnique({ where: { id: params.id } });
     if (!home) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     if (user.role !== UserRole.ADMIN) {
       const op = await prisma.operator.findUnique({ where: { userId: user.id } });
@@ -205,7 +207,8 @@ export async function POST(req: Request, ctx: { params: { id: string } }) {
   }
 }
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(_req: Request, { params: paramsIn }: { params: Promise<{ id: string }> | { id: string } }) {
+  const params = await paramsIn;
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

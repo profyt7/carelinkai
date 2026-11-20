@@ -43,11 +43,17 @@ it('signed in as FAMILY: offers to sign out and create (or sign in to) an operat
   expect(html).toContain('Sign out and create an operator account');
   expect(html).toContain('Sign in with an operator account');
   expect(html).not.toContain('data-testid="claim-page-register"');
+  // Server HTML: both buttons are disabled until React hydrates (a tap before that would do nothing).
+  for (const id of ['claim-page-switch-register', 'claim-page-switch-login']) {
+    expect(html).toMatch(new RegExp(`<button[^>]*disabled=""[^>]*data-testid="${id}"|<button[^>]*data-testid="${id}"[^>]*disabled=""`));
+  }
 });
 
 it('signed in as OPERATOR: the claim button', async () => {
   session.current = { user: { id: 'u-o', email: 'op@example.com', role: 'OPERATOR' } };
   const html = await render();
   expect(html).toContain('data-testid="claim-page-operator"');
+  // The one-click claim button is disabled in the server HTML too (enabled once hydrated).
+  expect(html).toMatch(/<button[^>]*disabled=""[^>]*data-testid="listing-claim-button"/);
   expect(html).not.toContain('claim-page-wrong-role');
 });

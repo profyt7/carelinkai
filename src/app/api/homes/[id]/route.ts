@@ -161,8 +161,8 @@ function sanitizeImageUrl(url: string | null): string | null {
   }
 }
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const id = params?.id;
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> | { id: string } }) {
+  const id = (await params)?.id;
   if (!id) {
     return NextResponse.json(
       { success: false, error: 'Missing home id' },

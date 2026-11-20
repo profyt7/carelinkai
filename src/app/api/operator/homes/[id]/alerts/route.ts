@@ -21,7 +21,8 @@ type Alert = {
   createdAt: Date;
 };
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(_req: Request, { params: paramsIn }: { params: Promise<{ id: string }> | { id: string } }) {
+  const params = await paramsIn;
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
