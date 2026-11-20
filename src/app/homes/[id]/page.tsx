@@ -41,6 +41,8 @@ import GoogleRatingBadge from "@/components/homes/GoogleRatingBadge";
 import FeaturedBadge from "@/components/homes/FeaturedBadge";
 import AvailabilityBadge, { UNVERIFIED_AVAILABILITY } from "@/components/availability/AvailabilityBadge";
 import HomeImagePlaceholder from "@/components/homes/HomeImagePlaceholder";
+import ListingLoadError from "@/components/homes/ListingLoadError";
+import { fetchWithRetry } from "@/lib/http/fetch-retry";
 import PriceLine from "@/components/ui/PriceLine";
 import LastConfirmed from "@/components/ui/LastConfirmed";
 import { setBottomStackHeight } from "@/hooks/useBottomStackOffset";
@@ -135,6 +137,9 @@ export default function HomeDetailPage() {
   // Listing data states
   const [realHome, setRealHome] = useState<any | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadNotFound, setLoadNotFound] = useState(false);
+  // Bumped by "Try again" to re-run the listing fetch.
+  const [reloadKey, setReloadKey] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
   
   // State for pricing calculator
@@ -351,17 +356,22 @@ export default function HomeDetailPage() {
     return () => io.disconnect();
   }, [panelEl]);
   
-  // Fetch data
+  // Fetch data. Network errors and 5xx/408/429 are retried automatically (3 tries, 0.5s then 1.5s apart);
+  // if it still fails the page offers "Try again" instead of a dead end. A 404 is final.
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
     const fetchReal = async () => {
       setIsLoading(true);
       setLoadError(null);
+      setLoadNotFound(false);
       try {
-        const res = await fetch(`/api/homes/${id}`, { cache: 'no-store', credentials: 'include' as RequestCredentials });
+        const res = await fetchWithRetry(`/api/homes/${id}`, { cache: 'no-store', credentials: 'include' as RequestCredentials, signal: controller.signal });
         if (!res.ok) {
-          const msg = `Failed to load listing (${res.status})`;
-          if (!cancelled) setLoadError(msg);
+          if (!cancelled) {
+            setLoadNotFound(res.status === 404);
+            setLoadError(`Failed to load listing (${res.status})`);
+          }
           return;
         }
         const j = await res.json();
@@ -383,8 +393,9 @@ export default function HomeDetailPage() {
     fetchReal();
     return () => {
       cancelled = true;
+      controller.abort();
     };
-  }, [id]);
+  }, [id, reloadKey]);
   
   
   // Handle inquiry form changes
@@ -620,10 +631,7 @@ export default function HomeDetailPage() {
     return (
       <BrowseShell title="Home Details">
         <div className="p-4 md:p-6">
-          <div className="rounded-lg border border-error-200 bg-error-50 p-6">
-            <h2 className="text-lg font-semibold text-error-700 mb-2">Could not load listing</h2>
-            <p className="text-error-700">{loadError}</p>
-          </div>
+          <ListingLoadError notFound={loadNotFound} onRetry={() => setReloadKey((k) => k + 1)} />
         </div>
       </BrowseShell>
     );
