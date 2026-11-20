@@ -18,7 +18,8 @@ import { requireRole } from '@/lib/auth-utils';
 
 const HOME_SCOPED = ['HOME', 'AVAILABILITY', 'LISTING_CLAIM', 'OPERATOR_PROFILE', 'AVAILABILITY_PING'] as const;
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params: paramsIn }: { params: Promise<{ id: string }> | { id: string } }) {
+  const params = await paramsIn;
   try {
     await requireRole([UserRole.ADMIN]);
     const limit = Math.min(500, Math.max(1, parseInt(req.nextUrl.searchParams.get('limit') ?? '100', 10) || 100));

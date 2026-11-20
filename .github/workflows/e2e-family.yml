@@ -426,6 +426,10 @@ jobs:
       # OL-190: the featured-listing spec needs the kill switch on (off by
       # default and in production). Stripe is never called by that spec.
       FEATURED_LISTING_ENABLED: "1"
+      # Fake, CI-only webhook signing key (NOT a real secret). This job runs the
+      # production build, which refuses unsigned Stripe webhooks; the featured-listing
+      # spec signs its test event with this value. Never set anywhere real.
+      STRIPE_WEBHOOK_SECRET: whsec_e2e_ci_only_not_a_real_secret
 
     steps:
       - name: Checkout
@@ -485,12 +489,29 @@ jobs:
           done
           exit 1
 
-      - name: Run Playwright (Operator claim flow)
+      # Nightly #261 (d7b1485): on `next dev` the server's memory watchdog restarted it
+      # three times mid-run ("approaching the used memory threshold, restarting"),
+      # resetting whatever request was in flight (socket hang up, "Failed to fetch").
+      # The build above already exists, so run against the production standalone
+      # server, as e2e-concierge does (OL-153): no lazy compiles, no restarts.
+      - name: Assemble the standalone server (static assets + public)
         run: |
+          test -f .next/standalone/server.js
+          cp -r public .next/standalone/public
+          mkdir -p .next/standalone/.next && cp -r .next/static .next/standalone/.next/static
+
+      - name: Run Playwright (Operator claim flow)
+        env:
+          E2E_WEB_SERVER: node .next/standalone/server.js
+          PORT: "3000"
+        run: |
+          # Bind dual-stack where the runner has IPv6 so both ::1 and 127.0.0.1
+          # answer for "localhost" (same as e2e-concierge).
+          export HOSTNAME=$([ -e /proc/net/if_inet6 ] && echo '::' || echo '0.0.0.0')
           # Uses playwright.e2e.config.ts (testDir: ./e2e) so the spec is actually
           # discovered — the default config's testDir is ./tests, which silently
-          # matches nothing under ./e2e. webServer runs `npm run dev` and inherits
-          # the job env (ALLOW_DEV_ENDPOINTS / ALLOW_INSECURE_AUTH_COOKIE / DB).
+          # matches nothing under ./e2e. The standalone server inherits the job env
+          # (ALLOW_DEV_ENDPOINTS / ALLOW_INSECURE_AUTH_COOKIE / DB).
           # operator-availability-contact.spec.ts (W5-5): the operator portal's
           # availability-contact card → admin pings page lists the home as eligible.
           # operator-featured-listing.spec.ts (OL-190): standalone featured checkout + webhook fulfilment.

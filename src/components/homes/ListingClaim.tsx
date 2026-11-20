@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useHydrated } from "@/hooks/useHydrated";
 
 /**
  * Self-serve listing claim on /homes/[id] (fix/self-serve-claim).
@@ -33,6 +34,8 @@ export function ClaimListingButton({
 }) {
   const [state, setState] = useState<"idle" | "busy" | "submitted" | "error">("idle");
   const [error, setError] = useState("");
+  // The operator button acts only through onClick: disabled until hydrated so an early tap isn't lost.
+  const hydrated = useHydrated();
   const btn = `inline-flex items-center justify-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 disabled:opacity-60 ${className}`;
 
   if (role !== "OPERATOR") {
@@ -69,7 +72,7 @@ export function ClaimListingButton({
 
   return (
     <span className="inline-flex flex-col items-start gap-1">
-      <button type="button" onClick={submit} disabled={state === "busy"} className={btn} data-testid="listing-claim-button">
+      <button type="button" onClick={submit} disabled={!hydrated || state === "busy"} className={btn} data-testid="listing-claim-button">
         {state === "busy" ? "Submitting…" : label}
       </button>
       {state === "error" && (

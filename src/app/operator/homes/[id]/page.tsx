@@ -14,7 +14,13 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 
-export default async function OperatorHomeManagePage({ params, searchParams }: { params: { id: string }, searchParams?: { operatorId?: string } }) {
+export default async function OperatorHomeManagePage({ params: paramsIn, searchParams: searchParamsIn }: {
+  params: Promise<{ id: string }> | { id: string };
+  searchParams?: Promise<{ operatorId?: string }> | { operatorId?: string };
+}) {
+  // Next 15: params / searchParams are async.
+  const params = await paramsIn;
+  const searchParams = await searchParamsIn;
   const session = await getServerSession(authOptions);
   const email = session?.user?.email ?? null;
   const user = email ? await prisma.user.findUnique({ where: { email } }) : null;

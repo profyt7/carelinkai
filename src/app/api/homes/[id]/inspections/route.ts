@@ -14,8 +14,8 @@ import { prisma } from '@/lib/prisma';
 
 const MAX_RECORDS = 20;
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const id = params?.id;
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> | { id: string } }) {
+  const id = (await params)?.id;
   if (!id) {
     return NextResponse.json({ success: false, error: 'Missing home id' }, { status: 400 });
   }

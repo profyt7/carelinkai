@@ -1,4 +1,4 @@
-import { test, expect, type Page, type Browser } from '@playwright/test';
+import { test, expect, type Page, type Browser, type BrowserContext } from '@playwright/test';
 import { PrismaClient } from '@prisma/client';
 import { signClaimToken } from '../src/lib/claim-token';
 
@@ -58,8 +58,12 @@ async function expectClaimNoticeLogged(homeId: string, claimId: string) {
   }).toPass({ timeout: 60_000, intervals: [1000, 2000, 5000] });
 }
 
+/** Contexts opened by the current test; closed in afterEach so finished pages stop polling the server. */
+const openContexts: BrowserContext[] = [];
+
 async function ctxPage(browser: Browser, width: number) {
   const ctx = await browser.newContext({ viewport: { width, height: 900 } });
+  openContexts.push(ctx);
   await ctx.addInitScript(() => {
     try {
       localStorage.setItem('carelinkai_cookie_consent', JSON.stringify({ necessary: true, analytics: false, marketing: false }));
@@ -97,6 +101,13 @@ test.describe('@critical self-serve listing claim', () => {
       expect((await request.post('/api/dev/upsert-admin', { data: { email: ADMIN } })).ok()).toBe(true);
       expect((await request.post('/api/dev/upsert-family', { data: { email: FAMILY } })).ok()).toBe(true);
     }).toPass({ timeout: 90_000, intervals: [2000, 5000, 10000] });
+  });
+
+  // A passed test's pages would otherwise keep polling (notifications, favorites) for the rest of the run.
+  // On failure leave them open: Playwright screenshots them for the report, then restarts the worker anyway.
+  test.afterEach(async ({}, testInfo) => {
+    const contexts = openContexts.splice(0);
+    if (testInfo.status === testInfo.expectedStatus) await Promise.all(contexts.map((c) => c.close().catch(() => undefined)));
   });
 
   test.afterAll(async () => {
