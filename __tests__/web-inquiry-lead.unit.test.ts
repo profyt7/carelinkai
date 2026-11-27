@@ -178,7 +178,7 @@ describe('routeUnclaimedInquiry (unclaimed fixture)', () => {
 
 describe('/api/inquiries wiring + confirmation screen', () => {
   const route = fs.readFileSync(path.join(process.cwd(), 'src/app/api/inquiries/route.ts'), 'utf8');
-  const page = fs.readFileSync(path.join(process.cwd(), 'src/app/homes/[id]/page.tsx'), 'utf8');
+  const page = fs.readFileSync(path.join(process.cwd(), 'src/app/homes/[id]/ListingDetailClient.tsx'), 'utf8');
 
   it('routes only unclaimed homes into the inbound queue', () => {
     // Demo listings (home.isDemo) take the same admin-only route, marked "[TEST]" (demo-safe-inquiries.api.test.ts).
@@ -260,7 +260,7 @@ describe('OL-179 — tour requests on unclaimed homes', () => {
     const inquiryRoute = fs.readFileSync(path.join(process.cwd(), 'src/app/api/inquiries/route.ts'), 'utf8');
     const schema = fs.readFileSync(path.join(process.cwd(), 'src/lib/inquiries/schema.ts'), 'utf8');
     const modal = fs.readFileSync(path.join(process.cwd(), 'src/components/tours/TourRequestModal.tsx'), 'utf8');
-    const page = fs.readFileSync(path.join(process.cwd(), 'src/app/homes/[id]/page.tsx'), 'utf8');
+    const page = fs.readFileSync(path.join(process.cwd(), 'src/app/homes/[id]/ListingDetailClient.tsx'), 'utf8');
     expect(tourRoute).toMatch(/if \(homeUnclaimed || adminOnly\) \{\s*await routeUnclaimedInquiry\(\{/);
     expect(tourRoute).toContain('tourRequestId: tourRequest.id');
     expect(schema).toContain('tourDate: z.string().datetime().optional().catch(undefined)');

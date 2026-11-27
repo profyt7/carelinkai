@@ -220,7 +220,7 @@ describe('search_performed carries no free text', () => {
 });
 
 describe('submitted / requested fire only on success', () => {
-  const page = fs.readFileSync(path.join(process.cwd(), 'src/app/homes/[id]/page.tsx'), 'utf8');
+  const page = fs.readFileSync(path.join(process.cwd(), 'src/app/homes/[id]/ListingDetailClient.tsx'), 'utf8');
 
   it('inquiry_submitted is emitted once, after the !res.ok early return and the confirmation step', () => {
     const occurrences = page.split("track('inquiry_submitted'").length - 1;

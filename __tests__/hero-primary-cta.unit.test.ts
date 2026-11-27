@@ -54,7 +54,7 @@ describe('2. "Last confirmed" on listing pages', () => {
     expect(pricingView({}).confirmedAt).toBeNull();
   });
   it('the listing panel shows both lines as visible text, and the Pricing section shows the price one', () => {
-    const page = read('src/app/homes/[id]/page.tsx');
+    const page = read('src/app/homes/[id]/ListingDetailClient.tsx');
     expect(page).toContain('<LastConfirmed at={availability.verifiedAt} testId="availability-last-confirmed" />');
     expect(page).toContain('<LastConfirmed at={realHome.pricing?.confirmedAt} testId="price-last-confirmed" />');
     expect(page).toContain('testId="pricing-section-last-confirmed"');

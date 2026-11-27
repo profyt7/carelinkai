@@ -16,7 +16,7 @@ const root = path.join(__dirname, '..');
 const read = (p: string) => fs.readFileSync(path.join(root, p), 'utf8');
 
 describe('(1) listing page has no mock mode', () => {
-  const src = read('src/app/homes/[id]/page.tsx');
+  const src = read('src/app/homes/[id]/ListingDetailClient.tsx');
 
   it('carries no mock listing, cookie check or runtime mock toggle', () => {
     for (const banned of ['MOCK_HOME', 'runtime/mocks', 'carelink_mock_mode', 'showMock', 'Sunshine Care Home', 'San Francisco', '123 Maple']) {
@@ -36,7 +36,7 @@ describe('(2) CareCredit wording', () => {
   });
 
   it('/learn and the listing both render the shared title + disclosure; no page claims a partnership', () => {
-    for (const p of ['src/app/learn/page.tsx', 'src/app/homes/[id]/page.tsx']) {
+    for (const p of ['src/app/learn/page.tsx', 'src/app/homes/[id]/ListingDetailClient.tsx']) {
       const src = read(p);
       expect(src).toContain('{CARECREDIT_TITLE}');
       expect(src).toContain('{CARECREDIT_DISCLOSURE}');
@@ -56,7 +56,7 @@ describe('(3) listing sticky bar clears the sticky site header', () => {
   });
 
   it('the listing sticky bar and booking sidebar offset by --site-header-h', () => {
-    const src = read('src/app/homes/[id]/page.tsx');
+    const src = read('src/app/homes/[id]/ListingDetailClient.tsx');
     expect(src).toMatch(/sticky top-\[var\(--site-header-h,0px\)\][^"]*" data-testid="listing-sticky-bar"/);
     expect(src).toContain('sticky top-[calc(var(--site-header-h,0px)+5rem)]');
     expect(src).not.toMatch(/sticky top-0\b/);

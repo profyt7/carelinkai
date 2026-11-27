@@ -20,7 +20,7 @@ describe('log guard: no user-entered field reaches console/logger', () => {
   it('covers the inquiry, tour, concierge and search handlers and routes', () => {
     const files = scanner.filesInScope().map((f) => path.relative(process.cwd(), f));
     for (const must of [
-      'src/app/homes/[id]/page.tsx',
+      'src/app/homes/[id]/ListingDetailClient.tsx',
       'src/components/tours/TourRequestModal.tsx',
       'src/app/concierge/ConciergeRequestForm.tsx',
       'src/app/concierge/ConciergeScreener.tsx',
@@ -76,7 +76,7 @@ describe('log guard: no user-entered field reaches console/logger', () => {
   });
 
   it('the old listing handler diagnostics are gone', () => {
-    const page = fs.readFileSync(path.join(process.cwd(), 'src/app/homes/[id]/page.tsx'), 'utf8');
+    const page = fs.readFileSync(path.join(process.cwd(), 'src/app/homes/[id]/ListingDetailClient.tsx'), 'utf8');
     expect(page).not.toMatch(/TOUR DIAGNOSTIC|inquiryForm\.(email|phone|name):/);
     const route = fs.readFileSync(path.join(process.cwd(), 'src/app/api/family/tours/request/route.ts'), 'utf8');
     expect(route).not.toMatch(/Raw body|Body fields|Family details|Data to insert/);

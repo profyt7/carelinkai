@@ -18,7 +18,7 @@ import HomeImagePlaceholder from '@/components/homes/HomeImagePlaceholder';
 import SidebarShell, { type SidebarNavItem } from '@/components/layout/SidebarShell';
 
 const read = (p: string) => fs.readFileSync(path.join(process.cwd(), p), 'utf8');
-const page = read('src/app/homes/[id]/page.tsx');
+const page = read('src/app/homes/[id]/ListingDetailClient.tsx');
 
 describe('listing: price and availability live at the point of inquiry', () => {
   it('no availability or pricing stat tile, no availability in the About quick facts', () => {
