@@ -15,7 +15,13 @@
 #      the built-in fallback) and assert the footer build sha "@<7-hex>"
 #      equals the target, retrying each page for up to PAGE_WAIT_SECS and
 #      re-purging once halfway through; /cleveland/assisted-living must also
-#      render the Medicaid-waiver lines.
+#      render the Medicaid-waiver lines;
+#   4. bare-URL consistency: GET /cleveland/assisted-living BARE_HITS times exactly as a
+#      visitor does (no ?v= cache-buster, browser user agent) and require every
+#      footer sha to equal the target. Step 3 busts caches on purpose, so on its
+#      own it cannot see a stale copy served for the plain URL (11/2026: footer
+#      flipping between an old build and the deployed one). Origin headers are
+#      printed so a second origin / instance is identifiable.
 # The pages verified are emitted as one ::notice:: (GitHub keeps 10 annotations
 # per step) so the result is readable from the check run without the job log. Secrets are never echoed.
 
@@ -30,6 +36,8 @@ STABLE_HITS="${STABLE_HITS:-3}"
 PAGE_WAIT_SECS="${PAGE_WAIT_SECS:-300}"
 POLL_SECS="${POLL_SECS:-15}"
 UA='CareLinkAI-PostDeploy/1.1'
+BARE_HITS="${BARE_HITS:-30}"
+BROWSER_UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36'
 SUMMARY="${GITHUB_STEP_SUMMARY:-/dev/null}"
 
 FAIL=0
@@ -118,6 +126,26 @@ cards=$(printf '%s' "$html" | grep -o 'data-testid="listing-card"' | wc -l | tr 
 waiver=$(printf '%s' "$html" | grep -o 'data-testid="listing-waiver-line"' | wc -l | tr -d ' ')
 if [ "$cards" -gt 0 ] && [ "$waiver" -gt 0 ]; then pass "waiver lines render ($waiver of $cards cards)"; else fail "no Medicaid-waiver line on /cleveland/assisted-living ($cards cards, $waiver waiver lines)"; fi
 echo "cache headers on /cleveland/assisted-living:"; curl -s -m 30 -D - -o /dev/null -A "$UA" "$BASE/cleveland/assisted-living" | grep -iE '^(cf-cache-status|age|cache-control|x-nextjs-cache|server|x-render):' || true
+
+# 4. Bare-URL consistency (see header).
+bare_url="$BASE/cleveland/assisted-living"
+bare_log=$(mktemp)
+for i in $(seq 1 "$BARE_HITS"); do
+  hdrs=$(mktemp)
+  sha=$(curl -s -m 40 -A "$BROWSER_UA" -D "$hdrs" "$bare_url" | grep -oE '@[0-9a-f]{7}' | head -n1 | tr -d '@')
+  origin=$(grep -iE '^(rndr-id|x-render-origin-server|cf-cache-status|age|x-nextjs-cache|server):' "$hdrs" | tr -d '\r' | tr '\n' ' ')
+  echo "${sha:-missing} | $origin" >> "$bare_log"
+  rm -f "$hdrs"
+done
+echo "bare $bare_url x$BARE_HITS (footer sha | origin headers):"
+sort "$bare_log" | sed -E 's/rndr-id: [^ ]+ //I' | sort | uniq -c
+shas=$(cut -d' ' -f1 "$bare_log" | sort | uniq -c | tr '\n' ' ')
+if [ "$(cut -d' ' -f1 "$bare_log" | grep -vc "^$target$")" -eq 0 ]; then
+  pass "bare /cleveland/assisted-living: all $BARE_HITS hits @$target"
+else
+  fail "bare /cleveland/assisted-living served other builds: $shas(expected @$target on every hit)"
+fi
+rm -f "$bare_log"
 
 [ "$FAIL" -ne 0 ] && { echo "::error::Post-deploy revalidate FAILED"; exit 1; }
 echo "All post-deploy checks passed ($(printf '%s' "$PAGES" | wc -w | tr -d ' ') pages @ $target)."
