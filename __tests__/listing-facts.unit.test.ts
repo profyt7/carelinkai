@@ -151,7 +151,7 @@ describe('map tiles (OL-178: MapTiler)', () => {
 });
 
 describe('listing page copy (OL-173)', () => {
-  const src = fs.readFileSync(path.join(process.cwd(), 'src/app/homes/[id]/page.tsx'), 'utf8');
+  const src = fs.readFileSync(path.join(process.cwd(), 'src/app/homes/[id]/ListingDetailClient.tsx'), 'utf8');
   // The page has a single, real-data render (the mock listing was removed),
   // so the whole file is checked.
   const real = src;
@@ -226,8 +226,8 @@ describe('OL-176 — imported / enriched listing (Windsor Heights shape)', () =>
 });
 
 describe('OL-176 — listing page + API source', () => {
-  const page = fs.readFileSync(path.join(process.cwd(), 'src/app/homes/[id]/page.tsx'), 'utf8');
-  const api = fs.readFileSync(path.join(process.cwd(), 'src/app/api/homes/[id]/route.ts'), 'utf8');
+  const page = fs.readFileSync(path.join(process.cwd(), 'src/app/homes/[id]/ListingDetailClient.tsx'), 'utf8');
+  const api = fs.readFileSync(path.join(process.cwd(), 'src/lib/homes/home-detail.ts'), 'utf8');
 
   it('amenity checkmarks only render on the verified branch', () => {
     expect(page).toMatch(/facts\.amenities\.verified \? \(\s*<FiCheck/);
