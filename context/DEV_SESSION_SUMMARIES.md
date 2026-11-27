@@ -2969,3 +2969,30 @@
 - **Deployment impact:** live. Operators without the current BAA/DPA keep the dashboard and listings and are asked for it at their first PHI route. No env, Render, Resend or Twilio changes.
 - **New risks/blockers:** BAA/DPA still draft text (OL-262); claim links not yet minted/sent (OL-261); OL-263 dev hydration warning; OL-264 full cookie banner on phones elsewhere; OL-265 leftover test branch.
 - **Recommended next step:** Chris mints the six links, runs the Arden Courts city fix (dry run, then `APPLY=1`) and the link checker on Render; send to the two call-confirmed operators (Pleasant Pointe, Eliza Jennings); hold the other four until a yes.
+
+### 2026-11-27 — Week-of-11/23 batch (listing SSR, hub staleness, nightly notifier) merged
+- **Objective:** the week-of-11/23 batch: server-render the listing detail page, find why the hub page showed an old footer and make its "Last updated" date real, fix the nightly failure notifier, and run read-only checks (scanner probes, claim-landing safety, Ghostscript advisory). Then merge on Chris's OK and verify production.
+- **Work completed:**
+  - Merged earlier in this session, not logged until now: #94 `d7b1485` (11/16; admin email to `ADMIN_NOTIFY_EMAIL` on a listing claim, plus the self-serve claim check), #95 `b116eb7` (11/20; nightly #261 e2e harness fix and a fake CI-only `STRIPE_WEBHOOK_SECRET` so the featured-listing spec signs its events), #96 `e71e5f0` (11/20; listing page retries its fetch automatically, then shows "Try again").
+  - Merged 11/27 on Chris's OK, in this order, each with CI fully green at merge time; merge commits throughout, no `--force`, no history rewrite:
+    - #99 `cc38efb`: nightly failure notifier `needs:` every e2e job and fires on `contains(needs.*.result, 'failure')`. It had skipped the 11/18–11/20 nightly failures (#260, #261, #263, all red in e2e-operator-claim, which it didn't list).
+    - #97 `7b08275`: `/homes/[id]` is server-rendered. The new `loadHomeDetail()` in `src/lib/homes/home-detail.ts` is shared with `GET /api/homes/[id]`. The client UI moved to `ListingDetailClient.tsx` and keeps #96's retry as a fallback. Demo listings stay hidden from logged-out visitors.
+    - #98 `aa6c377`: the service worker (`public/sw.js`) serves pages from the network only (caches v2→v3, `/` no longer pre-cached). `/cleveland/assisted-living` shows "Listings last updated <date>" from `latestPublicListingUpdate()`. Post-deploy verify also hits the bare hub URL 30 times.
+    - #100 `f02bc94`: the same data-driven date on `/cleveland`, memory-care, independent-living, nursing-homes, home-care-agencies and every suburb page (`ListingsLastUpdated` component; `loadCareTypeListings` returns `shownLevel`). `/cleveland` moved from hourly ISR to `force-dynamic`. #100 was stacked on #98; after #98 merged, `main` was merged into it and it went in only once CI was green on that base.
+  - Task 2 (rebase #44–#47) was moot: all four were already merged 11/03 and are on main.
+  - Stale-footer finding: the footer SHA `3cf48ce` is archive-repo #805, which was archive `main` only from 10/27 02:58 to ~10:29 ET (production showed `1977ff6a` later that day). From GitHub runners, production served the current build on every hit. Chris's own check on 11/27 found `getcarelinkai.com`, `www.getcarelinkai.com` and `carelinkai.onrender.com` all on `e71e5f0`, so it is **not an old Render service** still running. The automated sighting was most likely a stale copy inside an external fetch tool. Low priority (OL-268).
+  - Read-only checks:
+    - Scanner probes `/api/v1/namespaces/default/secrets` and `/api/actuator/env` → 404 in ~15–30 ms with no DB transactions (only the middleware's JWT decode when a cookie is present).
+    - #90/#91/#94/#95 add no email or SMS send path to claimants: #94's only send goes to the admin. `CLAIM_DRIP_ENABLED` is untouched and `claim-drip.yml` stays paused.
+    - Ghostscript (CVE-2026-125396): no ghostscript, imagemagick or graphicsmagick in the repo, its dependencies, the build script or `docker/Dockerfile`. Render runs the native Node runtime (`render.yaml runtime: node`); the managed image's OS packages can't be checked from the repo (OL-269).
+- **Files changed (this wrap):** `context/DEV_SESSION_SUMMARIES.md`, `context/CARELINKAI_TECHNICAL_STATE.md`, `context/CARELINKAI_TECH_OPEN_LOOPS.md`.
+- **Commands run:** `npx tsc --noEmit`, `npx jest` (last full run on #100's branch: 228 suites, 2612 passed, 10 skipped), eslint on changed files, `npm run build` plus Playwright on the standalone build against a fresh local Postgres (listing SSR and hub specs), and logged-out `curl` checks of production pages.
+- **Tests/build status:** CI green on #97–#100 at merge. On `f02bc94`: CI, E2E, Quality, Header Health, Post-deploy Health Check, and Post-deploy revalidate (purge + verify) all green.
+- **Deployment impact:** live on `f02bc94`, verified 11/27:
+  - The footer equals `f02bc94` on `/`, `/cleveland/assisted-living` and 26 other pages; the bare hub URL returned `f02bc94` on 30/30 hits.
+  - A logged-out fetch of a real listing has the name, care types, the waiver line and the JSON-LD, and no "No data found" or emails. The license line renders where a home has one; "Not yet confirmed" shows where nothing is verified.
+  - Every hub reads "Listings last updated Oct 17, 2026" (OL-266).
+
+  No env, Render, Resend, Twilio, Stripe or Sentry changes. No email or SMS sent. Claim drip stays off. No facility contacted.
+- **New risks/blockers:** OL-266 (hub date stuck at Oct 17 until listings are verified), OL-267 (Bloom at Rocky River: Canton street address in its JSON-LD), OL-268 (stale-footer sighting, low), OL-269 (Render image packages; `which gs convert magick`).
+- **Recommended next step:** Chris, in the Render shell: claim-link mint, Arden Courts city fix and link checker (OL-261), `which gs convert magick` (OL-269), and delete `test/claim-link-check-once` on GitHub (OL-265). Then get listings verified so the hub dates move (OL-266) and fix Bloom at Rocky River's address (OL-267).
