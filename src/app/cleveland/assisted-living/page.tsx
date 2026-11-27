@@ -4,7 +4,8 @@ import { BTN_PRIMARY, BTN_SECONDARY, CARD, HERO_BAND } from '@/components/site/b
 import { FiArrowRight, FiCheck } from 'react-icons/fi';
 import ListingCard from '@/components/directory/ListingCard';
 import FaqSection from '@/components/site/FaqSection';
-import { countPublicListings, fetchPublicListings, formatLastUpdated, latestPublicListingUpdate, waiverFilterFromSearchParams } from '@/lib/directory/public-listings';
+import { countPublicListings, fetchPublicListings, latestPublicListingUpdate, waiverFilterFromSearchParams } from '@/lib/directory/public-listings';
+import ListingsLastUpdated from '@/components/directory/ListingsLastUpdated';
 import { SUBURBS, suburbPath } from '@/lib/directory/suburbs';
 import { careTypeFaqs } from '@/lib/seo/directory-faq';
 import { PAGE_META, publicMetadata } from '@/lib/seo/page-meta';
@@ -354,11 +355,7 @@ export default async function ClevelandAssistedLivingPage({ searchParams }: { se
       <FaqSection faqs={faqs} />
 
       <div className="max-w-5xl mx-auto px-6 py-8 text-sm text-neutral-500" data-testid="page-note">
-        {lastUpdated && (
-          <span data-testid="hub-last-updated" data-updated-at={lastUpdated.toISOString()}>
-            {`Listings last updated ${formatLastUpdated(lastUpdated)}. `}
-          </span>
-        )}
+        <ListingsLastUpdated at={lastUpdated} />
         Not medical advice. Talk with a healthcare professional before making care decisions.
       </div>
     </div>

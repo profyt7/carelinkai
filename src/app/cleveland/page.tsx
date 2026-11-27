@@ -3,15 +3,16 @@ import Link from 'next/link';
 import { BTN_PRIMARY, BTN_SECONDARY, CARD, HERO_BAND } from '@/components/site/brand';
 import { FiArrowRight, FiCheck } from 'react-icons/fi';
 import { SUBURBS, suburbPath } from '@/lib/directory/suburbs';
+import { latestPublicListingUpdate } from '@/lib/directory/public-listings';
+import ListingsLastUpdated from '@/components/directory/ListingsLastUpdated';
 import FaqSection from '@/components/site/FaqSection';
 import { hubFaqs } from '@/lib/seo/directory-faq';
 import { buildBreadcrumbJsonLd, buildPagesItemListJsonLd } from '@/lib/seo/jsonld';
 import { PAGE_META, publicMetadata } from '@/lib/seo/page-meta';
 
-// OL-159: static content, but re-rendered at least hourly (and on demand via
-// POST /api/admin/revalidate) so the footer build sha and shared copy never
-// outlive a deploy.
-export const revalidate = 3600;
+// Rendered per request like the other hubs: the page note carries the newest listing change, and a
+// prerendered copy (OL-159: hourly ISR) could show a build-time date or an older build's footer.
+export const dynamic = 'force-dynamic';
 
 // OL-172 (a)(b): title without the suffix (root template adds it), 140–155 char description, OG + Twitter.
 export const metadata: Metadata = publicMetadata(PAGE_META.cleveland);
@@ -97,7 +98,9 @@ const breadcrumb = buildBreadcrumbJsonLd([
   { name: 'Cleveland senior care', path: '/cleveland' },
 ]);
 
-export default function ClevelandLandingPage() {
+export default async function ClevelandLandingPage() {
+  // Newest change across every public listing.
+  const lastUpdated = await latestPublicListingUpdate({});
   return (
     <div className="bg-neutral-50">
       <script
@@ -331,7 +334,8 @@ export default function ClevelandLandingPage() {
       </section>
 
       <div className="max-w-5xl mx-auto px-6 py-8 text-sm text-neutral-500" data-testid="page-note">
-        Last updated 2026-05-15. CareLinkAI is an independent Cleveland directory. We do
+        <ListingsLastUpdated at={lastUpdated} />
+        CareLinkAI is an independent Cleveland directory. We do
         not provide medical advice; talk with a healthcare professional before making care
         decisions.
       </div>
