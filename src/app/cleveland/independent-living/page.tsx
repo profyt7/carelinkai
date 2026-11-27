@@ -3,6 +3,8 @@ import Link from 'next/link';
 import CareTypeListingsSection from '@/components/directory/CareTypeListingsSection';
 import FaqSection from '@/components/site/FaqSection';
 import { CARE_TYPE_PLAN, loadCareTypeListings } from '@/lib/directory/care-type-listings';
+import { latestPublicListingUpdate } from '@/lib/directory/public-listings';
+import ListingsLastUpdated from '@/components/directory/ListingsLastUpdated';
 import { careTypeFaqs } from '@/lib/seo/directory-faq';
 import { buildBreadcrumbJsonLd } from '@/lib/seo/jsonld';
 import { PAGE_META, publicMetadata } from '@/lib/seo/page-meta';
@@ -43,6 +45,8 @@ const structuredData = {
 export default async function ClevelandIndependentLivingPage() {
   const plan = CARE_TYPE_PLAN['independent-living'];
   const result = await loadCareTypeListings(plan);
+  // Page-note date = newest change among the listings this page actually shows (its type or the fallback).
+  const lastUpdated = result.shownLevel ? await latestPublicListingUpdate({ careLevel: result.shownLevel }) : null;
   const faqs = careTypeFaqs('independent-living', { label: plan.label, total: result.fallback ? 0 : result.total, acceptingWaiver: result.acceptingWaiver, fallbackNote: result.fallback ? `The nearest real option we list is licensed ${result.fallback.label}, shown on this page.` : null });
   const breadcrumb = buildBreadcrumbJsonLd([
     { name: 'Cleveland senior care', path: '/cleveland' },
@@ -231,7 +235,7 @@ export default async function ClevelandIndependentLivingPage() {
       <FaqSection faqs={faqs} />
 
       <div className="max-w-5xl mx-auto px-6 py-8 text-sm text-neutral-500" data-testid="page-note">
-        Last updated 2026-05-15.
+        <ListingsLastUpdated at={lastUpdated} />
       </div>
     </div>
   );

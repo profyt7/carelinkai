@@ -35,8 +35,25 @@ it('formats in Cleveland time (a late-evening ET update keeps its ET date)', () 
   expect(formatLastUpdated(new Date('2026-11-26T03:30:00Z'))).toBe('Nov 25, 2026');
 });
 
-it('the assisted-living hub no longer hard-codes its date', () => {
-  const src = fs.readFileSync(path.join(process.cwd(), 'src/app/cleveland/assisted-living/page.tsx'), 'utf8');
+const HUBS = [
+  'src/app/cleveland/page.tsx',
+  'src/app/cleveland/assisted-living/page.tsx',
+  'src/app/cleveland/assisted-living/[suburb]/page.tsx',
+  'src/app/cleveland/memory-care/page.tsx',
+  'src/app/cleveland/independent-living/page.tsx',
+  'src/app/cleveland/nursing-homes/page.tsx',
+  'src/app/cleveland/home-care-agencies/page.tsx',
+];
+
+it.each(HUBS)('%s takes its page-note date from the listings, not a hard-coded string', (f) => {
+  const src = fs.readFileSync(path.join(process.cwd(), f), 'utf8');
   expect(src).not.toMatch(/Last updated 20\d\d-\d\d-\d\d/);
   expect(src).toContain('latestPublicListingUpdate');
+  expect(src).toContain('<ListingsLastUpdated at={lastUpdated} />');
+});
+
+it('no /cleveland page hard-codes a "Last updated" date', () => {
+  const walk = (d: string): string[] => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
+  const offenders = walk(path.join(process.cwd(), 'src/app/cleveland')).filter((f) => /Last updated 20\d\d-\d\d-\d\d/.test(fs.readFileSync(f, 'utf8')));
+  expect(offenders).toEqual([]);
 });

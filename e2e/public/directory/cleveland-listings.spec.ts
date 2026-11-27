@@ -96,6 +96,22 @@ test.describe('@critical /cleveland/assisted-living server-rendered listings', (
     expect(html).not.toContain('Last updated 2026-05-15');
   });
 
+  test('every other hub dates its page note from the listings it shows', async ({ request }) => {
+    // Each of these shows a home seeded above (directly, or as the care-type fallback), so its
+    // newest change is from this run. Independent living is format-only: the CI database may hold
+    // older INDEPENDENT homes, which it would rightly show instead of the fallback.
+    const fresh = ['/cleveland', '/cleveland/memory-care', '/cleveland/nursing-homes', '/cleveland/home-care-agencies', '/cleveland/assisted-living/parma'];
+    for (const path of [...fresh, '/cleveland/independent-living']) {
+      const res = await request.get(path, { maxRedirects: 0 });
+      expect(res.status(), path).toBe(200);
+      const html = await res.text();
+      expect(html, path).not.toMatch(/Last updated 20\d\d-\d\d-\d\d/);
+      const m = html.match(/data-testid="hub-last-updated" data-updated-at="([^"]+)"[^>]*>\s*Listings last updated ([A-Z][a-z]{2} \d{1,2}, \d{4})/);
+      expect(m, `${path}: hub-last-updated with an ISO timestamp and a formatted date`).toBeTruthy();
+      if (fresh.includes(path)) expect(Date.now() - new Date(m![1]).getTime(), path).toBeLessThan(6 * 60 * 60 * 1000);
+    }
+  });
+
   test('verified home sorts ahead of the unverified one', async ({ request }) => {
     const html = await (await request.get('/cleveland/assisted-living')).text();
     expect(html.indexOf(VERIFIED)).toBeGreaterThan(-1);

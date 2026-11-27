@@ -5,7 +5,8 @@ import { notFound } from 'next/navigation';
 import { FiArrowRight, FiCheck } from 'react-icons/fi';
 import ListingCard from '@/components/directory/ListingCard';
 import FaqSection from '@/components/site/FaqSection';
-import { countPublicListings, fetchPublicListings } from '@/lib/directory/public-listings';
+import { countPublicListings, fetchPublicListings, latestPublicListingUpdate } from '@/lib/directory/public-listings';
+import ListingsLastUpdated from '@/components/directory/ListingsLastUpdated';
 import { SUBURBS, findSuburb, nearbySuburbs, suburbPath } from '@/lib/directory/suburbs';
 import { suburbFaqs } from '@/lib/seo/directory-faq';
 import { publicMetadata } from '@/lib/seo/page-meta';
@@ -40,10 +41,11 @@ export default async function SuburbAssistedLivingPage({ params }: { params: Par
   const s = findSuburb(slug);
   if (!s) notFound();
 
-  const [listings, total, acceptingWaiver] = await Promise.all([
+  const [listings, total, acceptingWaiver, lastUpdated] = await Promise.all([
     fetchPublicListings(suburbListingsQuery(s, LISTINGS_LIMIT)),
     countPublicListings(suburbListingsQuery(s)).catch(() => null),
     countPublicListings({ ...suburbListingsQuery(s), medicaidWaiver: true }).catch(() => 0),
+    latestPublicListingUpdate(suburbListingsQuery(s)),
   ]);
   // Empty-state guard (W4 0c): a WARN with the live count + the exact filter,
   // so a suburb that silently lost its homes shows up in the Render logs.
@@ -224,7 +226,8 @@ export default async function SuburbAssistedLivingPage({ params }: { params: Par
       </section>
 
       <div className="max-w-5xl mx-auto px-6 py-8 text-sm text-neutral-500" data-testid="page-note">
-        Last updated 2026-10-13. Inspection data is sourced from Ohio Department of Health public
+        <ListingsLastUpdated at={lastUpdated} />
+        Inspection data is sourced from Ohio Department of Health public
         records and presented as facts without grading. Not medical advice.
       </div>
     </div>

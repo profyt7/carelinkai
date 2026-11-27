@@ -49,6 +49,8 @@ export type CareTypeListingsResult = {
   acceptingWaiver: number;
   /** Label of what is actually shown (the hub's type, or the fallback's). */
   shownLabel: string;
+  /** Care level of what is actually shown; null when nothing is shown. */
+  shownLevel: CareLevel | null;
   /** Set when the hub's own type had no listings and a fallback is shown. */
   fallback: { label: string; why: string } | null;
 };
@@ -64,11 +66,11 @@ export async function loadCareTypeListings(plan: CareTypePlan, take = 12): Promi
   };
   if (plan.level) {
     const own = await tryLevel(plan.level);
-    if (own.total > 0) return { ...own, shownLabel: plan.label, fallback: null };
+    if (own.total > 0) return { ...own, shownLabel: plan.label, shownLevel: plan.level, fallback: null };
   }
   for (const f of plan.fallbacks) {
     const alt = await tryLevel(f.level);
-    if (alt.total > 0) return { ...alt, shownLabel: f.label, fallback: { label: f.label, why: f.why } };
+    if (alt.total > 0) return { ...alt, shownLabel: f.label, shownLevel: f.level, fallback: { label: f.label, why: f.why } };
   }
-  return { listings: [], total: 0, acceptingWaiver: 0, shownLabel: plan.label, fallback: null };
+  return { listings: [], total: 0, acceptingWaiver: 0, shownLabel: plan.label, shownLevel: null, fallback: null };
 }
