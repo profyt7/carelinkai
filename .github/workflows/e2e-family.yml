@@ -1023,8 +1023,11 @@ jobs:
   e2e-notify-failure:
     name: Nightly failure notifier
     runs-on: ubuntu-24.04
-    needs: [e2e-residents, e2e-family, e2e-merge-reports]
-    if: ${{ always() && github.event_name == 'schedule' && (needs.e2e-residents.result == 'failure' || needs.e2e-family.result == 'failure' || needs.e2e-merge-reports.result == 'failure') }}
+    # Every e2e job, and any failure among them. The old condition listed only residents / family /
+    # merge-reports, so the 11/18–11/20 nightlies (red in e2e-operator-claim) skipped this job.
+    # `needs.*.result` covers a job added to `needs` later without editing the condition.
+    needs: [e2e-residents, e2e-family, e2e-operator-claim, e2e-concierge, e2e-public-directory, e2e-auth-signup-verify, e2e-merge-reports]
+    if: ${{ always() && github.event_name == 'schedule' && contains(needs.*.result, 'failure') }}
     steps:
       - name: Open or update failure issue
         uses: actions/github-script@v7
