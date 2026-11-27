@@ -130,7 +130,7 @@ describe('operator queues and metrics exclude test inquiries', () => {
     'src/lib/services/reports.ts',
     'src/app/admin/analytics/funnel/page.tsx',
     'src/lib/claim-engine/claim-drip.ts',
-    'src/app/api/homes/[id]/route.ts',
+    'src/lib/homes/home-detail.ts', // the public listing detail (moved from api/homes/[id]/route.ts)
   ])('%s filters with REAL_INQUIRIES', (p) => {
     expect(src(p)).toMatch(/\.\.\.REAL_INQUIRIES|where: REAL_INQUIRIES|Object\.assign\(where, REAL_INQUIRIES\)/);
   });

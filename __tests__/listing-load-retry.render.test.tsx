@@ -23,7 +23,7 @@ jest.mock('@/lib/http/fetch-retry', () => {
   return { ...actual, fetchWithRetry: (u: string, i?: RequestInit) => actual.fetchWithRetry(u, i, { sleep: async () => undefined }) };
 });
 
-import ListingPage from '@/app/homes/[id]/page';
+import ListingPage from '@/app/homes/[id]/ListingDetailClient'; // no initialHome: the browser-fetch fallback
 
 const listingCalls = () => (global.fetch as jest.Mock).mock.calls.filter(([u]) => u === '/api/homes/h-1').length;
 // jsdom has no Response class: a minimal response-shaped object is enough for the page.

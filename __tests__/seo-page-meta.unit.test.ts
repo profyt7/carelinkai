@@ -268,7 +268,7 @@ describe('OL-172 (e)(f) suburbs', () => {
     expect(links.hubs.map((h) => h.href)).toEqual(['/cleveland/assisted-living', '/cleveland/memory-care']);
     expect(listingRelatedLinks({ name: 'Y', city: 'Nowhere', careLevels: [] })).toEqual({ suburb: null, hubs: [{ label: 'Assisted living in Cleveland', href: '/cleveland/assisted-living' }] });
     expect(listingBreadcrumb({ id: 'h1', name: 'X', city: 'Beachwood', careLevels: ['ASSISTED'] }).map((c) => c.path)).toEqual(['/cleveland', '/cleveland/assisted-living', '/cleveland/assisted-living/beachwood', '/homes/h1']);
-    expect(read('src/app/homes/[id]/page.tsx')).toContain('<ListingRelatedLinks');
+    expect(read('src/app/homes/[id]/ListingDetailClient.tsx')).toContain('<ListingRelatedLinks');
   });
 
   it('the sitemap and the hub suburb grids are generated from the registry', () => {

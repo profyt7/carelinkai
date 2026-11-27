@@ -39,7 +39,7 @@ describe('SimpleMap without a MapTiler key', () => {
   });
 
   it('the listing page keeps the address and Get Directions outside the map component', () => {
-    const page = fs.readFileSync(path.join(process.cwd(), 'src/app/homes/[id]/page.tsx'), 'utf8');
+    const page = fs.readFileSync(path.join(process.cwd(), 'src/app/homes/[id]/ListingDetailClient.tsx'), 'utf8');
     const loc = page.slice(page.indexOf('<SimpleMap homes={[realHome]}'));
     expect(loc.indexOf('Get Directions')).toBeGreaterThan(0);
     expect(loc.indexOf('{addrText}')).toBeGreaterThan(0);

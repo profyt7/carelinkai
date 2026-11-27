@@ -63,7 +63,7 @@ describe('the opt-in sentence', () => {
   it('every form and both legal pages use the shared module — no copy of the sentence anywhere else', () => {
     const root = path.join(__dirname, '..');
     const files = [
-      'src/app/homes/[id]/page.tsx',
+      'src/app/homes/[id]/ListingDetailClient.tsx',
       'src/app/concierge/ConciergeRequestForm.tsx',
       'src/app/auth/register/page.tsx',
       'src/app/settings/operator/page.tsx',
