@@ -300,6 +300,31 @@ export async function countPublicListings(q: PublicListingsQuery = {}): Promise<
 }
 
 /**
+ * When the listings behind a public page last changed: the newest of any listing's `updatedAt` and its
+ * verification stamps (availability, price, Medicaid waiver), over the same filter the page lists.
+ * Replaces hard-coded "Last updated" strings. Null when there are none — or on a DB error (never a guess).
+ */
+export async function latestPublicListingUpdate(q: PublicListingsQuery = {}): Promise<Date | null> {
+  try {
+    const agg = await prisma.assistedLivingHome.aggregate({
+      where: publicListingsWhere(q),
+      _max: { updatedAt: true, availabilityVerifiedAt: true, priceUpdatedAt: true, medicaidWaiverVerifiedAt: true },
+    });
+    const times = Object.values(agg._max ?? {})
+      .filter((d): d is Date => d instanceof Date && !Number.isNaN(d.getTime()))
+      .map((d) => d.getTime());
+    return times.length ? new Date(Math.max(...times)) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** "Nov 25, 2026" in the directory's time zone (Cleveland). */
+export function formatLastUpdated(d: Date): string {
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' });
+}
+
+/**
  * Top verified, non-demo, ACTIVE homes for a public page. Never throws.
  */
 export async function fetchPublicListings(q: PublicListingsQuery = {}): Promise<PublicListing[]> {

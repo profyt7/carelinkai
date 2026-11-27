@@ -87,6 +87,15 @@ test.describe('@critical /cleveland/assisted-living server-rendered listings', (
     expect(html).not.toContain('directory-unclaimed@carelinkai.system');
   });
 
+  test('"Last updated" comes from the listings (a real date, not a hard-coded string)', async ({ request }) => {
+    const html = await (await request.get('/cleveland/assisted-living')).text();
+    const m = html.match(/data-testid="hub-last-updated" data-updated-at="([^"]+)"[^>]*>\s*Listings last updated ([A-Z][a-z]{2} \d{1,2}, \d{4})/);
+    expect(m, 'hub-last-updated with an ISO timestamp and a formatted date').toBeTruthy();
+    // The seeds above just wrote these listings, so the newest change is from this run.
+    expect(Date.now() - new Date(m![1]).getTime()).toBeLessThan(6 * 60 * 60 * 1000);
+    expect(html).not.toContain('Last updated 2026-05-15');
+  });
+
   test('verified home sorts ahead of the unverified one', async ({ request }) => {
     const html = await (await request.get('/cleveland/assisted-living')).text();
     expect(html.indexOf(VERIFIED)).toBeGreaterThan(-1);

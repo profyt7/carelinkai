@@ -3,13 +3,15 @@
  * Provides offline functionality, background sync, and push notifications
  */
 
-// Cache names with versioning for better cache management
+// Cache names with versioning for better cache management.
+// v3 (11/2026): pages are never served from cache any more (see the fetch handler). Bumping the names makes
+// `activate` delete every v2 cache, including HTML copies stored by builds from before the repo move.
 const CACHE_NAMES = {
-  static: 'carelink-static-v2',
-  dynamic: 'carelink-dynamic-v2',
-  pages: 'carelink-pages-v2',
-  images: 'carelink-images-v2',
-  api: 'carelink-api-v2'
+  static: 'carelink-static-v3',
+  dynamic: 'carelink-dynamic-v3',
+  pages: 'carelink-pages-v3',
+  images: 'carelink-images-v3',
+  api: 'carelink-api-v3'
 };
 
 // Maximum entries per cache to avoid uncontrolled growth
@@ -23,8 +25,7 @@ const CACHE_LIMITS = {
 
 // Assets to pre-cache during installation
 const CORE_ASSETS = [
-  '/',
-  // Do NOT pre-cache HTML application routes to avoid serving stale headers/CSP
+  // Do NOT pre-cache HTML application routes (not even '/'): a cached page outlives deploys.
   '/offline.html',
   '/manifest.json',
   '/icons/icon-192x192.png',
@@ -311,6 +312,14 @@ self.addEventListener('fetch', event => {
     return;
   }
   
+  // Page navigations (HTML) always come from the network, never from a cache: a cached page can be weeks
+  // old (11/2026: /cleveland/assisted-living showed a pre-move build's footer). Offline → the offline page.
+  const accept = event.request.headers.get('Accept') || '';
+  if (event.request.mode === 'navigate' || accept.includes('text/html')) {
+    event.respondWith(fetch(event.request).catch(() => caches.match('/offline.html')));
+    return;
+  }
+
   // Handle API requests
   const strategy = getStrategy(event.request);
   
